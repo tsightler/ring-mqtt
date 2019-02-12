@@ -57,7 +57,7 @@ mqtt:
 - Arm/Disarm with code
 - Arm/Disarm with sensor bypass
 - Dynamic add/remove of alarms/devices
-- Support for camera motion/lights/siren
+- Support for non-alarm devices (doorbell/camera motion/lights/siren)
 
 ### Debugging
 By default the script should produce no console output, however, the script does leverage the terriffic [debug](https://www.npmjs.com/package/debug) package.  To get debug, simply run the script like this:
