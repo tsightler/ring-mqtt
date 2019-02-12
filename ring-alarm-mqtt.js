@@ -29,11 +29,11 @@ function sleep(ms) {
 // Set unreachable status on exit 
 async function processExit(options, exitCode) {
     if (options.cleanup) {
-		ringAlarms.map(async alarm => {
-			availabilityTopic = ringTopic+'/alarm/'+alarm.locationId+'/status'
-			mqttClient.publish(availabilityTopic, 'offline')
-		})
-	}
+        ringAlarms.map(async alarm => {
+            availabilityTopic = ringTopic+'/alarm/'+alarm.locationId+'/status'
+            mqttClient.publish(availabilityTopic, 'offline')
+        })
+    }
     if (exitCode || exitCode === 0) debug('Exit code: '+exitCode)
     if (options.exit) {
         await sleep(1000)
@@ -44,16 +44,16 @@ async function processExit(options, exitCode) {
 // Monitor Alarm websocket connection and register/refresh status on connect/disconnect
 async function monitorAlarmConnection(alarm) {
     alarm.onConnected.subscribe(async connected => {
-		const devices = await alarm.getDevices()
+        const devices = await alarm.getDevices()
 
-		if (connected) {
-			debug('Alarm location '+alarm.locationId+' is connected')
-			await createAlarm(alarm)
-		} else {
+        if (connected) {
+            debug('Alarm location '+alarm.locationId+' is connected')
+            await createAlarm(alarm)
+        } else {
             const availabilityTopic = ringTopic+'/alarm/'+alarm.locationId+'/status'
-			mqttClient.publish(availabilityTopic, 'offline', { qos: 1 })
-			debug('Alarm location '+alarm.locationId+' is disconnected')
-		}
+            mqttClient.publish(availabilityTopic, 'offline', { qos: 1 })
+            debug('Alarm location '+alarm.locationId+' is disconnected')
+        }
     })
 }
 
@@ -87,7 +87,7 @@ function supportedDevice(deviceType) {
 async function createAlarm(alarm) {
     try {
         const availabilityTopic = ringTopic+'/alarm/'+alarm.locationId+'/status'
-		const devices = await alarm.getDevices()
+        const devices = await alarm.getDevices()
         devices.forEach((device) => {
             const deviceClassInfo = supportedDevice(device.data.deviceType)
             if (deviceClassInfo) {
@@ -106,24 +106,24 @@ async function createAlarm(alarm) {
 async function createDevice(device, deviceClassInfo) {
     const alarmId = device.alarm.locationId
     const deviceId = device.data.zid
-	
-	// Build alarm topics
-	const alarmTopic = ringTopic+'/alarm/'+alarmId
-	const availabilityTopic = alarmTopic+'/status'
+    
+    // Build alarm topics
+    const alarmTopic = ringTopic+'/alarm/'+alarmId
+    const availabilityTopic = alarmTopic+'/status'
 
-	// Build device topics
+    // Build device topics
     const deviceTopic = alarmTopic+'/'+deviceClassInfo.deviceComponent+'/'+deviceId
     const stateTopic = deviceTopic+'/state'
 
-	// If control panel subscribe to command topic
+    // If control panel subscribe to command topic
     if (deviceClassInfo.deviceComponent === 'alarm_control_panel') {
         var commandTopic = deviceTopic+'/command'
     }
 
-	// Build HASS MQTT discovery topic
+    // Build HASS MQTT discovery topic
     const configTopic = 'homeassistant/'+deviceClassInfo.deviceComponent+'/'+alarmId+'/'+deviceId+'/config'
     
-	// Build the MQTT discovery message
+    // Build the MQTT discovery message
     const message = { name : device.data.name,
                     device_class: deviceClassInfo.deviceClass,
                     unique_id: device.data.zid,
@@ -138,7 +138,7 @@ async function createDevice(device, deviceClassInfo) {
         mqttClient.subscribe(commandTopic)
     }
 
-	debug('HASS config topic: '+configTopic)
+    debug('HASS config topic: '+configTopic)
     debug(message)
     mqttClient.publish(configTopic, JSON.stringify(message), { qos: 1 })
 
@@ -266,23 +266,23 @@ try {
 
 // Establish MQTT connection, subscribe to topics, and handle messages
 const main = async() => {
-	var mqttConnected = false
+    var mqttConnected = false
 
     try {
-		// Get alarms via API
+        // Get alarms via API
         ringAlarms = await getAlarms({
-              email: CONFIG.ring_user,
-              password: CONFIG.ring_pass,
+            email: CONFIG.ring_user,
+            password: CONFIG.ring_pass,
         })
 
-		// Start monitoring alarm connection state
-	    ringAlarms.map(async alarm => {
+        // Start monitoring alarm connection state
+        ringAlarms.map(async alarm => {
             monitorAlarmConnection(alarm)
         })
-	
-		// Connect to MQTT broker
-		mqttClient = await initMqtt()
-		mqttConnected = true
+    
+        // Connect to MQTT broker
+        mqttClient = await initMqtt()
+        mqttConnected = true
 
     } catch (error)  {
         debugError(error);
@@ -292,18 +292,18 @@ const main = async() => {
     }
 
     mqttClient.on('connect', async function () {
-		if (mqttConnected) {
-			debugMqtt('Connection established with MQTT broker.')
-			if (hassTopic) mqttClient.subscribe(hassTopic)
-		} else {
-			// Republish device state data after 5 seconds MQTT session reestablished
-			debugMqtt('MQTT connection reestablished, resending config/state information in 5 seconds.')
-			await sleep(5000)
-			ringAlarms.map(async alarm => {
-				createAlarm(alarm)
-			})
-		}
-	})
+        if (mqttConnected) {
+            debugMqtt('Connection established with MQTT broker.')
+            if (hassTopic) mqttClient.subscribe(hassTopic)
+        } else {
+            // Republish device state data after 5 seconds MQTT session reestablished
+            debugMqtt('MQTT connection reestablished, resending config/state information in 5 seconds.')
+            await sleep(5000)
+            ringAlarms.map(async alarm => {
+                createAlarm(alarm)
+            })
+        }
+    })
 
     mqttClient.on('reconnect', function () {
         if (mqttConnected) {
@@ -328,11 +328,11 @@ const main = async() => {
                 debug('Home Assistant state topic '+topic+' received message: '+message)
                 if (message == 'online') {
                     debug('Resending device config/state in 30 seconds')
-					await sleep(30000)
-					ringAlarms.map(async alarm => {
-						createAlarm(alarm)
-						debug('Resent device config/state information')
-					})
+                    await sleep(30000)
+                    ringAlarms.map(async alarm => {
+                        createAlarm(alarm)
+                        debug('Resent device config/state information')
+                    })
                 }
                 break
             // Set alarm mode on update to topic
