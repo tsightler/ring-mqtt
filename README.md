@@ -56,7 +56,7 @@ mqtt:
 - Base station settings (volume, chime)
 - Arm/Disarm with code
 - Arm/Disarm with sensor bypass
-- Dynamic add/remove of alarms/devices
+- Dynamic add/remove of alarms/devices (i.e. no service restart required)
 - Support for non-alarm devices (doorbell/camera motion/lights/siren)
 
 ### Debugging
