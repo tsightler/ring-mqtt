@@ -20,7 +20,7 @@ Now you should just be able to run the script
 **TODO: Include a simple start/stop script**
 
 ### Optional Home Assistant Configuration
-If you'd like to take advantage of the Home Assistant specific features (auto MQTT discovery and state monitorting) you need to make sure Home Assistant MQTT is configured, here's an example:
+If you'd like to take full advantage of the Home Assistant specific features (auto MQTT discovery and server state monitorting) you need to make sure Home Assistant MQTT is configured with discovery and birth message options, here's an example:
 ```
 mqtt:
   broker: 127.0.0.1
