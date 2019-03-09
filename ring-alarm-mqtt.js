@@ -76,7 +76,7 @@ function supportedDevice(deviceType) {
                 deviceComponent: 'alarm_control_panel'
             }
     }
-	return NULL
+	return null
 }
 
 // Loop through alarm devices and create/publish MQTT device topics/messages
