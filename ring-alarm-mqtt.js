@@ -65,22 +65,18 @@ function supportedDevice(deviceType) {
                 deviceClass: 'door',
                 deviceComponent: 'binary_sensor'
             }
-            break;
         case "sensor.motion":
             return {
                 deviceClass: 'motion',
                 deviceComponent: 'binary_sensor'
             }
-            break;
         case "security-panel":
             return {
                 deviceClass: 'None',
                 deviceComponent: 'alarm_control_panel'
             }
-            break
-        default:
-            break
     }
+	return NULL
 }
 
 // Loop through alarm devices and create/publish MQTT device topics/messages
