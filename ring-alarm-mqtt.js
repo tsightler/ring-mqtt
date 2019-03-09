@@ -77,7 +77,7 @@ function supportedDevice(deviceType) {
             }
     }
 	
-	if (/^lock($|\.)/.test(deviceType)) {
+    if (/^lock($|\.)/.test(deviceType)) {
         return {
             deviceClass: 'none',
             deviceComponent: 'lock'
