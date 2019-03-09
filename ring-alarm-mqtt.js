@@ -271,7 +271,7 @@ function initMqtt() {
 // Get Configuration from file
 try {
     CONFIG = require('./config')
-    ringTopic = CONFIG.ring_topic
+    ringTopic = CONFIG.ring_topic ? CONFIG.ring_topic : 'ring'
     hassTopic = CONFIG.hass_topic
 } catch (e) {
     console.error('No configuration file found!')
