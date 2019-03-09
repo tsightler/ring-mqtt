@@ -159,7 +159,7 @@ function subscribeDevice(device, component, stateTopic) {
             case "binary_sensor":
                 var deviceState = data.faulted ? 'ON' : 'OFF'
                 break;
-            case "alarm-control-panel":
+            case "alarm_control_panel":
                 switch(data.mode) {
                     case 'none':
                         deviceState = "disarmed"
@@ -173,7 +173,7 @@ function subscribeDevice(device, component, stateTopic) {
                     default:
                         deviceState = 'unknown'
                 }
-		break;
+                break;
             case "lock":
                 switch(data.locked) {
                     case 'locked':
@@ -185,7 +185,7 @@ function subscribeDevice(device, component, stateTopic) {
                     default:
                         deviceState = "UNKNOWN"
                 }
-		break;
+                break;
         }
         debug(stateTopic, deviceState)
         mqttClient.publish(stateTopic, deviceState, { qos: 1 })
