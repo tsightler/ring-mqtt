@@ -173,6 +173,7 @@ function subscribeDevice(device, component, stateTopic) {
                     default:
                         deviceState = 'unknown'
                 }
+		break;
             case "lock":
                 switch(data.locked) {
                     case 'locked':
@@ -184,6 +185,7 @@ function subscribeDevice(device, component, stateTopic) {
                     default:
                         deviceState = "UNKNOWN"
                 }
+		break;
         }
         debug(stateTopic, deviceState)
         mqttClient.publish(stateTopic, deviceState, { qos: 1 })
