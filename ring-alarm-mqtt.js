@@ -110,7 +110,7 @@ async function createAlarm(alarm) {
 async function createDevice(device, deviceClassInfo) {
     const alarmId = device.alarm.locationId
     const deviceId = device.data.zid
-	const component = deviceClassInfo.deviceComponent
+    const component = deviceClassInfo.deviceComponent
     
     // Build alarm topics
     const alarmTopic = ringTopic+'/alarm/'+alarmId
@@ -173,17 +173,17 @@ function subscribeDevice(device, component, stateTopic) {
                     default:
                         deviceState = 'unknown'
                 }
-			case "lock":
-				switch(data.locked) {
-					case 'locked':
-						deviceState = "LOCK"
-						break;
-					case 'unlocked':
-						deviceState = "UNLOCK"
-						break;
-					default:
-						deviceState = "UNKNOWN"
-				}
+            case "lock":
+                switch(data.locked) {
+                    case 'locked':
+                        deviceState = "LOCK"
+                        break;
+                    case 'unlocked':
+                        deviceState = "UNLOCK"
+                        break;
+                    default:
+                        deviceState = "UNKNOWN"
+                }
         }
         debug(stateTopic, deviceState)
         mqttClient.publish(stateTopic, deviceState, { qos: 1 })
