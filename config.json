@@ -1,7 +1,7 @@
 {
     "host": "localhost",
     "port": 1883,
-    "ring_topic": "ring/",
+    "ring_topic": "ring",
     "hass_topic": "hass/status",
     "mqtt_user": "",
     "mqtt_pass": "",
