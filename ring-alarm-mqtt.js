@@ -76,6 +76,14 @@ function supportedDevice(deviceType) {
                 deviceComponent: 'alarm_control_panel'
             }
     }
+	
+	if (/^lock($|\.)/.test(deviceType)) {
+        return {
+            deviceClass: 'none',
+            deviceComponent: 'lock'
+        }
+    }
+	
 	return null
 }
 
@@ -102,22 +110,23 @@ async function createAlarm(alarm) {
 async function createDevice(device, deviceClassInfo) {
     const alarmId = device.alarm.locationId
     const deviceId = device.data.zid
+	const component = deviceClassInfo.deviceComponent
     
     // Build alarm topics
     const alarmTopic = ringTopic+'/alarm/'+alarmId
     const availabilityTopic = alarmTopic+'/status'
 
     // Build device topics
-    const deviceTopic = alarmTopic+'/'+deviceClassInfo.deviceComponent+'/'+deviceId
+    const deviceTopic = alarmTopic+'/'+component+'/'+deviceId
     const stateTopic = deviceTopic+'/state'
 
     // If control panel subscribe to command topic
-    if (deviceClassInfo.deviceComponent === 'alarm_control_panel') {
+    if (component === 'alarm_control_panel') {
         var commandTopic = deviceTopic+'/command'
     }
 
     // Build HASS MQTT discovery topic
-    const configTopic = 'homeassistant/'+deviceClassInfo.deviceComponent+'/'+alarmId+'/'+deviceId+'/config'
+    const configTopic = 'homeassistant/'+component+'/'+alarmId+'/'+deviceId+'/config'
     
     // Build the MQTT discovery message
     const message = { name : device.data.name,
@@ -139,19 +148,18 @@ async function createDevice(device, deviceClassInfo) {
     mqttClient.publish(configTopic, JSON.stringify(message), { qos: 1 })
 
     await sleep(1000)
-    subscribeDevice(device, stateTopic)
+    subscribeDevice(device, component, stateTopic)
 }
 
 // Publish device status and subscribe for state updates from API
-function subscribeDevice(device, stateTopic) {
+function subscribeDevice(device, component, stateTopic) {
     device.onData.subscribe(data => {
         var deviceState = undefined
-        switch(data.deviceType) {
-            case "sensor.contact":
-            case "sensor.motion":
+        switch(component) {
+            case "binary_sensor":
                 var deviceState = data.faulted ? 'ON' : 'OFF'
                 break;
-            case "security-panel":
+            case "alarm-control-panel":
                 switch(data.mode) {
                     case 'none':
                         deviceState = "disarmed"
@@ -165,6 +173,17 @@ function subscribeDevice(device, stateTopic) {
                     default:
                         deviceState = 'unknown'
                 }
+			case "lock":
+				switch(data.locked) {
+					case 'locked':
+						deviceState = "LOCK"
+						break;
+					case 'unlocked':
+						deviceState = "UNLOCK"
+						break;
+					default:
+						deviceState = "UNKNOWN"
+				}
         }
         debug(stateTopic, deviceState)
         mqttClient.publish(stateTopic, deviceState, { qos: 1 })
