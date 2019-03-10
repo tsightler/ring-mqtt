@@ -145,11 +145,16 @@ async function createDevice(device, supportedDeviceInfo) {
     }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     // If device is a binary sensor include
     // device class to set correct icon in UI 
 =======
     // If binary sensor, include device class to set correct icons in UI 
 >>>>>>> 660d9b128d41a4532821aa2c754ca4ce316bd535
+=======
+    // If device is a binary sensor include
+    // device class to set correct icon in UI  
+>>>>>>> 821131714813b1de849ef34fdfcdfcf3d777ad0f
     if (supportedDeviceInfo.className) {
         message.device_class = supportedDeviceInfo.className
     }
