@@ -163,7 +163,7 @@ async function createDevice(device, supportedDeviceInfo) {
 function subscribeDevice(device, component, stateTopic) {
     device.onData.subscribe(data => {
         var deviceState = undefined
-        debug("Component:"+component)
+        debug("Component: "+component)
         switch(component) {
             case "binary_sensor":
                 var deviceState = data.faulted ? 'ON' : 'OFF'
