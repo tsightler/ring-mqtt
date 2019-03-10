@@ -60,35 +60,35 @@ async function monitorAlarmConnection(alarm) {
 // Return class information if supported device
 function supportedDevice(deviceType) {
     switch(deviceType) {
-        case "sensor.contact":
+        case 'sensor.contact':
             return {
                 className: 'door',
                 componentType: 'binary_sensor',
                 stateOnly: true
             }
             break;
-        case "sensor.motion":
+        case 'sensor.motion':
             return {
                 className: 'motion',
                 componentType: 'binary_sensor',
                 stateOnly: true
             }
             break;
-        case "alarm.smoke":
+        case 'alarm.smoke':
             return {
                 className: 'smoke',
                 componentType: 'binary_sensor',
                 stateOnly: true
             }
             break;
-        case "alarm.co":
+        case 'alarm.co':
             return {
                 className: 'gas',
                 componentType: 'binary_sensor',
                 stateOnly: true
             }
             break;
-        case "security-panel":
+        case 'security-panel':
             return {
                 className: null,
                 componentType: 'alarm_control_panel',
@@ -181,19 +181,19 @@ function subscribeDevice(device, component, stateTopic) {
     device.onData.subscribe(data => {
         var deviceState = undefined
         switch(component) {
-            case "binary_sensor":
+            case 'binary_sensor':
                 switch (data.deviceType) {
-                    case "sensor.contact":
-                    case "sensor.motion":
+                    case 'sensor.contact':
+                    case 'sensor.motion':
                         var deviceState = data.faulted ? 'ON' : 'OFF'
                         break;
-                    case "alarm.smoke":
-                    case "alarm.co":
+                    case 'alarm.smoke':
+                    case 'alarm.co':
                         var deviceState = data.alarmStatus === 'active' ? 'ON' : 'OFF' 
                         break;
                 }
                 break;
-            case "alarm_control_panel":
+            case 'alarm_control_panel':
                 switch(data.mode) {
                     case 'none':
                         deviceState = 'disarmed'
@@ -208,16 +208,16 @@ function subscribeDevice(device, component, stateTopic) {
                         deviceState = 'unknown'
                 }
                 break;
-            case "lock":
+            case 'lock':
                 switch(data.locked) {
                     case 'locked':
-                        deviceState = "LOCK"
+                        deviceState = 'LOCK'
                         break;
                     case 'unlocked':
-                        deviceState = "UNLOCK"
+                        deviceState = 'UNLOCK'
                         break;
                     default:
-                        deviceState = "UNKNOWN"
+                        deviceState = 'UNKNOWN'
                 }
                 break;
         }
@@ -292,8 +292,8 @@ async function setLockTargetState(alarm, deviceId, message) {
     const command = message.toLowerCase()
 
     switch(command) {
-        case "lock":
-        case "unlock":
+        case 'lock':
+        case 'unlock':
             alarm.setDeviceInfo(deviceId, {
                 command: {
                     v1: [
@@ -306,13 +306,13 @@ async function setLockTargetState(alarm, deviceId, message) {
             })
             break;
         default:
-            debug("Received invalid command for lock!")
+            debug('Received invalid command for lock!')
     }
 }
 
 // Process received MQTT command
 async function processCommand(topic, message) {
-    var topic = topic.split("/")
+    var topic = topic.split('/')
     // Parse topic to get alarm/component/device info
     const alarmId = topic[topic.length - 4]
     const component = topic[topic.length - 3]
@@ -329,7 +329,7 @@ async function processCommand(topic, message) {
             setLockTargetState(alarm, deviceId, message)
             break;
         default:
-            debug("Somehow received command for an unknown device!")
+            debug('Somehow received command for an unknown device!')
     }
 }
 
@@ -415,7 +415,7 @@ const main = async() => {
     mqttClient.on('message', async function (topic, message) {
         message = message.toString()
         if (topic === hassTopic) {
-            // Republish devices and state after 45 seconds if restart of HA is detected
+            // Republish devices and state after 60 seconds if restart of HA is detected
             debug('Home Assistant state topic '+topic+' received message: '+message)
             if (message == 'online') {
                 debug('Resending device config/state in 60 seconds')
