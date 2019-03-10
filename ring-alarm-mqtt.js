@@ -145,7 +145,8 @@ async function createDevice(device, supportedDeviceInfo) {
         mqttClient.subscribe(commandTopic)
     }
 
-    // If binary sensor, include device class to set correct icons in UI 
+    // If device is a binary sensor include
+    // device class to set correct icon in UI  
     if (supportedDeviceInfo.className) {
         message.device_class = supportedDeviceInfo.className
     }
