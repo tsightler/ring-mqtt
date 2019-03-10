@@ -66,18 +66,35 @@ function supportedDevice(deviceType) {
                 componentType: 'binary_sensor',
                 stateOnly: true
             }
+            break;
         case "sensor.motion":
             return {
                 className: 'motion',
                 componentType: 'binary_sensor',
                 stateOnly: true
             }
+            break;
+        case "alarm.smoke":
+            return {
+                className: 'smoke',
+                componentType: 'binary_sensor',
+                stateOnly: true
+            }
+            break;
+        case "alarm.co":
+            return {
+                className: 'gas',
+                componentType: 'binary_sensor',
+                stateOnly: true
+            }
+            break;
         case "security-panel":
             return {
                 className: null,
                 componentType: 'alarm_control_panel',
                 stateOnly: false
             }
+            break;
     }
 	
     if (/^lock($|\.)/.test(deviceType)) {
@@ -109,17 +126,18 @@ async function createAlarm(alarm) {
     }
 }
 
-// Register alarm devices via HomeAssistant MQTT Discovery
+// Register alarm devices via HomeAssistant MQTT Discovery and
+// subscribe to command topic if control panel to allow actions on arm/disarm messages
 async function createDevice(device, supportedDeviceInfo) {
     const alarmId = device.alarm.locationId
     const deviceId = device.data.zid
     const component = supportedDeviceInfo.componentType
     
-    // Build the alarm topics
+    // Build alarm topics
     const alarmTopic = ringTopic+'/alarm/'+alarmId
     const availabilityTopic = alarmTopic+'/status'
 
-    // Build the device topics
+    // Build device topics
     const deviceTopic = alarmTopic+'/'+component+'/'+deviceId
     const stateTopic = deviceTopic+'/state'
 
@@ -136,16 +154,15 @@ async function createDevice(device, supportedDeviceInfo) {
         state_topic: stateTopic
     }
 
-    // If the device supports commands then
-    // build command topic and subscribe for messages
+    // If device supports commands then
+    // build command topic and subscribe for updates
     if (!supportedDeviceInfo.stateOnly) {
         const commandTopic = deviceTopic+'/command'
         message.command_topic = commandTopic
         mqttClient.subscribe(commandTopic)
     }
 
-    // If device is a binary sensor include
-    // device class to set correct icon in UI 
+    // If binary sensor include device class to help set icons in UI 
     if (supportedDeviceInfo.className) {
         message.device_class = supportedDeviceInfo.className
     }
@@ -163,21 +180,29 @@ async function createDevice(device, supportedDeviceInfo) {
 function subscribeDevice(device, component, stateTopic) {
     device.onData.subscribe(data => {
         var deviceState = undefined
-        debug("Component: "+component)
         switch(component) {
             case "binary_sensor":
-                var deviceState = data.faulted ? 'ON' : 'OFF'
+                switch (data.deviceType) {
+                    case "sensor.contact":
+                    case "sensor.motion":
+                        var deviceState = data.faulted ? 'ON' : 'OFF'
+                        break;
+                    case "alarm.smoke":
+                    case "alarm.co":
+                        var deviceState = data.alarmStatus === 'active' ? 'ON' : 'OFF' 
+                        break;
+                }
                 break;
             case "alarm_control_panel":
                 switch(data.mode) {
                     case 'none':
-                        deviceState = "disarmed"
+                        deviceState = 'disarmed'
                         break;
                     case 'some':
-                        deviceState = "armed_home"
+                        deviceState = 'armed_home'
                         break;
                     case 'all':
-                        deviceState = "armed_away"
+                        deviceState = 'armed_away'
                         break;
                     default:
                         deviceState = 'unknown'
@@ -390,10 +415,10 @@ const main = async() => {
     mqttClient.on('message', async function (topic, message) {
         message = message.toString()
         if (topic === hassTopic) {
-            // Republish devices and state after 60 seconds if restart of HA is detected
+            // Republish devices and state after 45 seconds if restart of HA is detected
             debug('Home Assistant state topic '+topic+' received message: '+message)
             if (message == 'online') {
-                debug('Resending device config/state in 45 seconds')
+                debug('Resending device config/state in 60 seconds')
                 await sleep(60000)
                 ringAlarms.map(async alarm => {
                     createAlarm(alarm)
