@@ -17,7 +17,12 @@ This should install all required dependencies.  Edit the config.js and enter you
 
 Now you should just be able to run the script
 
-**TODO: Include a simple start/stop script**
+### Starting the service automatically during boot
+I've included a sample service file which you can use to automaticlly start the script during system boot as long as your system uses systemd (most modern Linux distros).  The script assumes you've installed the script in /opt/ring-alarm-mqtt and that you want to run the process as the homeassistant user, but you can easily modify this to any path and user you'd like.  Then just drop the file in /etc/systemd/system and run the following:
+
+```
+systemctl enable ring-alarm-mqtt
+```
 
 ### Optional Home Assistant Configuration
 If you'd like to take full advantage of the Home Assistant specific features (auto MQTT discovery and server state monitorting) you need to make sure Home Assistant MQTT is configured with discovery and birth message options, here's an example:
