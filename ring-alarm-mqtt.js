@@ -102,25 +102,24 @@ async function createAlarm(alarm) {
                 createDevice(device, supportedDeviceInfo)
             }
         })
-        await sleep(1000)
+        await sleep(2000)
         mqttClient.publish(availabilityTopic, 'online', { qos: 1 })
     } catch (error) {
         debugError(error)
     }
 }
 
-// Register alarm devices via HomeAssistant MQTT Discovery and
-// subscribe to command topic if control panel to allow actions on arm/disarm messages
+// Register alarm devices via HomeAssistant MQTT Discovery
 async function createDevice(device, supportedDeviceInfo) {
     const alarmId = device.alarm.locationId
     const deviceId = device.data.zid
     const component = supportedDeviceInfo.componentType
     
-    // Build alarm topics
+    // Build the alarm topics
     const alarmTopic = ringTopic+'/alarm/'+alarmId
     const availabilityTopic = alarmTopic+'/status'
 
-    // Build device topics
+    // Build the device topics
     const deviceTopic = alarmTopic+'/'+component+'/'+deviceId
     const stateTopic = deviceTopic+'/state'
 
@@ -137,15 +136,20 @@ async function createDevice(device, supportedDeviceInfo) {
         state_topic: stateTopic
     }
 
-    // If device supports commands then
-    // build command topic and subscribe for updates
+    // If the device supports commands then
+    // build command topic and subscribe for messages
     if (!supportedDeviceInfo.stateOnly) {
         const commandTopic = deviceTopic+'/command'
         message.command_topic = commandTopic
         mqttClient.subscribe(commandTopic)
     }
 
-    // If binary sensor include device class to help set icons in UI 
+<<<<<<< HEAD
+    // If device is a binary sensor include
+    // device class to set correct icon in UI 
+=======
+    // If binary sensor, include device class to set correct icons in UI 
+>>>>>>> 660d9b128d41a4532821aa2c754ca4ce316bd535
     if (supportedDeviceInfo.className) {
         message.device_class = supportedDeviceInfo.className
     }
@@ -390,11 +394,11 @@ const main = async() => {
     mqttClient.on('message', async function (topic, message) {
         message = message.toString()
         if (topic === hassTopic) {
-            // Republish devices and state after 45 seconds if restart of HA is detected
+            // Republish devices and state after 60 seconds if restart of HA is detected
             debug('Home Assistant state topic '+topic+' received message: '+message)
             if (message == 'online') {
                 debug('Resending device config/state in 45 seconds')
-                await sleep(45000)
+                await sleep(60000)
                 ringAlarms.map(async alarm => {
                     createAlarm(alarm)
                     debug('Resent device config/state information')
