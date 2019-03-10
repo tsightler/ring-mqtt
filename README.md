@@ -44,8 +44,9 @@ mqtt:
 - Consistent topic creation based on location/device ID
 - Arm/Disarm via alarm control panel MQTT object
 - Arm/Disarm commands are monitored for success and retried (default up to 12x with 10 second interval)
-- Contact Sensors
-- Motion Sensors
+- Contact and Motion Sensors
+- Smoke/CO2 Detector (experimental/testing needed, does not currently support smoke/co2 listener)
+- Ring integrated door locks (status and lock control)
 - Multiple alarm support
 - Monitors websocket connection to each alarm and sets reachability status of socket is unavailable, resends device state when connection is established
 - Can monitor Home Assistant MQTT birth message to trigger automatic resend of configuration data after restart.  The script will automatically resend device config/state 30 seconds after receiving online message from Home Assistant.  This keeps you from having to restart the script after a Home Assistant restart.
@@ -53,7 +54,7 @@ mqtt:
 - Does not require MQTT retain and can work well with brokers that provide no persistent storage
 
 ### Planned Features
-- Additional devices (Fire/CO2/Flood)
+- Additional devices (Smoke/CO2 Listener, Flood sensor)
 - Battery status for devices
 - Tamper status
 
