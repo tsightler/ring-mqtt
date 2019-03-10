@@ -73,4 +73,4 @@ DEBUG=ring-alarm-mqtt ./ring-alarm-mqtt.js
 ```
 
 ### Thanks
-Much thanks must go to [dgrief](https://github.com/dgreif) and his amazinly excellent [ring-alarm API](https://github.com/dgreif/ring-alarm) as well as his homebridge plugin.  Without his work it would have taken far more effort and time, probably more time than I had, to get this working.
+Much thanks must go to dgrief and his excellent [ring-alarm API](https://github.com/dgreif/ring-alarm) as well as his homebridge plugin.  Without his work it would have taken far more effort and time, probably more time than I had, to get this working.
