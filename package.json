@@ -1,10 +1,10 @@
 {
   "name": "ring-alarm-mqtt",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Ring Alarm to MQTT Bridge",
   "main": "ring-alarm-mqtt.js",
   "dependencies": {
-    "@dgreif/ring-alarm": "^1.2.3",
+    "@dgreif/ring-alarm": "^1.4.1",
     "debug": "^4.1.1",
     "mqtt": "^2.18.8"
   },
@@ -16,6 +16,10 @@
     "ring",
     "mqtt"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/tsightler/ring-alarm-mqtt.git"
+  },
   "author": "Tom Sightler (tsightler@gmail.com)",
   "license": "MIT"
 }

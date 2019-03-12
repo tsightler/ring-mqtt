@@ -17,7 +17,12 @@ This should install all required dependencies.  Edit the config.js and enter you
 
 Now you should just be able to run the script
 
-**TODO: Include a simple start/stop script**
+### Starting the service automatically during boot
+I've included a sample service file which you can use to automaticlly start the script during system boot as long as your system uses systemd (most modern Linux distros).  The service file assumes you've installed the script in /opt/ring-alarm-mqtt and that you want to run the process as the homeassistant user, but you can easily modify this to any path and user you'd like.  Just edit the file as required and drop it in /etc/systemd/system then run the following:
+
+```
+systemctl enable ring-alarm-mqtt
+```
 
 ### Optional Home Assistant Configuration
 If you'd like to take full advantage of the Home Assistant specific features (auto MQTT discovery and server state monitorting) you need to make sure Home Assistant MQTT is configured with discovery and birth message options, here's an example:
@@ -39,8 +44,9 @@ mqtt:
 - Consistent topic creation based on location/device ID
 - Arm/Disarm via alarm control panel MQTT object
 - Arm/Disarm commands are monitored for success and retried (default up to 12x with 10 second interval)
-- Contact Sensors
-- Motion Sensors
+- Contact and Motion Sensors
+- Smoke/CO2 Detector (experimental/testing needed, does not currently support smoke/co2 listener)
+- Ring integrated door locks (status and lock control)
 - Multiple alarm support
 - Monitors websocket connection to each alarm and sets reachability status of socket is unavailable, resends device state when connection is established
 - Can monitor Home Assistant MQTT birth message to trigger automatic resend of configuration data after restart.  The script will automatically resend device config/state 30 seconds after receiving online message from Home Assistant.  This keeps you from having to restart the script after a Home Assistant restart.
@@ -48,7 +54,7 @@ mqtt:
 - Does not require MQTT retain and can work well with brokers that provide no persistent storage
 
 ### Planned Features
-- Additional devices (Fire/CO2/Flood)
+- Additional devices (Smoke/CO2 Listener, Flood sensor)
 - Battery status for devices
 - Tamper status
 
