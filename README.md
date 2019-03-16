@@ -55,7 +55,7 @@ mqtt:
 - Does not require MQTT retain and can work well with brokers that provide no persistent storage
 
 ### Planned Features
-- Additional devices (Flood/Freeze sensors)
+- Additional devices (Flood/Freeze sensor)
 - Battery status for devices
 - Tamper status
 
