@@ -218,8 +218,7 @@ function subscribeDevice(device, deviceTopic) {
                 debug(deviceTopic+'/gas/state', coAlarmState)
                 mqttClient.publish(deviceTopic+'/gas/state', coAlarmState, { qos: 1 })
                 debug(deviceTopic+'/smoke/state', smokeAlarmState)
-                mqttClient.publish(deviceTopic+'/smoke/state', deviceState, { qos: 1 })
-                deviceState = 'published'
+                mqttClient.publish(deviceTopic+'/smoke/state', smokeAlarmState, { qos: 1 })
                 break;                
             case 'security-panel':
                 switch(data.mode) {
@@ -250,7 +249,7 @@ function subscribeDevice(device, deviceTopic) {
                     deviceState = 'UNKNOWN'
             }
         }
-        if (deviceState !== 'published') {
+        if (deviceState !== undefined) {
             debug(deviceTopic+'/state', deviceState)
             mqttClient.publish(deviceTopic+'/state', deviceState, { qos: 1 })
         }
