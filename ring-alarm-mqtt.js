@@ -130,7 +130,6 @@ async function createAlarm(alarm) {
 // subscribe to command topic if control panel to allow actions on arm/disarm messages
 async function createDevice(device, supportedDeviceInfo) {
     const alarmId = device.alarm.locationId
-    const deviceName = device.data.name
     const deviceId = device.data.zid
     const component = supportedDeviceInfo.component   
     const numSensors = (!supportedDeviceInfo.classNames) ? 1 : supportedDeviceInfo.classNames.length
@@ -141,18 +140,22 @@ async function createDevice(device, supportedDeviceInfo) {
     const deviceTopic = alarmTopic+'/'+component+'/'+deviceId
 
     for(let i=0; i < numSensors; i++) {
-        var deviceNameSuffix = ''
-        var deviceSuffix = ''
+        var uniqueId = deviceId
+        var deviceName = device.data.name
+        var subTopic = ''
+
+        // If device has more than one sensor component create suffixes
+        // to build unique device entries for each sensor
         if (numSensors > 1) {
             var className = supportedDeviceInfo.classNames[i]
+            uniqueId = deviceId+'_'+className
+            subTopic = '/'+className
             switch(className) {
                 case 'smoke':
-                    deviceNameSuffix = ' - Smoke'
-                    deviceSuffix = '_smoke'
+                    deviceName = deviceName+' - Smoke'
                     break;
                 case 'gas':
-                    deviceNameSuffix = ' - CO'
-                    deviceSuffix = "_gas"
+                    deviceName = deviceName+' - CO'
                     break
             }
         } else {
@@ -160,13 +163,13 @@ async function createDevice(device, supportedDeviceInfo) {
         }
      
         // Build state topic and HASS MQTT discovery topic
-        const stateTopic = deviceTopic+deviceSuffix+'/state'
-        const configTopic = 'homeassistant/'+component+'/'+alarmId+'/'+deviceId+deviceSuffix+'/config'
+        const stateTopic = deviceTopic+subTopic+'/state'
+        const configTopic = 'homeassistant/'+component+'/'+alarmId+'/'+uniqueId+'/config'
     
         // Build the MQTT discovery message
         const message = { 
-            name : deviceName+deviceNameSuffix,
-            unique_id: deviceId+deviceSuffix,
+            name : deviceName,
+            unique_id: uniqueId,
             availability_topic: availabilityTopic,
             payload_available: 'online',
             payload_not_available: 'offline',
@@ -176,7 +179,7 @@ async function createDevice(device, supportedDeviceInfo) {
         // If device supports commands then
         // build command topic and subscribe for updates
         if (supportedDeviceInfo.command) {
-            const commandTopic = deviceTopic+deviceSuffix+'/command'
+            const commandTopic = deviceTopic+subTopic+'/command'
             message.command_topic = commandTopic
             mqttClient.subscribe(commandTopic)
         }
@@ -211,10 +214,10 @@ function subscribeDevice(device, deviceTopic) {
             case 'listener.smoke-co':
                 const coAlarmState = data.co && data.co.alarmStatus === 'active' ? 'ON' : 'OFF'
                 const smokeAlarmState = data.smoke && data.smoke.alarmStatus === 'active' ? 'ON' : 'OFF'
-                debug(deviceTopic+'_gas/state', coAlarmState)
-                mqttClient.publish(deviceTopic+'_gas/state', coAlarmState, { qos: 1 })
-                debug(deviceTopic+'_smoke/state', smokeAlarmState)
-                mqttClient.publish(deviceTopic+'_smoke/state', deviceState, { qos: 1 })
+                debug(deviceTopic+'/gas/state', coAlarmState)
+                mqttClient.publish(deviceTopic+'/gas/state', coAlarmState, { qos: 1 })
+                debug(deviceTopic+'/smoke/state', smokeAlarmState)
+                mqttClient.publish(deviceTopic+'/smoke/state', deviceState, { qos: 1 })
                 deviceState = 'published'
                 break;                
             case 'security-panel':
