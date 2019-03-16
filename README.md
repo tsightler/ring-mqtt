@@ -50,7 +50,7 @@ mqtt:
 - Ring integrated door locks (status and lock control)
 - Multiple alarm support
 - Monitors websocket connection to each alarm and sets reachability status of socket is unavailable, resends device state when connection is established
-- Can monitor Home Assistant MQTT birth message to trigger automatic resend of configuration data after restart.  The script will automatically resend device config/state 30 seconds after receiving online message from Home Assistant.  This keeps you from having to restart the script after a Home Assistant restart.
+- Can monitor Home Assistant MQTT birth message to trigger automatic resend of configuration data after restart.  The script will automatically resend device config/state 60 seconds after receiving online message from Home Assistant.  This keeps you from having to restart the script after a Home Assistant restart.
 - Monitors MQTT connection and resends device state after any reconnect
 - Does not require MQTT retain and can work well with brokers that provide no persistent storage
 
