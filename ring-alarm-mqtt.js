@@ -139,6 +139,8 @@ async function createDevice(device, supportedDeviceInfo) {
     const availabilityTopic = alarmTopic+'/status'
     const deviceTopic = alarmTopic+'/'+component+'/'+deviceId
 
+    // If device has more than one sensor component create some suffixes
+    // which will be used to create unique device entries
     for(let i=0; i < numSensors; i++) {
         var uniqueId = deviceId
         var deviceName = device.data.name

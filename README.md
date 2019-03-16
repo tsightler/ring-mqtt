@@ -24,7 +24,7 @@ I've included a sample service file which you can use to automaticlly start the 
 systemctl enable ring-alarm-mqtt
 ```
 
-### Optional Home Assistant Configuration
+### Optional Home Assistant Configuration (Highly Recommended)
 If you'd like to take full advantage of the Home Assistant specific features (auto MQTT discovery and server state monitorting) you need to make sure Home Assistant MQTT is configured with discovery and birth message options, here's an example:
 ```
 mqtt:
@@ -45,17 +45,18 @@ mqtt:
 - Arm/Disarm via alarm control panel MQTT object
 - Arm/Disarm commands are monitored for success and retried (default up to 12x with 10 second interval)
 - Contact and Motion Sensors
-- First Alert Z-Wave Smoke/CO Detector (experimental/testing needed, does not currently support smoke/co2 listener)
+- First Alert Z-Wave Smoke/CO Detector (experimental - testing needed)
+- Ring Smoke/CO Listener (experimental - testing needed)
 - Ring integrated door locks (status and lock control)
 - Multiple alarm support
 - Monitors websocket connection to each alarm and sets reachability status of socket is unavailable, resends device state when connection is established
-- Can monitor Home Assistant MQTT birth message to trigger automatic resend of configuration data after restart.  The script will automatically resend device config/state 30 seconds after receiving online message from Home Assistant.  This keeps you from having to restart the script after a Home Assistant restart.
+- Can monitor Home Assistant MQTT birth message to trigger automatic resend of configuration data after restart.  The script will automatically resend device config/state 60 seconds after receiving online message from Home Assistant.  This keeps you from having to restart the script after a Home Assistant restart.
 - Monitors MQTT connection and resends device state after any reconnect
 - Does not require MQTT retain and can work well with brokers that provide no persistent storage
 
 ### Planned Features
-- Additional devices (Smoke/CO Listener, Flood sensor)
-- Battery status for devices
+- Additional devices (Flood/Freeze sensor, base station, keypad)
+- Battery status
 - Tamper status
 
 ### Possible future features
@@ -73,10 +74,12 @@ By default the script should produce no console output, however, the script does
 DEBUG=* ./ring-alarm-mqtt.js
 ````
 
-**Debug messages from ring-alarm-mqtt onlY**
+**Debug messages from ring-alarm-mqtt only**
 ```
 DEBUG=ring-alarm-mqtt ./ring-alarm-mqtt.js
 ```
 
 ### Thanks
 Much thanks must go to dgrief and his excellent [ring-alarm API](https://github.com/dgreif/ring-alarm) as well as his homebridge plugin.  Without his work it would have taken far more effort and time, probably more time than I had, to get this working.
+
+I also have to give much credit to [acolytec3](https://community.home-assistant.io/u/acolytec3) on the Home Assistant community forums for his original Ring Alarm MQTT script.  Having an already functioning script with support for MQTT discovery saved me quite a bit of time in developing this script.
