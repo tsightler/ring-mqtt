@@ -6,7 +6,7 @@ Make sure Node.js (tested with 8.x and higher) is installed on your system and t
 
 `git clone https://github.com/tsightler/ring-alarm-mqtt.git`
 
-Change to created ring-alarm-mqtt and run:
+Change to the ring-alarm-mqtt directory and run:
 
 ```
 chmod +x ring-alarm-mqtt.js
