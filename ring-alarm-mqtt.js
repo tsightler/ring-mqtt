@@ -108,6 +108,20 @@ function supportedDevice(deviceType) {
 	return null
 }
 
+function getBatteryLevel(device) {
+    if (device.batteryLevel !== undefined) {
+        // Return 100% if 99% reported, otherwise return reported battery level
+        return (device.batteryLevel === 99) ? 100 : device.batteryLevel
+    } else if (device.batteryStatus === 'full') {
+        return 100
+    } else if (device.batteryStatus === 'ok') {
+        return 50
+    } else if (device.batteryStatus === 'none') {
+        return 'none'
+    }
+    return 0
+}
+
 // Loop through alarm devices and create/publish MQTT device topics/messages
 async function createAlarm(alarm) {
     try {
@@ -165,16 +179,18 @@ async function createDevice(device, supportedDeviceInfo) {
      
         // Build state topic and HASS MQTT discovery topic
         const stateTopic = deviceTopic+subTopic+'/state'
+        const attributesTopic = deviceTopic+'/attributes'
         const configTopic = 'homeassistant/'+component+'/'+alarmId+'/'+uniqueId+'/config'
     
         // Build the MQTT discovery message
         const message = { 
-            name : deviceName,
+            name: deviceName,
             unique_id: uniqueId,
             availability_topic: availabilityTopic,
             payload_available: 'online',
             payload_not_available: 'offline',
-            state_topic: stateTopic
+            state_topic: stateTopic,
+            json_attributes_topic: attributesTopic
         }
 
         // If device supports commands then
@@ -249,10 +265,23 @@ function subscribeDevice(device, deviceTopic) {
                     deviceState = 'UNKNOWN'
             }
         }
+
         if (deviceState !== undefined) {
             debug(deviceTopic+'/state', deviceState)
             mqttClient.publish(deviceTopic+'/state', deviceState, { qos: 1 })
         }
+
+        // Publish any available device attributes (battery, power, etc)
+        const attributes = {}
+        batteryLevel = getBatteryLevel(data)
+        if (batteryLevel !== 'none') {
+             attributes.battery_level = batteryLevel
+        }
+        if (data.tamperStatus) {
+            attributes.tamper_status = data.tamperStatus
+        }
+        debug(deviceTopic+'/attributes', attributes)
+        mqttClient.publish(deviceTopic+'/attributes', JSON.stringify(attributes), { qos: 1 })
     })
 }
 
