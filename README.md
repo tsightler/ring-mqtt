@@ -48,6 +48,7 @@ mqtt:
 - First Alert Z-Wave Smoke/CO Detector (experimental - testing needed)
 - Ring Smoke/CO Listener (experimental - testing needed)
 - Ring integrated door locks (status and lock control)
+- Battery/tamper status reported as JSON attribute (shows in Home Assistant UI for device)
 - Multiple alarm support
 - Monitors websocket connection to each alarm and sets reachability status of socket is unavailable, resends device state when connection is established
 - Can monitor Home Assistant MQTT birth message to trigger automatic resend of configuration data after restart.  The script will automatically resend device config/state 60 seconds after receiving online message from Home Assistant.  This keeps you from having to restart the script after a Home Assistant restart.
@@ -56,8 +57,6 @@ mqtt:
 
 ### Planned Features
 - Additional devices (Flood/Freeze sensor, base station, keypad)
-- Battery status
-- Tamper status
 
 ### Possible future features
 - Base station settings (volume, chime)
