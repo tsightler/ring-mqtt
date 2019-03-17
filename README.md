@@ -40,7 +40,7 @@ mqtt:
 
 ### Current Features
 - Simple configuration via config file, most cases just need Ring user/password and that's it
-- Home Assistant MQTT Discovery (also tested with OpenHAB 2.4)
+- Full Home Assistant MQTT Discovery -- device appear automatically (also tested with OpenHAB 2.4 MQTT)
 - Consistent topic creation based on location/device ID
 - Arm/Disarm via alarm control panel MQTT object
 - Arm/Disarm commands are monitored for success and retried (default up to 12x with 10 second interval)
