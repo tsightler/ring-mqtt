@@ -45,7 +45,6 @@ async function processExit(options, exitCode) {
 async function monitorAlarmConnection(alarm) {
     alarm.onConnected.subscribe(async connected => {
         const devices = await alarm.getDevices()
-
         if (connected) {
             debug('Alarm location '+alarm.locationId+' is connected')
             await createAlarm(alarm)
@@ -155,28 +154,27 @@ async function createDevice(device, supportedDeviceInfo) {
 
     // Loop through device sensors and publish HA discovery configuration
     for(let i=0; i < numSensors; i++) {
-        var uniqueId = deviceId
-        var deviceName = device.data.name
-        var subTopic = ''
-
         // If device has more than one sensor component create suffixes
         // to build unique device entries for each sensor
         if (numSensors > 1) {
             var className = supportedDeviceInfo.classNames[i]
-            uniqueId = deviceId+'_'+className
-            subTopic = '/'+className
+            var uniqueId = deviceId+'_'+className
+            var subTopic = '/'+className
             switch(className) {
                 case 'smoke':
-                    deviceName = deviceName+' - Smoke'
+                    var deviceName = device.data.name+' - Smoke'
                     break;
                 case 'gas':
-                    deviceName = deviceName+' - CO'
+                    var deviceName = device.data.name+' - CO'
                     break
             }
         } else {
             var className = supportedDeviceInfo.className
+            var uniqueId = deviceId
+            var subTopic = ''
+            var deviceName = device.data.name
         }
-     
+
         // Build state topic and HASS MQTT discovery topic
         const stateTopic = deviceTopic+subTopic+'/state'
         const attributesTopic = deviceTopic+'/attributes'
@@ -231,10 +229,8 @@ function subscribeDevice(device, deviceTopic) {
             case 'listener.smoke-co':
                 const coAlarmState = data.co && data.co.alarmStatus === 'active' ? 'ON' : 'OFF'
                 const smokeAlarmState = data.smoke && data.smoke.alarmStatus === 'active' ? 'ON' : 'OFF'
-                debug(deviceTopic+'/gas/state', coAlarmState)
-                mqttClient.publish(deviceTopic+'/gas/state', coAlarmState, { qos: 1 })
-                debug(deviceTopic+'/smoke/state', smokeAlarmState)
-                mqttClient.publish(deviceTopic+'/smoke/state', smokeAlarmState, { qos: 1 })
+                publishMqttState(deviceTopic+'/gas/state', coAlarmState)
+                publishMqttState(deviceTopic+'/smoke/state', smokeAlarmState)
                 break;                
             case 'security-panel':
                 switch(data.mode) {
@@ -267,8 +263,7 @@ function subscribeDevice(device, deviceTopic) {
         }
 
         if (deviceState !== undefined) {
-            debug(deviceTopic+'/state', deviceState)
-            mqttClient.publish(deviceTopic+'/state', deviceState, { qos: 1 })
+            publishMqttState(deviceTopic+'/state', deviceState)
         }
 
         // Publish any available device attributes (battery, power, etc)
@@ -280,9 +275,13 @@ function subscribeDevice(device, deviceTopic) {
         if (data.tamperStatus) {
             attributes.tamper_status = data.tamperStatus
         }
-        debug(deviceTopic+'/attributes', attributes)
-        mqttClient.publish(deviceTopic+'/attributes', JSON.stringify(attributes), { qos: 1 })
+        publishMqttState(deviceTopic+'/attributes', JSON.stringify(attributes))
     })
+}
+
+function publishMqttState(topic, message) {
+    debug(topic, message)
+    mqttClient.publish(topic, message, { qos: 1 })
 }
 
 async function trySetAlarmMode(alarm, deviceId, message, delay) {
