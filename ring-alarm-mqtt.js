@@ -435,7 +435,7 @@ const main = async() => {
         mqttConnected = true
 
     } catch (error)  {
-        debugError(error);
+        debugError(error)
         debugError( colors.red( 'Couldn\'t create the API instance. This could be because ring.com changed their API again' ))
         debugError( colors.red( 'or maybe the password is wrong. Please check settings and try again.' ))
         process.exit(1)
@@ -459,13 +459,13 @@ const main = async() => {
         if (mqttConnected) {
             debugMqtt('Connection to MQTT broker lost. Attempting to reconnect...')
         } else {
-            debugMqtt('Unable to connect to MQTT broker.')
+            debugMqtt('Attempting to reconnect to MQTT broker...')
         }
         mqttConnected = false
     })
 
-    mqttClient.on('error', function () {
-        debugMqtt('Unable to connect to MQTT broker.', error)
+    mqttClient.on('error', function (error) {
+        debugMqtt('Unable to connect to MQTT broker.', error.message)
         mqttConnected = false
     })
 
