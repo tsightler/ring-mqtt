@@ -101,7 +101,6 @@ function supportedDevice(deviceType) {
                 command: true
             }
             break;
-
     }
 
     // Check if device is a lock	
@@ -111,7 +110,6 @@ function supportedDevice(deviceType) {
             command: true
         }
     }
-	
 	return null
 }
 
