@@ -89,12 +89,19 @@ function supportedDevice(deviceType) {
                 component: 'binary_sensor'
             }
             break;
+        case 'sensor.flood-freeze':
+            return {
+                classNames: [ 'moisture', 'cold' ],
+                component: 'binary_sensor'
+            }
+            break;
         case 'security-panel':
             return {
                 component: 'alarm_control_panel',
                 command: true
             }
             break;
+
     }
 	
     if (/^lock($|\.)/.test(deviceType)) {
@@ -167,6 +174,10 @@ async function createDevice(device, supportedDeviceInfo) {
                 case 'gas':
                     var deviceName = device.data.name+' - CO'
                     break
+                case 'moisture':
+                    var deviceName = device.data.name+' - Flood'
+                case 'cold':
+                    var deviceName = device.data.name+' - Freeze'
             }
         } else {
             var className = supportedDeviceInfo.className
@@ -231,6 +242,12 @@ function subscribeDevice(device, deviceTopic) {
                 const smokeAlarmState = data.smoke && data.smoke.alarmStatus === 'active' ? 'ON' : 'OFF'
                 publishMqttState(deviceTopic+'/gas/state', coAlarmState)
                 publishMqttState(deviceTopic+'/smoke/state', smokeAlarmState)
+                break;
+            case 'sensor.flood-freeze':
+                const floodAlarmState = data.flood && data.flood.faulted ? 'ON' : 'OFF'
+                const freezeAlarmState = data.smoke && data.smoke.faulted ? 'ON' : 'OFF'
+                publishMqttState(deviceTopic+'/flood/state', floodAlarmState)
+                publishMqttState(deviceTopic+'/freeze/state', freezeAlarmState)
                 break;                
             case 'security-panel':
                 switch(data.mode) {
