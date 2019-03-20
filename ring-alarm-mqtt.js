@@ -103,7 +103,8 @@ function supportedDevice(deviceType) {
             break;
 
     }
-	
+
+    // Check if device is a lock	
     if (/^lock($|\.)/.test(deviceType)) {
         return {
             component: 'lock',
@@ -176,8 +177,10 @@ async function createDevice(device, supportedDeviceInfo) {
                     break
                 case 'moisture':
                     var deviceName = device.data.name+' - Flood'
+                    break;
                 case 'cold':
                     var deviceName = device.data.name+' - Freeze'
+                    break;
             }
         } else {
             var className = supportedDeviceInfo.className
@@ -245,9 +248,9 @@ function subscribeDevice(device, deviceTopic) {
                 break;
             case 'sensor.flood-freeze':
                 const floodAlarmState = data.flood && data.flood.faulted ? 'ON' : 'OFF'
-                const freezeAlarmState = data.smoke && data.smoke.faulted ? 'ON' : 'OFF'
-                publishMqttState(deviceTopic+'/flood/state', floodAlarmState)
-                publishMqttState(deviceTopic+'/freeze/state', freezeAlarmState)
+                const freezeAlarmState = data.freeze && data.freeze.faulted ? 'ON' : 'OFF'
+                publishMqttState(deviceTopic+'/moisture/state', floodAlarmState)
+                publishMqttState(deviceTopic+'/cold/state', freezeAlarmState)
                 break;                
             case 'security-panel':
                 switch(data.mode) {
