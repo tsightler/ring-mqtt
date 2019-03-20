@@ -435,7 +435,6 @@ try {
 // Establish MQTT connection, subscribe to topics, and handle messages
 const main = async() => {
     var mqttConnected = false
-
     try {
         // Get alarms via API
         ringAlarms = await getAlarms({
