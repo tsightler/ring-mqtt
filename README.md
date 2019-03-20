@@ -41,10 +41,11 @@ mqtt:
 ### Current Features
 - Simple configuration via config file, most cases just need Ring user/password and that's it
 - Supports the following devices:
-  - Contact and Motion Sensors
+  - Ring Contact and Motion Sensors
+  - Ring Flood/Freeze Sensor
+  - Ring Smoke/CO Listener
   - First Alert Z-Wave Smoke/CO Detector (experimental - testing needed)
-  - Ring Smoke/CO Listener (experimental - testing needed)
-  - Ring integrated door locks (status and lock control)
+  - Ring Alarm integrated door locks (status and lock control)
 - Provides battery and tamper status for supported devices via JSON attribute topic (visible in Home Assistant UI)
 - Full Home Assistant MQTT Discovery - devices appear automatically (also tested with OpenHAB 2.4 MQTT)
 - Consistent topic creation based on location/device ID - easy to use with MQTT tools like Node-RED
@@ -56,10 +57,8 @@ mqtt:
 - Monitors MQTT connection and automatically resends device state after any disconnect/reconnect event
 - Does not require MQTT retain and can work well with brokers that provide no persistent storage
 
-### Planned Features
-- Additional devices (Flood/Freeze sensor, base station, keypad)
-
 ### Possible future features
+- Additional Devices (base station, keypad - at least for tamper/battery status)
 - Base station settings (volume, chime)
 - Arm/Disarm with code
 - Arm/Disarm with sensor bypass
