@@ -423,7 +423,7 @@ function initMqtt() {
 
 // Get Configuration from file
 try {
-    CONFIG = require('./config')
+    CONFIG = require('/data/options')
     ringTopic = CONFIG.ring_topic ? CONFIG.ring_topic : 'ring'
     hassTopic = CONFIG.hass_topic
 } catch (e) {

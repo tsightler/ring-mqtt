@@ -1,10 +1,29 @@
 {
-    "host": "localhost",
-    "port": 1883,
-    "ring_topic": "ring",
-    "hass_topic": "hass/status",
-    "mqtt_user": "",
-    "mqtt_pass": "",
-    "ring_user": "<ring_email>",
-    "ring_pass": "<ring_password>"
+  "name": "Ring Alarm HassIO Add-on",
+  "version": "1",
+  "slug": "ring_alarm",
+  "description": "Ring Alarm Plugin",
+  "startup": "before",
+  "boot": "auto",
+  "options": {
+      "host": "localhost",
+      "port": "1883",
+      "ring_topic": "ring",
+      "hass_topic": "hass/status",
+      "mqtt_user": "mqttuser",
+      "mqtt_pass": "mqttpass",
+      "ring_user": "a@b.com",
+      "ring_pass": "password"
+  },
+  "schema": {
+      "host": "str?",
+      "port": "str?",
+      "ring_topic": "str?",
+      "hass_topic": "str?",
+      "mqtt_user": "str?",
+      "mqtt_pass": "str?",
+      "ring_user": "str",
+      "ring_pass": "str"
+  },
+  "discovery": ["mqtt"]
 }
