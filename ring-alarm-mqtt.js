@@ -427,13 +427,29 @@ try {
     ringTopic = CONFIG.ring_topic ? CONFIG.ring_topic : 'ring'
     hassTopic = CONFIG.hass_topic
 } catch (e) {
-    console.error('No configuration file found!')
-    debugError(e)
-    process.exit(1)
+    try {
+        console.error('No configuration file found, try environmental variables!')
+        CONFIG = {
+            "host": process.env.MQTTHOST,
+            "port": process.env.MQTTPORT,
+            "ring_topic": process.env.MQTTRINGTOPIC,
+            "hass_topic": process.env.MQTTHASSTOPIC,
+            "mqtt_user": process.env.MQTTUSER,
+            "mqtt_pass": process.env.MQTTPASSWORD,
+            "ring_user": process.env.RINGUSER,
+            "ring_pass": process.env.RINGPASS
+        }
+    }
+    catch {
+        console.error('No configuration found!')
+        debugError(e)
+        process.exit(1)
+    }
 }
 
 // Establish MQTT connection, subscribe to topics, and handle messages
 const main = async() => {
+
     var mqttConnected = false
     try {
         // Get alarms via API
