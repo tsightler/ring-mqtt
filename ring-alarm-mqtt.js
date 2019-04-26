@@ -439,10 +439,12 @@ try {
             "ring_user": process.env.RINGUSER,
             "ring_pass": process.env.RINGPASS
         }
+        ringTopic = CONFIG.ring_topic ? CONFIG.ring_topic : 'ring'
+        hassTopic = CONFIG.hass_topic
     }
-    catch {
+    catch (ex) {
         console.error('No configuration found!')
-        debugError(e)
+        debugError(ex)
         process.exit(1)
     }
 }
