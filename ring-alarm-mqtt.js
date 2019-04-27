@@ -440,6 +440,7 @@ const main = async() => {
         ringAlarms = await getAlarms({
             email: CONFIG.ring_user,
             password: CONFIG.ring_pass,
+            locationIds: CONFIG.location_ids,
         })
 
         // Start monitoring alarm connection state
