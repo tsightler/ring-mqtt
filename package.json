@@ -6,7 +6,8 @@
   "dependencies": {
     "@dgreif/ring-alarm": "^1.5.0",
     "debug": "^4.1.1",
-    "mqtt": "^2.18.8"
+    "mqtt": "^2.18.8",
+    "stdio": "^0.2.7"
   },
   "devDependencies": {},
   "scripts": {

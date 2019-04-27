@@ -7,6 +7,7 @@ const debug = require('debug')('ring-alarm-mqtt')
 const debugError = require('debug')('error')
 const debugMqtt = require('debug')('mqtt')
 const colors = require( 'colors/safe' )
+var stdio = require('stdio')
 var CONFIG
 var ringTopic
 var hassTopic
@@ -419,6 +420,24 @@ function initMqtt() {
     return mqtt
 }
 
+function getLocationIdsArgs() {
+    // Get location id from commandline if exist
+    let ops = stdio.getopt({
+        'locationIds': {args: '*'},
+    })
+
+    //Check if user passed specific locationids
+    var locationIds = ops['locationIds'];
+    locationIdsType = typeof locationIds;
+    if (locationIdsType !== "undefined" && locationIdsType !== "boolean") {
+        if (locationIdsType == "string") {
+            locationIds = [locationIds];
+        }
+        return locationIds;
+    }
+    return undefined;
+}
+
 /* End Functions */
 
 // Get Configuration from file
@@ -440,6 +459,7 @@ const main = async() => {
         ringAlarms = await getAlarms({
             email: CONFIG.ring_user,
             password: CONFIG.ring_pass,
+            locationIds: getLocationIdsArgs()
         })
 
         // Start monitoring alarm connection state
