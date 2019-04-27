@@ -15,6 +15,20 @@ npm install
 
 This should install all required dependencies.  Edit the config.js and enter your Ring account user/password and MQTT broker connection information.  You can also change the top level topic used for creating ring device topics and also configre the Home Assistant state topic, but most people should leave these as default.
 
+### Options
+By default executing the script will return all alarms accross all locations, even shared locations that you have permissions for. You can use the command line argument ```--locationIds``` to specify the locations you wish to get the alarm data from.
+
+You can get your location id from the ring website. Simply login to [Ring.com](https://ring.com/users/sign_in) and look at the address bar in the browser. It will look similar to ```https://app.ring.com/location/{location_id}```. The last path element is the location id. You can use this in the command line options to specify a location. The argument supports a single id or multiple ids. If you are using multiple location ids they are seperated by spaces. As seen below.
+
+
+```
+//Single Argument
+ring-alarm-mqtt.js --locationIds loc1-id
+
+//Mutiple Arguments
+ring-alarm-mqtt.js --locationIds loc1-id loc2-id
+```
+
 Now you should just execute the script and devices should show up automatically in Home Assistant within a few seconds.
 
 ### Starting the service automatically during boot
