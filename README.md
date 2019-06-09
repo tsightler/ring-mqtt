@@ -1,7 +1,7 @@
 # ring-alarm-mqtt
 This is a simple script that leverages the ring alarm API available at [dgreif/ring-alarm](https://github.com/dgreif/ring-alarm) and provides access to the alarm control panel and sensors via MQTT.  It provides support for Home Assistant style MQTT discovery which allows for very easy integration with Home Assistant with near zero configuration (assuming MQTT is already configured).  It can also be used with any other tool capable of working with MQTT as it provides consistent topic naming based on location/device ID.
 
-### Installation
+### Standard Installation (Linux)
 Make sure Node.js (tested with 8.x and higher) is installed on your system and then clone this repo:
 
 `git clone https://github.com/tsightler/ring-alarm-mqtt.git`
@@ -15,15 +15,6 @@ npm install
 
 This should install all required dependencies.  Edit the config.js and enter your Ring account user/password and MQTT broker connection information.  You can also change the top level topic used for creating ring device topics and also configre the Home Assistant state topic, but most people should leave these as default.
 
-### Options
-By default, this script will discover and monitor alarms across all locations, even shared locations for which you have permissions, however, it is possible to limit the locations monitored by the script including specific location IDs in the config as follows:
-
-```"location_ids": ["loc-id", "loc-id2"]```.
-
-To get the location id from the ring website simply login to [Ring.com](https://ring.com/users/sign_in) and look at the address bar in the browser. It will look similar to ```https://app.ring.com/location/{location_id}``` with the last path element being the location id.
-
-Now you should just execute the script and devices should show up automatically in Home Assistant within a few seconds.
-
 ### Starting the service automatically during boot
 I've included a sample service file which you can use to automaticlly start the script during system boot as long as your system uses systemd (most modern Linux distros).  The service file assumes you've installed the script in /opt/ring-alarm-mqtt and that you want to run the process as the homeassistant user, but you can easily modify this to any path and user you'd like.  Just edit the file as required and drop it in /etc/systemd/system then run the following:
 
@@ -31,7 +22,7 @@ I've included a sample service file which you can use to automaticlly start the 
 systemctl enable ring-alarm-mqtt
 ```
 
-### Docker
+### Docker Installation
 
 To build, execute
 
@@ -44,6 +35,15 @@ To run, execute
 ```
 docker run  -e "MQTTHOST={host name}" -e "MQTTPORT={host port}" -e "MQTTRINGTOPIC={host ring topic}" -e "MQTTHASSTOPIC={host hass topic}" -e "MQTTUSER={mqtt user}" -e "MQTTPASSWORD={mqtt pw}" -e "RINGUSER={ring user}" -e "RINGPASS={ring pq}" ring-alarm-mqtt/ring-alarm-mqtt
 ```
+
+### Config Options
+By default, this script will discover and monitor alarms across all locations, even shared locations for which you have permissions, however, it is possible to limit the locations monitored by the script including specific location IDs in the config as follows:
+
+```"location_ids": ["loc-id", "loc-id2"]```.
+
+To get the location id from the ring website simply login to [Ring.com](https://ring.com/users/sign_in) and look at the address bar in the browser. It will look similar to ```https://app.ring.com/location/{location_id}``` with the last path element being the location id.
+
+Now you should just execute the script and devices should show up automatically in Home Assistant within a few seconds.
 
 ### Optional Home Assistant Configuration (Highly Recommended)
 If you'd like to take full advantage of the Home Assistant specific features (auto MQTT discovery and server state monitorting) you need to make sure Home Assistant MQTT is configured with discovery and birth message options, here's an example:
