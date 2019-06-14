@@ -1,17 +1,16 @@
 {
   "name": "ring-alarm-mqtt",
-  "version": "0.8.1",
+  "version": "0.9.0",
   "description": "Ring Alarm to MQTT Bridge",
   "main": "ring-alarm-mqtt.js",
   "dependencies": {
-    "@dgreif/ring-alarm": "^1.5.0",
+    "@dgreif/ring-alarm": "^2.2.0",
     "debug": "^4.1.1",
-    "mqtt": "^2.18.8"
+    "mqtt": "^3.0.0"
   },
   "devDependencies": {},
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node ring-alarm-mqtt.js"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
     "ring",
@@ -24,4 +23,3 @@
   "author": "Tom Sightler (tsightler@gmail.com)",
   "license": "MIT"
 }
-
