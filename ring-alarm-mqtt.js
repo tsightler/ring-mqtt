@@ -15,8 +15,8 @@ var mqttConnected = false
 var ringLocations = new Array()
 var subscribedLocations = new Array()
 var subscribedDevices = new Array()
-var publishEnabled = true
-var republishCount = 10
+var publishEnabled = true  // Flag to stop publish/republish if connection is down
+var republishCount = 10 // Republish config/state this many times after startup or HA start/restart
 var republishDelay = 30 // Seconds
 
 // Setup Exit Handwlers
@@ -153,7 +153,7 @@ async function publishAlarm(location) {
         } catch (error) {
             debugError(error)
         }
-    await sleep(republishTime)
+    await sleep(republishDelay)
     republishCount--
     }
 }
@@ -402,7 +402,7 @@ async function processCommand(topic, message) {
             debug('Resending device config/state in 30 seconds')
             // Make sure any existing republish dies
             republishCount = 0 
-            await sleep(republishTime+5)
+            await sleep(republishDelay+5)
             // Reset republish counter and start publishing config/state
             republishCount = 10
             processLocations(ringLocations)
