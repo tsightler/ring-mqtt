@@ -59,6 +59,23 @@ mqtt:
     retain: false
 ```
 
+### Using with MQTT tools other than Home Assistant (ex: Node Red)
+**----------IMPORTANT NOTE----------**
+Starting with the 1.0.0 release there is a change in the format of the MQTT topic.  This will not impact Home Assistant users as the automatic configuration dynamically builds the topic anyway.  However, for those using this script with other MQTT tools, the order of the topic levels has changed slightly, swapping alarm and location_id.  Thus, prior to 1.0.0 the topics were formatted as:
+```
+ring/alarm/<location_id>/<ha_platform_type>/<device_zid>/
+```
+While in 1.0.0 and future versions it will be:
+
+```
+ring/<location_id>/alarm/<ha_platform_type>/<device_zid>/
+```
+While I was hesitant to make this change, it seemed like the correct time as the Ring API has changed to a location based model and it will be much easier to add support for new features in the API such as smart lighting and cameras by doing something like:
+```
+ring/<location_id>/alarm
+ring/<location_id>/cameras
+ring/<location_id>/lighting
+```
 ### Current Features
 - Simple configuration via config file, most cases just need Ring user/password and that's it
 - Supports the following devices:
@@ -78,13 +95,17 @@ mqtt:
 - Monitors MQTT connection and automatically resends device state after any disconnect/reconnect event
 - Does not require MQTT retain and can work well with brokers that provide no persistent storage
 
+### Planned features
+- Support for non-alarm devices (doorbell/camera motion/lights/siren)
+- Support for generic 3rd party sensors
+
 ### Possible future features
 - Additional Devices (base station, keypad - at least for tamper/battery status)
+- Support for smart lighting
 - Base station settings (volume, chime)
 - Arm/Disarm with code
 - Arm/Disarm with sensor bypass
 - Dynamic add/remove of alarms/devices (i.e. no service restart required)
-- Support for non-alarm devices (doorbell/camera motion/lights/siren)
 
 ### Debugging
 By default the script should produce no console output, however, the script does leverage the terriffic [debug](https://www.npmjs.com/package/debug) package.  To get debug output, simply run the script like this:
