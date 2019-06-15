@@ -60,7 +60,7 @@ mqtt:
 ```
 
 ### Using with MQTT tools other than Home Assistant (ex: Node Red)
-----------IMPORTANT NOTE----------
+**IMPORTANT NOTE**
 Starting with the 1.0.0 release there is a change in the format of the MQTT topic.  This will not impact Home Assistant users as the automatic configuration dynamically builds the topic anyway.  However, for those using this script with other MQTT tools, the order of the topic levels has changed slightly, swapping alarm and location_id.  Thus, prior to 1.0.0 the topics were formatted as:
 ```
 ring/alarm/<location_id>/<ha_platform_type>/<device_zid>/
