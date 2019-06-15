@@ -60,9 +60,9 @@ mqtt:
 ```
 
 ### Using with MQTT tools other than Home Assistant (ex: Node Red)
-**IMPORTANT NOTE**
+**----------IMPORTANT NOTE----------**
 
-Starting with the 1.0.0 release there is a change in the format of the MQTT topic.  This will not impact Home Assistant users as the automatic configuration dynamically builds the topic anyway.  However, for those using this script with other MQTT tools, the order of the topic levels has changed slightly, swapping alarm and location_id.  Thus, prior to 1.0.0 the topics were formatted as:
+Starting with the 1.0.0 release there is a change in the format of the MQTT topic.  This will not impact Home Assistant users as the automatic configuration dynamically builds the topic anyway.  However, for those using this script with other MQTT tools and accessing the topics manually, the order of the topic levels has changed slightly, swapping the alarm and location_id levels.  Thus, prior to 1.0.0 the topics were formatted as:
 ```
 ring/alarm/<location_id>/<ha_platform_type>/<device_zid>/
 ```
@@ -71,7 +71,7 @@ While in 1.0.0 and future versions it will be:
 ```
 ring/<location_id>/alarm/<ha_platform_type>/<device_zid>/
 ```
-While I was hesitant to make this change, it seemed like the correct time as the Ring API has changed to a location based model and it will be much easier to add support for new features in the API such as smart lighting and cameras by doing something like:
+While I was hesitant to make this change because it would break some setups, it seemed like the best thing to do to follow the changes in the ring alarm API from an alarm to a location based model.  This will make it more practical to add support for the new non-alarm Ring device which are being added to the API such as smart lighting and cameras while still grouping devices by location like follows:
 ```
 ring/<location_id>/alarm
 ring/<location_id>/cameras
