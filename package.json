@@ -1,6 +1,6 @@
 {
   "name": "ring-alarm-mqtt",
-  "version": "0.9.0",
+  "version": "1.0.0",
   "description": "Ring Alarm to MQTT Bridge",
   "main": "ring-alarm-mqtt.js",
   "dependencies": {
