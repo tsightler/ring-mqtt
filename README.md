@@ -59,6 +59,24 @@ mqtt:
     retain: false
 ```
 
+### Using with MQTT tools other than Home Assistant (ex: Node Red)
+**----------IMPORTANT NOTE----------**
+
+Starting with the 1.0.0 release there is a change in the format of the MQTT topic.  This will not impact Home Assistant users as the automatic configuration dynamically builds the topic anyway.  However, for those using this script with other MQTT tools and accessing the topics manually, the order of the topic levels has changed slightly, swapping the alarm and location_id levels.  Thus, prior to 1.0.0 the topics were formatted as:
+```
+ring/alarm/<location_id>/<ha_platform_type>/<device_zid>/
+```
+While in 1.0.0 and future versions it will be:
+
+```
+ring/<location_id>/alarm/<ha_platform_type>/<device_zid>/
+```
+While I was hesitant to make this change because it would break some setups, it seemed like the best thing to do to follow the changes in the ring alarm API from an alarm to a location based model.  This will make it more practical to add support for the new non-alarm Ring device which are being added to the API such as smart lighting and cameras while still grouping devices by location like follows:
+```
+ring/<location_id>/alarm
+ring/<location_id>/cameras
+ring/<location_id>/lighting
+```
 ### Current Features
 - Simple configuration via config file, most cases just need Ring user/password and that's it
 - Supports the following devices:
@@ -78,13 +96,17 @@ mqtt:
 - Monitors MQTT connection and automatically resends device state after any disconnect/reconnect event
 - Does not require MQTT retain and can work well with brokers that provide no persistent storage
 
+### Planned features
+- Support for non-alarm devices (doorbell/camera motion/lights/siren)
+- Support for generic 3rd party sensors
+
 ### Possible future features
 - Additional Devices (base station, keypad - at least for tamper/battery status)
+- Support for smart lighting
 - Base station settings (volume, chime)
 - Arm/Disarm with code
 - Arm/Disarm with sensor bypass
 - Dynamic add/remove of alarms/devices (i.e. no service restart required)
-- Support for non-alarm devices (doorbell/camera motion/lights/siren)
 
 ### Debugging
 By default the script should produce no console output, however, the script does leverage the terriffic [debug](https://www.npmjs.com/package/debug) package.  To get debug output, simply run the script like this:
@@ -101,7 +123,7 @@ DEBUG=ring-alarm-mqtt ./ring-alarm-mqtt.js
 This option is also useful when using script with external MQTT tools as it dumps all discovered sensors and their topics.  Also allows you to monitor sensor states in real-time on the console.
 
 ### Thanks
-Much thanks must go to dgrief and his excellent [ring-alarm API](https://github.com/dgreif/ring-alarm) as well as his homebridge plugin.  Without his work it would have taken far more effort and time, probably more time than I had, to get this working.
+Much thanks must go to @dgrief and his excellent [ring-alarm API](https://github.com/dgreif/ring-alarm) as well as his homebridge plugin.  Without his work it would have taken far more effort and time, probably more time than I had, to get this working.
 
 I also have to give much credit to [acolytec3](https://community.home-assistant.io/u/acolytec3) on the Home Assistant community forums for his original Ring Alarm MQTT script.  Having an already functioning script with support for MQTT discovery saved me quite a bit of time in developing this script.
 
