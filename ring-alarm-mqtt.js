@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 // Defines
-var getLocations = require('@dgreif/ring-alarm').getLocations
+var RingApi = require('@dgreif/ring-alarm').RingApi
 const mqttApi = require ('mqtt')
 const debug = require('debug')('ring-alarm-mqtt')
 const debugError = require('debug')('error')
@@ -481,11 +481,12 @@ const main = async() => {
 
     // Establish connection to Ring API
     try {
-        ringLocations = await getLocations({
+        const ringApi = new RingApi({
             email: CONFIG.ring_user,
             password: CONFIG.ring_pass,
             locationIds: locationIds
         })
+        ringLocations = await ringApi.getLocations()
     } catch (error) {
         debugError(error)
         debugError( colors.red( 'Couldn\'t create the API instance. This could be because ring.com changed their API again' ))
