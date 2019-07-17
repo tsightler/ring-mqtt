@@ -376,16 +376,13 @@ async function setLockTargetState(location, deviceId, message) {
     switch(command) {
         case 'lock':
         case 'unlock':
-            location.setDeviceInfo(deviceId, {
-                command: {
-                    v1: [
-                        {
-                            commandType: `lock.${command}`,
-                            data: {}
-                        }
-                    ]
-                }
-            })
+            const devices = await location.getDevices();
+            const device = devices.find(device => device.id === deviceId);
+            if(!device) {
+                debug('Cannot find specified device id in location devices');
+                break;
+            }
+            device.sendCommand(`lock.${command}`);
             break;
         default:
             debug('Received invalid command for lock!')
