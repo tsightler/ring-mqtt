@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 // Defines
-var RingApi = require('@dgreif/ring-alarm').RingApi
+var RingApi = require('ring-client-api').RingApi
 const mqttApi = require ('mqtt')
 const debug = require('debug')('ring-alarm-mqtt')
 const debugError = require('debug')('error')
