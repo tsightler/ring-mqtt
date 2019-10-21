@@ -114,7 +114,7 @@ function supportedDevice(device) {
             break;
         case 'switch':
             device.component = 'switch'
-            device.command = true
+            //device.command = true
             break;
     }
 
