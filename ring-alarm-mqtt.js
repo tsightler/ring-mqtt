@@ -403,6 +403,17 @@ async function setSwitchState(location, deviceId, message) {
     const command = message.toLowerCase()
 
     switch(command) {
+        case 'on':
+        case 'off':
+            const devices = await location.getDevices();
+            const device = devices.find(device => device.id === deviceId);
+            if(!device) {
+                debug('Cannot find specified device id in location devices');
+                break;
+            }
+            const on: boolean = (command == 'on') ? true : false
+            device.setInfo({ device: { v1: { on } } })
+            break;
         default:
             debug('Received invalid command for switch!')
     }
