@@ -113,7 +113,7 @@ function supportedDevice(device) {
             device.command = true
             break;
         case 'switch':
-            device.component = 'switch'
+            device.component = (device.data.categoryId === 2) ? 'light' : 'switch'
             device.command = true
             break;
     }
@@ -411,7 +411,7 @@ async function setSwitchState(location, deviceId, message) {
                 debug('Cannot find specified device id in location devices');
                 break;
             }
-            const on = (command == 'on') ? true : false
+            const on = (command === 'on') ? true : false
             device.setInfo({ device: { v1: { on } } })
             break;
         default:
