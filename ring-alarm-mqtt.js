@@ -113,8 +113,7 @@ function supportedDevice(device) {
             device.command = true
             break;
         case 'switch':
-            device.className = 'light'
-            device.component = 'binary_sensor'
+            device.component = 'switch'
             device.command = true
             break;
     }
@@ -442,8 +441,7 @@ async function processCommand(topic, message) {
             case 'lock':
                 setLockTargetState(location, deviceId, message)
                 break;
-            case 'power':
-            case 'light':
+            case 'switch':
                 setSwitchState(location, deviceId, message)
                 break;
             default:
