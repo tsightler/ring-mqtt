@@ -452,6 +452,7 @@ async function processCommand(topic, message) {
             case 'lock':
                 setLockTargetState(location, deviceId, message)
                 break;
+            case 'light':
             case 'switch':
                 setSwitchState(location, deviceId, message)
                 break;
