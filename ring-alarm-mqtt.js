@@ -55,7 +55,7 @@ async function hasAlarm(location) {
     }
     return false
 }
-
+    
 // Establich websocket connections and register/refresh location status on connect/disconnect
 async function processLocations(locations) {
     ringLocations.forEach(async location => {
