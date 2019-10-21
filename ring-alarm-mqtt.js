@@ -115,6 +115,7 @@ function supportedDevice(device) {
         case 'switch':
             device.className = 'light'
             device.component = 'binary_sensor'
+            device.command = true
             break;
     }
 
