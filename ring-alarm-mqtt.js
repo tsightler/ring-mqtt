@@ -260,7 +260,6 @@ function publishDeviceData(data, deviceTopic) {
             // Alarm trigger status is in the siren state in panel
             if (data.siren && data.siren.state == "on") {
                     deviceState = 'triggered'
-                    debug("Siren is on, Alarm triggered")
             }
             break;
             switch(data.mode) {
