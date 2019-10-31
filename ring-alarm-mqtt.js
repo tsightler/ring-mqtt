@@ -494,8 +494,6 @@ const main = async() => {
             auth["password"] = CONFIG.ring_pass
         }
 
-        console.log("AUTH:", auth)
-
         const ringApi = new RingApi(auth)
         ringLocations = await ringApi.getLocations()
     } catch (error) {
