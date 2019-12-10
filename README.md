@@ -59,6 +59,8 @@ mqtt:
     retain: false
 ```
 
+Contact sensors have a default device class of `door`. Adding `window` to the contact sensor name will change the device class to `window`.
+
 ### Using with MQTT tools other than Home Assistant (ex: Node Red)
 **----------IMPORTANT NOTE----------**
 
