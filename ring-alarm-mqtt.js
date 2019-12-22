@@ -112,6 +112,10 @@ function supportedDevice(device) {
             device.component = 'alarm_control_panel'
             device.command = true
             break;
+        case 'switch.multilevel':
+            device.component = 'light'
+            device.command = true
+            break;
     }
     
     // Check if device is a lock	
@@ -249,6 +253,9 @@ function publishDeviceData(data, deviceTopic) {
             const smokeAlarmState = data.smoke && data.smoke.alarmStatus === 'active' ? 'ON' : 'OFF'
             publishMqttState(deviceTopic+'/gas/state', coAlarmState)
             publishMqttState(deviceTopic+'/smoke/state', smokeAlarmState)
+            break;
+        case 'switch.multilevel':
+            publishMqttState(deviceTopic+'/switch/level', data.level)
             break;
         case 'sensor.flood-freeze':
             const floodAlarmState = data.flood && data.flood.faulted ? 'ON' : 'OFF'
