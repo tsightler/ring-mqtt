@@ -398,6 +398,29 @@ async function setLockTargetState(location, deviceId, message) {
     }
 }
 
+// Set lock target state on received MQTT command message
+async function setSwitchTargetState(location, deviceId, message) {
+    debug('Received set switch state '+message+' for switch Id: '+deviceId)
+    debug('Location Id: '+ location.locationId)
+    
+    const command = message.toLowerCase()
+
+    switch(command) {
+        case 'on':
+        case 'off':
+            const devices = await location.getDevices();
+            const device = devices.find(device => device.id === deviceId);
+            if(!device) {
+                debug('Cannot find specified device id in location devices');
+                break;
+            }
+            device.sendCommand(command);
+            break;
+        default:
+            debug('Received invalid command for switch!')
+    }
+}
+
 // Process received MQTT command
 async function processCommand(topic, message) {
     var message = message.toString()
@@ -430,6 +453,9 @@ async function processCommand(topic, message) {
                 break;
             case 'lock':
                 setLockTargetState(location, deviceId, message)
+                break;
+            case 'switch':
+                setSwitchTargetState(location, deviceId, message)
                 break;
             default:
                 debug('Somehow received command for an unknown device!')
