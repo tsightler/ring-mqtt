@@ -409,7 +409,7 @@ async function setSwitchTargetState(location, deviceId, message) {
     const device = devices.find(device => device.id === deviceId);
     if(!device) {
         debug('Cannot find specified device id in location devices');
-        break;
+        return;
     }
     device.setInfo({device: {v1: { state }}});
 }
