@@ -255,7 +255,7 @@ function publishDeviceData(data, deviceTopic) {
             publishMqttState(deviceTopic+'/smoke/state', smokeAlarmState)
             break;
         case 'switch.multilevel':
-            publishMqttState(deviceTopic+'/switch/level', (data.level * 100).toString())
+            publishMqttState(deviceTopic+'/switch/state', (data.level * 100).toString())
             break;
         case 'sensor.flood-freeze':
             const floodAlarmState = data.flood && data.flood.faulted ? 'ON' : 'OFF'
