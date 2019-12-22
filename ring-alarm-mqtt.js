@@ -403,22 +403,15 @@ async function setSwitchTargetState(location, deviceId, message) {
     debug('Received set switch state '+message+' for switch Id: '+deviceId)
     debug('Location Id: '+ location.locationId)
     
-    const command = message.toLowerCase()
+    const state = message.toLowerCase() === 'on'
 
-    switch(command) {
-        case 'on':
-        case 'off':
-            const devices = await location.getDevices();
-            const device = devices.find(device => device.id === deviceId);
-            if(!device) {
-                debug('Cannot find specified device id in location devices');
-                break;
-            }
-            device.setInfo({device: {v1: { command }}});
-            break;
-        default:
-            debug('Received invalid command for switch!')
+    const devices = await location.getDevices();
+    const device = devices.find(device => device.id === deviceId);
+    if(!device) {
+        debug('Cannot find specified device id in location devices');
+        break;
     }
+    device.setInfo({device: {v1: { state }}});
 }
 
 // Process received MQTT command
