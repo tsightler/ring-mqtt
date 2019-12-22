@@ -411,7 +411,7 @@ async function setSwitchTargetState(location, deviceId, message) {
         debug('Cannot find specified device id in location devices');
         return;
     }
-    device.setInfo({device: {v1: { state }}});
+    device.setInfo({ device: { v1: { true } } });
 }
 
 // Process received MQTT command
