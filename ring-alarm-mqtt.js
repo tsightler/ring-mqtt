@@ -112,6 +112,7 @@ function supportedDevice(device) {
             device.component = 'alarm_control_panel'
             device.command = true
             break;
+	case 'switch':
         case 'switch.multilevel':
             device.component = 'light'
             device.command = true
@@ -254,8 +255,10 @@ function publishDeviceData(data, deviceTopic) {
             publishMqttState(deviceTopic+'/gas/state', coAlarmState)
             publishMqttState(deviceTopic+'/smoke/state', smokeAlarmState)
             break;
+        case 'switch':
         case 'switch.multilevel':
-            publishMqttState(deviceTopic+'/switch/state', (data.level * 100).toString())
+	    const lightState = data.on ? 'ON' : 'OFF'
+            publishMqttState(deviceTopic+'/switch/state', lightState)
             break;
         case 'sensor.flood-freeze':
             const floodAlarmState = data.flood && data.flood.faulted ? 'ON' : 'OFF'
