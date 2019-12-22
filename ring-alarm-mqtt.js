@@ -414,7 +414,7 @@ async function setSwitchTargetState(location, deviceId, message) {
                 debug('Cannot find specified device id in location devices');
                 break;
             }
-            device.setInfo({device: {v1: { on }}});
+            device.setInfo({device: {v1: { command }}});
             break;
         default:
             debug('Received invalid command for switch!')
