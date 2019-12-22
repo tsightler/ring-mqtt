@@ -114,7 +114,7 @@ function supportedDevice(device) {
             break;
 	case 'switch':
         case 'switch.multilevel':
-            device.component = 'light'
+            device.component = 'switch'
             device.command = true
             break;
     }
