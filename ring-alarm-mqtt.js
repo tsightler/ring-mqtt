@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 // Defines
-var getAlarms = require('@dgreif/ring-alarm').getAlarms
+var RingApi = require('ring-client-api').RingApi
 const mqttApi = require ('mqtt')
 const debug = require('debug')('ring-alarm-mqtt')
 const debugError = require('debug')('error')
@@ -11,7 +11,13 @@ var CONFIG
 var ringTopic
 var hassTopic
 var mqttClient
-var ringAlarms
+var mqttConnected = false
+var ringLocations = new Array()
+var subscribedLocations = new Array()
+var subscribedDevices = new Array()
+var publishEnabled = true  // Flag to stop publish/republish if connection is down
+var republishCount = 10 // Republish config/state this many times after startup or HA start/restart
+var republishDelay = 30 // Seconds
 
 // Setup Exit Handwlers
 process.on('exit', processExit.bind(null, {cleanup:true, exit:true}))
@@ -22,95 +28,97 @@ process.on('uncaughtException', processExit.bind(null, {exit:true}))
 /* Functions */
 
 // Simple sleep to pause in async functions
-function sleep(ms) {
- return new Promise(res => setTimeout(res, ms));
+function sleep(sec) {
+    return new Promise(res => setTimeout(res, sec*1000));
 }
 
 // Set unreachable status on exit 
 async function processExit(options, exitCode) {
     if (options.cleanup) {
-        ringAlarms.map(async alarm => {
-            availabilityTopic = ringTopic+'/alarm/'+alarm.locationId+'/status'
+        ringLocations.forEach(async location => {
+            availabilityTopic = ringTopic+'/'+location.locationId+'/status'
             mqttClient.publish(availabilityTopic, 'offline')
         })
     }
     if (exitCode || exitCode === 0) debug('Exit code: '+exitCode)
     if (options.exit) {
-        await sleep(1000)
+        await sleep(1)
         process.exit()
     }
 }
 
-// Monitor Alarm websocket connection and register/refresh status on connect/disconnect
-async function monitorAlarmConnection(alarm) {
-    alarm.onConnected.subscribe(async connected => {
-        const devices = await alarm.getDevices()
-        if (connected) {
-            debug('Alarm location '+alarm.locationId+' is connected')
-            await createAlarm(alarm)
+// Check if location has alarm panel (could be only camera/lights)
+async function hasAlarm(location) {
+    const devices = await location.getDevices()
+    if (devices.filter(device => device.data.deviceType === 'security-panel')) {
+        return true
+    }
+    return false
+}
+    
+// Establich websocket connections and register/refresh location status on connect/disconnect
+async function processLocations(locations) {
+    ringLocations.forEach(async location => {
+        if (!(subscribedLocations.includes(location.locationId)) && await hasAlarm(location)) {
+            subscribedLocations.push(location.locationId)
+            location.onConnected.subscribe(async connected => {
+                if (connected) {
+                    debug('Location '+location.locationId+' is connected')
+                    publishEnabled = true
+                    publishAlarm(location)
+                } else {
+                    publishEnabled = false
+                    const availabilityTopic = ringTopic+'/'+location.locationId+'/status'
+                    mqttClient.publish(availabilityTopic, 'offline', { qos: 1 })
+                    debug('Location '+location.locationId+' is disconnected')
+                }
+            })
         } else {
-            const availabilityTopic = ringTopic+'/alarm/'+alarm.locationId+'/status'
-            mqttClient.publish(availabilityTopic, 'offline', { qos: 1 })
-            debug('Alarm location '+alarm.locationId+' is disconnected')
+                publishAlarm(location)
         }
     })
 }
 
 // Return class information if supported device
-function supportedDevice(deviceType) {
-    switch(deviceType) {
+function supportedDevice(device) {
+    switch(device.data.deviceType) {
         case 'sensor.contact':
-            return {
-                className: 'door',
-                component: 'binary_sensor'
-            }
+            device.className = 'door'
+            device.component = 'binary_sensor'
             break;
         case 'sensor.motion':
-            return {
-                className: 'motion',
-                component: 'binary_sensor'
-            }
+            device.className = 'motion'
+            device.component = 'binary_sensor'
             break;
         case 'alarm.smoke':
-            return {
-                className: 'smoke', 
-                component: 'binary_sensor'
-            }
+            device.className = 'smoke' 
+            device.component = 'binary_sensor'
             break;
         case 'alarm.co':
-            return {
-                className: 'gas',
-                component: 'binary_sensor'
-            }
+            device.className = 'gas'
+            device.component = 'binary_sensor'
             break;
         case 'listener.smoke-co':
-            return {
-                classNames: [ 'smoke', 'gas' ],
-                component: 'binary_sensor'
-            }
+            device.classNames = [ 'smoke', 'gas' ]
+            device.suffixNames = [ 'Smoke', 'CO' ]
+            device.component = 'binary_sensor'
             break;
         case 'sensor.flood-freeze':
-            return {
-                classNames: [ 'moisture', 'cold' ],
-                component: 'binary_sensor'
-            }
+            device.classNames = [ 'moisture', 'cold' ]
+            device.suffixNames = [ 'Flood', 'Freeze' ]
+            device.component = 'binary_sensor'
             break;
         case 'security-panel':
-            return {
-                component: 'alarm_control_panel',
-                command: true
-            }
+            device.component = 'alarm_control_panel'
+            device.command = true
             break;
     }
-
+    
     // Check if device is a lock	
-    if (/^lock($|\.)/.test(deviceType)) {
-        return {
-            component: 'lock',
-            command: true
-        }
+    if (/^lock($|\.)/.test(device.data.deviceType)) {
+        device.component = 'lock'
+        device.command = true
     }
-	return null
 }
 
 function getBatteryLevel(device) {
@@ -127,75 +135,65 @@ function getBatteryLevel(device) {
     return 0
 }
 
-// Loop through alarm devices and create/publish MQTT device topics/messages
-async function createAlarm(alarm) {
-    try {
-        const availabilityTopic = ringTopic+'/alarm/'+alarm.locationId+'/status'
-        const devices = await alarm.getDevices()
-        devices.forEach((device) => {
-            const supportedDeviceInfo = supportedDevice(device.data.deviceType)
-            if (supportedDeviceInfo) {
-                createDevice(device, supportedDeviceInfo)
-            }
-        })
-        await sleep(1000)
-        mqttClient.publish(availabilityTopic, 'online', { qos: 1 })
-    } catch (error) {
-        debugError(error)
+// Loop through alarm devices at location and publish each one
+async function publishAlarm(location) {
+    if (republishCount < 1) { republishCount = 1 } 
+    while (republishCount > 0 && publishEnabled && mqttConnected) {
+        try {
+            const availabilityTopic = ringTopic+'/'+location.locationId+'/status'
+            const devices = await location.getDevices()
+            devices.forEach((device) => {
+                supportedDevice(device)
+                if (device.component) {
+                    publishDevice(device)
+                }
+            })
+            await sleep(1)
+            mqttClient.publish(availabilityTopic, 'online', { qos: 1 })
+        } catch (error) {
+            debugError(error)
+        }
+    await sleep(republishDelay)
+    republishCount--
     }
 }
 
-// Register alarm devices via HomeAssistant MQTT Discovery and
-// subscribe to command topic if control panel to allow actions on arm/disarm messages
-async function createDevice(device, supportedDeviceInfo) {
-    const alarmId = device.alarm.locationId
-    const deviceId = device.data.zid
-    const component = supportedDeviceInfo.component   
-    const numSensors = (!supportedDeviceInfo.classNames) ? 1 : supportedDeviceInfo.classNames.length
+// Register all device sensors via HomeAssistant MQTT Discovery and
+// subscribe to command topic if device accepts commands
+async function publishDevice(device) {
+    const locationId = device.location.locationId
+    const numSensors = (!device.classNames) ? 1 : device.classNames.length
 
     // Build alarm, availability and device topic
-    const alarmTopic = ringTopic+'/alarm/'+alarmId
-    const availabilityTopic = alarmTopic+'/status'
-    const deviceTopic = alarmTopic+'/'+component+'/'+deviceId
+    const alarmTopic = ringTopic+'/'+locationId+'/alarm'
+    const availabilityTopic = ringTopic+'/'+locationId+'/status'
+    const deviceTopic = alarmTopic+'/'+device.component+'/'+device.zid
 
     // Loop through device sensors and publish HA discovery configuration
     for(let i=0; i < numSensors; i++) {
         // If device has more than one sensor component create suffixes
         // to build unique device entries for each sensor
         if (numSensors > 1) {
-            var className = supportedDeviceInfo.classNames[i]
-            var uniqueId = deviceId+'_'+className
-            var subTopic = '/'+className
-            switch(className) {
-                case 'smoke':
-                    var deviceName = device.data.name+' - Smoke'
-                    break;
-                case 'gas':
-                    var deviceName = device.data.name+' - CO'
-                    break
-                case 'moisture':
-                    var deviceName = device.data.name+' - Flood'
-                    break;
-                case 'cold':
-                    var deviceName = device.data.name+' - Freeze'
-                    break;
-            }
+            var className = device.classNames[i]
+            var deviceName = device.name+' - '+device.suffixNames[i]
+            var sensorId = device.zid+'_'+className
+            var sensorTopic = deviceTopic+'/'+className
         } else {
-            var className = supportedDeviceInfo.className
-            var uniqueId = deviceId
-            var subTopic = ''
-            var deviceName = device.data.name
+            var className = device.className
+            var deviceName = device.name
+            var sensorId = device.zid
+            var sensorTopic = deviceTopic
         }
 
         // Build state topic and HASS MQTT discovery topic
-        const stateTopic = deviceTopic+subTopic+'/state'
+        const stateTopic = sensorTopic+'/state'
         const attributesTopic = deviceTopic+'/attributes'
-        const configTopic = 'homeassistant/'+component+'/'+alarmId+'/'+uniqueId+'/config'
+        const configTopic = 'homeassistant/'+device.component+'/'+locationId+'/'+sensorId+'/config'
     
         // Build the MQTT discovery message
         const message = { 
             name: deviceName,
-            unique_id: uniqueId,
+            unique_id: sensorId,
             availability_topic: availabilityTopic,
             payload_available: 'online',
             payload_not_available: 'offline',
@@ -205,8 +203,8 @@ async function createDevice(device, supportedDeviceInfo) {
 
         // If device supports commands then
         // build command topic and subscribe for updates
-        if (supportedDeviceInfo.command) {
-            const commandTopic = deviceTopic+subTopic+'/command'
+        if (device.command) {
+            const commandTopic = sensorTopic+'/command'
             message.command_topic = commandTopic
             mqttClient.subscribe(commandTopic)
         }
@@ -221,103 +219,111 @@ async function createDevice(device, supportedDeviceInfo) {
         mqttClient.publish(configTopic, JSON.stringify(message), { qos: 1 })
     }
     // Give Home Assistant time to configure device before sending first state data
-    await sleep(2000)
-    subscribeDevice(device, deviceTopic)
+    await sleep(2)
+
+    // Publish device data and, if newly registered device, subscribe to state updates
+    if (subscribedDevices.find(subscribedDevice => subscribedDevice.zid === device.zid)) {
+        publishDeviceData(device.data, deviceTopic)
+    } else {
+        device.onData.subscribe(data => {
+            publishDeviceData(data, deviceTopic)
+        })
+        subscribedDevices.push(device)
+    }
 }
 
-// Publish device status and subscribe for state updates from API
-function subscribeDevice(device, deviceTopic) {
-    device.onData.subscribe(data => {
-        var deviceState = undefined
-        switch(data.deviceType) {
-            case 'sensor.contact':
-            case 'sensor.motion':
-                var deviceState = data.faulted ? 'ON' : 'OFF'
-                break;
-            case 'alarm.smoke':
-            case 'alarm.co':
-                var deviceState = data.alarmStatus === 'active' ? 'ON' : 'OFF' 
-                break;
-            case 'listener.smoke-co':
-                const coAlarmState = data.co && data.co.alarmStatus === 'active' ? 'ON' : 'OFF'
-                const smokeAlarmState = data.smoke && data.smoke.alarmStatus === 'active' ? 'ON' : 'OFF'
-                publishMqttState(deviceTopic+'/gas/state', coAlarmState)
-                publishMqttState(deviceTopic+'/smoke/state', smokeAlarmState)
-                break;
-            case 'sensor.flood-freeze':
-                const floodAlarmState = data.flood && data.flood.faulted ? 'ON' : 'OFF'
-                const freezeAlarmState = data.freeze && data.freeze.faulted ? 'ON' : 'OFF'
-                publishMqttState(deviceTopic+'/moisture/state', floodAlarmState)
-                publishMqttState(deviceTopic+'/cold/state', freezeAlarmState)
-                break;                
-            case 'security-panel':
-                switch(data.mode) {
-                    case 'none':
-                        deviceState = 'disarmed'
-                        break;
-                    case 'some':
-                        deviceState = 'armed_home'
-                        break;
-                    case 'all':
-                        deviceState = 'armed_away'
-                        break;
-                    default:
-                        deviceState = 'unknown'
-                }
-                break;
-        }
-
-        if (/^lock($|\.)/.test(data.deviceType)) {
-            switch(data.locked) {
-                case 'locked':
-                    deviceState = 'LOCK'
+// Publish device state data
+function publishDeviceData(data, deviceTopic) {
+    var deviceState = undefined
+    switch(data.deviceType) {
+        case 'sensor.contact':
+        case 'sensor.motion':
+            var deviceState = data.faulted ? 'ON' : 'OFF'
+            break;
+        case 'alarm.smoke':
+        case 'alarm.co':
+            var deviceState = data.alarmStatus === 'active' ? 'ON' : 'OFF' 
+            break;
+        case 'listener.smoke-co':
+            const coAlarmState = data.co && data.co.alarmStatus === 'active' ? 'ON' : 'OFF'
+            const smokeAlarmState = data.smoke && data.smoke.alarmStatus === 'active' ? 'ON' : 'OFF'
+            publishMqttState(deviceTopic+'/gas/state', coAlarmState)
+            publishMqttState(deviceTopic+'/smoke/state', smokeAlarmState)
+            break;
+        case 'sensor.flood-freeze':
+            const floodAlarmState = data.flood && data.flood.faulted ? 'ON' : 'OFF'
+            const freezeAlarmState = data.freeze && data.freeze.faulted ? 'ON' : 'OFF'
+            publishMqttState(deviceTopic+'/moisture/state', floodAlarmState)
+            publishMqttState(deviceTopic+'/cold/state', freezeAlarmState)
+            break;                
+        case 'security-panel':
+            switch(data.mode) {
+                case 'none':
+                    deviceState = 'disarmed'
                     break;
-                case 'unlocked':
-                    deviceState = 'UNLOCK'
+                case 'some':
+                    deviceState = 'armed_home'
+                    break;
+                case 'all':
+                    deviceState = 'armed_away'
                     break;
                 default:
-                    deviceState = 'UNKNOWN'
+                    deviceState = 'unknown'
             }
-        }
+            break;
+    }
 
-        if (deviceState !== undefined) {
-            publishMqttState(deviceTopic+'/state', deviceState)
+    if (/^lock($|\.)/.test(data.deviceType)) {
+       switch(data.locked) {
+            case 'locked':
+                deviceState = 'LOCK'
+                break;
+            case 'unlocked':
+                deviceState = 'UNLOCK'
+                break;
+            default:
+                deviceState = 'UNKNOWN'
         }
+    }
 
-        // Publish any available device attributes (battery, power, etc)
-        const attributes = {}
-        batteryLevel = getBatteryLevel(data)
-        if (batteryLevel !== 'none') {
-             attributes.battery_level = batteryLevel
-        }
-        if (data.tamperStatus) {
-            attributes.tamper_status = data.tamperStatus
-        }
-        publishMqttState(deviceTopic+'/attributes', JSON.stringify(attributes))
-    })
+    if (deviceState !== undefined) {
+        publishMqttState(deviceTopic+'/state', deviceState)
+    }
+
+    // Publish any available device attributes (battery, power, etc)
+    const attributes = {}
+    batteryLevel = getBatteryLevel(data)
+    if (batteryLevel !== 'none') {
+        attributes.battery_level = batteryLevel
+    }
+    if (data.tamperStatus) {
+        attributes.tamper_status = data.tamperStatus
+    }
+    publishMqttState(deviceTopic+'/attributes', JSON.stringify(attributes))
 }
 
+// Simple function to publish MQTT state messages with debug
 function publishMqttState(topic, message) {
     debug(topic, message)
     mqttClient.publish(topic, message, { qos: 1 })
 }
 
-async function trySetAlarmMode(alarm, deviceId, message, delay) {
-    // Pause before attempting to alarm mode -- used for retries
+async function trySetAlarmMode(location, deviceId, message, delay) {
+    // Pause before attempting to set alarm mode -- used for retries
     await sleep(delay)
     var alarmTargetMode
     debug('Set alarm mode: '+message)
     switch(message) {
         case 'DISARM':
-            alarm.disarm();
+            location.disarm();
             alarmTargetMode = 'none'
             break
         case 'ARM_HOME':
-            alarm.armHome()
+            location.armHome()
             alarmTargetMode = 'some'
             break
         case 'ARM_AWAY':
-            alarm.armAway()
+            location.armAway()
             alarmTargetMode = 'all'
             break
         default:
@@ -325,8 +331,8 @@ async function trySetAlarmMode(alarm, deviceId, message, delay) {
             return 'unknown'
     }
     // Sleep a few seconds and check if alarm entered requested mode
-    await sleep(2000);
-    const devices = await alarm.getDevices()
+    await sleep(2);
+    const devices = await location.getDevices()
     const device = await devices.find(device => device.data.zid === deviceId)
     if (device.data.mode == alarmTargetMode) {
         debug('Alarm successfully entered mode: '+message)
@@ -338,9 +344,9 @@ async function trySetAlarmMode(alarm, deviceId, message, delay) {
 }
 
 // Set Alarm Mode on received MQTT command message
-async function setAlarmMode(alarm, deviceId, message) {
+async function setAlarmMode(location, deviceId, message) {
     debug('Received set alarm mode '+message+' for Security Panel Id: '+deviceId)
-    debug('Alarm Location Id: '+ alarm.locationId)
+    debug('Location Id: '+ location.locationId)
 
     // Try to set alarm mode and retry after delay if mode set fails
     // Initial attempt with no delay
@@ -348,7 +354,7 @@ async function setAlarmMode(alarm, deviceId, message) {
     var retries = 12
     var setAlarmSuccess = false
     while (retries-- > 0 && !(setAlarmSuccess)) {
-        setAlarmSuccess = await trySetAlarmMode(alarm, deviceId, message, delay*1000)
+        setAlarmSuccess = await trySetAlarmMode(location, deviceId, message, delay)
         // On failure delay 10 seconds for next set attempt
         delay = 10
     }
@@ -361,25 +367,22 @@ async function setAlarmMode(alarm, deviceId, message) {
 }
 
 // Set lock target state on received MQTT command message
-async function setLockTargetState(alarm, deviceId, message) {
+async function setLockTargetState(location, deviceId, message) {
     debug('Received set lock state '+message+' for lock Id: '+deviceId)
-    debug('Alarm Location Id: '+ alarm.locationId)
+    debug('Location Id: '+ location.locationId)
     
     const command = message.toLowerCase()
 
     switch(command) {
         case 'lock':
         case 'unlock':
-            alarm.setDeviceInfo(deviceId, {
-                command: {
-                    v1: [
-                        {
-                            commandType: `lock.${command}`,
-                            data: {}
-                        }
-                    ]
-                }
-            })
+            const devices = await location.getDevices();
+            const device = devices.find(device => device.id === deviceId);
+            if(!device) {
+                debug('Cannot find specified device id in location devices');
+                break;
+            }
+            device.sendCommand(`lock.${command}`);
             break;
         default:
             debug('Received invalid command for lock!')
@@ -388,24 +391,40 @@ async function setLockTargetState(alarm, deviceId, message) {
 
 // Process received MQTT command
 async function processCommand(topic, message) {
-    var topic = topic.split('/')
-    // Parse topic to get alarm/component/device info
-    const alarmId = topic[topic.length - 4]
-    const component = topic[topic.length - 3]
-    const deviceId = topic[topic.length - 2]
+    var message = message.toString()
+    if (topic === hassTopic) {
+        // Republish devices and state after 60 seconds if restart of HA is detected
+        debug('Home Assistant state topic '+topic+' received message: '+message)
+        if (message == 'online') {
+            debug('Resending device config/state in 30 seconds')
+            // Make sure any existing republish dies
+            republishCount = 0 
+            await sleep(republishDelay+5)
+            // Reset republish counter and start publishing config/state
+            republishCount = 10
+            processLocations(ringLocations)
+            debug('Resent device config/state information')
+        }
+    } else {
+        var topic = topic.split('/')
+        // Parse topic to get alarm/component/device info
+        const locationId = topic[topic.length - 5]
+        const component = topic[topic.length - 3]
+        const deviceId = topic[topic.length - 2]
 
-    // Get alarm by location ID
-    const alarm = await ringAlarms.find(alarm => alarm.locationId == alarmId)
+        // Get alarm by location ID
+        const location = await ringLocations.find(location => location.locationId == locationId)
     
-    switch(component) {
-        case 'alarm_control_panel':
-            setAlarmMode(alarm, deviceId, message)
-            break;
-        case 'lock':
-            setLockTargetState(alarm, deviceId, message)
-            break;
-        default:
-            debug('Somehow received command for an unknown device!')
+        switch(component) {
+            case 'alarm_control_panel':
+                setAlarmMode(location, deviceId, message)
+                break;
+            case 'lock':
+                setLockTargetState(location, deviceId, message)
+                break;
+            default:
+                debug('Somehow received command for an unknown device!')
+        }
     }
 }
 
@@ -421,73 +440,77 @@ function initMqtt() {
 
 /* End Functions */
 
-// Get Configuration from file
-try {
-    CONFIG = require('./config')
-    ringTopic = CONFIG.ring_topic ? CONFIG.ring_topic : 'ring'
-    hassTopic = CONFIG.hass_topic
-} catch (e) {
+// Main code loop
+const main = async() => {
+    let locationIds = null
+
+    // Get Configuration from file
     try {
-        console.error('No configuration file found, try environmental variables!')
-        CONFIG = {
-            "host": process.env.MQTTHOST,
-            "port": process.env.MQTTPORT,
-            "ring_topic": process.env.MQTTRINGTOPIC,
-            "hass_topic": process.env.MQTTHASSTOPIC,
-            "mqtt_user": process.env.MQTTUSER,
-            "mqtt_pass": process.env.MQTTPASSWORD,
-            "ring_user": process.env.RINGUSER,
-            "ring_pass": process.env.RINGPASS
-        }
+        CONFIG = require('./config')
         ringTopic = CONFIG.ring_topic ? CONFIG.ring_topic : 'ring'
         hassTopic = CONFIG.hass_topic
+        if (!(CONFIG.location_ids === undefined || CONFIG.location_ids == 0)) {
+            locationIds = CONFIG.location_ids
+        }
+    } catch (e) {
+        try {
+            debugError('Configuration file not found, try environment variables!')
+            CONFIG = {
+                "host": process.env.MQTTHOST,
+                "port": process.env.MQTTPORT,
+                "ring_topic": process.env.MQTTRINGTOPIC,
+                "hass_topic": process.env.MQTTHASSTOPIC,
+                "mqtt_user": process.env.MQTTUSER,
+                "mqtt_pass": process.env.MQTTPASSWORD,
+                "ring_user": process.env.RINGUSER,
+                "ring_pass": process.env.RINGPASS
+            }
+            ringTopic = CONFIG.ring_topic ? CONFIG.ring_topic : 'ring'
+            hassTopic = CONFIG.hass_topic
+            if (!(CONFIG.ring_user || CONFIG.ring_pass)) throw "Required environment variables are not set!"
+        }
+        catch (ex) {
+            debugError(ex)
+            console.error('Configuration file not found and required environment variables are not set!')
+            process.exit(1)
+        }
     }
-    catch (ex) {
-        console.error('No configuration found!')
-        debugError(ex)
-        process.exit(1)
-    }
-}
 
-// Establish MQTT connection, subscribe to topics, and handle messages
-const main = async() => {
-
-    var mqttConnected = false
+    // Establish connection to Ring API
     try {
-        // Get alarms via API
-        ringAlarms = await getAlarms({
+        const ringApi = new RingApi({
             email: CONFIG.ring_user,
             password: CONFIG.ring_pass,
+            locationIds: locationIds
         })
-
-        // Start monitoring alarm connection state
-        ringAlarms.map(async alarm => {
-            monitorAlarmConnection(alarm)
-        })
-    
-        // Connect to MQTT broker
-        mqttClient = await initMqtt()
-        mqttConnected = true
-
-    } catch (error)  {
+        ringLocations = await ringApi.getLocations()
+    } catch (error) {
         debugError(error)
         debugError( colors.red( 'Couldn\'t create the API instance. This could be because ring.com changed their API again' ))
         debugError( colors.red( 'or maybe the password is wrong. Please check settings and try again.' ))
         process.exit(1)
     }
 
+    // Initiate connection to MQTT broker
+    try {
+        mqttClient = await initMqtt()
+        mqttConnected = true
+        if (hassTopic) { mqttClient.subscribe(hassTopic) }
+        debugMqtt('Connection established with MQTT broker, sending config/state information in 5 seconds.')
+    } catch (error) {
+        debugError(error)
+        debugError( colors.red( 'Couldn\'t connect to MQTT broker. Please check the broker and configuration settings.' ))
+        process.exit(1)
+    }
+
+    // On MQTT connect/reconnect send config/state information after delay
     mqttClient.on('connect', async function () {
-        if (mqttConnected) {
-            debugMqtt('Connection established with MQTT broker.')
-            if (hassTopic) mqttClient.subscribe(hassTopic)
-        } else {
-            // Republish device state data after 5 seconds MQTT session reestablished
+        if (!mqttConnected) {
+            mqttConnected = true
             debugMqtt('MQTT connection reestablished, resending config/state information in 5 seconds.')
-            await sleep(5000)
-            ringAlarms.map(async alarm => {
-                createAlarm(alarm)
-            })
         }
+        await sleep(5)
+        processLocations(ringLocations)
     })
 
     mqttClient.on('reconnect', function () {
@@ -506,21 +529,7 @@ const main = async() => {
 
     // Process MQTT messages from subscribed command topics
     mqttClient.on('message', async function (topic, message) {
-        message = message.toString()
-        if (topic === hassTopic) {
-            // Republish devices and state after 60 seconds if restart of HA is detected
-            debug('Home Assistant state topic '+topic+' received message: '+message)
-            if (message == 'online') {
-                debug('Resending device config/state in 60 seconds')
-                await sleep(60000)
-                ringAlarms.map(async alarm => {
-                    createAlarm(alarm)
-                    debug('Resent device config/state information')
-                })
-            } 
-        } else {
-            processCommand(topic, message)
-        }
+        processCommand(topic, message)
     })
 }
 
