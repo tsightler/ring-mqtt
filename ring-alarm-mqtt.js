@@ -503,11 +503,11 @@ const main = async() => {
                 "mqtt_pass": process.env.MQTTPASSWORD,
                 "ring_user": process.env.RINGUSER,
                 "ring_pass": process.env.RINGPASS,
-                "refresh_token": process.env.RINGTOKEN,
+                "ring_token": process.env.RINGTOKEN,
             }
             ringTopic = CONFIG.ring_topic ? CONFIG.ring_topic : 'ring'
             hassTopic = CONFIG.hass_topic
-            if (!(CONFIG.ring_user || CONFIG.ring_pass) && !CONFIG.refresh_token) throw "Required environment variables are not set!"
+            if (!(CONFIG.ring_user || CONFIG.ring_pass) && !CONFIG.ring_token) throw "Required environment variables are not set!"
         }
         catch (ex) {
             debugError(ex)
@@ -526,8 +526,8 @@ const main = async() => {
         // enabled, the user/pass authentication will not work.
         //
         // See: https://github.com/dgreif/ring/wiki/Two-Factor-Auth
-        if(CONFIG.refresh_token) {
-            auth["refreshToken"] = CONFIG.refresh_token
+        if(CONFIG.ring_token) {
+            auth["refreshToken"] = CONFIG.ring_token
         } else {
             auth["email"] = CONFIG.ring_user
             auth["password"] = CONFIG.ring_pass
