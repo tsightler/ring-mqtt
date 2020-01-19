@@ -39,6 +39,15 @@ To run, execute
 docker run  -e "MQTTHOST={host name}" -e "MQTTPORT={host port}" -e "MQTTRINGTOPIC={host ring topic}" -e "MQTTHASSTOPIC={host hass topic}" -e "MQTTUSER={mqtt user}" -e "MQTTPASSWORD={mqtt pw}" -e "RINGUSER={ring user}" -e "RINGPASS={ring pq}" ring-alarm-mqtt/ring-alarm-mqtt
 ```
 
+### Authentication Options
+The script supports standard Ring username/password authentication, but can also be used with accounts with Two Factor Authenticaton, i.e. 2FA, enabled as well.  To use 2FA instead you must acquire a token for your Ring account by using ring-auth-cli from the command line and entering you username/password and then the passcode sent via SMS to your device.  Once you receive this token you can set the "ring_token" environment in the config.json file and leave "ring_user" and "ring_pass" blank.
+
+Note that using 2FA authenticaiton this way opens up the possibility that, if you Home Assistant environment is comporomised, an attacker can acquire the token and use this to authenticate to your Ring account without even knowing your username/password and completely bypassing all 2FA protection on your account.  Please secure your Home Assistant environment carefully.
+
+Personally, I think it's better to simply create a second account on Ring, dedicated for Home Assistant, and set a very strong password on this account.  This way, you can still have 2FA enabled on your primary account, while using this second account only for this script.  This way you can control exactly what devices are visible to this script directly in the Ring app by sharing only the devices you want.  Also, any action performed by Home Assistant will show up as being performed by the second account vs the primary account.  This way you can monitor easily for nafarious activity.
+
+While I believe this second approach is better, there was simply too much demand for 2FA support in the script, so I've included it, but, in any case, please secure your environment carefully.
+
 ### Config Options
 By default, this script will discover and monitor alarms across all locations, even shared locations for which you have permissions, however, it is possible to limit the locations monitored by the script including specific location IDs in the config as follows:
 
