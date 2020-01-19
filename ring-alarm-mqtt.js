@@ -276,10 +276,10 @@ function publishDeviceData(data, deviceTopic) {
     if (/^lock($|\.)/.test(data.deviceType)) {
        switch(data.locked) {
             case 'locked':
-                deviceState = 'LOCK'
+                deviceState = 'LOCKED'
                 break;
             case 'unlocked':
-                deviceState = 'UNLOCK'
+                deviceState = 'UNLOCKED'
                 break;
             default:
                 deviceState = 'UNKNOWN'
