@@ -4,7 +4,7 @@
   "description": "Ring Alarm to MQTT Bridge",
   "main": "ring-alarm-mqtt.js",
   "dependencies": {
-    "ring-client-api": "^4.2.1",
+    "ring-client-api": "^6.0.3",
     "debug": "^4.1.1",
     "mqtt": "^3.0.0"
   },

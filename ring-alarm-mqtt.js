@@ -85,6 +85,11 @@ function supportedDevice(device) {
         case 'sensor.contact':
             device.className = 'door'
             device.component = 'binary_sensor'
+
+            if (/window/i.test(device.data.name)) {
+                device.className = 'window'
+            }
+
             break;
         case 'sensor.motion':
             device.className = 'motion'
@@ -110,6 +115,10 @@ function supportedDevice(device) {
             break;
         case 'security-panel':
             device.component = 'alarm_control_panel'
+            device.command = true
+            break;
+        case 'switch':
+            device.component = (device.data.categoryId === 2) ? 'light' : 'switch'
             device.command = true
             break;
     }
@@ -271,15 +280,18 @@ function publishDeviceData(data, deviceTopic) {
                     deviceState = 'unknown'
             }
             break;
+        case 'switch':
+            var deviceState = data.on ? "ON" : "OFF"
+            break;
     }
 
     if (/^lock($|\.)/.test(data.deviceType)) {
        switch(data.locked) {
             case 'locked':
-                deviceState = 'LOCK'
+                deviceState = 'LOCKED'
                 break;
             case 'unlocked':
-                deviceState = 'UNLOCK'
+                deviceState = 'UNLOCKED'
                 break;
             default:
                 deviceState = 'UNKNOWN'
@@ -389,6 +401,29 @@ async function setLockTargetState(location, deviceId, message) {
     }
 }
 
+async function setSwitchState(location, deviceId, message) {
+    debug('Received set switch state '+message+' for switch Id: '+deviceId)
+    debug('Location Id: '+ location.locationId)
+
+    const command = message.toLowerCase()
+
+    switch(command) {
+        case 'on':
+        case 'off':
+            const devices = await location.getDevices();
+            const device = devices.find(device => device.id === deviceId);
+            if(!device) {
+                debug('Cannot find specified device id in location devices');
+                break;
+            }
+            const on = (command === 'on') ? true : false
+            device.setInfo({ device: { v1: { on } } })
+            break;
+        default:
+            debug('Received invalid command for switch!')
+    }
+}
+
 // Process received MQTT command
 async function processCommand(topic, message) {
     var message = message.toString()
@@ -421,6 +456,10 @@ async function processCommand(topic, message) {
                 break;
             case 'lock':
                 setLockTargetState(location, deviceId, message)
+                break;
+            case 'light':
+            case 'switch':
+                setSwitchState(location, deviceId, message)
                 break;
             default:
                 debug('Somehow received command for an unknown device!')
@@ -463,11 +502,12 @@ const main = async() => {
                 "mqtt_user": process.env.MQTTUSER,
                 "mqtt_pass": process.env.MQTTPASSWORD,
                 "ring_user": process.env.RINGUSER,
-                "ring_pass": process.env.RINGPASS
+                "ring_pass": process.env.RINGPASS,
+                "ring_token": process.env.RINGTOKEN,
             }
             ringTopic = CONFIG.ring_topic ? CONFIG.ring_topic : 'ring'
             hassTopic = CONFIG.hass_topic
-            if (!(CONFIG.ring_user || CONFIG.ring_pass)) throw "Required environment variables are not set!"
+            if (!(CONFIG.ring_user || CONFIG.ring_pass) && !CONFIG.ring_token) throw "Required environment variables are not set!"
         }
         catch (ex) {
             debugError(ex)
@@ -478,11 +518,22 @@ const main = async() => {
 
     // Establish connection to Ring API
     try {
-        const ringApi = new RingApi({
-            email: CONFIG.ring_user,
-            password: CONFIG.ring_pass,
+        let auth = {
             locationIds: locationIds
-        })
+        }
+
+        // Ring allows users to enable two-factor authentication. If this is
+        // enabled, the user/pass authentication will not work.
+        //
+        // See: https://github.com/dgreif/ring/wiki/Two-Factor-Auth
+        if(CONFIG.ring_token) {
+            auth["refreshToken"] = CONFIG.ring_token
+        } else {
+            auth["email"] = CONFIG.ring_user
+            auth["password"] = CONFIG.ring_pass
+        }
+
+        const ringApi = new RingApi(auth)
         ringLocations = await ringApi.getLocations()
     } catch (error) {
         debugError(error)

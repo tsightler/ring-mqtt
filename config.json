@@ -5,6 +5,8 @@
     "hass_topic": "hass/status",
     "mqtt_user": "",
     "mqtt_pass": "",
-    "ring_user": "<ring_email>",
-    "ring_pass": "<ring_password>"
+    "ring_user": "",
+    "ring_pass": "",
+    "ring_token": "",
+    "location_ids": [""]
 }
