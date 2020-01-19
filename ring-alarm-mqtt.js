@@ -85,6 +85,11 @@ function supportedDevice(device) {
         case 'sensor.contact':
             device.className = 'door'
             device.component = 'binary_sensor'
+
+            if (/window/i.test(device.data.name)) {
+                device.className = 'window'
+            }
+
             break;
         case 'sensor.motion':
             device.className = 'motion'
