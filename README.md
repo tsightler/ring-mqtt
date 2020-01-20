@@ -40,7 +40,7 @@ docker run  -e "MQTTHOST={host name}" -e "MQTTPORT={host port}" -e "MQTTRINGTOPI
 ```
 
 ### Authentication Options
-The script supports standard Ring username/password authentication, but can also be used with accounts with Two Factor Authenticaton, i.e. 2FA, enabled as well.  To use 2FA instead you must acquire a token for your Ring account by using ring-auth-cli from the command line and entering you username/password and then the passcode sent via SMS to your device.  Once you receive this token you can set the "ring_token" environment in the config.json file and leave "ring_user" and "ring_pass" blank.
+The script supports standard Ring username/password authentication, but can also be used with accounts with Two Factor Authenticaton, i.e. 2FA, enabled as well.  To use 2FA instead you must acquire a token for your Ring account by using ring-auth-cli from the command line and entering you username/password and then the passcode sent via SMS to your device.  Once you receive this token you can set the "ring_token" environment in the config.json file and leave "ring_user" and "ring_pass" blank.  For more details please check the [Two Factor Auth](https://github.com/dgreif/ring/wiki/Two-Factor-Auth) documentation from the ring client API.
 
 Note that using 2FA authenticaiton this way opens up the possibility that, if you Home Assistant environment is comporomised, an attacker can acquire the token and use this to authenticate to your Ring account without even knowing your username/password and completely bypassing all 2FA protection on your account.  Please secure your Home Assistant environment carefully.
 
