@@ -1,7 +1,7 @@
 # ring-alarm-mqtt
 This is a simple script that leverages the ring alarm API available at [dgreif/ring-alarm](https://github.com/dgreif/ring-alarm) and provides access to the alarm control panel and sensors via MQTT.  It provides support for Home Assistant style MQTT discovery which allows for very easy integration with Home Assistant with near zero configuration (assuming MQTT is already configured).  It can also be used with any other tool capable of working with MQTT as it provides consistent topic naming based on location/device ID.
 
-*** **Breaking changes in v2.0** ***
+__---Breaking changes in v2.0---__
 Due to changes in Home Assistant 0.104 I decided to change the lock MQTT state value from LOCK/UNLOCK to LOCKED/UNLOCKED to match the new default starting in this version.  If you are using and older version of Home Assistant, please continue to use prior versions of this script.  If you are using this script with other tools, such as Node Red, please make the required changes for monitoring the new state values.
 
 ### Standard Installation (Linux)
