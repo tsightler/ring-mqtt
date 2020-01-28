@@ -1,7 +1,7 @@
 # ring-alarm-mqtt
 This is a simple script that leverages the ring alarm API available at [dgreif/ring-alarm](https://github.com/dgreif/ring-alarm) and provides access to the alarm control panel and sensors via MQTT.  It provides support for Home Assistant style MQTT discovery which allows for very easy integration with Home Assistant with near zero configuration (assuming MQTT is already configured).  It can also be used with any other tool capable of working with MQTT as it provides consistent topic naming based on location/device ID.
 
-# Breaking changes in 2.0
+** ***Breaking changes in v2.0*** **
 Due to changes in Home Assistant 0.104 I decided to change the lock MQTT state value from LOCK/UNLOCK to LOCKED/UNLOCKED to match the new default starting in this version.  If you are using and older version of Home Assistant, please continue to use prior versions of this script.  If you are using this script with other tools, such as Node Red, please make the required changes for monitoring the new state values.
 
 ### Standard Installation (Linux)
@@ -91,6 +91,25 @@ ring/<location_id>/alarm
 ring/<location_id>/cameras
 ring/<location_id>/lighting
 ```
+
+### Working with Homekit via Home Assistant
+If you are attempting to use the HomeKit integration of Home Assistant to forward entities to Apple HomeKit you will need to implement a delay of the HomeKit service using an automation.  This is because the HomeKit service only exports devices on startup and the devices will no be present until autodiscovery is complete.  This is documented in the HomeKit documentation for similar behavior of Z-wave devices and you can use a similar concept as [documented there](https://www.home-assistant.io/integrations/homekit/).  While there are several exampls such as waiting on specific devices, I think the easiest and most reliable is just a simple delay so I've reproduced that example below to start the HomeKit service after 2 minutes:
+
+```yaml
+# Example using a delay after the start of Home Assistant
+homekit:
+  auto_start: false
+
+automation:
+  - alias: 'Start HomeKit'
+    trigger:
+      - platform: homeassistant
+        event: start
+    action:
+      - delay: 00:02  # Waits 2 minutes
+      - service: homekit.start
+```
+
 ### Current Features
 - Simple configuration via config file, most cases just need Ring user/password and that's it
 - Supports the following devices:
