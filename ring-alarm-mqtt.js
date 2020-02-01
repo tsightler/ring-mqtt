@@ -83,17 +83,20 @@ async function processLocations(locations) {
 function supportedDevice(device) {
     switch(device.data.deviceType) {
         case 'sensor.contact':
-            device.className = 'door'
+            // If device name inclused "Windows" assume it's a window sensor, otherwise use door
+            device.className = (device.data.name.match(/window/i)) ? 'window' : 'door' 
             device.component = 'binary_sensor'
-
-            if (/window/i.test(device.data.name)) {
-                device.className = 'window'
-            }
-
             break;
         case 'sensor.motion':
             device.className = 'motion'
             device.component = 'binary_sensor'
+            break;
+        case 'sensor.zone':
+            // Only activate enabled zones from retro kit
+            if (device.status == 'enabled') { 
+                device.className = 'safety'
+                device.component = 'binary_sensor'
+            }
             break;
         case 'alarm.smoke':
             device.className = 'smoke' 
@@ -247,6 +250,7 @@ function publishDeviceData(data, deviceTopic) {
     switch(data.deviceType) {
         case 'sensor.contact':
         case 'sensor.motion':
+        case 'sensor.zone':
             var deviceState = data.faulted ? 'ON' : 'OFF'
             break;
         case 'alarm.smoke':
