@@ -4,8 +4,6 @@
 var RingApi = require('ring-client-api').RingApi
 const mqttApi = require ('mqtt')
 const debug = require('debug')('ring-alarm-mqtt')
-const debugError = require('debug')('error')
-const debugMqtt = require('debug')('mqtt')
 const colors = require( 'colors/safe' )
 var CONFIG
 var ringTopic
@@ -157,13 +155,16 @@ async function publishAlarm(location) {
             devices.forEach((device) => {
                 supportedDevice(device)
                 if (device.component) {
+                    debug('*** Found supported device type: '+device.data.deviceType+' ***')
                     publishDevice(device)
+                } else {
+                    debug('!!! Found unsupported device type: '+device.data.deviceType+' !!!')
                 }
             })
             await sleep(1)
             mqttClient.publish(availabilityTopic, 'online', { qos: 1 })
         } catch (error) {
-            debugError(error)
+            debug(error)
         }
     await sleep(republishDelay)
     republishCount--
@@ -497,7 +498,7 @@ const main = async() => {
         }
     } catch (e) {
         try {
-            debugError('Configuration file not found, try environment variables!')
+            debug('Configuration file not found, try environment variables!')
             CONFIG = {
                 "host": process.env.MQTTHOST,
                 "port": process.env.MQTTPORT,
@@ -514,8 +515,8 @@ const main = async() => {
             if (!(CONFIG.ring_user || CONFIG.ring_pass) && !CONFIG.ring_token) throw "Required environment variables are not set!"
         }
         catch (ex) {
-            debugError(ex)
-            console.error('Configuration file not found and required environment variables are not set!')
+            debug(ex)
+            debug('Configuration file not found and required environment variables are not set!')
             process.exit(1)
         }
     }
@@ -540,9 +541,9 @@ const main = async() => {
         const ringApi = new RingApi(auth)
         ringLocations = await ringApi.getLocations()
     } catch (error) {
-        debugError(error)
-        debugError( colors.red( 'Couldn\'t create the API instance. This could be because ring.com changed their API again' ))
-        debugError( colors.red( 'or maybe the password is wrong. Please check settings and try again.' ))
+        debug(error)
+        debug( colors.red( 'Couldn\'t create the API instance. This could be because ring.com changed their API again' ))
+        debug( colors.red( 'or maybe the password is wrong. Please check settings and try again.' ))
         process.exit(1)
     }
 
@@ -551,10 +552,10 @@ const main = async() => {
         mqttClient = await initMqtt()
         mqttConnected = true
         if (hassTopic) { mqttClient.subscribe(hassTopic) }
-        debugMqtt('Connection established with MQTT broker, sending config/state information in 5 seconds.')
+        debug('Connection established with MQTT broker, sending config/state information in 5 seconds.')
     } catch (error) {
-        debugError(error)
-        debugError( colors.red( 'Couldn\'t connect to MQTT broker. Please check the broker and configuration settings.' ))
+        debug(error)
+        debug( colors.red( 'Couldn\'t connect to MQTT broker. Please check the broker and configuration settings.' ))
         process.exit(1)
     }
 
@@ -562,7 +563,7 @@ const main = async() => {
     mqttClient.on('connect', async function () {
         if (!mqttConnected) {
             mqttConnected = true
-            debugMqtt('MQTT connection reestablished, resending config/state information in 5 seconds.')
+            debug('MQTT connection reestablished, resending config/state information in 5 seconds.')
         }
         await sleep(5)
         processLocations(ringLocations)
@@ -570,15 +571,15 @@ const main = async() => {
 
     mqttClient.on('reconnect', function () {
         if (mqttConnected) {
-            debugMqtt('Connection to MQTT broker lost. Attempting to reconnect...')
+            debug('Connection to MQTT broker lost. Attempting to reconnect...')
         } else {
-            debugMqtt('Attempting to reconnect to MQTT broker...')
+            debug('Attempting to reconnect to MQTT broker...')
         }
         mqttConnected = false
     })
 
     mqttClient.on('error', function (error) {
-        debugMqtt('Unable to connect to MQTT broker.', error.message)
+        debug('Unable to connect to MQTT broker.', error.message)
         mqttConnected = false
     })
 
