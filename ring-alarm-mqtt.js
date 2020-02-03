@@ -79,7 +79,7 @@ async function processLocations(locations) {
 
 // Return class information if supported device
 function supportedDevice(device) {
-    switch(device.data.deviceType) {
+    switch(device.deviceType) {
         case 'sensor.contact':
             // If device name inclused "Windows" assume it's a window sensor, otherwise use door
             device.className = (device.data.name.match(/window/i)) ? 'window' : 'door' 
@@ -90,11 +90,8 @@ function supportedDevice(device) {
             device.component = 'binary_sensor'
             break;
         case 'sensor.zone':
-            // Only activate enabled zones from retro kit
-            if (device.status == 'enabled') { 
-                device.className = 'safety'
-                device.component = 'binary_sensor'
-            }
+            device.className = 'safety'
+            device.component = 'binary_sensor'
             break;
         case 'alarm.smoke':
             device.className = 'smoke' 
@@ -122,6 +119,9 @@ function supportedDevice(device) {
             device.component = (device.data.categoryId === 2) ? 'light' : 'switch'
             device.command = true
             break;
+        case 'swtich.multilevel':
+            device.component = 'light'
+            device.command = true
     }
     
     // Check if device is a lock	
@@ -155,10 +155,13 @@ async function publishAlarm(location) {
             devices.forEach((device) => {
                 supportedDevice(device)
                 if (device.component) {
-                    debug('*** Found supported device type: '+device.data.deviceType+' ***')
+                    debug('*** Found supported device type: '+device.deviceType+' ***')
+                    if (device.deviceType == 'sensor.zone') {
+                        debug('*** Zone state is: '+device.status+' ***')
+                    }
                     publishDevice(device)
                 } else {
-                    debug('!!! Found unsupported device type: '+device.data.deviceType+' !!!')
+                    debug('!!! Found unsupported device type: '+device.deviceType+' !!!')
                 }
             })
             await sleep(1)
@@ -222,6 +225,14 @@ async function publishDevice(device) {
             mqttClient.subscribe(commandTopic)
         }
 
+        // If device is dimmer include brightness topics
+        if (device.deviceType == 'switch.multilevel') {
+            message.brightness_scale = '100'
+            message.brightness_state_topic = sensorTopic+'/brightness_state'
+            message.brightness_command_topic = sensorTopic+'/brightness_command'
+            mqttClient.subscribe(sensorTopic+'/brightness_command')
+        }
+
         // If binary sensor include device class to help set icons in UI 
         if (className) {
             message.device_class = className
@@ -248,15 +259,16 @@ async function publishDevice(device) {
 // Publish device state data
 function publishDeviceData(data, deviceTopic) {
     var deviceState = undefined
+    var deviceBrightnessState = undefined
     switch(data.deviceType) {
         case 'sensor.contact':
         case 'sensor.motion':
         case 'sensor.zone':
-            var deviceState = data.faulted ? 'ON' : 'OFF'
+            deviceState = data.faulted ? 'ON' : 'OFF'
             break;
         case 'alarm.smoke':
         case 'alarm.co':
-            var deviceState = data.alarmStatus === 'active' ? 'ON' : 'OFF' 
+            deviceState = data.alarmStatus === 'active' ? 'ON' : 'OFF' 
             break;
         case 'listener.smoke-co':
             const coAlarmState = data.co && data.co.alarmStatus === 'active' ? 'ON' : 'OFF'
@@ -286,7 +298,11 @@ function publishDeviceData(data, deviceTopic) {
             }
             break;
         case 'switch':
-            var deviceState = data.on ? "ON" : "OFF"
+            deviceState = data.on ? "ON" : "OFF"
+            break;
+        case 'switch.multilevel':
+            deviceState = data.on ? "ON" : "OFF"
+            deviceBrightnessState = (data.level && !isNaN(data.level) ? 100 * data.level : 0)
             break;
     }
 
@@ -305,6 +321,10 @@ function publishDeviceData(data, deviceTopic) {
 
     if (deviceState !== undefined) {
         publishMqttState(deviceTopic+'/state', deviceState)
+    }
+
+    if (deviceBrightnessState !== undefined) {
+        publishMqttState(deviceTopic+'/brightness_state', deviceBrightnessState)
     }
 
     // Publish any available device attributes (battery, power, etc)
@@ -406,26 +426,37 @@ async function setLockTargetState(location, deviceId, message) {
     }
 }
 
-async function setSwitchState(location, deviceId, message) {
-    debug('Received set switch state '+message+' for switch Id: '+deviceId)
-    debug('Location Id: '+ location.locationId)
+async function setSwitchState(location, deviceId, message, stateCmd) {
+    debug('Received command for Location Id: '+ location.locationId)
+    const devices = await location.getDevices();
+    const device = devices.find(device => device.id === deviceId);
+    if(!device) {
+        debug('Cannot find specified device id in location devices')
+        break;
+    }
 
-    const command = message.toLowerCase()
-
-    switch(command) {
-        case 'on':
-        case 'off':
-            const devices = await location.getDevices();
-            const device = devices.find(device => device.id === deviceId);
-            if(!device) {
-                debug('Cannot find specified device id in location devices');
-                break;
-            }
+    if (stateCmd == 'brightness_command') {
+        const level = message
+        debug('Set brightness state to '+level+' for switch Id: '+deviceId)
+        if (isNaN(message)) {
+            debug('Brightness command received but not a number!')
+        } else if (!(message >= 0 && message <= 100)) {
+            debug('Brightness command receives but out of range (0-100)!')
+        } else {
+            device.setInfo({ device: { v1: { level: level / 100 } } })
+        }
+    } else {
+        debug('Received set switch state '+message+' for switch Id: '+deviceId)
+        const command = message.toLowerCase()
+        switch(command) {
+            case 'on':
+            case 'off':
             const on = (command === 'on') ? true : false
             device.setInfo({ device: { v1: { on } } })
             break;
         default:
             debug('Received invalid command for switch!')
+        }
     }
 }
 
@@ -451,6 +482,7 @@ async function processCommand(topic, message) {
         const locationId = topic[topic.length - 5]
         const component = topic[topic.length - 3]
         const deviceId = topic[topic.length - 2]
+        const stateCmd = topic[topic.length - 1]
 
         // Get alarm by location ID
         const location = await ringLocations.find(location => location.locationId == locationId)
@@ -464,7 +496,7 @@ async function processCommand(topic, message) {
                 break;
             case 'light':
             case 'switch':
-                setSwitchState(location, deviceId, message)
+                setSwitchState(location, deviceId, message, stateCmd)
                 break;
             default:
                 debug('Somehow received command for an unknown device!')
