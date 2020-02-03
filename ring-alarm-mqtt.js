@@ -324,7 +324,7 @@ function publishDeviceData(data, deviceTopic) {
     }
 
     if (deviceBrightnessState !== undefined) {
-        publishMqttState(deviceTopic+'/brightness_state', deviceBrightnessState)
+        publishMqttState(deviceTopic+'/brightness_state', deviceBrightnessState.toString())
     }
 
     // Publish any available device attributes (battery, power, etc)
