@@ -432,7 +432,7 @@ async function setSwitchState(location, deviceId, message, stateCmd) {
     const device = devices.find(device => device.id === deviceId);
     if(!device) {
         debug('Cannot find specified device id in location devices')
-        break;
+        return
     }
 
     if (stateCmd == 'brightness_command') {
@@ -441,7 +441,7 @@ async function setSwitchState(location, deviceId, message, stateCmd) {
         if (isNaN(message)) {
             debug('Brightness command received but not a number!')
         } else if (!(message >= 0 && message <= 100)) {
-            debug('Brightness command receives but out of range (0-100)!')
+            debug('Brightness command received but out of range (0-100)!')
         } else {
             device.setInfo({ device: { v1: { level: level / 100 } } })
         }
