@@ -119,7 +119,7 @@ function supportedDevice(device) {
             device.component = (device.data.categoryId === 2) ? 'light' : 'switch'
             device.command = true
             break;
-        case 'swtich.multilevel':
+        case 'switch.multilevel':
             device.component = 'light'
             device.command = true
     }
