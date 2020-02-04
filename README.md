@@ -93,7 +93,7 @@ ring/<location_id>/lighting
 ```
 
 ### Working with Homekit via Home Assistant
-If you are attempting to use the HomeKit integration of Home Assistant to forward entities to Apple HomeKit you will need to implement a delay of the HomeKit service using an automation.  This is because the HomeKit service only exports devices on startup and the devices will no be present until autodiscovery is complete.  This is documented in the HomeKit documentation for similar behavior of Z-wave devices and you can use a similar concept as [documented there](https://www.home-assistant.io/integrations/homekit/).  While there are several exampls such as waiting on specific devices, I think the easiest and most reliable is just a simple delay so I've reproduced that example below to start the HomeKit service after 2 minutes:
+If you are attempting to use the HomeKit integration of Home Assistant to forward entities to Apple HomeKit you may need to implement a delay of the HomeKit service using an automation, although this may be addressed with the entity changes in HA 0.104 and later.  In prior versions the HomeKit service only exports devices available on service startup and the Ring devices will not be present until autodiscovery is complete.  This is documented in the HomeKit documentation for similar behavior of Z-wave devices and you can use a similar concept as [documented there](https://www.home-assistant.io/integrations/homekit/).  While there are several exampls such as waiting on specific devices, I think the easiest and most reliable is just a simple delay so I've reproduced that example below to start the HomeKit service after 2 minutes:
 
 ```yaml
 # Example using a delay after the start of Home Assistant
