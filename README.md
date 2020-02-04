@@ -118,6 +118,7 @@ automation:
   - Ring Smoke/CO Listener
   - First Alert Z-Wave Smoke/CO Detector (experimental - testing needed)
   - Ring Alarm integrated door locks (status and lock control)
+  - Some 3rd party Z-Wave swtiches and dimmers
 - Provides battery and tamper status for supported devices via JSON attribute topic (visible in Home Assistant UI)
 - Full Home Assistant MQTT Discovery - devices appear automatically (also tested with OpenHAB 2.4 MQTT)
 - Consistent topic creation based on location/device ID - easy to use with MQTT tools like Node-RED
@@ -131,7 +132,7 @@ automation:
 
 ### Planned features
 - Support for non-alarm devices (doorbell/camera motion/lights/siren)
-- Support for generic 3rd party sensors
+- Support for generic 3rd party sensors/devices
 
 ### Possible future features
 - Additional Devices (base station, keypad - at least for tamper/battery status)
