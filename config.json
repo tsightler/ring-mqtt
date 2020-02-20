@@ -8,5 +8,6 @@
     "ring_user": "",
     "ring_pass": "",
     "ring_token": "",
+    "enable_cameras": false,
     "location_ids": [""]
 }

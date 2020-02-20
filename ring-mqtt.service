@@ -1,9 +1,9 @@
 #!/bin/sh -
 [Unit]
-Description=ring-alarm-mqtt
+Description=ring-mqtt
 
 [Service]
-ExecStart=/usr/bin/node /opt/ring-alarm-mqtt/ring-alarm-mqtt.js
+ExecStart=/usr/bin/node /opt/ring-mqtt/ring-mqtt.js
 Restart=always
 User=homeassistant
 Group=homeassistant
@@ -13,4 +13,4 @@ WorkingDirectory=/usr/bin/
 
 [Install]
 WantedBy=multi-user.target
-Alias=ring-alarm-mqtt.service
+Alias=ring-mqtt.service
