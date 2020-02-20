@@ -6,7 +6,7 @@ The 3.0 release is a major refactor with the goal to dramatically simplfy the ab
 
 Also, rather than a single, global avaialbaility state for each location, each device now has a device specific availability topic.  Cameras track their own availability state by querying for device health data on a polling interval (60 seconds).  Alarms are still monitored by the state of the websocket connection for each location but, in the future, offline devices (such as devices with dead batteries or otherwise disconnected) will be monitored as well.
 
-For those using this script with 3rd party MQTT tools (not Home Assistant) the state and command topics have been standardized to use consistent, Ring-like prefixes across topic names.  This way topic lengths for all devices are always the identical.  This makes internal processing in the code simpler and makes state and command topics consistent across both single and dual sensor devices.  For example, with 2.0 and earlier the state topic for the smoke sensor would be:
+For those using this script with 3rd party MQTT tools (not Home Assistant) the state and command topics have been standardized to use consistent, Ring-like prefixes across topic names.  This way topic lengths for all devices are always the identical.  This makes internal processing in the code simpler and makes state and command topics consistent across both single and dual sensor devices.  For example, with 2.0 and earlier the state topic for the standaline co sensor would be:
 ```
 ring/<location_id>/alarm/binary_sensor/<device_id>/state
 ```
@@ -15,7 +15,7 @@ While for the combined co/smoke listener it would be:
 ring/<location_id>/alarm/binary_sensor/<device_id>/smoke/state
 ring/<location_id>/alarm/binary_sensor/<device_id>/gas/state
 ```
-This was inconsistent so now, with 3.0 the topics for the smoke sensor would be:
+This was inconsistent so now, with 3.0 the topics for the co sensor would be:
 ```
 ring/<location_id>/alarm/binary_sensor/<device_id>/co_state
 ```
@@ -101,7 +101,8 @@ Contact sensors have a default device class of `door`. Adding `window` to the co
 MQTT topics are built consistently during each startup.  The easiest way to determine the device topics is to run the script with debug output as noted below and it will dump the state and command topics for all devices, the general format for topics is as follows:
 
 ```
-ring/<location_id>/alarm/<ha_platform_type>/<device_id>/state
+ring/<location_id>/alarm/<ha_platform_type>/<device_id>/<prefix>_state
+ring/<location_id>/alarm/<ha_platform_type>/<device_id>/<prefix>_command
 ```
 
 For alarm devices with mulitple functions the state or command topics are prefixed with the sensor class/type.  For example for the Smoke/CO Listener:
@@ -114,10 +115,10 @@ ring/<location_id>/alarm/<ha_platform_type>/<device_id>/co_state
 
 Or for a multi-level switch:
 ```
-ring/<location_id>/alarm/<ha_platform_type>/<device_id>/switch_state               <-- For on/off state
-ring/<location_id>/alarm/<ha_platform_type>/<device_id>/switch_brightness_state    <-- For brightness state
-ring/<location_id>/alarm/<ha_platform_type>/<device_id>/switch_command             <-- Set on/off state
-ring/<location_id>/alarm/<ha_platform_type>/<device_id>/switch_brightness_command  <-- Set brightness state
+ring/<location_id>/alarm/switch/<device_id>/switch_state               <-- For on/off state
+ring/<location_id>/alarm/switch/<device_id>/switch_brightness_state    <-- For brightness state
+ring/<location_id>/alarm/switch/<device_id>/switch_command             <-- Set on/off state
+ring/<location_id>/alarm/switch/<device_id>/switch_brightness_command  <-- Set brightness state
 
 ```
 
