@@ -1,7 +1,7 @@
 # ring-mqtt
 This script leverages the ring alarm API available at [dgreif/ring-alarm](https://github.com/dgreif/ring-alarm) and provides access to the alarm control panel, sensors, cameras and some 3rd party devices via MQTT.  It provides support for Home Assistant style MQTT discovery which allows for simple integration with Home Assistant with near zero configuration (assuming MQTT is already configured).  It can also be used with any other tool capable of working with MQTT as it provides consistent topic naming based on location/device ID.
 
-### --- Special Note ---
+### --- Important Note regarding Hass.io ---
 Due to the renaming of this project and the complete code refactor, old Hass.io addons will no longer work with the project (unless they are updated).  As part of this release I have published a new [Hass.io addon](https://github.com/tsightler/ring-mqtt-hassio-addon) which I will attempt to support going forward.  Please migrate to it as soon as reasonable and report any issues with Hass.io there.
 
 ### --- Breaking changes in v3.0 ---
