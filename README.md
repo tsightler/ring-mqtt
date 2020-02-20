@@ -1,13 +1,29 @@
 # ring-mqtt
 This script leverages the ring alarm API available at [dgreif/ring-alarm](https://github.com/dgreif/ring-alarm) and provides access to the alarm control panel, sensors, cameras and some 3rd party devices via MQTT.  It provides support for Home Assistant style MQTT discovery which allows for simple integration with Home Assistant with near zero configuration (assuming MQTT is already configured).  It can also be used with any other tool capable of working with MQTT as it provides consistent topic naming based on location/device ID.
 
-**--- Breaking changes in v2.0 ---**
-Due to changes in Home Assistant 0.104 I decided to change the lock MQTT state value from LOCK/UNLOCK to LOCKED/UNLOCKED to match the new default starting in this version.  If you are using and older version of Home Assistant, please continue to use prior versions of this script.  If you are using this script with other tools, such as Node Red, please make the required changes for monitoring the new state values.
-
 **--- Breaking changes in v3.0 ---**
 The 3.0 release is a major refactor with the goal to dramatically simplfy the ability to add support for new devices and reduce complexity in the main code by implementing standardized devices functions.  Each device is now defined in it's own class, stored in separate files, and this class implements at least two standard methods, one for initializing the device (publish discovery message, subscribe to events and publish state updates) and a second for processing commands (only for devices that accept commands).  While this creates some code redundancy, it eliminates lots of ugly conditions and switch commands that were previously far too easy to break when adding new devices.
 
 Also, rather than a single, global avaialbaility state for each location, each device now has a device specific availability topic.  Cameras track their own availability state by querying for device health data on a polling interval (60 seconds).  Alarms are still monitored by the state of the websocket connection for each location but, in the future, offline devices (such as devices with dead batteries or otherwise disconnected) will be monitored as well.
+
+For those using this script with 3rd party MQTT tools (not Home Assistant) the state and command topics have been standardized to use consistent, Ring-like prefixes across topic names.  This way topic lengths for all devices are always the identical.  This makes internal processing in the code simpler and makes state and command topics consistent across both single and dual sensor devices.  For example, with 2.0 and earlier the state topic for the smoke sensor would be:
+```
+ring/<location_id>/alarm/binary_sensor/<device_id>/state
+```
+While for the combined co/smoke listener it would be:
+```
+ring/<location_id>/alarm/binary_sensor/<device_id>/smoke/state
+ring/<location_id>/alarm/binary_sensor/<device_id>/gas/state
+```
+This was inconsistent so now, with 3.0 the topics for the smoke sensor would be:
+```
+ring/<location_id>/alarm/binary_sensor/<device_id>/co_state
+```
+While for the combined device it will be
+```
+ring/<location_id>/alarm/binary_sensor/<device_id>/smoke_state
+ring/<location_id>/alarm/binary_sensor/<device_id>/co_state
+```
 
 ### Standard Installation (Linux)
 Make sure Node.js (tested with 10.16.x and higher) is installed on your system and then clone this repo:
@@ -98,10 +114,10 @@ ring/<location_id>/alarm/<ha_platform_type>/<device_id>/co_state
 
 Or for a multi-level switch:
 ```
-ring/<location_id>/alarm/<ha_platform_type>/<device_id>/state               <-- For on/off state
-ring/<location_id>/alarm/<ha_platform_type>/<device_id>/brightness_state    <-- For brightness state
-ring/<location_id>/alarm/<ha_platform_type>/<device_id>/command             <-- Set on/off state
-ring/<location_id>/alarm/<ha_platform_type>/<device_id>/brightness_command  <-- Set brightness state
+ring/<location_id>/alarm/<ha_platform_type>/<device_id>/switch_state               <-- For on/off state
+ring/<location_id>/alarm/<ha_platform_type>/<device_id>/switch_brightness_state    <-- For brightness state
+ring/<location_id>/alarm/<ha_platform_type>/<device_id>/switch_command             <-- Set on/off state
+ring/<location_id>/alarm/<ha_platform_type>/<device_id>/switch_brightness_command  <-- Set brightness state
 
 ```
 
@@ -109,10 +125,10 @@ For cameras the overall structure is the same:
 ```
 ring/<location_id>/camera/binary_sensor/<device_id>/ding_state      <-- Doorbell state
 ring/<location_id>/camera/binary_sensor/<device_id>/motion_state    <-- Motion state
-ring/<location_id>/camera/light/<device_id>/state                   <-- Light on/off state
-ring/<location_id>/camera/light/<device_id>/command                 <-- Set light on/off state
-ring/<location_id>/camera/switch/<device_id>/state                  <-- Siren state
-ring/<location_id>/camera/switch/<device_id>/command                <-- Set siren state
+ring/<location_id>/camera/light/<device_id>/light_state             <-- Light on/off state
+ring/<location_id>/camera/light/<device_id>/light_command           <-- Set light on/off state
+ring/<location_id>/camera/switch/<device_id>/siren_state            <-- Siren state
+ring/<location_id>/camera/switch/<device_id>/siren_command          <-- Set siren state
 ```
 
 ### Working with Homekit via Home Assistant
