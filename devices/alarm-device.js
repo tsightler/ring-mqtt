@@ -64,7 +64,7 @@ class AlarmDevice {
 
     // Set state topic online
     async online(mqttClient) {
-        let isDebug = true
+        let isDebug = false
         // Ugly hack to keep from spamming debug log on every republish when there's no state change 
         if (this.availabilityState == 'online') { isDebug = false }
         await utils.sleep(1)
@@ -74,7 +74,7 @@ class AlarmDevice {
 
     // Set state topic offline
     offline(mqttClient) {
-        let isDebug = true
+        let isDebug = false
         // Ugly hack to keep from spamming debug log on every republish when there's no state change
         if (this.availabilityState == 'offline') { isDebug = false }
         this.availabilityState = 'offline'

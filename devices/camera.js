@@ -334,14 +334,14 @@ class Camera {
         const enableDebug = this.availabilityState !== 'online'
         await utils.sleep(1)
         this.availabilityState = 'online'
-        this.publishAvailabilityState(mqttClient, enableDebug)
+        this.publishAvailabilityState(mqttClient, false)
     }
 
     // Set state topic offline
     offline(mqttClient) {
         const enableDebug = this.availabilityState !== 'offline'
         this.availabilityState = 'offline'
-        this.publishAvailabilityState(mqttClient, enableDebug)
+        this.publishAvailabilityState(mqttClient, false)
     }
 }
 
