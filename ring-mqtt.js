@@ -236,6 +236,7 @@ function initMqtt() {
     return mqtt
 }
 
+// Super simple web server for generating refreshToken
 async function startWeb() {
     var app = express()
     var client
@@ -298,10 +299,11 @@ const main = async() => {
             }
             ringTopic = CONFIG.ring_topic ? CONFIG.ring_topic : 'ring'
             hassTopic = CONFIG.hass_topic
+            if (!CONFIG.ring_token) throw "Environemnt variable RINGTOKEN is not found but is required."    
         }
         catch (ex) {
             debug(ex)
-            debug('Configuration file not found and required environment variables are not set!')
+            debug('Configuration file not found and required environment variables are not set.')
             process.exit(1)
         }
     }
@@ -325,6 +327,7 @@ const main = async() => {
             debug(error)
             debug( colors.red( 'Couldn\'t create the API instance. This could be because the Ring servers are down/unreachable' ))
             debug( colors.red( 'or maybe the refreshToken is invalid. Please check settings and try again.' ))
+            process.exit(2)
         }
 
         // Initiate connection to MQTT broker
