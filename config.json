@@ -5,8 +5,6 @@
     "hass_topic": "hass/status",
     "mqtt_user": "",
     "mqtt_pass": "",
-    "ring_user": "",
-    "ring_pass": "",
     "ring_token": "",
     "enable_cameras": false,
     "location_ids": [""]

@@ -295,9 +295,11 @@ const main = async() => {
                 "enable_cameras": process.env.ENABLECAMERAS,
                 "location_ids" : process.env.RINGLOCATIONIDS.split(',')
             }
+            if (!CONFIG.ring_token) throw "Environemnt variable RINGTOKEN is not found but is required."
+            CONFIG.host = CONFIG.host ? CONFIG.host : 'localhost'
+            CONFIG.port = CONFIG.port ? CONFIG.port : '1883'
             ringTopic = CONFIG.ring_topic ? CONFIG.ring_topic : 'ring'
-            hassTopic = CONFIG.hass_topic
-            if (!CONFIG.ring_token) throw "Environemnt variable RINGTOKEN is not found but is required."    
+            hassTopic = CONFIG.hass_topic ? CONFIG.hass_topic : 'hass/status'
         }
         catch (ex) {
             debug(ex)
