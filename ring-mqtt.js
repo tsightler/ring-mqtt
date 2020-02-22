@@ -293,10 +293,11 @@ const main = async() => {
                 "mqtt_pass": process.env.MQTTPASSWORD,
                 "ring_token": process.env.RINGTOKEN,
                 "enable_cameras": process.env.ENABLECAMERAS,
-                "location_ids" : process.env.RINGLOCATIONIDS.split(',')
+                "location_ids" : process.env.RINGLOCATIONIDS
             }
             if (!CONFIG.ring_token) throw "Environemnt variable RINGTOKEN is not found but is required."
-            CONFIG.host = CONFIG.host ? CONFIG.host : 'localhost'
+            if (CONFIG.location_ids) { CONFIG.location_ids = CONFIG.locations_ids.split(',') } 
+			CONFIG.host = CONFIG.host ? CONFIG.host : 'localhost'
             CONFIG.port = CONFIG.port ? CONFIG.port : '1883'
             ringTopic = CONFIG.ring_topic ? CONFIG.ring_topic : 'ring'
             hassTopic = CONFIG.hass_topic ? CONFIG.hass_topic : 'hass/status'
