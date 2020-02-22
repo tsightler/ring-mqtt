@@ -4,30 +4,6 @@ This script leverages the ring alarm API available at [dgreif/ring-alarm](https:
 ### --- Important Note regarding Hass.io ---
 Due to the renaming of this project and the complete code refactor, old Hass.io addons will no longer work with the project (unless they are updated).  As part of this release I have published a new [Hass.io addon](https://github.com/tsightler/ring-mqtt-hassio-addon) which I will attempt to support going forward.  Please migrate to it as soon as reasonable and report any issues with Hass.io there.
 
-### --- Breaking changes in v3.0 ---
-The 3.0 release is a major refactor with the goal to dramatically simplfy the ability to add support for new devices and reduce complexity in the main code by implementing standardized devices functions.  Each device is now defined in it's own class, stored in separate files, and this class implements at least two standard methods, one for initializing the device (publish discovery message, subscribe to events and publish state updates) and a second for processing commands (only for devices that accept commands).  While this creates some code redundancy, it eliminates lots of ugly conditions and switch commands that were previously far too easy to break when adding new devices.
-
-Also, rather than a single, global avaialbaility state for each location, each device now has a device specific availability topic.  Cameras track their own availability state by querying for device health data on a polling interval (60 seconds).  Alarms are still monitored by the state of the websocket connection for each location but, in the future, offline devices (such as devices with dead batteries or otherwise disconnected) will be monitored as well.
-
-For those using this script with 3rd party MQTT tools (not Home Assistant) the state and command topics have been standardized to use consistent, Ring-like prefixes across topic names.  This way topic lengths for all devices are always the identical.  This makes internal processing in the code simpler and makes state and command topics consistent across both single and dual sensor devices.  For example, with 2.0 and earlier the state topic for the standaline co sensor would be:
-```
-ring/<location_id>/alarm/binary_sensor/<device_id>/state
-```
-While for the combined co/smoke listener it would be:
-```
-ring/<location_id>/alarm/binary_sensor/<device_id>/smoke/state
-ring/<location_id>/alarm/binary_sensor/<device_id>/gas/state
-```
-This was inconsistent so now, with 3.0 the topics for the co sensor would be:
-```
-ring/<location_id>/alarm/binary_sensor/<device_id>/co_state
-```
-While for the combined device it will be
-```
-ring/<location_id>/alarm/binary_sensor/<device_id>/smoke_state
-ring/<location_id>/alarm/binary_sensor/<device_id>/co_state
-```
-
 ### Standard Installation (Linux)
 Make sure Node.js (tested with 10.16.x and higher) is installed on your system and then clone this repo:
 
@@ -65,14 +41,30 @@ To run, execute
 docker run  -e "MQTTHOST={host name}" -e "MQTTPORT={host port}" -e "MQTTRINGTOPIC={ring topic}" -e "MQTTHASSTOPIC={hass topic}" -e "MQTTUSER={mqtt user}" -e "MQTTPASSWORD={mqtt pw}" -e "RINGTOKEN={ring refreshToken}" ring-mqtt/ring-mqtt
 ```
 
-### Authentication Options
-The script supports standard Ring username/password authentication, but can also be used with accounts with Two Factor Authenticaton, i.e. 2FA, enabled as well.  To use 2FA instead you must acquire a token for your Ring account by using ring-auth-cli from the command line and entering you username/password and then the passcode sent via SMS to your device.  Once you receive this token you can set the "ring_token" environment in the config.json file and leave "ring_user" and "ring_pass" blank.  For more details please check the [Two Factor Auth](https://github.com/dgreif/ring/wiki/Two-Factor-Auth) documentation from the ring client API.
+When submitting any issue with the Docker build, please be sure to add '-e "DEBUG=ring-mqtt"' to the Docker run command before submitting.
 
-Note that using 2FA authenticaiton this way opens up the possibility that, if your Home Assistant environment is comporomised, an attacker can acquire the token and use this to authenticate to your Ring account without even knowing your username/password and completely bypassing all 2FA protection on your account.  Please secure your Home Assistant environment carefully.
+### Authentication
+Ring has made two factor authentication (2FA) mandatory thus the script now only supports this authentication method.  Using 2FA requires acquiring a refresh token for your Ring account and seting the ring_token parameter in the config file (standard/Hass.io installs) or passing the token with the RINGTOKEN environment variable (Docker installs).  There are two primary ways to acquire this token:
 
-Personally, I think it's better to simply create a second account on Ring, dedicated for Home Assistant, and set a very strong password on this account.  This way, you can still have 2FA enabled on your primary account, while using this second account only for this script, allowing you to control exactly what devices are visible to HA directly in the Ring app by sharing only the specific devices.  Also, any action performed by Home Assistant will show up as being performed by this second account vs the primary account allowing for much easier auditing for nafarious activity.
+**Option 1:** Use ring-auth-cli from the command line.  This command can be run from any system with NodeJS installed.  If you are using the standard Linux installation method after running the "npm install" step you can execute the following from the ring-mqtt directory: 
+```
+node node_modules/ring-client-api/ring-auth-cli.js
+```
 
-While I believe this second approach is better, there was simply too much demand for 2FA support in the script, so I've included it, but, in any case, please secure your environment carefully.
+   If you are using the Docker, you can execute:
+```
+docker run -it --rm ring-mqtt/ring-mqtt node_modules/ring-client-api/ring-auth-cli.js
+```
+For more details please check the [Two Factor Auth](https://github.com/dgreif/ring/wiki/Two-Factor-Auth) documentation from the ring client API.
+
+**Option 2:** This method is primarily for Hass.io, but also works with standard script method (it does not work for the Docker method).  If you leave the ring_token parameter blank in the config file and run the script, it will detect that you don't yet have a refresh token and start a small web service at http://<ip_of_server>:55123.  Simply go to this URL with your browser, enter your username/password and then 2FA code, and it will display the Ring refresh token that you can just copy/paste into the config file.
+
+For more details please check the [Two Factor Auth](https://github.com/dgreif/ring/wiki/Two-Factor-Auth) documentation from the ring client API.
+
+### ***Important Node regarding your refresh token***
+Using 2FA authenticaiton opens up the possibility that, if your Home Assistant or Hass.io environment is comporomised, an attacker can acquire the refresh token and use this to authenticate to your Ring account without knowing your username/password and completely bypassing the 2FA protections.  Please secure your Home Assistant environment carefully.
+
+Because of this added risk, it's a good idea to create a second account dedicated to this script.  This allows actions performed by this script to be easily audited since they will show up in activity logs with their own name instead of that of the primary account.  Also, you can control what devices the script has access to and easily disable access if nafarious activity is detected.
 
 ### Config Options
 By default, this script will discover and monitor alarms across all locations, even shared locations for which you have permissions, however, it is possible to limit the locations monitored by the script including specific location IDs in the config as follows:
@@ -204,6 +196,29 @@ DEBUG=* ./ring-mqtt.js
 DEBUG=ring-mqtt ./ring-mqtt.js
 ```
 This option is also useful when using the script with external MQTT tools as it dumps all discovered sensors and their topics.  Also allows you to monitor sensor states in real-time on the console.
+
+### --- Breaking changes in v3.0 ---
+The 3.0 release is a major refactor with the goal to dramatically simplfy the ability to add support for new devices and reduce complexity in the main code by implementing standardized devices functions.  Each device is now defined in it's own class, stored in separate files, and this class implements at least two standard methods, one for initializing the device (publish discovery message, subscribe to events and publish state updates) and a second for processing commands (only for devices that accept commands).  While this creates some code redundancy, it eliminates lots of ugly conditions and switch commands that were previously far too easy to break when adding new devices.
+
+Also, rather than a single, global avaialbaility state for each location, each device now has a device specific availability topic.  Cameras track their own availability state by querying for device health data on a polling interval (60 seconds).  Alarms are still monitored by the state of the websocket connection for each location but, in the future, offline devices (such as devices with dead batteries or otherwise disconnected) will be monitored as well.
+
+For those using this script with 3rd party MQTT tools (not Home Assistant) the state and command topics have been standardized to use consistent, Ring-like prefixes across topic names.  This way topic lengths for all devices are always the identical.  This makes internal processing in the code simpler and makes state and command topics consistent across both single and dual sensor devices.  For example, with 2.0 and earlier the state topic for the standaline co sensor would be:
+```
+ring/<location_id>/alarm/binary_sensor/<device_id>/state
+```
+While for the combined co/smoke listener it would be:
+```
+ring/<location_id>/alarm/binary_sensor/<device_id>/smoke/state
+ring/<location_id>/alarm/binary_sensor/<device_id>/gas/state
+```
+This was inconsistent so now, with 3.0 the topics for the co sensor would be:
+```
+ring/<location_id>/alarm/binary_sensor/<device_id>/co_state
+```
+While for the combined device it will be
+```
+ring/<location_id>/alarm/binary_sensor/<device_id>/smoke_state
+ring/<location_id>/alarm/binary_sensor/<device_id>/co_state
 
 ### Thanks
 Many thanks to @dgrief and his excellent [ring-client-api API](https://github.com/dgreif/ring/) as well as his homebridge plugin, from which I've learned a lot.  Without his work it would have taken far more effort and time, probably more time than I had, to get this working.
