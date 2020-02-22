@@ -40,15 +40,18 @@ To run, execute
 ```
 docker run  -e "MQTTHOST={host name}" -e "MQTTPORT={host port}" -e "MQTTRINGTOPIC={ring topic}" -e "MQTTHASSTOPIC={hass topic}" -e "MQTTUSER={mqtt user}" -e "MQTTPASSWORD={mqtt pw}" -e "RINGTOKEN={ring refreshToken}" -e "RINGLOCATIONIDS={command separate location IDs}" ring-mqtt/ring-mqtt
 ```
-Note that only RINGTOKEN is technically required, all others will default as follows:
+Note that only **RINGTOKEN** is technically required, all others will default as follows:
 
-MQTTHOST="localhost"
-MQTTPORT="1883"
-MQTTRINGTOPIC="ring"
-MQTTHASSTOPIC="hass/status"
-MQTTUSER=""
-MQTTPASSWORD=""
-RINGLOCATIONIDS=""
+"MQTTHOST=localhost"\
+"MQTTPORT=1883"\
+"MQTTRINGTOPIC=ring"\
+"MQTTHASSTOPIC=hass/status"\
+"MQTTUSER="\
+"MQTTPASSWORD="\
+"ENABLECAMERAS=false"\
+"RINGLOCATIONIDS="\
+
+In practice at least **MQTTHOST** will likely be required (unless you use the host network in "docker run" command), and **MQTTUSER/MQTTPASSWORD** will be required if the MQTT broker does not accept anonymous connections.
 
 When submitting any issue with the Docker build, please be sure to add '-e "DEBUG=ring-mqtt"' to the Docker run command before submitting.
 
