@@ -296,7 +296,7 @@ const main = async() => {
                 "location_ids" : process.env.RINGLOCATIONIDS
             }
             if (!CONFIG.ring_token) throw "Environemnt variable RINGTOKEN is not found but is required."
-            if (CONFIG.location_ids) { CONFIG.location_ids = CONFIG.locations_ids.split(',') } 
+            if (CONFIG.location_ids) { CONFIG.location_ids = CONFIG.location_ids.split(',') } 
 			CONFIG.host = CONFIG.host ? CONFIG.host : 'localhost'
             CONFIG.port = CONFIG.port ? CONFIG.port : '1883'
             ringTopic = CONFIG.ring_topic ? CONFIG.ring_topic : 'ring'
