@@ -49,7 +49,7 @@ Note that only **RINGTOKEN** is technically required, all others will default as
 "MQTTUSER="\
 "MQTTPASSWORD="\
 "ENABLECAMERAS=false"\
-"RINGLOCATIONIDS="\
+"RINGLOCATIONIDS="
 
 In practice at least **MQTTHOST** will likely be required (unless you use the host network in "docker run" command), and **MQTTUSER/MQTTPASSWORD** will be required if the MQTT broker does not accept anonymous connections.
 
