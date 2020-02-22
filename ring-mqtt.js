@@ -281,9 +281,6 @@ const main = async() => {
         CONFIG = require(configFile)
         ringTopic = CONFIG.ring_topic ? CONFIG.ring_topic : 'ring'
         hassTopic = CONFIG.hass_topic
-        if (!(CONFIG.location_ids === undefined || CONFIG.location_ids == 0)) {
-            locationIds = CONFIG.location_ids
-        }
     } catch (e) {
         try {
             debug('Configuration file not found, try environment variables!')
@@ -295,7 +292,8 @@ const main = async() => {
                 "mqtt_user": process.env.MQTTUSER,
                 "mqtt_pass": process.env.MQTTPASSWORD,
                 "ring_token": process.env.RINGTOKEN,
-                "enable_cameras": process.env.ENABLECAMERAS
+                "enable_cameras": process.env.ENABLECAMERAS,
+                "location_ids" : process.env.RINGLOCATIONIDS.split(',')
             }
             ringTopic = CONFIG.ring_topic ? CONFIG.ring_topic : 'ring'
             hassTopic = CONFIG.hass_topic
@@ -307,7 +305,9 @@ const main = async() => {
             process.exit(1)
         }
     }
-
+    if (!(CONFIG.location_ids === undefined || CONFIG.location_ids == 0)) {
+        locationIds = CONFIG.location_ids
+    }
     if (!CONFIG.enable_cameras) { CONFIG.enable_cameras = false }
 
     if (CONFIG.ring_token) {
