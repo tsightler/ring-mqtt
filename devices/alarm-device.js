@@ -17,7 +17,7 @@ class AlarmDevice {
     getBatteryLevel() {
         if (this.device.data.batteryLevel !== undefined) {
             // Return 100% if 99% reported, otherwise return reported battery level
-            return (this.device.data.batteryLevel === 99) ? 100 : this.device.batteryLevel
+            return (this.device.data.batteryLevel === 99) ? 100 : this.device.data.batteryLevel
         } else if (this.device.data.batteryStatus === 'full') {
             return 100
         } else if (this.device.data.batteryStatus === 'ok') {
