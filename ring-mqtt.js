@@ -7,6 +7,9 @@ const mqttApi = require ('mqtt')
 const debug = require('debug')('ring-mqtt')
 const colors = require('colors/safe')
 const utils = require('./lib/utils.js')
+const express = require('express')
+const restClient = require('./node_modules/ring-client-api/lib/api/rest-client')
+const bodyParser = require("body-parser")
 const SecurityPanel = require('./devices/security-panel')
 const ContactSensor = require('./devices/contact-sensor')
 const MotionSensor = require('./devices/motion-sensor')
@@ -233,6 +236,35 @@ function initMqtt() {
     return mqtt
 }
 
+async function startWeb() {
+    var app = express()
+    var client
+
+    app.use(bodyParser.urlencoded({ extended: false }))
+
+    app.get('/', function (req, res) {
+        res.sendFile('./web/account.html', {root: __dirname})
+    })
+
+    app.post('/submit-account', function (req, res) {
+        const email = req.body.email
+        const password = req.body.password
+        res.sendFile('./web/code.html', {root: __dirname})
+        client = new restClient.RingRestClient({ email, password })
+    })
+
+    app.post('/submit-code', async function (req, res) {
+        const code = req.body.code
+        const token = await client.getAuth(code)
+        res.send('<style>p {word-wrap: break-word;}</style><body>Refresh token: <br /><p>'+token.refresh_token+'</p>')
+        process.exit(0)
+    })
+
+    var server = app.listen(55123, function () {
+        debug('No refresh token found, go to http://<ip_address>:55123/ to generate a valid token.')
+    })
+}
+
 /* End Functions */
 
 // Main code loop
@@ -261,14 +293,11 @@ const main = async() => {
                 "hass_topic": process.env.MQTTHASSTOPIC,
                 "mqtt_user": process.env.MQTTUSER,
                 "mqtt_pass": process.env.MQTTPASSWORD,
-                "ring_user": process.env.RINGUSER,
-                "ring_pass": process.env.RINGPASS,
                 "ring_token": process.env.RINGTOKEN,
                 "enable_cameras": process.env.ENABLECAMERAS
             }
             ringTopic = CONFIG.ring_topic ? CONFIG.ring_topic : 'ring'
             hassTopic = CONFIG.hass_topic
-            if (!(CONFIG.ring_user || CONFIG.ring_pass) && !CONFIG.ring_token) throw "Required environment variables are not set!"
         }
         catch (ex) {
             debug(ex)
@@ -279,77 +308,70 @@ const main = async() => {
 
     if (!CONFIG.enable_cameras) { CONFIG.enable_cameras = false }
 
-    // Establish connection to Ring API
-    try {
-        let auth = {
-            locationIds: locationIds
-        }
-
-        // Ring allows users to enable two-factor authentication. If this is
-        // enabled, the user/pass authentication will not work.
-        // See: https://github.com/dgreif/ring/wiki/Two-Factor-Auth
-        if(CONFIG.ring_token) {
-            debug('Found refresh token, attempting 2FA Authentication.')
+    if (CONFIG.ring_token) {
+        // Establish connection to Ring API
+        try {
+            let auth = {
+                locationIds: locationIds
+            }
             auth["refreshToken"] = CONFIG.ring_token
-        } else {
-            auth["email"] = CONFIG.ring_user
-            auth["password"] = CONFIG.ring_pass
+            auth["cameraStatusPollingSeconds"] = 20
+            auth["cameraDingsPollingSeconds"] = 2
+
+            const ring = new RingApi(auth)
+            ringLocations = await ring.getLocations()
+            debug('Connection to Ring API successful')
+        } catch (error) {
+            debug(error)
+            debug( colors.red( 'Couldn\'t create the API instance. This could be because the Ring servers are down/unreachable' ))
+            debug( colors.red( 'or maybe the refreshToken is invalid. Please check settings and try again.' ))
         }
-        
-        auth["cameraStatusPollingSeconds"] = 20
-        auth["cameraDingsPollingSeconds"] = 2
 
-        const ring = new RingApi(auth)
-        ringLocations = await ring.getLocations()
-        debug('Connection to Ring API successful')
-    } catch (error) {
-        debug(error)
-        debug( colors.red( 'Couldn\'t create the API instance. This could be because ring.com changed their API again' ))
-        debug( colors.red( 'or maybe the password is wrong. Please check settings and try again.' ))
-        process.exit(1)
-    }
-
-    // Initiate connection to MQTT broker
-    try {
-        debug('Starting connection to MQTT broker.')
-        mqttClient = await initMqtt()
-        mqttConnected = true
-        if (hassTopic) { mqttClient.subscribe(hassTopic) }
-        debug('Connection established with MQTT broker, sending config/state information in 5 seconds.')
-    } catch (error) {
-        debug(error)
-        debug( colors.red( 'Couldn\'t connect to MQTT broker. Please check the broker and configuration settings.' ))
-        process.exit(1)
-    }
-
-    // On MQTT connect/reconnect send config/state information after delay
-    mqttClient.on('connect', async function () {
-        if (!mqttConnected) {
+        // Initiate connection to MQTT broker
+        try {
+            debug('Starting connection to MQTT broker.')
+            mqttClient = await initMqtt()
             mqttConnected = true
-            debug('MQTT connection reestablished, resending config/state information in 5 seconds.')
+            if (hassTopic) { mqttClient.subscribe(hassTopic) }
+            debug('Connection established with MQTT broker, sending config/state information in 5 seconds.')
+        } catch (error) {
+            debug(error)
+            debug( colors.red( 'Couldn\'t connect to MQTT broker. Please check the broker and configuration settings.' ))
+            process.exit(1)
         }
-        await utils.sleep(5)
-        processLocations(ringLocations)
-    })
 
-    mqttClient.on('reconnect', function () {
-        if (mqttConnected) {
-            debug('Connection to MQTT broker lost. Attempting to reconnect...')
-        } else {
-            debug('Attempting to reconnect to MQTT broker...')
-        }
-        mqttConnected = false
-    })
+        // On MQTT connect/reconnect send config/state information after delay
+        mqttClient.on('connect', async function () {
+            if (!mqttConnected) {
+                mqttConnected = true
+                debug('MQTT connection reestablished, resending config/state information in 5 seconds.')
+            }
+            await utils.sleep(5)
+            processLocations(ringLocations)
+        })
 
-    mqttClient.on('error', function (error) {
-        debug('Unable to connect to MQTT broker.', error.message)
-        mqttConnected = false
-    })
+        mqttClient.on('reconnect', function () {
+            if (mqttConnected) {
+                debug('Connection to MQTT broker lost. Attempting to reconnect...')
+            } else {
+                debug('Attempting to reconnect to MQTT broker...')
+            }
+            mqttConnected = false
+        })
 
-    // Process MQTT messages from subscribed command topics
-    mqttClient.on('message', async function (topic, message) {
-        processMqttMessage(topic, message)
-    })
+        mqttClient.on('error', function (error) {
+            debug('Unable to connect to MQTT broker.', error.message)
+            mqttConnected = false
+        })
+
+        // Process MQTT messages from subscribed command topics
+        mqttClient.on('message', async function (topic, message) {
+            processMqttMessage(topic, message)
+        })
+
+    } else {
+        startWeb()
+    }
 }
 
 // Call the main code
