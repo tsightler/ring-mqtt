@@ -332,11 +332,13 @@ const main = async() => {
 
         // Initiate connection to MQTT broker
         try {
-            debug('Starting connection to MQTT broker.')
+            debug('Starting connection to MQTT broker...')
             mqttClient = await initMqtt()
-            mqttConnected = true
+            if (mqttClient.connected) {
+                mqttConnected = true
+                debug('MQTT connection established, sending config/state information in 5 seconds.')
+            }
             if (hassTopic) { mqttClient.subscribe(hassTopic) }
-            debug('Connection established with MQTT broker, sending config/state information in 5 seconds.')
         } catch (error) {
             debug(error)
             debug( colors.red( 'Couldn\'t connect to MQTT broker. Please check the broker and configuration settings.' ))
@@ -347,7 +349,7 @@ const main = async() => {
         mqttClient.on('connect', async function () {
             if (!mqttConnected) {
                 mqttConnected = true
-                debug('MQTT connection reestablished, resending config/state information in 5 seconds.')
+                debug('MQTT connection established, sending config/state information in 5 seconds.')
             }
             await utils.sleep(5)
             processLocations(ringLocations)
