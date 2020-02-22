@@ -1,10 +1,10 @@
 # ring-mqtt
 This script leverages the ring alarm API available at [dgreif/ring-alarm](https://github.com/dgreif/ring-alarm) and provides access to the alarm control panel, sensors, cameras and some 3rd party devices via MQTT.  It provides support for Home Assistant style MQTT discovery which allows for simple integration with Home Assistant with near zero configuration (assuming MQTT is already configured).  It can also be used with any other tool capable of working with MQTT as it provides consistent topic naming based on location/device ID.
 
-### !!! Important Note regarding Hass.io !!!
+## !!! Important Note regarding Hass.io !!!
 Due to the renaming of this project and the complete code refactor, old Hass.io addons developed for ring-alarm-mqtt will no longer work with this project.  As part of this release I have published a new [Hass.io addon](https://github.com/tsightler/ring-mqtt-hassio-addon) which I will attempt to support going forward.  Please migrate to it as soon as reasonable and report any issues with Hass.io there.
 
-### Standard Installation (Linux)
+## Standard Installation (Linux)
 Make sure Node.js (tested with 10.16.x and higher) is installed on your system and then clone this repo:
 
 `git clone https://github.com/tsightler/ring-mqtt.git`
@@ -27,7 +27,7 @@ systemctl enable ring-mqtt
 systemctl start ring-mqtt
 ```
 
-### Docker Installation
+## Docker Installation
 
 To build, execute
 
@@ -43,7 +43,7 @@ docker run  -e "MQTTHOST={host name}" -e "MQTTPORT={host port}" -e "MQTTRINGTOPI
 
 When submitting any issue with the Docker build, please be sure to add '-e "DEBUG=ring-mqtt"' to the Docker run command before submitting.
 
-### Authentication
+## Authentication
 Ring has made two factor authentication (2FA) mandatory thus the script now only supports this authentication method.  Using 2FA requires acquiring a refresh token for your Ring account and seting the ring_token parameter in the config file (standard/Hass.io installs) or passing the token with the RINGTOKEN environment variable (Docker installs).  There are two primary ways to acquire this token:
 
 **Option 1:** Use ring-auth-cli from the command line.  This command can be run from any system with NodeJS installed.  If you are using the standard Linux installation method after running the "npm install" step you can execute the following from the ring-mqtt directory: 
@@ -66,7 +66,7 @@ Using 2FA authenticaiton opens up the possibility that, if your Home Assistant o
 
 Because of this added risk, it's a good idea to create a second account dedicated to this script.  This allows actions performed by this script to be easily audited since they will show up in activity logs with their own name instead of that of the primary account.  Also, you can control what devices the script has access to and easily disable access if nafarious activity is detected.
 
-### Config Options
+## Config Options
 By default, this script will discover and monitor alarms across all locations, even shared locations for which you have permissions, however, it is possible to limit the locations monitored by the script including specific location IDs in the config as follows:
 
 ```"location_ids": ["loc-id", "loc-id2"]```.
@@ -75,7 +75,7 @@ To get the location id from the ring website simply login to [Ring.com](https://
 
 Now you should just execute the script and devices should show up automatically in Home Assistant within a few seconds.
 
-### Optional Home Assistant Configuration (Highly Recommended)
+## Optional Home Assistant Configuration (Highly Recommended)
 If you'd like to take full advantage of the Home Assistant specific features (auto MQTT discovery and server state monitorting) you need to make sure Home Assistant MQTT is configured with discovery and birth message options, here's an example:
 ```
 mqtt:
@@ -91,7 +91,7 @@ mqtt:
 
 Contact sensors have a default device class of `door`. Adding `window` to the contact sensor name will change the device class to `window`.
 
-### Using with MQTT tools other than Home Assistant (ex: Node Red)
+## Using with MQTT tools other than Home Assistant (ex: Node Red)
 
 MQTT topics are built consistently during each startup.  The easiest way to determine the device topics is to run the script with debug output as noted below and it will dump the state and command topics for all devices, the general format for topics is as follows:
 
@@ -100,8 +100,7 @@ ring/<location_id>/alarm/<ha_platform_type>/<device_id>/<prefix>_state
 ring/<location_id>/alarm/<ha_platform_type>/<device_id>/<prefix>_command
 ```
 
-For alarm devices with mulitple functions the state or command topics are prefixed with the sensor class/type.  For example for the Smoke/CO Listener:
-
+An example for the Smoke/CO listener:
 ```
 ring/<location_id>/alarm/<ha_platform_type>/<device_id>/gas_state
 ring/<location_id>/alarm/<ha_platform_type>/<device_id>/co_state
@@ -127,25 +126,8 @@ ring/<location_id>/camera/switch/<device_id>/siren_state            <-- Siren st
 ring/<location_id>/camera/switch/<device_id>/siren_command          <-- Set siren state
 ```
 
-### Working with Homekit via Home Assistant
-If you are attempting to use the HomeKit integration of Home Assistant to forward entities to Apple HomeKit you may need to implement a delay of the HomeKit service using an automation, although this may be addressed with the entity changes in HA 0.104 and later.  In prior versions the HomeKit service only exports devices available on service startup and the Ring devices will not be present until autodiscovery is complete.  This is documented in the HomeKit documentation for similar behavior of Z-wave devices and you can use a similar concept as [documented there](https://www.home-assistant.io/integrations/homekit/).  While there are several exampls such as waiting on specific devices, I think the easiest and most reliable is just a simple delay so I've reproduced that example below to start the HomeKit service after 2 minutes:
-
-```yaml
-# Example using a delay after the start of Home Assistant
-homekit:
-  auto_start: false
-
-automation:
-  - alias: 'Start HomeKit'
-    trigger:
-      - platform: homeassistant
-        event: start
-    action:
-      - delay: 00:02  # Waits 2 minutes
-      - service: homekit.start
-```
-
-### Current Features
+## Features and Plans
+### Current features
 - Simple configuration via config file, most cases just need Ring user/password and that's it
 - Supports the following devices:
   - Alarm Devices
@@ -183,7 +165,7 @@ automation:
 - Arm/Disarm with sensor bypass
 - Dynamic add/remove of alarms/devices (i.e. no service restart required)
 
-### Debugging
+## Debugging
 By default the script should produce no console output, however, the script does leverage the terriffic [debug](https://www.npmjs.com/package/debug) package.  To get debug output, simply run the script like this:
 
 **Debug messages from all modules** (Warning, this very verbose!)
@@ -197,7 +179,7 @@ DEBUG=ring-mqtt ./ring-mqtt.js
 ```
 This option is also useful when using the script with external MQTT tools as it dumps all discovered sensors and their topics.  Also allows you to monitor sensor states in real-time on the console.
 
-### --- Breaking changes in v3.0 ---
+## Breaking changes in v3.0
 The 3.0 release is a major refactor with the goal to dramatically simplfy the ability to add support for new devices and reduce complexity in the main code by implementing standardized devices functions.  Each device is now defined in it's own class, stored in separate files, and this class implements at least two standard methods, one for initializing the device (publish discovery message, subscribe to events and publish state updates) and a second for processing commands (only for devices that accept commands).  While this creates some code redundancy, it eliminates lots of ugly conditions and switch commands that were previously far too easy to break when adding new devices.
 
 Also, rather than a single, global avaialbaility state for each location, each device now has a device specific availability topic.  Cameras track their own availability state by querying for device health data on a polling interval (60 seconds).  Alarms are still monitored by the state of the websocket connection for each location but, in the future, offline devices (such as devices with dead batteries or otherwise disconnected) will be monitored as well.
@@ -220,7 +202,7 @@ While for the combined device it will be
 ring/<location_id>/alarm/binary_sensor/<device_id>/smoke_state
 ring/<location_id>/alarm/binary_sensor/<device_id>/co_state
 
-### Thanks
+## Thanks
 Many thanks to @dgrief and his excellent [ring-client-api API](https://github.com/dgreif/ring/) as well as his homebridge plugin, from which I've learned a lot.  Without his work it would have taken far more effort and time, probably more time than I had, to get this working.
 
 Also thanks to [acolytec3](https://community.home-assistant.io/u/acolytec3) on the Home Assistant community forums for his original Ring Alarm MQTT script.  Having an already functioning script with support for MQTT discovery saved me quite a bit of time in developing this script.
