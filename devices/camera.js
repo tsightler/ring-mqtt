@@ -1,5 +1,4 @@
 const debug = require('debug')('ring-mqtt')
-const colors = require( 'colors/safe' )
 const utils = require( '../lib/utils' )
 
 class Camera {

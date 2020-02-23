@@ -52,7 +52,7 @@ async function processExit(options, exitCode) {
 }
 
 // Establich websocket connections and register/refresh location status on connect/disconnect
-async function processLocations(locations) {
+async function processLocations() {
     // For each location get alarm devices and cameras
     ringLocations.forEach(async location => {
         const devices = await location.getDevices()
@@ -129,8 +129,6 @@ function getAlarmDevice(device) {
             return new MotionSensor(device, ringTopic)
         case RingDeviceType.FloodFreezeSensor:
             return new FloodFreezeSensor(device, ringTopic)
-        case RingDeviceType.FreezeSensor:
-            return new FreezeSensor(device, ringTopic)
         case RingDeviceType.SecurityPanel:
             return new SecurityPanel(device, ringTopic)
         case RingDeviceType.SmokeAlarm:
@@ -147,8 +145,6 @@ function getAlarmDevice(device) {
                 }
         case RingDeviceType.Switch:
             return new Switch(device, ringTopic)
-        case RingDeviceType.TemperatureSensor:
-            return new TemperatureSensor(device, ringTopic)
     }
 
     if (/^lock($|\.)/.test(device.deviceType)) {
@@ -165,12 +161,15 @@ function publishAlarmDevice(device) {
     if (existingAlarmDevice) {
         debug('Republishing existing device id: '+existingAlarmDevice.deviceId)
         existingAlarmDevice.init(mqttClient)
-    } else if (newAlarmDevice = getAlarmDevice(device)) {
-        debug('Publishing new device id: '+newAlarmDevice.deviceId)
-        newAlarmDevice.init(mqttClient)
-        subscribedDevices.push(newAlarmDevice)
     } else {
-        debug('!!! Found unsupported device type: '+device.deviceType+' !!!')
+        const newAlarmDevice = getAlarmDevice(device)
+        if (newAlarmDevice) {
+            debug('Publishing new device id: '+newAlarmDevice.deviceId)
+            newAlarmDevice.init(mqttClient)
+            subscribedDevices.push(newAlarmDevice)
+        } else {
+            debug('!!! Found unsupported device type: '+device.deviceType+' !!!')
+        }
     }
 }
 
@@ -192,7 +191,7 @@ function publishCameras(cameras) {
 
 // Process received MQTT command
 async function processMqttMessage(topic, message) {
-    var message = message.toString()
+    message = message.toString()
     if (topic === hassTopic) {
         // Republish devices and state after 60 seconds if restart of HA is detected
         debug('Home Assistant state topic '+topic+' received message: '+message)
@@ -203,11 +202,11 @@ async function processMqttMessage(topic, message) {
             await utils.sleep(republishDelay+5)
             // Reset republish counter and start publishing config/state
             republishCount = 10
-            processLocations(ringLocations)
+            processLocations()
             debug('Resent device config/state information')
         }
     } else {
-        var topic = topic.split('/')
+        topic = topic.split('/')
         // Parse topic to get location/device ID
         const locationId = topic[topic.length - 5]
         const deviceId = topic[topic.length - 2]
@@ -261,7 +260,7 @@ async function startWeb() {
         process.exit(0)
     })
 
-    var server = app.listen(55123, function () {
+    app.listen(55123, function () {
         debug('No refresh token found, go to http://<ip_address>:55123/ to generate a valid token.')
     })
 }
@@ -355,7 +354,7 @@ const main = async() => {
                 debug('MQTT connection established, sending config/state information in 5 seconds.')
             }
             await utils.sleep(5)
-            processLocations(ringLocations)
+            processLocations()
         })
 
         mqttClient.on('reconnect', function () {

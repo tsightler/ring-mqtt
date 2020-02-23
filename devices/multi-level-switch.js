@@ -1,5 +1,4 @@
 const debug = require('debug')('ring-mqtt')
-const colors = require( 'colors/safe' )
 const utils = require( '../lib/utils' )
 const AlarmDevice = require('./alarm-device')
 
@@ -51,7 +50,7 @@ class MultiLevelSwitch extends AlarmDevice {
 
     publishData(mqttClient) {
         const switchState = this.device.data.on ? "ON" : "OFF"
-        const switchLevel = (this.device.data.level && !isNaN(this.device.data.level) ? 100 * data.level : 0) 
+        const switchLevel = (this.device.data.level && !isNaN(this.device.data.level) ? 100 * this.device.data.level : 0) 
         // Publish device state
         this.publishMqtt(mqttClient, this.stateTopic, switchState, true)
         this.publishMqtt(mqttClient, this.brightnessStateTopic, switchLevel.toString(), true)

@@ -1,5 +1,4 @@
 const debug = require('debug')('ring-mqtt')
-const colors = require( 'colors/safe' )
 const utils = require( '../lib/utils' )
 const AlarmDevice = require('./alarm-device')
 
@@ -50,16 +49,16 @@ class Fan extends AlarmDevice {
 
     publishData(mqttClient) {
         const fanState = this.device.data.on ? "ON" : "OFF"
-        const fanSpeed = (this.device.data.level && !isNaN(this.device.data.level) ? 100 * data.level : 0)
-        if (0 <= fanSpeedPct && fanSpeedPct <= 33) {
+        const fanSpeed = (this.device.data.level && !isNaN(this.device.data.level) ? 100 * this.device.data.level : 0)
+        let fanLevel = "unknown"
+        if (0 <= fanSpeed && fanSpeed <= 33) {
             fanLevel = 'low'
-        } else if (34 <= fanSpeedPct && fanSpeedPct <= 66) {
+        } else if (34 <= fanSpeed && fanSpeed <= 66) {
             fanLevel = 'medium'
-        } else if (67 <= fanSpeedPct && fanSpeedPct <= 100) {
+        } else if (67 <= fanSpeed && fanSpeed <= 100) {
             fanLevel = 'high'
         } else {
             debug('ERROR - Could not determine fan speed.  Raw value: '+fanSpeed)
-            fanLevel = 'unknown'
         }
         // Publish device state
         this.publishMqtt(mqttClient, this.stateTopic, fanState, true)
@@ -99,7 +98,7 @@ class Fan extends AlarmDevice {
 
     // Set fan speed state from received MQTT command message
     setFanLevel(message) {
-        level = undefined
+        let level = undefined
         debug('Received set fan level to '+message+' for fan Id: '+this.deviceId)
         debug('Location Id: '+ this.locationId)
         switch(message.toLowerCase()) {
@@ -115,7 +114,7 @@ class Fan extends AlarmDevice {
             default:
                 debug('Speed command received but out of range (low,medium,high)!')
         }
-        this.device.setInfo({ device: { v1: { level: level } } })
+        if (level) { this.device.setInfo({ device: { v1: { level: level } } }) }
     }
 }
 
