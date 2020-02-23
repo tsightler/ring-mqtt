@@ -38,20 +38,20 @@ docker build -t ring-mqtt/ring-mqtt .
 To run, execute
 
 ```
-docker run  -e "MQTTHOST={host name}" -e "MQTTPORT={host port}" -e "MQTTRINGTOPIC={ring topic}" -e "MQTTHASSTOPIC={hass topic}" -e "MQTTUSER={mqtt user}" -e "MQTTPASSWORD={mqtt pw}" -e "RINGTOKEN={ring refreshToken}" -e "RINGLOCATIONIDS={command separate location IDs}" ring-mqtt/ring-mqtt
+docker run  -e "MQTTHOST={host name}" -e "MQTTPORT={host port}" -e "MQTTRINGTOPIC={ring topic}" -e "MQTTHASSTOPIC={hass topic}" -e "MQTTUSER={mqtt user}" -e "MQTTPASSWORD={mqtt pw}" -e "RINGTOKEN={ring refreshToken}" -e "ENABLECAMERAS={true-or-false}" -e "RINGLOCATIONIDS={comma-separated location IDs}" ring-mqtt/ring-mqtt
 ```
-Note that only **RINGTOKEN** is technically required, all others will default as follows:
+Note that only **RINGTOKEN** is technically required but in practice at least **MQTTHOST** will likely be required (unless you use the host network option in "docker run" command).  **MQTTUSER/MQTTPASSWORD** will be required if the MQTT broker does not accept anonymous connections.  Default values for the environment values if they are not defined are as follows:
 
-"MQTTHOST=localhost"\
-"MQTTPORT=1883"\
-"MQTTRINGTOPIC=ring"\
-"MQTTHASSTOPIC=hass/status"\
-"MQTTUSER="\
-"MQTTPASSWORD="\
-"ENABLECAMERAS=false"\
-"RINGLOCATIONIDS="
-
-In practice at least **MQTTHOST** will likely be required (unless you use the host network in "docker run" command), and **MQTTUSER/MQTTPASSWORD** will be required if the MQTT broker does not accept anonymous connections.
+| Environment Variable Name | Default |
+| --- | --- |
+| MQTTHOST | localhost |
+| MQTTPORT | 1883 |
+| MQTTRINGTOPIC | ring  |
+| MQTTHASSTOPIC | hass/status |
+| MQTTUSER | blank |
+| MQTTPASSWORD | blank |
+| ENABLECAMERAS | false |
+| RINGLOCATIONIDS | blank |
 
 When submitting any issue with the Docker build, please be sure to add '-e "DEBUG=ring-mqtt"' to the Docker run command before submitting.
 
@@ -79,13 +79,19 @@ Using 2FA authenticaiton opens up the possibility that, if your Home Assistant o
 Because of this added risk, it's a good idea to create a second account dedicated to this script.  This allows actions performed by this script to be easily audited since they will show up in activity logs with their own name instead of that of the primary account.  Also, you can control what devices the script has access to and easily disable access if nafarious activity is detected.
 
 ## Config Options
-By default, this script will discover and monitor alarms across all locations, even shared locations for which you have permissions, however, it is possible to limit the locations monitored by the script including specific location IDs in the config as follows:
+| Config Option | Description | Default |
+| --- | --- | --- |
+| host | Hostname for MQTT broker | localhost |
+| port | Port number for MQTT broker | 1883 |
+| ring_topic | Top level topic for ring devices, default should be fine for most cases | ring |
+| hass_topic | Home Assistant state topic, used to monitor for restarts to automatically republish devices | hass/status |
+| mqtt_user | Username for MQTT broker | blank |
+| mqtt_pass | Password for MQTT broker | blank |
+| ring_token | The refresh token received after authenticating with 2FA - See Authentication section | blank
+| enable_cameras | Enable camera support, otherwise only alarm devices will be discovered | false |
+| location_ids | Array of location Ids in format: ["loc-id", "loc-id2"] | blank |
 
-```"location_ids": ["loc-id", "loc-id2"]```.
-
-To get the location id from the ring website simply login to [Ring.com](https://ring.com/users/sign_in) and look at the address bar in the browser. It will look similar to ```https://app.ring.com/location/{location_id}``` with the last path element being the location id.
-
-Now you should just execute the script and devices should show up automatically in Home Assistant within a few seconds.
+By default, this script will discover and monitor enabled devices across all locations, even shared locations for which you have permissions.  To limit locations you can create a separate account and assign only the desired resources to it, or you can pass location_ids using the appropriate config option.  To get the location id from the ring website simply login to [Ring.com](https://ring.com/users/sign_in) and look at the address bar in the browser. It will look similar to ```https://app.ring.com/location/{location_id}``` with the last path element being the location id.
 
 ## Optional Home Assistant Configuration (Highly Recommended)
 If you'd like to take full advantage of the Home Assistant specific features (auto MQTT discovery and server state monitorting) you need to make sure Home Assistant MQTT is configured with discovery and birth message options, here's an example:
