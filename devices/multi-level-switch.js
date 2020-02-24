@@ -50,7 +50,7 @@ class MultiLevelSwitch extends AlarmDevice {
 
     publishData(mqttClient) {
         const switchState = this.device.data.on ? "ON" : "OFF"
-        const switchLevel = (this.device.data.level && !isNaN(this.device.data.level) ? 100 * this.device.data.level : 0) 
+        const switchLevel = (this.device.data.level && !isNaN(this.device.data.level) ? Math.round(100 * this.device.data.level) : 0) 
         // Publish device state
         this.publishMqtt(mqttClient, this.stateTopic, switchState, true)
         this.publishMqtt(mqttClient, this.brightnessStateTopic, switchLevel.toString(), true)
