@@ -128,7 +128,7 @@ class Fan extends AlarmDevice {
         if (level) {
             debug('Set fan level to: '+level*100)
             this.device.setInfo({ device: { v1: { level: level } } })
-            this.targetFanLevel = level
+            this.targetFanLevel = message.toLowerCase()
 
             // Automatically turn on fan when level is sent.
             // Home assistant normally does this but we want the
