@@ -36,7 +36,7 @@ class MultiLevelSwitch extends AlarmDevice {
             state_topic: this.stateTopic,
             json_attributes_topic: this.attributesTopic,
             command_topic: this.commandTopic,
-            brightness_scale: '100',
+            brightness_scale: 100,
             brightness_state_topic: this.brightnessStateTopic,
             brightness_command_topic: this.brightnessCommandTopic
         }
