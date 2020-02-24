@@ -112,6 +112,9 @@ class Fan extends AlarmDevice {
             case 'high':
                 level = 1
                 break;
+            case 'off':
+                this.setFanState('off')
+                break;
             default:
                 debug('Fan speed command is not low/medium/high!')
         }
