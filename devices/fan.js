@@ -49,6 +49,7 @@ class Fan extends AlarmDevice {
     }
 
     publishData(mqttClient) {
+        utils.sleep(1)
         const fanState = this.device.data.on ? "ON" : "OFF"
         const fanSpeed = (this.device.data.level && !isNaN(this.device.data.level) ? 100 * this.device.data.level : 0)
         let fanLevel = "unknown"
@@ -122,7 +123,6 @@ class Fan extends AlarmDevice {
             this.device.setInfo({ device: { v1: { level: level } } })
             // Sleep for a second and turn fan state ON if currently off
             // This works around a glitch in the Home Assistant UI
-            utils.sleep(1)
             const fanState = this.device.data.on ? "ON" : "OFF"
             if (fanState == 'OFF') { this.setFanState('on') }
         }
