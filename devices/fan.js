@@ -38,7 +38,7 @@ class Fan extends AlarmDevice {
             command_topic: this.commandTopic,
             speed_state_topic: this.speedStateTopic,
             speed_command_topic: this.speedCommandTopic,
-            speeds: { "low", "medium", "high" }
+            speeds: [ "low", "medium", "high" ]
         }
 
         debug('HASS config topic: '+this.configTopic)
