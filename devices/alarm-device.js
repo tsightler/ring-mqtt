@@ -40,7 +40,7 @@ class AlarmDevice {
             this.publishData(mqttClient)
         } else {
             this.device.onData.subscribe(() => {
-                this.publishData(mqttClient)
+                this.publishData(mqttClient, true)
             })
             this.subscribed = true
         }

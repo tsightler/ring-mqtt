@@ -16,6 +16,8 @@ class Fan extends AlarmDevice {
         this.attributesTopic = this.deviceTopic+'/attributes'
         this.availabilityTopic = this.deviceTopic+'/status'
         this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
+        this.prevFanState = undefined
+        this.prevFanLevel = undefined
 
         // Publish discovery message for HA and wait 2 seoonds before sending state
         this.publishDiscovery(mqttClient)
@@ -48,8 +50,7 @@ class Fan extends AlarmDevice {
         mqttClient.subscribe(this.speedCommandTopic)
     }
 
-    async publishData(mqttClient) {
-        await utils.sleep(1)
+    publishData(mqttClient, onData) {
         const fanState = this.device.data.on ? "ON" : "OFF"
         const fanSpeed = (this.device.data.level && !isNaN(this.device.data.level) ? 100 * this.device.data.level : 0)
         let fanLevel = "unknown"
@@ -64,8 +65,21 @@ class Fan extends AlarmDevice {
         }
         
         // Publish device state
-        this.publishMqtt(mqttClient, this.stateTopic, fanState, true)
-        this.publishMqtt(mqttClient, this.speedStateTopic, fanLevel, true)
+        if (onData) {
+            if (this.prevFanState != fanState) {
+                this.publishMqtt(mqttClient, this.stateTopic, fanState, true)
+                this.prevFanState = fanState
+            }
+            if (this.prevFanLevel != fanLevel) {
+                this.publishMqtt(mqttClient, this.stateTopic, fanState, true)
+                this.prevFanLevel = fanLevel
+            }
+        } else {
+            this.publishMqtt(mqttClient, this.stateTopic, fanState, true)
+            this.publishMqtt(mqttClient, this.speedStateTopic, fanLevel, true)
+            this.prevFanState = fanState
+            this.prevFanLevel = fanLevel
+        }
         // Publish device attributes (batterylevel, tamper status)
         this.publishAttributes(mqttClient)
     }
@@ -121,6 +135,8 @@ class Fan extends AlarmDevice {
         if (level) {
             debug('Set fan level to: '+level*100)
             this.device.setInfo({ device: { v1: { level: level } } })
+            // Hackish attempt to fix UI behavior when fan is turned on
+            // automatically by Home Assistant when level is set
             await utils.sleep(2)
             const fanState = this.device.data.on ? "ON" : "OFF"
             if (fanState == 'OFF') { this.setFanState('on') }
