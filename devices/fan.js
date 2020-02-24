@@ -87,10 +87,11 @@ class Fan extends AlarmDevice {
 
         switch(command) {
             case 'on':
-            case 'off':
+            case 'off': {
                 const on = (command === 'on') ? true : false
                 this.device.setInfo({ device: { v1: { on } } })
                 break;
+            }
             default:
                 debug('Received invalid command for fan!')
         }
@@ -103,18 +104,21 @@ class Fan extends AlarmDevice {
         debug('Location Id: '+ this.locationId)
         switch(message.toLowerCase()) {
             case 'low':
-                level = '0.01'
+                level = 0.1
                 break;
             case 'medium':
-                level = '0.5'
+                level = 0.5
                 break;
             case 'high':
-                level = '1'
+                level = 1
                 break;
             default:
-                debug('Speed command received but out of range (low,medium,high)!')
+                debug('Fan speed command is not low/medium/high!')
         }
-        if (level) { this.device.setInfo({ device: { v1: { level: level } } }) }
+        if (level) {
+            debug('Set fan level to: '+level)
+            this.device.setInfo({ device: { v1: { level: level } } })
+        }
     }
 }
 

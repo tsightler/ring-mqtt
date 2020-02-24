@@ -106,7 +106,7 @@ class Camera {
 
             // If camers as light/siren subsribed to those events as well (only polls, default 20 seconds)
             if (this.camera.hasLight || this.camera.hasSiren) {
-                this.camera.onData.subscribe(data => {
+                this.camera.onData.subscribe(() => {
                     this.publishPolledState(mqttClient)
                 })
             }
@@ -330,7 +330,7 @@ class Camera {
 
     // Set state topic online
     async online(mqttClient) {
-        const enableDebug = this.availabilityState !== 'online'
+        //const enableDebug = this.availabilityState !== 'online'
         await utils.sleep(1)
         this.availabilityState = 'online'
         this.publishAvailabilityState(mqttClient, false)
@@ -338,7 +338,7 @@ class Camera {
 
     // Set state topic offline
     offline(mqttClient) {
-        const enableDebug = this.availabilityState !== 'offline'
+        //const enableDebug = this.availabilityState !== 'offline'
         this.availabilityState = 'offline'
         this.publishAvailabilityState(mqttClient, false)
     }

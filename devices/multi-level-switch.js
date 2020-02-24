@@ -11,7 +11,7 @@ class MultiLevelSwitch extends AlarmDevice {
         this.deviceTopic = this.alarmTopic+'/'+this.component+'/'+this.deviceId
         this.stateTopic = this.deviceTopic+'/switch_state'
         this.commandTopic = this.deviceTopic+'/switch_command'
-        this.brightessStateTopic = this.deviceTopic+'/brightness_state'
+        this.brightnessStateTopic = this.deviceTopic+'/brightness_state'
         this.brightnessCommandTopic = this.deviceTopic+'/brightness_command'
         this.attributesTopic = this.deviceTopic+'/attributes'
         this.availabilityTopic = this.deviceTopic+'/status'
@@ -37,7 +37,7 @@ class MultiLevelSwitch extends AlarmDevice {
             json_attributes_topic: this.attributesTopic,
             command_topic: this.commandTopic,
             brightness_scale: '100',
-            brightness_state_topic: this.brightessStateTopic,
+            brightness_state_topic: this.brightnessStateTopic,
             brightness_command_topic: this.brightnessCommandTopic
         }
 
@@ -78,10 +78,11 @@ class MultiLevelSwitch extends AlarmDevice {
 
         switch(command) {
             case 'on':
-            case 'off':
+            case 'off': {
                 const on = (command === 'on') ? true : false
                 this.device.setInfo({ device: { v1: { on } } })
                 break;
+            }
             default:
                 debug('Received invalid command for switch!')
         }

@@ -64,10 +64,11 @@ class Switch extends AlarmDevice {
 
         switch(command) {
             case 'on':
-            case 'off':
+            case 'off': {
                 const on = (command === 'on') ? true : false
                 this.device.setInfo({ device: { v1: { on } } })
                 break;
+            }
             default:
                 debug('Received invalid command for switch!')
         }
