@@ -153,9 +153,9 @@ ring/<location_id>/camera/switch/<device_id>/siren_command          <-- Set sire
     - Ring Flood/Freeze Sensor
     - Ring Smoke/CO Listener
     - First Alert Z-Wave Smoke/CO Detector
-	- Ring Retro Kit Zones
+    - Ring Retro Kit Zones
     - Ring integrated door locks (status and lock control)
-    - 3rd party Z-Wave swtiches, dimmers, and fans
+    - 3rd party Z-Wave switches, dimmers, and fans
   - Camera Devices
     - Motion Events
     - Doorbell (Ding) Events
