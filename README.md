@@ -28,17 +28,16 @@ systemctl start ring-mqtt
 ```
 
 ## Docker Installation
-
-To build, execute
-
-```
-docker build -t ring-mqtt/ring-mqtt .
-```
-
-To run, execute
+Ring-mqtt is now on Docker Hub!  While you're still welcome to build your own image from the Dockerfile you can now install and update by pulling directly from Docker Hub:
 
 ```
-docker run  -e "MQTTHOST={host name}" -e "MQTTPORT={host port}" -e "MQTTRINGTOPIC={ring topic}" -e "MQTTHASSTOPIC={hass topic}" -e "MQTTUSER={mqtt user}" -e "MQTTPASSWORD={mqtt pw}" -e "RINGTOKEN={ring refreshToken}" -e "ENABLECAMERAS={true-or-false}" -e "RINGLOCATIONIDS={comma-separated location IDs}" ring-mqtt/ring-mqtt
+docker pull tsightler/ring-mqtt
+```
+
+Or just run directly (Docker will automatically pull the image if it doesn't exist locally):
+
+```
+docker run --rm -e "MQTTHOST={host name}" -e "MQTTPORT={host port}" -e "MQTTRINGTOPIC={ring topic}" -e "MQTTHASSTOPIC={hass topic}" -e "MQTTUSER={mqtt user}" -e "MQTTPASSWORD={mqtt pw}" -e "RINGTOKEN={ring refreshToken}" -e "ENABLECAMERAS={true-or-false}" -e "RINGLOCATIONIDS={comma-separated location IDs}" tsightler/ring-mqtt
 ```
 Note that only **RINGTOKEN** is technically required but in practice at least **MQTTHOST** will likely be required (unless you use the host network option in "docker run" command).  **MQTTUSER/MQTTPASSWORD** will be required if the MQTT broker does not accept anonymous connections.  Default values for the environment values if they are not defined are as follows:
 
