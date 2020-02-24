@@ -71,7 +71,7 @@ class Fan extends AlarmDevice {
                 this.prevFanState = fanState
             }
             if (this.prevFanLevel != fanLevel) {
-                this.publishMqtt(mqttClient, this.stateTopic, fanState, true)
+                this.publishMqtt(mqttClient, this.speedStateTopic, fanLevel, true)
                 this.prevFanLevel = fanLevel
             }
         } else {
