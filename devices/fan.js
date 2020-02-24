@@ -69,19 +69,23 @@ class Fan extends AlarmDevice {
             if (this.prevFanState != fanState) {
                 this.publishMqtt(mqttClient, this.stateTopic, fanState, true)
                 this.prevFanState = fanState
+                // Publish device attributes (batterylevel, tamper status)
+                //this.publishAttributes(mqttClient)
             }
             if (this.prevFanLevel != fanLevel) {
                 this.publishMqtt(mqttClient, this.speedStateTopic, fanLevel, true)
                 this.prevFanLevel = fanLevel
+                // Publish device attributes (batterylevel, tamper status)
+                //this.publishAttributes(mqttClient)
             }
         } else {
             this.publishMqtt(mqttClient, this.stateTopic, fanState, true)
             this.publishMqtt(mqttClient, this.speedStateTopic, fanLevel, true)
             this.prevFanState = fanState
             this.prevFanLevel = fanLevel
+            // Publish device attributes (batterylevel, tamper status)
+            this.publishAttributes(mqttClient)
         }
-        // Publish device attributes (batterylevel, tamper status)
-        this.publishAttributes(mqttClient)
     }
     
     // Process messages from MQTT command topic
