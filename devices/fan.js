@@ -120,7 +120,9 @@ class Fan extends AlarmDevice {
         if (level) {
             debug('Set fan level to: '+level*100)
             this.device.setInfo({ device: { v1: { level: level } } })
-            // If fan not already on set fan state ON
+            // Sleep for a second and turn fan state ON if currently off
+            // This works around a glitch in the Home Assistant UI
+            utils.sleep(1)
             const fanState = this.device.data.on ? "ON" : "OFF"
             if (fanState == 'OFF') { this.setFanState('on') }
         }
