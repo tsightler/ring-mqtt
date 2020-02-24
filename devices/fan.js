@@ -37,7 +37,8 @@ class Fan extends AlarmDevice {
             json_attributes_topic: this.attributesTopic,
             command_topic: this.commandTopic,
             speed_state_topic: this.speedStateTopic,
-            speed_command_topic: this.speedCommandTopic
+            speed_command_topic: this.speedCommandTopic,
+            speeds: { "low", "medium", "high" }
         }
 
         debug('HASS config topic: '+this.configTopic)
@@ -60,6 +61,7 @@ class Fan extends AlarmDevice {
         } else {
             debug('ERROR - Could not determine fan speed.  Raw value: '+fanSpeed)
         }
+        
         // Publish device state
         this.publishMqtt(mqttClient, this.stateTopic, fanState, true)
         this.publishMqtt(mqttClient, this.speedStateTopic, fanLevel, true)
@@ -87,11 +89,10 @@ class Fan extends AlarmDevice {
 
         switch(command) {
             case 'on':
-            case 'off': {
+            case 'off':
                 const on = (command === 'on') ? true : false
                 this.device.setInfo({ device: { v1: { on } } })
                 break;
-            }
             default:
                 debug('Received invalid command for fan!')
         }
@@ -100,7 +101,7 @@ class Fan extends AlarmDevice {
     // Set fan speed state from received MQTT command message
     setFanLevel(message) {
         let level = undefined
-        debug('Received set fan level to '+message+' for fan Id: '+this.deviceId)
+        debug('Received set fan to '+message+' for fan Id: '+this.deviceId)
         debug('Location Id: '+ this.locationId)
         switch(message.toLowerCase()) {
             case 'low':
@@ -112,15 +113,16 @@ class Fan extends AlarmDevice {
             case 'high':
                 level = 1
                 break;
-            case 'off':
-                this.setFanState('off')
-                break;
             default:
-                debug('Fan speed command is not low/medium/high!')
+                debug('Speed command received but out of range (low,medium,high)!')
         }
+
         if (level) {
-            debug('Set fan level to: '+level)
+            debug('Set fan level to: '+level*100)
             this.device.setInfo({ device: { v1: { level: level } } })
+            // If fan not already on set fan state ON
+            const fanState = this.device.data.on ? "ON" : "OFF"
+            if (fanState == 'OFF') { this.setFanState('on') }
         }
     }
 }
