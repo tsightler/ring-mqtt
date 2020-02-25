@@ -51,7 +51,7 @@ async function processExit(options, exitCode) {
     process.exit()
 }
 
-// Establich websocket connections and register/refresh location status on connect/disconnect
+// Loop through each location and call publishLocation for supported/connected devices
 async function processLocations() {
     // For each location get alarm devices and cameras
     ringLocations.forEach(async location => {
@@ -97,7 +97,7 @@ async function processLocations() {
     })
 }
 
-// Loop through locations to publish alarms/cameras
+// Publish alarms/cameras for given location
 async function publishLocation(devices, cameras) {
     if (republishCount < 1) { republishCount = 1 }
     while (republishCount > 0 && mqttConnected) {
@@ -154,7 +154,7 @@ function getAlarmDevice(device) {
     return null
 }
 
-// Return class information if supported Alarm device
+// Publish an individual alarm device
 function publishAlarmDevice(device) {
     const existingAlarmDevice = subscribedDevices.find(d => (d.deviceId == device.zid && d.locationId == device.location.locationId))
     
