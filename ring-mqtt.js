@@ -72,7 +72,7 @@ async function processLocations() {
                             // Is it an alarm device?
                             if (subscribedDevice.device) {
                                 // Set availability state online
-                                subscribedDevice.offline(mqttClient)
+                                subscribedDevice.online(mqttClient)
                             }
                         })
                     } else {
