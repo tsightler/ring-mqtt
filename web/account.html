@@ -1,15 +1,82 @@
 <!DOCTYPE html>
-
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
 <head>
-    <meta charset="utf-8" />
-    <title></title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body {font-family: Arial, Helvetica, sans-serif; max-width: 500px;}
+* {box-sizing: border-box;}
+
+input[type=text], select, textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+  margin-top: 6px;
+  margin-bottom: 16px;
+  resize: vertical;
+}
+
+input[type=password], select, textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+  margin-top: 6px;
+  margin-bottom: 16px;
+  resize: vertical;
+}
+
+input[type=submit] {
+  background-color: #47a9e6;
+  color: white;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+input[type=submit]:hover {
+  background-color: #315b82;
+}
+
+.container {
+  max-width: 500px;
+  border-radius: 5px;
+  background-color: #f2f2f2;
+  padding: 20px;
+}
+</style>
 </head>
 <body>
-    <form action="/submit-account" method="post">
-        Ring Email: <input name="email" type="text" /> <br />
-        Ring Password: <input name="password" type="text" /> <br />
-        <input type="submit" />
-    </form>
+
+<h3>Acquire Refresh Token</h3>
+Use this form to acquire a refresh token from Ring.com.  Submit the login information for the desired account and then the 2FA code.  Upon succesful 2FA authentication the refresh token will be displayed. Simply copy the entire string and paste into the config file.<br>
+<br>
+<h3>Login</h3>
+<div class="container">
+  <form action="/submit-account" method="post">
+    <label for="email">Email</label>
+    <input type="text" id="email" name="email">
+    <label for="password">Password</label>
+    <input type="password" id="password" name="password">
+    <input type="checkbox" onclick="myFunction()">Show Password
+    <br><br>
+    <input type="submit" value="Submit">
+  </form>
+</div>
+
+<script>
+function myFunction() {
+  var x = document.getElementById("password");
+  if (x.type === "password") {
+    x.type = "text";
+  } else {
+    x.type = "password";
+  }
+}
+</script>
+
 </body>
 </html>
