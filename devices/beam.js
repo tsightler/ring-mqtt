@@ -6,6 +6,7 @@ class Beam extends AlarmDevice {
     async init(mqttClient) {
 
         availabilityTopic = this.alarmTopic+'/beam/'+this.deviceId+'/status'
+        attributesTopic = this.alarmTopic+'/beam/'+this.deviceId+'/attributes'
         
         // Build required MQTT topics for device for each entity        
         if (this.device.data.deviceType === 'group.light-group.beams') {
@@ -16,7 +17,6 @@ class Beam extends AlarmDevice {
         if (deviceType !== 'switch.transformer.beams') {
             this.deviceTopic_motion = this.alarmTopic+'/binary_sensor/'+this.deviceId
             this.stateTopic_motion = this.deviceTopic_motion+'/motion_state'
-            this.attributesTopic_motion = this.deviceTopic_motion+'/attributes'
             this.configTopic_motion = 'homeassistant/binary_sensor/'+this.locationId+'/'+this.deviceId+'/config'
         }
 
@@ -24,7 +24,6 @@ class Beam extends AlarmDevice {
             this.deviceTopic_light = this.alarmTopic+'/light/'+this.deviceId
             this.stateTopic_light = this.deviceTopic_light+'switch_state'
             this.commandTopic_light = this.deviceTopic_light+'switch_command'
-            this.attributesTopic_light = this.deviceTopic_light+'/attributes'
             this.configTopic_light = 'homeassistant/light/'+this.locationId+'/'+this.deviceId+'/config'
         }
 
@@ -32,8 +31,6 @@ class Beam extends AlarmDevice {
             this.stateTopic_brightness = this.deviceTopic_light+'brightness_state'
             this.commandTopic_brightness = this.deviceTopic_light+'brightness_command'
         }
-
-        this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
 
         // Publish discovery message for HA and wait 2 seoonds before sending state
         this.publishDiscovery(mqttClient)
@@ -54,7 +51,7 @@ class Beam extends AlarmDevice {
                 payload_available: 'online',
                 payload_not_available: 'offline',
                 state_topic: this.stateTopic_motion,
-                json_attributes_topic: this.attributesTopic_motion,
+                json_attributes_topic: this.attributesTopic,
                 device_class: motion
             }
             debug('HASS config topic: '+this.configTopic_motion)
@@ -70,20 +67,19 @@ class Beam extends AlarmDevice {
                 payload_available: 'online',
                 payload_not_available: 'offline',
                 state_topic: this.stateTopic_light,
-                json_attributes_topic: this.attributesTopic_light,
+                json_attributes_topic: this.attributesTopic,
                 command_topic: this.commandTopic_light
             }
-
             if (this.stateTopic_brightness) {
-                message_light.brightness_scale = 100
-                message_light.brightness_state_topic = this.stateTopic_brightness,
-                message_light.brightness_command_topic = this.commandTopic_brightness
+                message.brightness_scale = 100
+                message.brightness_state_topic = this.stateTopic_brightness,
+                message.brightness_command_topic = this.commandTopic_brightness
             }
-            debug('HASS config topic: '+this.configTopic_motion)
+            debug('HASS config topic: '+this.configTopic_light)
             debug(message)
             this.publishMqtt(mqttClient, this.configTopic_light, JSON.stringify(message))
             mqttClient.subscribe(this.commandTopic_light)
-            if (this.stateTopic_brightness) { 
+            if (this.commandTopic_brightness) { 
                 mqttClient.subscribe(this.commandTopic_brightness)
             }            
         }
@@ -93,7 +89,6 @@ class Beam extends AlarmDevice {
         if (this.stateTopic_motion) {
             const motionState = this.device.data.motionState === 'faulted' ? 'ON' : 'OFF'
             this.publishMqtt(mqttClient, this.stateTopic_motion, motionState, true)
-            this.publishBeamAttributes(mqttClient, attributesTopic_motion)
         }
         if (this.stateTopic_light) {
             const switchState = this.device.data.on ? "ON" : "OFF"
@@ -102,18 +97,10 @@ class Beam extends AlarmDevice {
                 const switchLevel = (this.device.data.level && !isNaN(this.device.data.level) ? Math.round(100 * this.device.data.level) : 0)
                 this.publishMqtt(mqttClient, this.stateTopic_brightness, switchLevel, true)
             }
-            this.publishBeamAttributes(mqttClient, attributesTopic_light)
         }
-    }
-
-    // Publish device attributes
-    publishBeamAttributes(mqttClient, attributesTopic) {
-        const attributes = {}
-        const batteryLevel = this.getBatteryLevel()
-        if (batteryLevel !== 'none') {
-            attributes.battery_level = batteryLevel
+        if (!this.isLightGroup) {
+            this.publishAttributes(mqttClient)
         }
-        this.publishMqtt(mqttClient, attributesTopic, JSON.stringify(attributes), true)
     }
 
     // Process messages from MQTT command topic
