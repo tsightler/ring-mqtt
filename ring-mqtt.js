@@ -21,6 +21,7 @@ const Lock = require('./devices/lock')
 const Switch = require('./devices/switch')
 const MultiLevelSwitch = require('./devices/multi-level-switch')
 const Fan = require('./devices/fan')
+const Beam = require('./devices/beam')
 const Camera = require('./devices/camera')
 
 var CONFIG
@@ -137,6 +138,11 @@ function getAlarmDevice(device) {
             return new CoAlarm(device, ringTopic)
         case RingDeviceType.SmokeCoListener:
             return new SmokeCoListener(device, ringTopic)
+        case RingDeviceType.BeamsMotionSensor:
+        case RingDeviceType.BeamsSwitch:
+        case RingDeviceType.BeamsTransformerSwitch:
+        case RingDeviceType.BeamsLightGroupSwitch:
+            return new Beam(device, ringTopic)
         case RingDeviceType.MultiLevelSwitch:
                 if (device.categoryId == 17) {
                     return new Fan(device, ringTopic)
