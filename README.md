@@ -139,6 +139,7 @@ ring/<location_id>/camera/switch/<device_id>/siren_command          <-- Set sire
 
 ## Features and Plans
 ### Current features
+- Full support for 2FA including embedded web service to simplfiy generation of refresh token
 - Supports the following devices:
   - Alarm Devices
     - Alarm control panel (Monitor arming state + Arm/Disarm actions)
