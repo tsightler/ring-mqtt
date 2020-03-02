@@ -52,7 +52,7 @@ class Beam extends AlarmDevice {
                 payload_not_available: 'offline',
                 state_topic: this.stateTopic_motion,
                 json_attributes_topic: this.attributesTopic,
-                device_class: motion
+                device_class: 'motion'
             }
             debug('HASS config topic: '+this.configTopic_motion)
             debug(message)
@@ -91,7 +91,7 @@ class Beam extends AlarmDevice {
             this.publishMqtt(mqttClient, this.stateTopic_motion, motionState, true)
         }
         if (this.stateTopic_light) {
-            const switchState = this.device.data.on ? "ON" : "OFF"
+            const switchState = this.device.data.on ? 'ON' : 'OFF'
             this.publishMqtt(mqttClient, this.stateTopic_light, switchState, true)
             if (this.stateTopic_brightness) {
                 const switchLevel = (this.device.data.level && !isNaN(this.device.data.level) ? Math.round(100 * this.device.data.level) : 0)
