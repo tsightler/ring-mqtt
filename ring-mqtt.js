@@ -53,6 +53,8 @@ async function processExit(options, exitCode) {
 }
 
 // Loop through each location and call publishLocation for supported/connected devices
+// TODO:  I hate this function, I wrote it and even I can't figure out what it's doing
+//        and why!  I need to re-write this or at least break it down into more functions.
 async function processLocations() {
     // For each location get alarm devices and cameras
     ringLocations.forEach(async location => {

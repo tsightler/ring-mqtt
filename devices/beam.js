@@ -5,8 +5,8 @@ const AlarmDevice = require('./alarm-device')
 class Beam extends AlarmDevice {
     async init(mqttClient) {
 
-        availabilityTopic = this.alarmTopic+'/beam/'+this.deviceId+'/status'
-        attributesTopic = this.alarmTopic+'/beam/'+this.deviceId+'/attributes'
+        this.availabilityTopic = this.alarmTopic+'/beam/'+this.deviceId+'/status'
+        this.attributesTopic = this.alarmTopic+'/beam/'+this.deviceId+'/attributes'
         
         // Build required MQTT topics for device for each entity        
         if (this.device.data.deviceType === 'group.light-group.beams') {
