@@ -14,20 +14,20 @@ class Beam extends AlarmDevice {
             this.groupId = this.device.data.groupId
         }
 
-        if (deviceType !== 'switch.transformer.beams') {
+        if (this.deviceType !== 'switch.transformer.beams') {
             this.deviceTopic_motion = this.alarmTopic+'/binary_sensor/'+this.deviceId
             this.stateTopic_motion = this.deviceTopic_motion+'/motion_state'
             this.configTopic_motion = 'homeassistant/binary_sensor/'+this.locationId+'/'+this.deviceId+'/config'
         }
 
-        if (deviceType !== 'motion-sensor.beams') {
+        if (this.deviceType !== 'motion-sensor.beams') {
             this.deviceTopic_light = this.alarmTopic+'/light/'+this.deviceId
             this.stateTopic_light = this.deviceTopic_light+'switch_state'
             this.commandTopic_light = this.deviceTopic_light+'switch_command'
             this.configTopic_light = 'homeassistant/light/'+this.locationId+'/'+this.deviceId+'/config'
         }
 
-        if (deviceType === 'switch.multilevel.beams') {
+        if (this.deviceType === 'switch.multilevel.beams') {
             this.stateTopic_brightness = this.deviceTopic_light+'brightness_state'
             this.commandTopic_brightness = this.deviceTopic_light+'brightness_command'
         }
