@@ -168,7 +168,6 @@ ring/<location_id>/camera/switch/<device_id>/siren_command          <-- Set sire
 - Does not require MQTT retain and can work well with brokers that provide no persistent storage
 
 ### Planned features
-- Support for Ring smart lighting -- in progress (2/26/2020)
 - Support for additional 3rd party sensors/devices
 - Additional Devices (base station, keypad - at least for tamper/battery status)
 
