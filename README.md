@@ -1,5 +1,5 @@
 # ring-mqtt
-This script leverages the excellent [ring-client-api](https://github.com/dgreif/ring) to provide a bridge between MQTT and suppoted Ring devices such as alarm control panels, sensors, cameras and some 3rd party Z-wave devices.  It also provides support for Home Assistant style MQTT discovery which allows for very simple integration with Home Assistant with minimal configuration (assuming MQTT is already configured), including an optional [Hass.io Addon](https://github.com/tsightler/ring-mqtt-hassio-addon) for users of that platform.  It can also be used with any other tool capable of working with MQTT as it provides consistent topic naming based on location/device ID.
+This script leverages the excellent [ring-client-api](https://github.com/dgreif/ring) to provide a bridge between MQTT and suppoted Ring devices such as alarm control panel, lights and cameras ([full list of supported devices and features](#current-features)).  It also provides support for Home Assistant style MQTT discovery which allows for simple Home Assistant integration with minimal configuration (assuming MQTT is already configured), including an optional [Hass.io Addon](https://github.com/tsightler/ring-mqtt-hassio-addon) for users of that platform.  It can also be used with any other tool capable of working with MQTT as it provides consistent topic naming based on location/device ID.
 
 ## !!! Important note regarding Hass.io !!!
 Due to the renaming of this project on Feb 20th, 2020, and the complete code refactor, old Hass.io addons developed for ring-alarm-mqtt will no longer work with this project.  As part of this release I have published a new [Hass.io addon](https://github.com/tsightler/ring-mqtt-hassio-addon) which I will attempt to support going forward.  Please migrate to it as soon as reasonable and report any issues with Hass.io there.
@@ -92,21 +92,15 @@ Because of this added risk, it's a good idea to create a second account dedicate
 
 By default, this script will discover and monitor enabled devices across all locations, even shared locations for which you have permissions.  To limit locations you can create a separate account and assign only the desired resources to it, or you can pass location_ids using the appropriate config option.  To get the location id from the ring website simply login to [Ring.com](https://ring.com/users/sign_in) and look at the address bar in the browser. It will look similar to ```https://app.ring.com/location/{location_id}``` with the last path element being the location id.
 
-## Optional Home Assistant Configuration (Highly Recommended)
-If you'd like to take full advantage of the Home Assistant specific features (auto MQTT discovery and server state monitorting) you need to make sure Home Assistant MQTT is configured with discovery and birth message options, here's an example:
+## Optional Home Assistant Configuration
+**---Highly Recommended---**
+For optimal operation with Home Assistant you should configure MQTT birth messages for Home Assistant.  Below is an example MQTT configuration with birth messages enabled.  See [here](https://www.home-assistant.io/docs/mqtt/birth_will/) for more information.
 ```
 mqtt:
-  broker: 127.0.0.1
-  discovery: true
-  discovery_prefix: homeassistant
   birth_message:
     topic: 'hass/status'
     payload: 'online'
-    qos: 0
-    retain: false
 ```
-
-Contact sensors have a default device class of `door`. Adding `window` to the contact sensor name will change the device class to `window`.
 
 ## Using with MQTT tools other than Home Assistant (ex: Node Red)
 
@@ -145,9 +139,10 @@ ring/<location_id>/camera/switch/<device_id>/siren_command          <-- Set sire
 
 ## Features and Plans
 ### Current features
-- Simple configuration via config file, most cases just need Ring user/password and that's it
+- Full support for 2FA including embedded web service to simplfiy generation of refresh token
 - Supports the following devices:
   - Alarm Devices
+    - Alarm control panel (Monitor arming state + Arm/Disarm actions)
     - Ring Contact and Motion Sensors
     - Ring Flood/Freeze Sensor
     - Ring Smoke/CO Listener
@@ -166,20 +161,18 @@ ring/<location_id>/camera/switch/<device_id>/siren_command          <-- Set sire
 - Provides battery and tamper status for supported Alarm devices via JSON attribute topic (visible in Home Assistant UI)
 - Full Home Assistant MQTT Discovery - devices appear automatically
 - Consistent topic creation based on location/device ID - easy to use with MQTT tools like Node-RED
-- Arm/Disarm via alarm control panel MQTT object
-- Arm/Disarm commands are monitored for success and retried (default up to 12x with 10 second interval)
-- Support for mulitple alarms
-- Monitors websocket connection to each alarm and sets reachability status if socket is unavailable (Home Assistant UI reports "unknown" status for unreachable), automatically resends device state when connection is established
-- Can monitor Home Assistant MQTT birth message to trigger automatic resend of configuration data after restart.  The script will automatically resend device config/state 60 seconds after receiving online message from Home Assistant.  This keeps you from having to restart the script after a Home Assistant restart.
-- Monitors MQTT connection and automatically resends device state after any disconnect/reconnect event
+- Arm/Disarm commands are monitored for success and retried automatically
+- Support for mulitple locations
+- Monitors websocket connection to each alarm and sets reachability status if socket is unavailable (Home Assistant UI reports "unknown" status for unreachable devices), automatically resends device state when connection is established
+- Monitors MQTT connection and Home Assistant MQTT birth messages ([if configured](#optional-home-assistant-configuration)) to trigger automatic resend of configuration data after restart/disconnect
 - Does not require MQTT retain and can work well with brokers that provide no persistent storage
 
 ### Planned features
-- Support for Ring smart lighting
+- Support for Ring smart lighting -- in progress (2/26/2020)
 - Support for additional 3rd party sensors/devices
+- Additional Devices (base station, keypad - at least for tamper/battery status)
 
 ### Possible future features
-- Additional Devices (base station, keypad - at least for tamper/battery status)
 - Base station settings (volume, chime)
 - Arm/Disarm with code
 - Arm/Disarm with sensor bypass
@@ -226,4 +219,3 @@ ring/<location_id>/alarm/binary_sensor/<device_id>/co_state
 Many thanks to @dgrief and his excellent [ring-client-api API](https://github.com/dgreif/ring/) as well as his homebridge plugin, from which I've learned a lot.  Without his work it would have taken far more effort and time, probably more time than I had, to get this working.
 
 Also thanks to [acolytec3](https://community.home-assistant.io/u/acolytec3) on the Home Assistant community forums for his original Ring Alarm MQTT script.  Having an already functioning script with support for MQTT discovery saved me quite a bit of time in developing this script.
-
