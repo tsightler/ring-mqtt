@@ -22,8 +22,8 @@ class Beam extends AlarmDevice {
 
         if (this.deviceType !== 'motion-sensor.beams') {
             this.deviceTopic_light = this.alarmTopic+'/light/'+this.deviceId
-            this.stateTopic_light = this.deviceTopic_light+'switch_state'
-            this.commandTopic_light = this.deviceTopic_light+'switch_command'
+            this.stateTopic_light = this.deviceTopic_light+'/switch_state'
+            this.commandTopic_light = this.deviceTopic_light+'/switch_command'
             this.configTopic_light = 'homeassistant/light/'+this.locationId+'/'+this.deviceId+'/config'
         }
 
