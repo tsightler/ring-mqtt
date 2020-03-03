@@ -63,21 +63,19 @@ class AlarmDevice {
 
     // Set state topic online
     async online(mqttClient) {
-        let isDebug = false
-        // Ugly hack to keep from spamming debug log on every republish when there's no state change 
-        if (this.availabilityState == 'online') { isDebug = false }
+        // Debug log output only if state changed from prior published state
+        const enableDebug = (this.availabilityState == 'online') ? false : true
         await utils.sleep(1)
         this.availabilityState = 'online'
-        this.publishMqtt(mqttClient, this.availabilityTopic, this.availabilityState, isDebug)
+        this.publishMqtt(mqttClient, this.availabilityTopic, this.availabilityState, enableDebug)
     }
 
     // Set state topic offline
     offline(mqttClient) {
-        let isDebug = false
-        // Ugly hack to keep from spamming debug log on every republish when there's no state change
-        if (this.availabilityState == 'offline') { isDebug = false }
+        // Debug log output only if state changed from prior published state
+        const enableDebug = (this.availabilityState == 'offline') ? false : true
         this.availabilityState = 'offline'
-        this.publishMqtt(mqttClient, this.availabilityTopic, this.availabilityState, isDebug)
+        this.publishMqtt(mqttClient, this.availabilityTopic, this.availabilityState, enableDebug)
     }
 }
 

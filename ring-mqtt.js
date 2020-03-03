@@ -53,8 +53,8 @@ async function processExit(options, exitCode) {
 }
 
 // Loop through each location and call publishLocation for supported/connected devices
-// TODO:  I hate this function, I wrote it and even I can't figure out what it's doing
-//        and why!  I need to re-write this or at least break it down into more functions.
+// TODO:  This function stops publishing discovery for all locations even if only one
+//        location is offline.  Should be fixed to be per location.
 async function processLocations() {
     // For each location get alarm devices and cameras
     ringLocations.forEach(async location => {
@@ -71,23 +71,11 @@ async function processLocations() {
                         debug('Location '+location.locationId+' is connected')
                         publishAlarm = true
                         publishLocation(devices, cameras)
-                        subscribedDevices.forEach(async subscribedDevice => {
-                            // Is it an alarm device?
-                            if (subscribedDevice.device) {
-                                // Set availability state online
-                                subscribedDevice.online(mqttClient)
-                            }
-                        })
+                        setLocationOnline(location)
                     } else {
                         debug('Location '+location.locationId+' is disconnected')
                         publishAlarm = false
-                        subscribedDevices.forEach(async subscribedDevice => {
-                            // Is it an alarm device?
-                            if (subscribedDevice.device) {
-                                // Set availability state offline
-                                subscribedDevice.offline(mqttClient)
-                            }
-                        })
+                        setLocationOffline(location)
                     }
                 })
             // If location has no alarm but has cameras publish cameras only
@@ -96,6 +84,28 @@ async function processLocations() {
             }
         } else {
             publishLocation(devices, cameras)
+        }
+    })
+}
+
+// Set all devices for location online
+async function setLocationOnline(location) {
+    subscribedDevices.forEach(async subscribedDevice => {
+        if (subscribedDevice.locationId == location.locationId && subscribedDevice.device) { 
+            subscribedDevice.online(mqttClient)
+        }
+    })
+}
+
+// Set all devices for location offline
+async function setLocationOffline(location) {
+    // Wait 30 seconds before setting devices offline in case disconnect is transient
+    // Keeps from creating "unknown" state for sensors if connection error is short lived
+    await utils.sleep(30)
+    if (location.onConnected._value) { return }
+    subscribedDevices.forEach(async subscribedDevice => {
+        if (subscribedDevice.locationId == location.locationId && subscribedDevice.device) { 
+            subscribedDevice.offline(mqttClient)
         }
     })
 }

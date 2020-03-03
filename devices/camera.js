@@ -242,7 +242,7 @@ class Camera {
             const camera = _this.camera
 
             // Query camera heath, if health data doesn't return in 5 seconds assume camera is offline
-            const deviceHealth = await Promise.race([camera.getHealth(), utils.sleep(5)]).then(function(result) {
+            const deviceHealth = await Promise.race([camera.getHealth(), utils.sleep(60)]).then(function(result) {
                 return result;
             });
             const cameraState = (deviceHealth) ? 'online' : 'offline'
