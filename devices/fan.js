@@ -52,13 +52,13 @@ class Fan extends AlarmDevice {
 
     publishData(mqttClient) {
         const fanState = this.device.data.on ? "ON" : "OFF"
-        const fanSpeed = (this.device.data.level && !isNaN(this.device.data.level) ? 100 * this.device.data.level : 0)
+        const fanSpeed = (this.device.data.level && !isNaN(this.device.data.level) ? this.device.data.level : 0)
         let fanLevel = "unknown"
-        if (0 <= fanSpeed && fanSpeed <= 33) {
+        if (0 <= fanSpeed && fanSpeed <= 0.33) {
             fanLevel = 'low'
-        } else if (34 <= fanSpeed && fanSpeed <= 66) {
+        } else if (0.33 <= fanSpeed && fanSpeed <= 0.67) {
             fanLevel = 'medium'
-        } else if (67 <= fanSpeed && fanSpeed <= 100) {
+        } else if (0.67 <= fanSpeed && fanSpeed <= 1) {
             fanLevel = 'high'
         } else {
             debug('ERROR - Could not determine fan speed.  Raw value: '+fanSpeed)
@@ -113,10 +113,10 @@ class Fan extends AlarmDevice {
         debug('Location Id: '+ this.locationId)
         switch(message.toLowerCase()) {
             case 'low':
-                level = 0.1
+                level = 0.33
                 break;
             case 'medium':
-                level = 0.5
+                level = 0.67
                 break;
             case 'high':
                 level = 1
@@ -126,7 +126,7 @@ class Fan extends AlarmDevice {
         }
 
         if (level) {
-            debug('Set fan level to: '+level*100)
+            debug('Set fan level to: '+level*100+'%')
             this.device.setInfo({ device: { v1: { level: level } } })
             this.targetFanLevel = message.toLowerCase()
 

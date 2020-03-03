@@ -12,11 +12,7 @@ class ContactSensor extends AlarmDevice {
             this.sensorType = 'zone'
         } else {
             // Device is contact sensor
-            if (this.device.data.subCategoryId == 2) {
-                this.className = 'window'
-            } else {
-                this.className = 'door'
-            }
+            this.className = (this.device.data.subCategoryId == 2) ? 'window' : 'door'
             this.sensorType = 'contact'
         }
 

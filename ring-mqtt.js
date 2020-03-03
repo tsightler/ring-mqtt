@@ -21,6 +21,7 @@ const Lock = require('./devices/lock')
 const Switch = require('./devices/switch')
 const MultiLevelSwitch = require('./devices/multi-level-switch')
 const Fan = require('./devices/fan')
+const Beam = require('./devices/beam')
 const Camera = require('./devices/camera')
 
 var CONFIG
@@ -52,6 +53,8 @@ async function processExit(options, exitCode) {
 }
 
 // Loop through each location and call publishLocation for supported/connected devices
+// TODO:  This function stops publishing discovery for all locations even if only one
+//        location is offline.  Should be fixed to be per location.
 async function processLocations() {
     // For each location get alarm devices and cameras
     ringLocations.forEach(async location => {
@@ -68,23 +71,11 @@ async function processLocations() {
                         debug('Location '+location.locationId+' is connected')
                         publishAlarm = true
                         publishLocation(devices, cameras)
-                        subscribedDevices.forEach(async subscribedDevice => {
-                            // Is it an alarm device?
-                            if (subscribedDevice.device) {
-                                // Set availability state online
-                                subscribedDevice.online(mqttClient)
-                            }
-                        })
+                        setLocationOnline(location)
                     } else {
                         debug('Location '+location.locationId+' is disconnected')
                         publishAlarm = false
-                        subscribedDevices.forEach(async subscribedDevice => {
-                            // Is it an alarm device?
-                            if (subscribedDevice.device) {
-                                // Set availability state offline
-                                subscribedDevice.offline(mqttClient)
-                            }
-                        })
+                        setLocationOffline(location)
                     }
                 })
             // If location has no alarm but has cameras publish cameras only
@@ -93,6 +84,28 @@ async function processLocations() {
             }
         } else {
             publishLocation(devices, cameras)
+        }
+    })
+}
+
+// Set all devices for location online
+async function setLocationOnline(location) {
+    subscribedDevices.forEach(async subscribedDevice => {
+        if (subscribedDevice.locationId == location.locationId && subscribedDevice.device) { 
+            subscribedDevice.online(mqttClient)
+        }
+    })
+}
+
+// Set all devices for location offline
+async function setLocationOffline(location) {
+    // Wait 30 seconds before setting devices offline in case disconnect is transient
+    // Keeps from creating "unknown" state for sensors if connection error is short lived
+    await utils.sleep(30)
+    if (location.onConnected._value) { return }
+    subscribedDevices.forEach(async subscribedDevice => {
+        if (subscribedDevice.locationId == location.locationId && subscribedDevice.device) { 
+            subscribedDevice.offline(mqttClient)
         }
     })
 }
@@ -137,6 +150,11 @@ function getAlarmDevice(device) {
             return new CoAlarm(device, ringTopic)
         case RingDeviceType.SmokeCoListener:
             return new SmokeCoListener(device, ringTopic)
+        case RingDeviceType.BeamsMotionSensor:
+        case RingDeviceType.BeamsSwitch:
+        case RingDeviceType.BeamsTransformerSwitch:
+        case RingDeviceType.BeamsLightGroupSwitch:
+            return new Beam(device, ringTopic)
         case RingDeviceType.MultiLevelSwitch:
                 if (device.categoryId == 17) {
                     return new Fan(device, ringTopic)

@@ -155,6 +155,9 @@ ring/<location_id>/camera/switch/<device_id>/siren_command          <-- Set sire
     - Doorbell (Ding) Events
     - Lights (for devices with lights)
     - Siren (for devices with siren support)
+  - Smart Lighting
+    - Lighting and motion sensor devices
+    - Light groups
 - Provides battery and tamper status for supported Alarm devices via JSON attribute topic (visible in Home Assistant UI)
 - Full Home Assistant MQTT Discovery - devices appear automatically
 - Consistent topic creation based on location/device ID - easy to use with MQTT tools like Node-RED

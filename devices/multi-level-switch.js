@@ -73,9 +73,7 @@ class MultiLevelSwitch extends AlarmDevice {
     setSwitchState(message) {
         debug('Received set switch state '+message+' for switch Id: '+this.deviceId)
         debug('Location Id: '+ this.locationId)
-
         const command = message.toLowerCase()
-
         switch(command) {
             case 'on':
             case 'off': {
