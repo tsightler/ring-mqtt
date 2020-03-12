@@ -3,7 +3,7 @@ const utils = require( '../lib/utils' )
 const AlarmDevice = require('./alarm-device')
 
 class MultiLevelSwitch extends AlarmDevice {
-    async init(mqttClient) {
+    async init() {
         // Home Assistant component type and device class (set appropriate icon)
         this.component = 'light'
 
@@ -18,14 +18,14 @@ class MultiLevelSwitch extends AlarmDevice {
         this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
 
         // Publish discovery message for HA and wait 2 seoonds before sending state
-        this.publishDiscovery(mqttClient)
+        this.publishDiscovery()
         await utils.sleep(2)
 
         // Publish device state data with optional subscribe
-        this.publishSubscribeDevice(mqttClient)
+        this.publishSubscribeDevice()
     }
 
-    publishDiscovery(mqttClient) {
+    publishDiscovery() {
         // Build the MQTT discovery message
         const message = {
             name: this.device.name,
@@ -43,19 +43,19 @@ class MultiLevelSwitch extends AlarmDevice {
 
         debug('HASS config topic: '+this.configTopic)
         debug(message)
-        this.publishMqtt(mqttClient, this.configTopic, JSON.stringify(message))
-        mqttClient.subscribe(this.commandTopic)
-        mqttClient.subscribe(this.brightnessCommandTopic)
+        this.publishMqtt(this.configTopic, JSON.stringify(message))
+        this.mqttClient.subscribe(this.commandTopic)
+        this.mqttClient.subscribe(this.brightnessCommandTopic)
     }
 
-    publishData(mqttClient) {
+    publishData() {
         const switchState = this.device.data.on ? "ON" : "OFF"
         const switchLevel = (this.device.data.level && !isNaN(this.device.data.level) ? Math.round(100 * this.device.data.level) : 0) 
         // Publish device state
-        this.publishMqtt(mqttClient, this.stateTopic, switchState, true)
-        this.publishMqtt(mqttClient, this.brightnessStateTopic, switchLevel.toString(), true)
+        this.publishMqtt(this.stateTopic, switchState, true)
+        this.publishMqtt(this.brightnessStateTopic, switchLevel.toString(), true)
         // Publish device attributes (batterylevel, tamper status)
-        this.publishAttributes(mqttClient)
+        this.publishAttributes()
     }
     
     // Process messages from MQTT command topic

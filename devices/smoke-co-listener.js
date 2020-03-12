@@ -4,7 +4,7 @@ const AlarmDevice = require('./alarm-device')
 
 class SmokeCoListener extends AlarmDevice {
 
-    async init(mqttClient) {
+    async init() {
         // Set Home Assistant component type and device class (appropriate icon in UI)
         this.className_smoke = 'smoke'
         this.className_co = 'gas'
@@ -19,14 +19,14 @@ class SmokeCoListener extends AlarmDevice {
         this.configTopic_smoke = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'_smoke/config'
         this.configTopic_co = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'_gas/config'
 
-        this.publishDiscovery(mqttClient)
+        this.publishDiscovery()
         await utils.sleep(2)
 
         // Publish device state data with optional subscribe
-        this.publishSubscribeDevice(mqttClient)
+        this.publishSubscribeDevice()
     }
 
-    publishDiscovery(mqttClient) {
+    publishDiscovery() {
 
         // Build the MQTT discovery messages
         const message_smoke = {
@@ -54,24 +54,24 @@ class SmokeCoListener extends AlarmDevice {
         // Publish smoke sensor
         debug('HASS config topic: '+this.configTopic_smoke)
         debug(message_smoke)
-        this.publishMqtt(mqttClient, this.configTopic_smoke, JSON.stringify(message_smoke))
+        this.publishMqtt(this.configTopic_smoke, JSON.stringify(message_smoke))
 
         // Publish CO sensor
         debug('HASS config topic: '+this.configTopic_co)
         debug(message_co)
-        this.publishMqtt(mqttClient, this.configTopic_co, JSON.stringify(message_co))
+        this.publishMqtt(this.configTopic_co, JSON.stringify(message_co))
     }
 
-    publishData(mqttClient) {
+    publishData() {
         const smokeState = this.device.data.smoke && this.device.data.smoke.alarmStatus === 'active' ? 'ON' : 'OFF'
         const coState = this.device.data.co && this.device.data.co.alarmStatus === 'active' ? 'ON' : 'OFF'
 
         // Publish sensor states
-        this.publishMqtt(mqttClient, this.stateTopic_smoke, smokeState, true)
-        this.publishMqtt(mqttClient, this.stateTopic_co, coState, true)
+        this.publishMqtt(this.stateTopic_smoke, smokeState, true)
+        this.publishMqtt(this.stateTopic_co, coState, true)
 
         // Publish device attributes (batterylevel, tamper status)
-        this.publishAttributes(mqttClient)
+        this.publishAttributes()
     }
 }
 

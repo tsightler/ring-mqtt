@@ -3,7 +3,7 @@ const utils = require( '../lib/utils' )
 const AlarmDevice = require('./alarm-device')
 
 class Beam extends AlarmDevice {
-    async init(mqttClient) {
+    async init() {
 
         this.availabilityTopic = this.alarmTopic+'/beam/'+this.deviceId+'/status'
         this.attributesTopic = this.alarmTopic+'/beam/'+this.deviceId+'/attributes'
@@ -33,14 +33,14 @@ class Beam extends AlarmDevice {
         }
 
         // Publish discovery message for HA and wait 2 seoonds before sending state
-        this.publishDiscovery(mqttClient)
+        this.publishDiscovery()
         await utils.sleep(2)
 
         // Publish device state data with optional subscribe
-        this.publishSubscribeDevice(mqttClient)
+        this.publishSubscribeDevice()
     }
 
-    publishDiscovery(mqttClient) {
+    publishDiscovery() {
         // Build the MQTT discovery messages and publish devices
 
         if (this.stateTopic_motion) {
@@ -56,7 +56,7 @@ class Beam extends AlarmDevice {
             }
             debug('HASS config topic: '+this.configTopic_motion)
             debug(message)
-            this.publishMqtt(mqttClient, this.configTopic_motion, JSON.stringify(message))    
+            this.publishMqtt(this.configTopic_motion, JSON.stringify(message))    
         }
 
         if (this.stateTopic_light) {
@@ -77,29 +77,29 @@ class Beam extends AlarmDevice {
             }
             debug('HASS config topic: '+this.configTopic_light)
             debug(message)
-            this.publishMqtt(mqttClient, this.configTopic_light, JSON.stringify(message))
-            mqttClient.subscribe(this.commandTopic_light)
+            this.publishMqtt(this.configTopic_light, JSON.stringify(message))
+            this.mqttClient.subscribe(this.commandTopic_light)
             if (this.commandTopic_brightness) { 
-                mqttClient.subscribe(this.commandTopic_brightness)
+                this.mqttClient.subscribe(this.commandTopic_brightness)
             }            
         }
     }
 
-    publishData(mqttClient) {
+    publishData() {
         if (this.stateTopic_motion) {
             const motionState = this.device.data.motionState === 'faulted' ? 'ON' : 'OFF'
-            this.publishMqtt(mqttClient, this.stateTopic_motion, motionState, true)
+            this.publishMqtt(this.stateTopic_motion, motionState, true)
         }
         if (this.stateTopic_light) {
             const switchState = this.device.data.on ? 'ON' : 'OFF'
-            this.publishMqtt(mqttClient, this.stateTopic_light, switchState, true)
+            this.publishMqtt(this.stateTopic_light, switchState, true)
             if (this.stateTopic_brightness) {
                 const switchLevel = (this.device.data.level && !isNaN(this.device.data.level) ? Math.round(100 * this.device.data.level) : 0)
-                this.publishMqtt(mqttClient, this.stateTopic_brightness, switchLevel, true)
+                this.publishMqtt(this.stateTopic_brightness, switchLevel, true)
             }
         }
         if (!this.isLightGroup) {
-            this.publishAttributes(mqttClient)
+            this.publishAttributes()
         }
     }
 
