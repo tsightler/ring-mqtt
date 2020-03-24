@@ -64,11 +64,11 @@ node node_modules/ring-client-api/ring-auth-cli.js
 
    If you are using the Docker, you can execute:
 ```
-docker run -it --rm ring-mqtt/ring-mqtt node_modules/ring-client-api/ring-auth-cli.js
+docker run -it --rm --entrypoint node_modules/ring-client-api/ring-auth-cli.js tsightler/ring-mqtt
 ```
 For more details please check the [Two Factor Auth](https://github.com/dgreif/ring/wiki/Two-Factor-Auth) documentation from the ring client API.
 
-**Option 2:** This method is primarily for Hass.io, but also works with standard script method (it does not work for the Docker method).  If you leave the ring_token parameter blank in the config file and run the script, it will detect that you don't yet have a refresh token and start a small web service at http://<ip_of_server>:55123.  Simply go to this URL with your browser, enter your username/password and then 2FA code, and it will display the Ring refresh token that you can just copy/paste into the config file.
+**Option 2:** This method is primarily for Hass.io, but also works with the standard script method (it does not work for the Docker method).  If you leave the ring_token parameter blank in the config file and run the script, it will detect that you don't yet have a refresh token and start a small web service at http://<ip_of_server>:55123.  Simply go to this URL with your browser, enter your username/password and then 2FA code, and it will display the Ring refresh token that you can just copy/paste into the config file.
 
 For more details please check the [Two Factor Auth](https://github.com/dgreif/ring/wiki/Two-Factor-Auth) documentation from the ring client API.
 
