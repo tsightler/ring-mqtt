@@ -1,12 +1,12 @@
 {
   "name": "ring-mqtt",
-  "version": "3.2.0-beta1",
+  "version": "3.1.1",
   "description": "Ring to MQTT Bridge",
   "main": "ring-mqtt.js",
   "dependencies": {
     "debug": "^4.1.1",
     "mqtt": "^3.0.0",
-    "ring-client-api": "^7.0.0",
+    "ring-client-api": "^7.2.2",
     "express": "^4.17.1",
     "body-parser": "^1.19.0"
   },
