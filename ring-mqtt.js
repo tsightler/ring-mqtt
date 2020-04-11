@@ -7,6 +7,7 @@ const mqttApi = require ('mqtt')
 const debug = require('debug')('ring-mqtt')
 const colors = require('colors/safe')
 const utils = require('./lib/utils.js')
+const fs = require('fs')
 const express = require('express')
 const restClient = require('./node_modules/ring-client-api/lib/api/rest-client')
 const bodyParser = require("body-parser")
@@ -322,7 +323,7 @@ function startMqtt(mqttClient, ringClient) {
 
 // Main code loop
 const main = async() => {
-    let configFile = './config'
+    let configFile = './config.json'
     if (process.env.HASSADDON) { configFile = '/data/options' }
     debug('Configuration file read from: '+configFile)
 
@@ -383,6 +384,21 @@ const main = async() => {
             debug( colors.red( 'or maybe the refreshToken is invalid. Please check settings and try again.' ))
             process.exit(2)
         }
+
+        ringClient.onRefreshTokenUpdated.subscribe(
+            async ({ newRefreshToken, oldRefreshToken }) => {
+                if (!oldRefreshToken) { return }
+                if (configFile) {
+                    CONFIG.ring_token = newRefreshToken
+                    fs.writeFile(configFile, JSON.stringify(CONFIG, null, 4), (err) => {
+                        // throws an error, you could also catch it here
+                        if (err) throw err;
+                        // success case, the file was saved
+                        debug('Config file saved with updated refresh token.');
+                    })
+                }
+            }
+        )
 
         // Initiate connection to MQTT broker
         try {
