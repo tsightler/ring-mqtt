@@ -2,9 +2,9 @@ const debug = require('debug')('ring-mqtt')
 const utils = require('../lib/utils')
 
 class AlarmDevice {
-    constructor(device, ringTopic) {
+    constructor(device, mqttClient, ringTopic) {
         this.device = device
-
+        this.mqttClient = mqttClient
         // Set device location and top level MQTT topics 
         this.locationId = this.device.location.locationId
         this.deviceId = this.device.zid
@@ -28,28 +28,28 @@ class AlarmDevice {
     }
 
     // Publish state messages with debug
-    publishMqtt(mqttClient, topic, message, isDebug) {
+    publishMqtt(topic, message, isDebug) {
         if (isDebug) { debug(topic, message) }
-        mqttClient.publish(topic, message, { qos: 1 })
+        this.mqttClient.publish(topic, message, { qos: 1 })
     }
 
     // Publish device state data and subscribe to
     // device events if not previously subscribed
-    publishSubscribeDevice(mqttClient) {
+    publishSubscribeDevice() {
         if (this.subscribed) {
-            this.publishData(mqttClient)
+            this.publishData()
         } else {
             this.device.onData.subscribe(() => {
-                this.publishData(mqttClient)
+                this.publishData()
             })
             this.subscribed = true
         }
         // Publish availability state for device
-        this.online(mqttClient)
+        this.online()
     }
 
     // Publish device attributes
-    publishAttributes(mqttClient) {
+    publishAttributes() {
         const attributes = {}
         const batteryLevel = this.getBatteryLevel()
         if (batteryLevel !== 'none') {
@@ -58,26 +58,26 @@ class AlarmDevice {
         if (this.device.data.tamperStatus) {
             attributes.tamper_status = this.device.data.tamperStatus
         }
-        this.publishMqtt(mqttClient, this.attributesTopic, JSON.stringify(attributes), true)
+        this.publishMqtt(this.attributesTopic, JSON.stringify(attributes), true)
     }
 
     // Set state topic online
-    async online(mqttClient) {
+    async online() {
         // Debug output only if state changed from prior published state
         // Prevents spamming debug log with availability events during republish
         const enableDebug = (this.availabilityState == 'online') ? false : true
         await utils.sleep(1)
         this.availabilityState = 'online'
-        this.publishMqtt(mqttClient, this.availabilityTopic, this.availabilityState, enableDebug)
+        this.publishMqtt(this.availabilityTopic, this.availabilityState, enableDebug)
     }
 
     // Set state topic offline
-    offline(mqttClient) {
+    offline() {
         // Debug log output only if state changed from prior published state
         // Prevents spamming debug log with online/offline events during republish
         const enableDebug = (this.availabilityState == 'offline') ? false : true
         this.availabilityState = 'offline'
-        this.publishMqtt(mqttClient, this.availabilityTopic, this.availabilityState, enableDebug)
+        this.publishMqtt(this.availabilityTopic, this.availabilityState, enableDebug)
     }
 }
 

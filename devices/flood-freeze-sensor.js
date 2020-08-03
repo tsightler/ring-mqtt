@@ -4,7 +4,7 @@ const AlarmDevice = require('./alarm-device')
 
 class FloodFreezeSensor extends AlarmDevice {
 
-    async init(mqttClient) {
+    async init() {
         // Set Home Assistant component type and device class (appropriate icon in UI)
         this.className_flood = 'moisture'
         this.className_freeze = 'cold'
@@ -19,14 +19,14 @@ class FloodFreezeSensor extends AlarmDevice {
         this.configTopic_flood = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'_flood/config'
         this.configTopic_freeze = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'_freeze/config'
 
-        this.publishDiscovery(mqttClient)
+        this.publishDiscovery()
         await utils.sleep(2)
 
         // Publish device state data with optional subscribe
-        this.publishSubscribeDevice(mqttClient)
+        this.publishSubscribeDevice()
     }
 
-    publishDiscovery(mqttClient) {
+    publishDiscovery() {
 
         // Build the MQTT discovery messages
         const message_flood = {
@@ -54,24 +54,24 @@ class FloodFreezeSensor extends AlarmDevice {
         // Publish flood sensor
         debug('HASS config topic: '+this.configTopic_flood)
         debug(message_flood)
-        this.publishMqtt(mqttClient, this.configTopic_flood, JSON.stringify(message_flood))
+        this.publishMqtt(this.configTopic_flood, JSON.stringify(message_flood))
 
         // Publish freeze sensor
         debug('HASS config topic: '+this.configTopic_freeze)
         debug(message_freeze)
-        this.publishMqtt(mqttClient, this.configTopic_freeze, JSON.stringify(message_freeze))
+        this.publishMqtt(this.configTopic_freeze, JSON.stringify(message_freeze))
     }
 
-    publishData(mqttClient) {
+    publishData() {
         const floodState = this.device.data.flood && this.device.data.flood.faulted ? 'ON' : 'OFF'
         const freezeState = this.device.data.freeze && this.device.data.freeze.faulted ? 'ON' : 'OFF'
 
         // Publish sensor states
-        this.publishMqtt(mqttClient, this.stateTopic_flood, floodState, true)
-        this.publishMqtt(mqttClient, this.stateTopic_freeze, freezeState, true)
+        this.publishMqtt(this.stateTopic_flood, floodState, true)
+        this.publishMqtt(this.stateTopic_freeze, freezeState, true)
 
         // Publish device attributes (batterylevel, tamper status)
-        this.publishAttributes(mqttClient)
+        this.publishAttributes()
     }
 }
 
