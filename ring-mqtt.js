@@ -4,6 +4,7 @@
 const RingApi = require ('ring-client-api').RingApi
 const RingDeviceType = require ('ring-client-api').RingDeviceType
 const mqttApi = require ('mqtt')
+const isOnline = require ('is-online')
 const debug = require('debug')('ring-mqtt')
 const colors = require('colors/safe')
 const utils = require('./lib/utils.js')
@@ -52,7 +53,7 @@ async function processExit(options, exitCode) {
 // Loop through each location and call publishLocation for supported/connected devices
 // TODO:  This function stops publishing discovery for all locations even if only one
 //        location is offline.  Should be fixed to be per location.
-async function processLocations(ringClient, mqttClient) {
+async function processLocations(mqttClient, ringClient) {
     // For each location get alarm devices and cameras
     const locations = await ringClient.getLocations()
     locations.forEach(async location => {
@@ -206,7 +207,7 @@ function publishCameras(cameras, mqttClient) {
 }
 
 // Process received MQTT command
-async function processMqttMessage(topic, message) {
+async function processMqttMessage(topic, message, mqttClient, ringClient) {
     message = message.toString()
     if (topic === CONFIG.hass_topic) {
         // Republish devices and state after 60 seconds if restart of HA is detected
@@ -218,7 +219,7 @@ async function processMqttMessage(topic, message) {
             await utils.sleep(republishDelay+5)
             // Reset republish counter and start publishing config/state
             republishCount = 10
-            processLocations()
+            processLocations(mqttClient, ringClient)
             debug('Resent device config/state information')
         }
     } else {
@@ -296,7 +297,7 @@ function startMqtt(mqttClient, ringClient) {
                 debug('MQTT connection established, sending config/state information in 5 seconds.')
             }
             await utils.sleep(5)
-            processLocations(ringClient, mqttClient)
+            processLocations(mqttClient, ringClient)
         })
 
         mqttClient.on('reconnect', function () {
@@ -315,7 +316,7 @@ function startMqtt(mqttClient, ringClient) {
 
         // Process MQTT messages from subscribed command topics
         mqttClient.on('message', async function (topic, message) {
-            processMqttMessage(topic, message)
+            processMqttMessage(topic, message, mqttClient, ringClient)
         })
     }
 
@@ -347,7 +348,7 @@ const main = async() => {
             if (!CONFIG.ring_token) throw "Environemnt variable RINGTOKEN is not found but is required."
             if (CONFIG.enable_cameras && CONFIG.enable_cameras != 'true') { CONFIG.enable_cameras = false}
             if (CONFIG.location_ids) { CONFIG.location_ids = CONFIG.location_ids.split(',') } 
-			CONFIG.host = CONFIG.host ? CONFIG.host : 'localhost'
+            CONFIG.host = CONFIG.host ? CONFIG.host : 'localhost'
             CONFIG.port = CONFIG.port ? CONFIG.port : '1883'
         }
         catch (ex) {
@@ -374,10 +375,13 @@ const main = async() => {
             ringAuth.locationIds = CONFIG.location_ids
         }
 
-        // Establish connection to Ring API
         try {
-            ringClient = await new RingApi(ringAuth)
-            debug('Connection to Ring API successful')
+        while (!(await isOnline())) {
+            debug('Network is offline, Waiting 10 seconds to try again...')
+            await utils.sleep(10)
+        }
+        ringClient = await new RingApi(ringAuth)
+        debug('Connection to Ring API successful')
         } catch (error) {
             debug(error)
             debug( colors.red( 'Couldn\'t create the API instance. This could be because the Ring servers are down/unreachable' ))
