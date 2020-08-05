@@ -8,7 +8,7 @@
     "debug": "^4.1.1",
     "express": "^4.17.1",
     "is-online": "^8.4.0",
-    "mqtt": "^3.0.0",
+    "mqtt": "^4.1.0",
     "ring-client-api": "^9.6.0",
     "yargs-parser": "^18.1.3"
   },

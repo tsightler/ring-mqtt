@@ -325,11 +325,17 @@ function startMqtt(mqttClient, ringClient) {
 // Main code loop
 const main = async() => {
     let configFile = './config.json'
-    if (process.env.HASSADDON) { configFile = '/data/options' }
-    debug('Configuration file read from: '+configFile)
+    let TOKEN = new Object()
+    let tokenFile
+
+    if (process.env.HASSADDON) { 
+        configFile = '/data/options'
+        tokenFile = '/data/ring_token.json'
+    }
 
     // Get Configuration from file
     try {
+        debug('Using configuration file: '+configFile)
         CONFIG = require(configFile)
     } catch (e) {
         try {
@@ -363,11 +369,28 @@ const main = async() => {
     CONFIG.hass_topic = CONFIG.hass_topic ? CONFIG.hass_topic : 'hass/status'
     if (!CONFIG.enable_cameras) { CONFIG.enable_cameras = false }
 
+    // Check if there is an updated refresh token saved in token file
+    if (tokenFile) {
+        try {
+            debug('Reading most recent saved refresh token from: '+tokenFile)
+            TOKEN = require(tokenFile)
+        } catch (e) {
+            debug('No updated refresh token found, will use token from config file.')
+        }
+    }
+
     if (CONFIG.ring_token) {
         let ringClient
         let mqttClient
+
+        // Check if network is up before attempting to connect to Ring, wait if it is not ready
+        while (!(await isOnline())) {
+            debug('Network is offline, Waiting 10 seconds to try again...')
+            await utils.sleep(10)
+        }
+
+        // Get ready to attempt connection to Ring API
         const ringAuth = { 
-            refreshToken: CONFIG.ring_token, 
             cameraStatusPollingSeconds: 20,
             cameraDingsPollingSeconds: 2
         }
@@ -375,30 +398,49 @@ const main = async() => {
             ringAuth.locationIds = CONFIG.location_ids
         }
 
-        try {
-        while (!(await isOnline())) {
-            debug('Network is offline, Waiting 10 seconds to try again...')
-            await utils.sleep(10)
+        // If there is an updated refresh token in the token file, try to connect using it first
+        if (TOKEN.ring_token) {
+            debug('Attempting connection to Ring API using saved refresh token from file: '+tokenFile)
+            ringAuth.refreshToken = TOKEN.ring_token
+            try {
+                ringClient = await new RingApi(ringAuth)
+            } catch (ex) {
+                debug('Unable to connect to Ring API with saved refresh token, will attempt to use the configured refresh token.')
+            }
         }
-        ringClient = await new RingApi(ringAuth)
+
+        // If Ring API is not already connected, try connection using refresh token from config file 
+        if (!ringClient) {
+            ringAuth.refreshToken = CONFIG.ring_token  
+            try {
+                debug('Attempting connection to Ring API using the configured refresh token')
+                ringClient = await new RingApi(ringAuth)
+            } catch (ex) {
+                debug( colors.red (ex) )
+                debug( colors.red( 'Could not create the API instance. This could be because the Ring servers are down/unreachable' ))
+                debug( colors.red( 'or maybe all available refresh tokens are invalid. Please check settings and try again.' ))
+                process.exit(2)
+            }
+        }
         debug('Connection to Ring API successful')
-        } catch (error) {
-            debug(error)
-            debug( colors.red( 'Couldn\'t create the API instance. This could be because the Ring servers are down/unreachable' ))
-            debug( colors.red( 'or maybe the refreshToken is invalid. Please check settings and try again.' ))
-            process.exit(2)
-        }
 
         ringClient.onRefreshTokenUpdated.subscribe(
             async ({ newRefreshToken, oldRefreshToken }) => {
                 if (!oldRefreshToken) { return }
-                if (configFile) {
+                if (process.env.HASSADDON) {
+                    fs.writeFile(tokenFile, JSON.stringify({ ring_token: newRefreshToken }), (err) => {
+                        // throws an error, you could also catch it here
+                        if (err) throw err;
+                        // success case, the file was saved
+                        debug('File ' + tokenFile + ' saved with updated refresh token.')
+                    })
+                } else if (configFile) {
                     CONFIG.ring_token = newRefreshToken
                     fs.writeFile(configFile, JSON.stringify(CONFIG, null, 4), (err) => {
                         // throws an error, you could also catch it here
                         if (err) throw err;
                         // success case, the file was saved
-                        debug('Config file saved with updated refresh token.');
+                        debug('Config file saved with updated refresh token.')
                     })
                 }
             }
