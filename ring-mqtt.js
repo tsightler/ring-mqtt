@@ -319,26 +319,26 @@ function startMqtt(mqttClient, ringClient) {
             processMqttMessage(topic, message, mqttClient, ringClient)
         })
     }
-
 /* End Functions */
 
 // Main code loop
 const main = async() => {
     let configFile = './config.json'
-    let TOKEN = new Object()
-    let tokenFile
+    let STATE = new Object()
+    let stateFile
 
     if (process.env.HASSADDON) { 
-        configFile = '/data/options'
-        tokenFile = '/data/ring_token.json'
+        configFile = '/data/options.json'
+        stateFile = '/data/ring-state.json'
     }
 
     // Get Configuration from file
     try {
         debug('Using configuration file: '+configFile)
         CONFIG = require(configFile)
-    } catch (e) {
+    } catch (error) {
         try {
+            debug(error)
             debug('Configuration file not found, trying environment variables.')
             CONFIG = {
                 "host": process.env.MQTTHOST,
@@ -357,8 +357,8 @@ const main = async() => {
             CONFIG.host = CONFIG.host ? CONFIG.host : 'localhost'
             CONFIG.port = CONFIG.port ? CONFIG.port : '1883'
         }
-        catch (ex) {
-            debug(ex)
+        catch (error) {
+            debug(error)
             debug('Configuration file not found and required environment variables are not set.')
             process.exit(1)
         }
@@ -370,16 +370,16 @@ const main = async() => {
     if (!CONFIG.enable_cameras) { CONFIG.enable_cameras = false }
 
     // Check if there is an updated refresh token saved in token file
-    if (tokenFile) {
+    if (stateFile) {
         try {
-            debug('Reading most recent saved refresh token from: '+tokenFile)
-            TOKEN = require(tokenFile)
+            debug('Reading latest saved refresh token from file: '+stateFile)
+            STATE = require(stateFile)
         } catch (e) {
-            debug('No updated refresh token found, will use token from config file.')
+            debug('No newer refresh token found, will use token from config file.')
         }
     }
 
-    if (CONFIG.ring_token) {
+    if (CONFIG.ring_token || STATE.ring_token) {
         let ringClient
         let mqttClient
 
@@ -389,7 +389,7 @@ const main = async() => {
             await utils.sleep(10)
         }
 
-        // Get ready to attempt connection to Ring API
+        // Setup some parameters for connection to Ring API
         const ringAuth = { 
             cameraStatusPollingSeconds: 20,
             cameraDingsPollingSeconds: 2
@@ -399,26 +399,30 @@ const main = async() => {
         }
 
         // If there is an updated refresh token in the token file, try to connect using it first
-        if (TOKEN.ring_token) {
-            debug('Attempting connection to Ring API using saved refresh token from file: '+tokenFile)
-            ringAuth.refreshToken = TOKEN.ring_token
+        if (STATE.ring_token) {
+            debug('Attempting connection to Ring API using saved refresh token from file: '+stateFile)
+            ringAuth.refreshToken = STATE.ring_token
             try {
-                ringClient = await new RingApi(ringAuth)
-            } catch (ex) {
-                debug('Unable to connect to Ring API with saved refresh token, will attempt to use the configured refresh token.')
+                ringClient = new RingApi(ringAuth)
+                await ringClient.getLocations()
+            } catch(error) {
+                ringClient = null
+                debug(colors.brightYellow(error.message))
+                debug(colors.brightYellow('Unable to connect to Ring API with saved refresh token, will attempt to use the configured refresh token.'))
             }
         }
 
         // If Ring API is not already connected, try connection using refresh token from config file 
         if (!ringClient) {
-            ringAuth.refreshToken = CONFIG.ring_token  
+            debug('Attempting connection to Ring API using refresh token from file: '+configFile)
+            ringAuth.refreshToken = CONFIG.ring_token
             try {
-                debug('Attempting connection to Ring API using the configured refresh token')
-                ringClient = await new RingApi(ringAuth)
-            } catch (ex) {
-                debug( colors.red (ex) )
-                debug( colors.red( 'Could not create the API instance. This could be because the Ring servers are down/unreachable' ))
-                debug( colors.red( 'or maybe all available refresh tokens are invalid. Please check settings and try again.' ))
+                ringClient = new RingApi(ringAuth)
+                await ringClient.getLocations()
+            } catch(error) {
+                debug(colors.brightRed(error.message))
+                debug(colors.brightRed('Could not create the API instance. This could be because the Ring servers are down/unreachable'))
+                debug(colors.brightRed('or maybe all available refresh tokens are invalid. Please check settings and try again.'))
                 process.exit(2)
             }
         }
@@ -428,11 +432,11 @@ const main = async() => {
             async ({ newRefreshToken, oldRefreshToken }) => {
                 if (!oldRefreshToken) { return }
                 if (process.env.HASSADDON) {
-                    fs.writeFile(tokenFile, JSON.stringify({ ring_token: newRefreshToken }), (err) => {
+                    fs.writeFile(stateFile, JSON.stringify({ ring_token: newRefreshToken }), (err) => {
                         // throws an error, you could also catch it here
                         if (err) throw err;
                         // success case, the file was saved
-                        debug('File ' + tokenFile + ' saved with updated refresh token.')
+                        debug('File ' + stateFile + ' saved with updated refresh token.')
                     })
                 } else if (configFile) {
                     CONFIG.ring_token = newRefreshToken
