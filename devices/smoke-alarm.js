@@ -3,7 +3,7 @@ const utils = require( '../lib/utils' )
 const AlarmDevice = require('./alarm-device')
 
 class SmokeAlarm extends AlarmDevice {
-    async init(mqttClient) {
+    async init() {
         // Home Assistant component type and device class (set appropriate icon)
         this.component = 'binary_sensor'
         this.className = 'smoke'
@@ -16,14 +16,14 @@ class SmokeAlarm extends AlarmDevice {
         this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
 
         // Publish discovery message for HA and wait 2 seoonds before sending state
-        this.publishDiscovery(mqttClient)
+        this.publishDiscovery()
         await utils.sleep(2)
 
         // Publish device state data with optional subscribe
-        this.publishSubscribeDevice(mqttClient)
+        this.publishSubscribeDevice()
     }
 
-    publishDiscovery(mqttClient) {
+    publishDiscovery() {
         // Build the MQTT discovery message
         const message = {
             name: this.device.name,
@@ -38,15 +38,15 @@ class SmokeAlarm extends AlarmDevice {
 
         debug('HASS config topic: '+this.configTopic)
         debug(message)
-        this.publishMqtt(mqttClient, this.configTopic, JSON.stringify(message))
+        this.publishMqtt(this.configTopic, JSON.stringify(message))
     }
 
-    publishData(mqttClient) {
+    publishData() {
         const smokeState = this.device.data.alarmStatus === 'active' ? 'ON' : 'OFF'
         // Publish device sensor state
-        this.publishMqtt(mqttClient, this.stateTopic, smokeState, true)
+        this.publishMqtt(this.stateTopic, smokeState, true)
         // Publish device attributes (batterylevel, tamper status)
-        this.publishAttributes(mqttClient)
+        this.publishAttributes()
     }
 }
 
