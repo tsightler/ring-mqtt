@@ -6,8 +6,8 @@ After=network.target
 [Service]
 ExecStart=/usr/bin/node /opt/ring-mqtt/ring-mqtt.js
 Restart=always
-User=homeassistant
-Group=homeassistant
+User=root
+Group=root
 Environment=PATH=/usr/bin/
 Environment=NODE_ENV=production
 Environment=DEBUG=ring-mqtt
