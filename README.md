@@ -1,8 +1,17 @@
 # ring-mqtt
 This script leverages the excellent [ring-client-api](https://github.com/dgreif/ring) to provide a bridge between MQTT and suppoted Ring devices such as alarm control panel, lights and cameras ([full list of supported devices and features](#current-features)).  It also provides support for Home Assistant style MQTT discovery which allows for simple Home Assistant integration with minimal configuration (assuming MQTT is already configured), including an optional [Hass.io Addon](https://github.com/tsightler/ring-mqtt-hassio-addon) for users of that platform.  It can also be used with any other tool capable of working with MQTT as it provides consistent topic naming based on location/device ID.
 
-## !!! Important note regarding Hass.io !!!
-Due to the renaming of this project on Feb 20th, 2020, and the complete code refactor, old Hass.io addons developed for ring-alarm-mqtt will no longer work with this project.  As part of this release I have published a new [Hass.io addon](https://github.com/tsightler/ring-mqtt-hassio-addon) which I will attempt to support going forward.  Please migrate to it as soon as reasonable and report any issues with Hass.io there.
+## !!! Important changes for Home Assistant/HASS.io Users for MQTT !!!
+Previously it was highly recommended to manually configure MQTT Birth messages within Home Assistant using the following settings in Home Assistants configuration.yaml:
+```
+mqtt:
+  birth_message:
+    topic: 'hass/status'
+    payload: 'online'
+```
+However, modern versions of Home Assistant are moving to emphasize UI based configuration over YAML and birth/last will messages are automatically send to the homeassistant/state topic by default.  This default config.json with this script has been modified to monitor the default topic so no special configuration is needed for new installs.
+
+For existing users who had implemented the previously recommended configuration, it will continue to work without changes, however, for consistency with future configurations it is now recommended to revert the Home Assistant MQTT configuraiton to defaults and modify the config.json file to change the hass_topic from hass/status to homeassistant/status.  You can also completely switch to UI configuration for the MQTT component once making this change.
 
 ## Standard Installation (Linux)
 Make sure Node.js (tested with 10.16.x and higher) is installed on your system and then clone this repo:
@@ -91,16 +100,6 @@ Because of this added risk, it's a good idea to create a second account dedicate
 | location_ids | Array of location Ids in format: ["loc-id", "loc-id2"] | blank |
 
 By default, this script will discover and monitor enabled devices across all locations, even shared locations for which you have permissions.  To limit locations you can create a separate account and assign only the desired resources to it, or you can pass location_ids using the appropriate config option.  To get the location id from the ring website simply login to [Ring.com](https://ring.com/users/sign_in) and look at the address bar in the browser. It will look similar to ```https://app.ring.com/location/{location_id}``` with the last path element being the location id.
-
-## Optional Home Assistant Configuration
-**---Highly Recommended---**
-For optimal operation with Home Assistant you should configure MQTT birth messages for Home Assistant.  Below is an example MQTT configuration with birth messages enabled.  See [here](https://www.home-assistant.io/docs/mqtt/birth_will/) for more information.
-```
-mqtt:
-  birth_message:
-    topic: 'hass/status'
-    payload: 'online'
-```
 
 ## Using with MQTT tools other than Home Assistant (ex: Node Red)
 
