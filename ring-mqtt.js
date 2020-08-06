@@ -79,10 +79,10 @@ async function processLocations(mqttClient, ringClient) {
                 })
             // If location has no alarm but has cameras publish cameras only
             } else if (cameras && cameras.length > 0) {
-                publishLocation(devices, cameras)
+                publishLocation(devices, cameras, mqttClient)
             }
         } else {
-            publishLocation(devices, cameras)
+            publishLocation(devices, cameras, mqttClient)
         }
     })
 }
