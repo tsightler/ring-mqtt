@@ -9,7 +9,7 @@ mqtt:
     topic: 'hass/status'
     payload: 'online'
 ```
-However, modern versions of Home Assistant are moving to emphasize UI based configuration over YAML and birth/last will messages are automatically send to the homeassistant/state topic by default.  This default config.json with this script has been modified to monitor the default topic so no special configuration is needed for new installs.
+However, modern versions of Home Assistant are moving to emphasize UI based configuration over YAML and birth/last will messages are automatically send to the homeassistant/status topic by default.  This default config.json with this script has been modified to monitor the default topic so no special configuration is needed for new installs.
 
 For existing users who had implemented the previously recommended configuration, it will continue to work without changes, however, for consistency with future configurations it is now recommended to revert the Home Assistant MQTT configuraiton to defaults and modify the config.json file to change the hass_topic from hass/status to homeassistant/status.  You can also completely switch to UI configuration for the MQTT component once making this change.
 
