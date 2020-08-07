@@ -87,7 +87,7 @@ class Beam extends AlarmDevice {
 
     publishData() {
         if (this.stateTopic_motion) {
-            const motionState = this.device.data.motionState === 'faulted' ? 'ON' : 'OFF'
+            const motionState = this.device.data.motionStatus === 'faulted' ? 'ON' : 'OFF'
             this.publishMqtt(this.stateTopic_motion, motionState, true)
         }
         if (this.stateTopic_light) {
