@@ -349,36 +349,26 @@ function startMqtt(mqttClient, ringClient) {
     }
 
     // Create CONFIG object from file or envrionment variables
-    async function initConfig(configFile) {    
+    async function initConfig(configFile) {
         try {
-            CONFIG = require(configFile)
+            if (fs.existsSync(configFile)) {
+                CONFIG = require(configFile)
+            }
         } catch (error) {
-            try {
-                debug(error)
-                debug('No configuration file found, attempting to use environment variables.')
-                CONFIG = {
-                    "host": process.env.MQTTHOST,
-                    "port": process.env.MQTTPORT,
-                    "ring_topic": process.env.MQTTRINGTOPIC,
-                    "hass_topic": process.env.MQTTHASSTOPIC,
-                    "mqtt_user": process.env.MQTTUSER,
-                    "mqtt_pass": process.env.MQTTPASSWORD,
-                    "ring_token": process.env.RINGTOKEN,
-                    "enable_cameras": process.env.ENABLECAMERAS,
-                    "location_ids" : process.env.RINGLOCATIONIDS
-                }
-                if (!CONFIG.ring_token && !process.env.RINGSTATEPATH) {
-                    throw "Either RINGTOKEN or RINGSTATEPATH must be defined for running in Docker."
-                }
-                if (CONFIG.enable_cameras && CONFIG.enable_cameras != 'true') { CONFIG.enable_cameras = false}
-                if (CONFIG.location_ids) { CONFIG.location_ids = CONFIG.location_ids.split(',') }
-                process.env.ISDOCKER = true
+            debug('No configuration file found, attempting to use environment variables.')
+            CONFIG = {
+                "host": process.env.MQTTHOST,
+                "port": process.env.MQTTPORT,
+                "ring_topic": process.env.MQTTRINGTOPIC,
+                "hass_topic": process.env.MQTTHASSTOPIC,
+                "mqtt_user": process.env.MQTTUSER,
+                "mqtt_pass": process.env.MQTTPASSWORD,
+                "ring_token": process.env.RINGTOKEN,
+                "enable_cameras": process.env.ENABLECAMERAS,
+                "location_ids" : process.env.RINGLOCATIONIDS
             }
-            catch (error) {
-                debug(error)
-                debug('Configuration file not found and required environment variables are not set.')
-                if (process.env.ISDOCKER) { process.exit(1) }
-            }
+            if (CONFIG.enable_cameras && CONFIG.enable_cameras != 'true') { CONFIG.enable_cameras = false}
+            if (CONFIG.location_ids) { CONFIG.location_ids = CONFIG.location_ids.split(',') }
         }
         // Set some defaults if undefined
         CONFIG.host = CONFIG.host ? CONFIG.host : 'localhost'
@@ -390,7 +380,7 @@ function startMqtt(mqttClient, ringClient) {
 
     async function updateToken(newRefreshToken, oldRefreshToken, stateFile, configFile) {
         if (!oldRefreshToken) { return }
-        if (process.env.HASSADDON) {
+        if (process.env.HASSADDON || process.env.ISDOCKER) {
             fs.writeFile(stateFile, JSON.stringify({ ring_token: newRefreshToken }), (err) => {
                 if (err) throw err;
                 debug('File ' + stateFile + ' saved with updated refresh token.')
@@ -408,38 +398,35 @@ function startMqtt(mqttClient, ringClient) {
 // Main code loop
 const main = async(generatedToken) => {
     let configFile = './config.json'
-    let stateFile
     let stateData = new Object()
+    let stateFile
     let ringClient
     let mqttClient
 
-    // For HASSIO addon latest refresh token is stored in ring-state.json file
-    if (process.env.HASSADDON) { 
-        configFile = '/data/options.json'
+    // For HASSIO and DOCKER latest token is saved in /data/ring-state.json
+    if (process.env.HASSADDON || process.env.ISDOCKER) { 
+        configFile = (process.env.HASSADDON) ? '/data/options.json' : '/data/config.json'
         stateFile = '/data/ring-state.json'
-        await initConfig(configFile)
-        if (generatedToken) {
-            debug('Using refresh token generated via web UI.')
-            stateData.ring_token = generatedToken
-        } else {
-            try {
-                debug('Reading latest saved refresh token from file: '+stateFile)
+    }
+
+    // Initiate the configuration variable from file or environment variables
+    await initConfig(configFile)
+
+    // If new token was generated via web UI, use it, otherwise attempt to read latest token from state file
+    if (generatedToken) {
+        debug('Using refresh token generated via web UI.')
+        stateData.ring_token = generatedToken
+    } else if (stateFile) {
+        try {
+            debug('Reading latest saved refresh token from file: '+stateFile)
+            if (fs.existsSync(stateFile)) {
                 stateData = require(stateFile)
-            } catch (e) {
-                debug('No saved refresh token found, will attempt to use token from config file.')
             }
-        }
-    } else {
-        await initConfig(configFile)
-        if (process.env.ISDOCKER) {
-            if (process.env.RINGSTATEPATH) {
-                stateFile = process.env.RINGSTATEPATH + '/ring-state.json'
-            }
-            try {
-                debug('Reading latest saved refresh token from file: '+stateFile)
-                stateData = require(stateFile)
-            } catch (e) {
-                debug('No saved refresh token found, will attempt to use token from RINGTOKEN environment variable.')
+        } catch (error) {
+            if (process.env.ISDOCKER) {
+                debug('No saved refresh token found, will attempt connection using RINGTOKEN environment variable.')
+            } else {
+                debug('No saved refresh token found, will attempt connection using token from config file.')
             }
         }
     }
@@ -459,9 +446,13 @@ const main = async(generatedToken) => {
         ringAuth.locationIds = CONFIG.location_ids
     }
 
-    // If there is a saved refresh token in state file, try to connect using it first
+    // If there is a saved or generated refresh token, try to connect using it first
     if (stateData.ring_token) {
-    debug('Attempting connection to Ring API using saved refresh token from file: '+stateFile)
+        if (generatedToken) {
+            debug('Attempting connection to Ring API using generated refresh token.')
+        } else {
+            debug('Attempting connection to Ring API using saved refresh token from file: '+stateFile)
+        }
         ringAuth.refreshToken = stateData.ring_token
         try {
             ringClient = new RingApi(ringAuth)
@@ -469,11 +460,15 @@ const main = async(generatedToken) => {
         } catch(error) {
             ringClient = null
             debug(colors.brightYellow(error.message))
-            debug(colors.brightYellow('Unable to connect to Ring API with saved refresh token, will attempt to use the configured refresh token.'))
+            if (generatedToken) {
+                debug(colors.brightYellow('Unable to connect to Ring API with generated refresh token.'))
+            } else {
+                debug(colors.brightYellow('Unable to connect to Ring API with saved refresh token.'))
+            }
         }
     }
 
-    // If Ring API is not already connected, try connection using refresh token from config file 
+    // If Ring API is not already connected, try using refresh token from config file or RINGTOKEN variable
     if (!ringClient && CONFIG.ring_token) {
         if (process.env.ISDOCKER) {
             debug('Attempting connection to Ring API using refresh token from environment variable RINGTOKEN')
@@ -498,8 +493,14 @@ const main = async(generatedToken) => {
             }
         }
     } else if (!ringClient && !CONFIG.ring_token) {
-        debug('No valid refresh token found.')
-        startWeb()
+        debug('No valid refresh tokens were found.')
+        if (process.env.ISDOCKER) {
+            debug('No valid refresh token was found and RINGTOKEN is not configured.')
+            process.exit(2)
+        } else {
+            debug('No valid refresh tokens were found in config file.')
+            startWeb()
+        }
     }
 
     if (ringClient) {
@@ -521,7 +522,7 @@ const main = async(generatedToken) => {
             startMqtt(mqttClient, ringClient)
         } catch (error) {
             debug(error)
-            debug( colors.red( 'Couldn\'t connect to MQTT broker. Please check the broker and configuration settings.' ))
+            debug( colors.red('Couldn\'t connect to MQTT broker. Please check the broker and configuration settings.'))
             process.exit(1)
         }
     }
