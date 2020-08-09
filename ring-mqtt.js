@@ -351,9 +351,7 @@ function startMqtt(mqttClient, ringClient) {
     // Create CONFIG object from file or envrionment variables
     async function initConfig(configFile) {
         try {
-            if (fs.existsSync(configFile)) {
-                CONFIG = require(configFile)
-            }
+            CONFIG = require(configFile)
         } catch (error) {
             debug('No configuration file found, attempting to use environment variables.')
             CONFIG = {
