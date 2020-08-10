@@ -428,7 +428,11 @@ const main = async(generatedToken) => {
             debug('No refresh token was found in state file and RINGTOKEN is not configured.')
             process.exit(2)
         } else {
-            debug('No refresh token was found in saved state file or config file.')
+            if (process.env.HASSADDON) {
+                debug('No refresh token was found in saved state file or config file.')
+            } else {
+                debug('No refresh token was found in config file.')
+            }
             startWeb()
         }
     }
