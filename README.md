@@ -46,11 +46,12 @@ docker pull tsightler/ring-mqtt
 Or just run directly (Docker will automatically pull the image if it doesn't exist locally):
 
 ```
-docker run --rm -e "MQTTHOST={host name}" -e "MQTTPORT={host port}" -e "MQTTRINGTOPIC={ring topic}" -e "MQTTHASSTOPIC={hass topic}" -e "MQTTUSER={mqtt user}" -e "MQTTPASSWORD={mqtt pw}" -e "RINGTOKEN={ring refreshToken}" -e "ENABLECAMERAS={true-or-false}" -e "RINGLOCATIONIDS={comma-separated location IDs}" tsightler/ring-mqtt
+docker run --rm -e "MQTTHOST={host_name}" -e "MQTTPORT={host_port}" -e "MQTTRINGTOPIC={ring_topic}" -e "MQTTHASSTOPIC={hass_topic}" -e "MQTTUSER={mqtt_user}" -e "MQTTPASSWORD={mqtt_pw}" -e "RINGTOKEN={ring_refreshToken}" -e "ENABLECAMERAS={true-or-false}" -e "RINGLOCATIONIDS={comma-separated location IDs}" tsightler/ring-mqtt
 ```
-
-In ring-mqtt version >=3.2.0 the Docker build supports the use of a bind mount for persistent storage, this is used to store updated refresh tokens.  While this is not required, it can be useful as refresh tokens eventually expire and are renewed automatically by the script.  Using persistent storage will store these newer tokens in a file which will be read during script startup and the connection to the Ring server will attempt to use this token before any configured token.  If you do not specify a bind mount the script will continue function as it did previously, but you may have to manually regenerate a token when they expire.  For more details see ([Authentication](#authentication)).
-
+In ring-mqtt version >=3.2.0 the Docker build supports the use of a bind mount for persistent storage, this is used to store updated refresh tokens in a persistent fashion.  While this is not absolutely required, it can be useful as refresh tokens eventually expire and are renewed automatically by the script.  Using persistent storage will store these refreshed tokens in a state file which will be read during script startup and the connection to the Ring server will attempt to use this token before any manually configured token.  If you do not specify a bind mount the script will continue function without state, as in previous versions, but during restarts you may have to manually regenerate a token and modify the configuration value when they expire.  For more details see ([Authentication](#authentication)).  Here is an example docker run command with a bind mount which mount this host directory /etc/ring-mqtt to the container path /data:
+```
+docker run --rm --mount type=bind,source=/etc/ring-mqtt,target=/data -e "MQTTHOST={host_name}" -e "MQTTUSER={mqtt_user}" -e "MQTTPASSWORD={mqtt_pw}" -e "RINGTOKEN={ring_refreshToken}" tsightler/ring-mqtt
+```
 Note that only **RINGTOKEN** is technically required but in practice at least **MQTTHOST** will likely be required as well (unless you use the host network option in "docker run" command).  **MQTTUSER/MQTTPASSWORD** will be required if the MQTT broker does not accept anonymous connections.  Default values for the environment values if they are not defined are as follows:
 
 | Environment Variable Name | Default |
