@@ -353,7 +353,7 @@ function startMqtt(mqttClient, ringClient) {
         try {
             CONFIG = require(configFile)
         } catch (error) {
-            debug('No configuration file found, attempting to use environment variables for settings.')
+            debug('No configuration file found, attempting to use environment variables for configuration.')
             CONFIG = {
                 "host": process.env.MQTTHOST,
                 "port": process.env.MQTTPORT,
@@ -386,8 +386,8 @@ function startMqtt(mqttClient, ringClient) {
         } else if (configFile) {
             CONFIG.ring_token = newRefreshToken
             fs.writeFile(configFile, JSON.stringify(CONFIG, null, 4), (err) => {
-            if (err) throw err;
-            debug('Config file saved with updated refresh token.')
+                if (err) throw err;
+                debug('Config file saved with updated refresh token.')
             })
         }
     }
@@ -407,7 +407,7 @@ const main = async(generatedToken) => {
         stateFile = '/data/ring-state.json'
     }
 
-    // Initiate the configuration variable from file or environment variables
+    // Initiate the CONFIG variable from file or environment variables
     await initConfig(configFile)
 
     // If new token was generated via web UI, use it, otherwise attempt to read latest token from state file
@@ -416,10 +416,20 @@ const main = async(generatedToken) => {
         stateData.ring_token = generatedToken
     } else if (stateFile) {
         if (fs.existsSync(stateFile)) {
-            debug('Reading latest saved state data from file: '+stateFile)
+            debug('Reading latest data from state file: '+stateFile)
             stateData = require(stateFile)
         } else {
-            debug('Saved state file '+stateFile+' not found.')
+            debug('File '+stateFile+' not found. No saved state data available.')
+        }
+    }
+    
+    if (!CONFIG.ring_token && !stateData.ring_token) {
+        if (process.env.ISDOCKER) {
+            debug('No refresh token was found in state file and RINGTOKEN is not configured.')
+            process.exit(2)
+        } else {
+            debug('No refresh token was found in state file or config file.')
+            startWeb()
         }
     }
 
@@ -429,7 +439,7 @@ const main = async(generatedToken) => {
         await utils.sleep(10)
     }
 
-    // Define base parameters for connection to Ring API
+    // Define basic parameters for connection to Ring API
     const ringAuth = { 
         cameraStatusPollingSeconds: 20,
         cameraDingsPollingSeconds: 2
@@ -455,11 +465,8 @@ const main = async(generatedToken) => {
 
     // If Ring API is not already connected, try using refresh token from config file or RINGTOKEN variable
     if (!ringClient && CONFIG.ring_token) {
-        if (process.env.ISDOCKER) {
-            debug('Attempting connection to Ring API using RINGTOKEN environment variable.')
-        } else {
-            debug('Attempting connection to Ring API using refresh token from file: '+configFile)
-        }
+        const debugMsg = process.env.ISDOCKER ? 'RINGTOKEN environment variable.' : 'refresh token from file: '+configFile
+        debug('Attempting connection to Ring API using '+debugMsg)
         ringAuth.refreshToken = CONFIG.ring_token
         try {
             ringClient = new RingApi(ringAuth)
@@ -479,11 +486,7 @@ const main = async(generatedToken) => {
         }
     } else if (!ringClient && !CONFIG.ring_token) {
         if (process.env.ISDOCKER) {
-            if (!stateData.ring_token) {
-                debug('No refresh token was found in saved state and RINGTOKEN is not configured.')
-            } else {
-                debug('Could not connect with saved refresh token and RINGTOKEN is not configured.')
-            }
+            debug('Could not connect with saved refresh token and RINGTOKEN is not configured.')
             process.exit(2)
         } else {
             debug('No valid refresh tokens were found in config file.')
