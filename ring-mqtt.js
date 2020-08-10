@@ -496,6 +496,7 @@ const main = async(generatedToken) => {
             process.exit(2)
         } else if (process.env.HASSADDON) {
             debug('Could not connect with saved refresh token and no refresh token exist in config file.')
+            debug('Restart the addon to try again or use the web interface to generate a new token.')
             startWeb()
         }
     }
