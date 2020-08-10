@@ -484,14 +484,9 @@ const main = async(generatedToken) => {
                 process.exit(2)
             }
         }
-    } else if (!ringClient && !CONFIG.ring_token) {
-        if (process.env.ISDOCKER) {
-            debug('Could not connect with saved refresh token and RINGTOKEN is not configured.')
-            process.exit(2)
-        } else {
-            debug('No valid refresh tokens were found in config file.')
-            startWeb()
-        }
+    } else if (!ringClient && !CONFIG.ring_token && process.env.ISDOCKER) {
+        debug('Could not connect with saved refresh token and RINGTOKEN is not configured.')
+        process.exit(2)
     }
 
     if (ringClient) {
