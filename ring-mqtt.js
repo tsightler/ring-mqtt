@@ -436,68 +436,68 @@ const main = async(generatedToken) => {
             }
             startWeb()
         }
-    }
-
-    // Check if network is up before attempting to connect to Ring, wait if it is not ready
-    while (!(await isOnline())) {
-        debug('Network is offline, waiting 10 seconds to check again...')
-        await utils.sleep(10)
-    }
-
-    // Define basic parameters for connection to Ring API
-    const ringAuth = { 
-        cameraStatusPollingSeconds: 20,
-        cameraDingsPollingSeconds: 2
-    }
-    if (!(CONFIG.location_ids === undefined || CONFIG.location_ids == 0)) {
-        ringAuth.locationIds = CONFIG.location_ids
-    }
-
-    // If there is a saved or generated refresh token, try to connect using it first
-    if (stateData.ring_token) {
-        const tokenSource = generatedToken ? "generated" : "saved"
-        debug('Attempting connection to Ring API using '+tokenSource+' refresh token.')
-        ringAuth.refreshToken = stateData.ring_token
-        try {
-            ringClient = new RingApi(ringAuth)
-            await ringClient.getLocations()
-        } catch(error) {
-            ringClient = null
-            debug(colors.brightYellow(error.message))
-            debug(colors.brightYellow('Unable to connect to Ring API using '+tokenSource+' refresh token.'))
+    } else {
+        // Check if network is up before attempting to connect to Ring, wait if it is not ready
+        while (!(await isOnline())) {
+            debug('Network is offline, waiting 10 seconds to check again...')
+            await utils.sleep(10)
         }
-    }
 
-    // If Ring API is not already connected, try using refresh token from config file or RINGTOKEN variable
-    if (!ringClient && CONFIG.ring_token) {
-        const debugMsg = process.env.ISDOCKER ? 'RINGTOKEN environment variable.' : 'refresh token from file: '+configFile
-        debug('Attempting connection to Ring API using '+debugMsg)
-        ringAuth.refreshToken = CONFIG.ring_token
-        try {
-            ringClient = new RingApi(ringAuth)
-            await ringClient.getLocations()
-        } catch(error) {
-            ringClient = null
-            debug(colors.brightRed(error.message))
-            debug(colors.brightRed('Could not create the API instance. This could be because the Ring servers are down/unreachable'))
-            debug(colors.brightRed('or maybe all available refresh tokens are invalid.'))
-            if (process.env.HASSADDON) {
-                debug('Restart the addon to try again or use the web interface to generate a new token.')
-                startWeb()
-            } else {
-                debug('Please check the configuration and network settings, or generate a new refresh token, and try again.')
-                process.exit(2)
+        // Define basic parameters for connection to Ring API
+        const ringAuth = { 
+            cameraStatusPollingSeconds: 20,
+            cameraDingsPollingSeconds: 2
+        }
+        if (!(CONFIG.location_ids === undefined || CONFIG.location_ids == 0)) {
+            ringAuth.locationIds = CONFIG.location_ids
+        }
+
+        // If there is a saved or generated refresh token, try to connect using it first
+        if (stateData.ring_token) {
+            const tokenSource = generatedToken ? "generated" : "saved"
+            debug('Attempting connection to Ring API using '+tokenSource+' refresh token.')
+            ringAuth.refreshToken = stateData.ring_token
+            try {
+                ringClient = new RingApi(ringAuth)
+                await ringClient.getLocations()
+            } catch(error) {
+                ringClient = null
+                debug(colors.brightYellow(error.message))
+                debug(colors.brightYellow('Unable to connect to Ring API using '+tokenSource+' refresh token.'))
             }
         }
-    } else if (!ringClient && !CONFIG.ring_token) {
-        // No connection with Ring API using saved token and no configured token to try
-        if (process.env.ISDOCKER) {
-            debug('Could not connect with saved refresh token and RINGTOKEN is not configured.')    
-            process.exit(2)
-        } else if (process.env.HASSADDON) {
-            debug('Could not connect with saved refresh token and no refresh token exist in config file.')
-            debug('Restart the addon to try again or use the web interface to generate a new token.')
-            startWeb()
+
+        // If Ring API is not already connected, try using refresh token from config file or RINGTOKEN variable
+        if (!ringClient && CONFIG.ring_token) {
+            const debugMsg = process.env.ISDOCKER ? 'RINGTOKEN environment variable.' : 'refresh token from file: '+configFile
+            debug('Attempting connection to Ring API using '+debugMsg)
+            ringAuth.refreshToken = CONFIG.ring_token
+            try {
+                ringClient = new RingApi(ringAuth)
+                await ringClient.getLocations()
+            } catch(error) {
+                ringClient = null
+                debug(colors.brightRed(error.message))
+                debug(colors.brightRed('Could not create the API instance. This could be because the Ring servers are down/unreachable'))
+                debug(colors.brightRed('or maybe all available refresh tokens are invalid.'))
+                if (process.env.HASSADDON) {
+                    debug('Restart the addon to try again or use the web interface to generate a new token.')
+                    startWeb()
+                } else {
+                    debug('Please check the configuration and network settings, or generate a new refresh token, and try again.')
+                    process.exit(2)
+                }
+            }
+        } else if (!ringClient && !CONFIG.ring_token) {
+            // No connection with Ring API using saved token and no configured token to try
+            if (process.env.ISDOCKER) {
+                debug('Could not connect with saved refresh token and RINGTOKEN is not configured.')    
+                process.exit(2)
+            } else if (process.env.HASSADDON) {
+                debug('Could not connect with saved refresh token and no refresh token exist in config file.')
+                debug('Restart the addon to try again or use the web interface to generate a new token.')
+                startWeb()
+            }
         }
     }
 
