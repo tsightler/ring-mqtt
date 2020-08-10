@@ -9,9 +9,9 @@ mqtt:
     topic: 'hass/status'
     payload: 'online'
 ```
-However, modern versions of Home Assistant are moving to emphasize UI based configuration over YAML and birth/last will messages are automatically send to the homeassistant/status topic by default.  This default config.json with this script has been modified to monitor the default topic so no special configuration is needed for new installs.
+However, modern versions of Home Assistant (>=0.113) have enabled birth/last will messages by default using the homeassistant/status topic (vs hass/status previously used by this addon).  The default config.json with this script has been modified to monitor the default topic so no special configuration is needed for new installs.
 
-For existing users who had implemented the previously recommended configuration, it will continue to work without changes, however, for consistency with future configurations it is now recommended to revert the Home Assistant MQTT configuraiton to defaults and modify the config.json file to change the hass_topic from hass/status to homeassistant/status.  You can also completely switch to UI configuration for the MQTT component once making this change.
+For existing users who had implemented the previously recommended configuration, it will continue to work without changes, however, for consistency with future configurations it is now recommended to revert the Home Assistant MQTT configuraiton to defaults and modify the config.json file to change the hass_topic value from hass/status to homeassistant/status.  You can also completely switch to UI configuration for the MQTT component after making this change.
 
 ## Standard Installation (Linux)
 Make sure Node.js (tested with 10.16.x and higher) is installed on your system and then clone this repo:
@@ -48,7 +48,10 @@ Or just run directly (Docker will automatically pull the image if it doesn't exi
 ```
 docker run --rm -e "MQTTHOST={host name}" -e "MQTTPORT={host port}" -e "MQTTRINGTOPIC={ring topic}" -e "MQTTHASSTOPIC={hass topic}" -e "MQTTUSER={mqtt user}" -e "MQTTPASSWORD={mqtt pw}" -e "RINGTOKEN={ring refreshToken}" -e "ENABLECAMERAS={true-or-false}" -e "RINGLOCATIONIDS={comma-separated location IDs}" tsightler/ring-mqtt
 ```
-Note that only **RINGTOKEN** is technically required but in practice at least **MQTTHOST** will likely be required (unless you use the host network option in "docker run" command).  **MQTTUSER/MQTTPASSWORD** will be required if the MQTT broker does not accept anonymous connections.  Default values for the environment values if they are not defined are as follows:
+
+In ring-mqtt version >=3.2.0 the Docker build supports the use of a bind mount for persistent storage, this is used to store updated refresh tokens.  While this is not required, it can be useful as refresh tokens eventually expire and are renewed automatically by the script.  Using persistent storage will store these newer tokens in a file which will be read during script startup and the connection to the Ring server will attempt to use this token before any configured token.  If you do not specify a bind mount the script will continue function as it did previously, but you may have to manually regenerate a token when they expire.  For more details see ([Authentication](#authentication)).
+
+Note that only **RINGTOKEN** is technically required but in practice at least **MQTTHOST** will likely be required as well (unless you use the host network option in "docker run" command).  **MQTTUSER/MQTTPASSWORD** will be required if the MQTT broker does not accept anonymous connections.  Default values for the environment values if they are not defined are as follows:
 
 | Environment Variable Name | Default |
 | --- | --- |
@@ -64,7 +67,9 @@ Note that only **RINGTOKEN** is technically required but in practice at least **
 When submitting any issue with the Docker build, please be sure to add '-e "DEBUG=ring-mqtt"' to the Docker run command before submitting.
 
 ## Authentication
-Ring has made two factor authentication (2FA) mandatory thus the script now only supports this authentication method.  Using 2FA requires acquiring a refresh token for your Ring account and seting the ring_token parameter in the config file (standard/Hass.io installs) or passing the token with the RINGTOKEN environment variable (Docker installs).  There are two primary ways to acquire this token:
+Ring has made two factor authentication (2FA) mandatory thus the script now only supports this authentication method.  Using 2FA requires acquiring a refresh token for your Ring account and seting the ring_token parameter in the config file (standard/Hass.io installs) or passing the token with the RINGTOKEN environment variable (Docker installs).
+
+There are two primary ways to acquire this token:
 
 **Option 1:** Use ring-auth-cli from the command line.  This command can be run from any system with NodeJS installed.  If you are using the standard Linux installation method after running the "npm install" step you can execute the following from the ring-mqtt directory: 
 ```
@@ -77,12 +82,21 @@ docker run -it --rm --entrypoint node_modules/ring-client-api/ring-auth-cli.js t
 ```
 For more details please check the [Two Factor Auth](https://github.com/dgreif/ring/wiki/Two-Factor-Auth) documentation from the ring client API.
 
-**Option 2:** This method is primarily for Hass.io, but also works with the standard script method (it does not work for the Docker method).  If you leave the ring_token parameter blank in the config file and run the script, it will detect that you don't yet have a refresh token and start a small web service at http://<ip_of_server>:55123.  Simply go to this URL with your browser, enter your username/password and then 2FA code, and it will display the Ring refresh token that you can just copy/paste into the config file.
+**Option 2:** This method is primarily for Home Assistant add-on, but also works with the standard script method (it does not work for the Docker method).  If you leave the ring_token parameter blank in the config file and run the script, it will detect that you don't yet have a refresh token and start a small web service at http://<ip_of_server>:55123.  Simply go to this URL with your browser, enter your username/password and then 2FA code, and it will display the Ring refresh token that you can just copy/paste into the config file.
 
 For more details please check the [Two Factor Auth](https://github.com/dgreif/ring/wiki/Two-Factor-Auth) documentation from the ring client API.
 
-### ***Important Node regarding your refresh token***
-Using 2FA authenticaiton opens up the possibility that, if your Home Assistant or Hass.io environment is comporomised, an attacker can acquire the refresh token and use this to authenticate to your Ring account without knowing your username/password and completely bypassing the 2FA protections.  Please secure your Home Assistant environment carefully.
+### ***Important Note regarding expiring refresh tokens***
+Refresh tokens do expire and this can cause issues during restarts since you may have to manually acquire a new token.  Starting with version 3.2.0 of this script updated refresh tokens are automatically stored in a persistent manner where possible.  The exact nature of how these updated tokens are stored vary slightly based on installation type as described below:
+
+**Standard Installation:** The script will attempt to automatically write new tokens to the config.json file.  Note that this means the script must be running under an account which has permissions to this file
+
+**Docker Installation:** The script will attempt to store refresh tokens in /data/ring-state.json.  Note that for these to be persistent accross restarts you must provide a bind mount to this path during docker run stage as descibed in the Docker installtion section.  If /data/ring-state.json doesn't exist during startup, or if the system fails to authenticate using this token, it will fall back to using the RINGTOKEN envrionment variable, if defined.
+
+**Home Assistant Add-on:** The script will store refresh tokens in /data/ring-state.json.  If /data/ring-state.json doesn't exist during startup, or if the system fails to authenticate using this token, it will fall back to using the ring_token value defined in the configuration.  If no tokens are available, or if all tokens fail to authenticate, it will start the web service and allow you to generate a new token.  Note that it is no longer required to manually copy/paste the token into the config file in this case, once you generate the token via the web UI it will save the token in /data/ring-state.json and automatically attempt to connect using this new token.  The ring_token value can stay completely blank in this case, however, if you prefer to manually create a token without using the Web UI, it is still possible to set this value in the config, but it is no longer required.
+
+### ***Important Note regarding the security of your refresh token***
+Using 2FA authentication opens up the possibility that, if your Home Assistant environment is comporomised, an attacker can acquire the refresh token and use this to authenticate to your Ring account without knowing your username/password and completely bypassing any 2FA protections.  Please secure your Home Assistant environment carefully.
 
 Because of this added risk, it's a good idea to create a second account dedicated to this script.  This allows actions performed by this script to be easily audited since they will show up in activity logs with their own name instead of that of the primary account.  Also, you can control what devices the script has access to and easily disable access if nafarious activity is detected.
 
