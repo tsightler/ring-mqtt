@@ -350,10 +350,11 @@ function startMqtt(mqttClient, ringClient) {
 
     // Create CONFIG object from file or envrionment variables
     async function initConfig(configFile) {
+        debug('Attempting to read configuration file: '+configFile)
         try {
             CONFIG = require(configFile)
         } catch (error) {
-            debug('No configuration file found, attempting to use environment variables for configuration.')
+            debug('Configuration file not found, attempting to use environment variables for configuration.')
             CONFIG = {
                 "host": process.env.MQTTHOST,
                 "port": process.env.MQTTPORT,
@@ -484,7 +485,7 @@ const main = async(generatedToken) => {
                 debug('Restart the addon to try again or use the web interface to generate a new token.')
                 startWeb()
             } else {
-                debug('Please check the configuration and network settings and try again.')
+                debug('Please check the configuration and network settings, or generate a new refresh token, and try again.')
                 process.exit(2)
             }
         }
