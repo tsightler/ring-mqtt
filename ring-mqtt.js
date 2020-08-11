@@ -13,6 +13,7 @@ const fs = require('fs')
 const express = require('express')
 const bodyParser = require("body-parser")
 const SecurityPanel = require('./devices/security-panel')
+const ModesPanel = require('./devices/modes-panel')
 const ContactSensor = require('./devices/contact-sensor')
 const MotionSensor = require('./devices/motion-sensor')
 const FloodFreezeSensor = require('./devices/flood-freeze-sensor')
@@ -77,8 +78,25 @@ async function processLocations(mqttClient, ringClient) {
                         setLocationOffline(location)
                     }
                 })
-            // If location has no alarm but has cameras publish cameras only
-            } else if (cameras && cameras.length > 0) {
+            }
+            // If location has modes then publish modes and cameras
+            if (devices && devices.length > 0 && utils.hasModes(devices)) {
+                // For modes subscribe to websocket connection monitor
+                location.onConnected.subscribe(async connected => {
+                    if (connected) {
+                        debug('Location '+location.locationId+' is connected')
+                        publishModes = true
+                        publishLocation(devices, cameras, mqttClient)
+                        setLocationOnline(location)
+                    } else {
+                        debug('Location '+location.locationId+' is disconnected')
+                        publishModes = false
+                        setLocationOffline(location)
+                    }
+                })
+            }
+            // If location has no alarm nor modes but has cameras publish cameras only
+            else if (cameras && cameras.length > 0) {
                 publishLocation(devices, cameras, mqttClient)
             }
         } else {
@@ -119,6 +137,11 @@ async function publishLocation(devices, cameras, mqttClient) {
                     publishAlarmDevice(device, mqttClient)
                 })
             }
+            if (devices && devices.length > 0 && utils.hasModes(devices) && publishModes) {
+                devices.forEach((device) => {
+                    publishModesDevice(device, mqttClient)
+                })
+            }
             if (CONFIG.enable_cameras && cameras && cameras.length > 0) {
                 publishCameras(cameras, mqttClient)
             }
@@ -131,7 +154,7 @@ async function publishLocation(devices, cameras, mqttClient) {
     }
 }
 
-// Return supportted alarm device class
+// Return supported alarm device class
 function getAlarmDevice(device, mqttClient, ringTopic) {
     switch (device.deviceType) {
         case RingDeviceType.ContactSensor:
@@ -164,6 +187,16 @@ function getAlarmDevice(device, mqttClient, ringTopic) {
             return new Switch(device, mqttClient, ringTopic)
     }
 
+// Return supported modes device class
+function getModesDevice(device, mqttClient, ringTopic) {
+    switch (device.deviceType) {
+        case RingDeviceType.MotionSensor:
+            return new MotionSensor(device, mqttClient, ringTopic)
+        case RingDeviceType.ModesPanel:
+            return new ModesPanel(device, mqttClient, ringTopic)
+    }
+
+
     if (/^lock($|\.)/.test(device.deviceType)) {
         return new Lock(device, mqttClient, ringTopic)
     }
@@ -184,6 +217,25 @@ function publishAlarmDevice(device, mqttClient) {
             debug('Publishing new device id: '+newAlarmDevice.deviceId)
             newAlarmDevice.init()
             subscribedDevices.push(newAlarmDevice)
+        } else {
+            debug('!!! Found unsupported device type: '+device.deviceType+' !!!')
+        }
+    }
+}
+
+// Publish an individual modes device
+function publishModesDevice(device, mqttClient) {
+    const existingModesDevice = subscribedDevices.find(d => (d.deviceId == device.zid && d.locationId == device.location.locationId))
+    
+    if (existingModesDevice) {
+        debug('Republishing existing device id: '+existingModesDevice.deviceId)
+        existingModesDevice.init()
+    } else {
+        const newModesDevice = getModesDevice(device, mqttClient, CONFIG.ring_topic)
+        if (newModesDevice) {
+            debug('Publishing new device id: '+newModesDevice.deviceId)
+            newModesDevice.init()
+            subscribedDevices.push(newModesDevice)
         } else {
             debug('!!! Found unsupported device type: '+device.deviceType+' !!!')
         }
