@@ -173,8 +173,7 @@ function getAlarmDevice(device, mqttClient, ringTopic) {
 
 // Publish an individual alarm device
 function publishAlarmDevice(device, mqttClient) {
-    const existingAlarmDevice = subscribedDevices.find(d => (d.deviceId == device.zid && d.locationId == device.location.locationId))
-    
+    const existingAlarmDevice = subscribedDevices.find(d => (d.deviceId == device.zid && d.locationId == device.location.locationId))    
     if (existingAlarmDevice) {
         debug('Republishing existing device id: '+existingAlarmDevice.deviceId)
         existingAlarmDevice.init()
@@ -396,6 +395,7 @@ function startMqtt(mqttClient, ringClient) {
 
 // Main code loop
 const main = async(generatedToken) => {
+    let ringAuth = new Object()
     let configFile = './config.json'
     let stateData = new Object()
     let stateFile
@@ -408,10 +408,10 @@ const main = async(generatedToken) => {
         stateFile = '/data/ring-state.json'
     }
 
-    // Initiate the CONFIG variable from file or environment variables
+    // Initiate CONFIG object from file or environment variables
     await initConfig(configFile)
 
-    // If new token was generated via web UI, use it, otherwise attempt to read latest token from state file
+    // If refresh token was generated via web UI, use it, otherwise attempt to get latest token from state file
     if (generatedToken) {
         debug('Using refresh token generated via web UI.')
         stateData.ring_token = generatedToken
@@ -424,6 +424,7 @@ const main = async(generatedToken) => {
         }
     }
     
+    // If no refresh tokens were found, either exit or start Web UI for token generator
     if (!CONFIG.ring_token && !stateData.ring_token) {
         if (process.env.ISDOCKER) {
             debug('No refresh token was found in state file and RINGTOKEN is not configured.')
@@ -437,16 +438,19 @@ const main = async(generatedToken) => {
             startWeb()
         }
     } else {
-        // Check if network is up before attempting to connect to Ring, wait if it is not ready
+        // There is at least one token in state file or config
+        // Check if network is up before attempting to connect to Ring, wait if network is not ready
         while (!(await isOnline())) {
             debug('Network is offline, waiting 10 seconds to check again...')
             await utils.sleep(10)
         }
 
-        // Define basic parameters for connection to Ring API
-        const ringAuth = { 
-            cameraStatusPollingSeconds: 20,
-            cameraDingsPollingSeconds: 2
+        // Define some basic parameters for connection to Ring API
+        if (CONFIG.enable_cameras) {
+            ringAuth = { 
+                cameraStatusPollingSeconds: 20,
+                cameraDingsPollingSeconds: 2
+            }
         }
         if (!(CONFIG.location_ids === undefined || CONFIG.location_ids == 0)) {
             ringAuth.locationIds = CONFIG.location_ids
@@ -503,12 +507,13 @@ const main = async(generatedToken) => {
 
     if (ringClient) {
         debug('Connection to Ring API successful')
+
+        // Subscribed to token update events and save new token
         ringClient.onRefreshTokenUpdated.subscribe( async ({ newRefreshToken, oldRefreshToken }) => {
             updateToken(newRefreshToken, oldRefreshToken, stateFile, configFile)
         })
 
         // Initiate connection to MQTT broker
-        await utils.sleep(1)
         try {
             debug('Starting connection to MQTT broker...')
             mqttClient = await initMqtt()
