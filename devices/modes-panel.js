@@ -3,22 +3,13 @@ const utils = require( '../lib/utils' )
 const AlarmDevice = require('./alarm-device')
 
 class ModesPanel extends AlarmDevice {
-    // This is not a "real" device so constructor is a little different
-    constructor(location, mqttClient, ringTopic) {
-        this.location = location
-        this.mqttClient = mqttClient
-        this.locationId = this.location.locationId
-        this.name = this.location.name+' Modes'
-        this.deviceId = locationId+'_mode_switch'
-        this.availabilityState = 'offline'
-    }
-
     async init() {
         // Home Assistant component type and device class (set appropriate icon)
         this.component = 'alarm_control_panel'
         
         // Build required MQTT topics for device
-        this.deviceTopic = ringTopic+'/'+this.locationId+'/mode/'+this.component+'/'+this.deviceId
+        // Override device topic for this since it's not an alarm device
+        this.deviceTopic = ringTopic+'/'+this.locationId+'/'+this.component+'/'+this.deviceId
         this.stateTopic = this.deviceTopic+'/mode_state'
         this.commandTopic = this.deviceTopic+'/made_command'
         this.attributesTopic = this.deviceTopic+'/attributes'
@@ -33,7 +24,7 @@ class ModesPanel extends AlarmDevice {
         if (this.subscribed) {
             this.publishSubscribeDevice()
         } else {
-            this.location.onLocationMode.subscribe((mode) => {
+            this.device.location.onLocationMode.subscribe((mode) => {
                 this.publishData()
             })
             this.subscribed = true
@@ -124,11 +115,11 @@ class ModesPanel extends AlarmDevice {
                 debug('Cannot set alarm mode: Unknown')
                 return 'unknown'
         }
-        this.location.setLocationMode(targetMode)
+        this.device.location.setLocationMode(targetMode)
 
         // Sleep a few seconds and check if location entered the requested mode
         await utils.sleep(10);
-        if (this.location.getLocationMode() == targetMode) {
+        if (this.device.location.getLocationMode() == targetMode) {
             debug('Location successfully entered mode: '+message)
             return true
         } else {
