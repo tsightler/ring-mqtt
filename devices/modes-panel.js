@@ -8,11 +8,9 @@ class ModesPanel extends AlarmDevice {
         this.component = 'alarm_control_panel'
         
         // Build required MQTT topics for device
-        // Override device topic for this since it's not an alarm device
-        this.deviceTopic = ringTopic+'/'+this.locationId+'/'+this.component+'/'+this.deviceId
+        this.deviceTopic = ringTopic+'/'+this.locationId+'/mode/'+this.component+'/'+this.deviceId
         this.stateTopic = this.deviceTopic+'/mode_state'
         this.commandTopic = this.deviceTopic+'/made_command'
-        this.attributesTopic = this.deviceTopic+'/attributes'
         this.availabilityTopic = this.deviceTopic+'/status'
         this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
 
@@ -20,23 +18,13 @@ class ModesPanel extends AlarmDevice {
         this.publishDiscovery()
         await utils.sleep(2)
 
-        // Publish device state data with optional subscribe
-        if (this.subscribed) {
-            this.publishSubscribeDevice()
-        } else {
-            this.device.location.onLocationMode.subscribe((mode) => {
-                this.publishData()
-            })
-            this.subscribed = true
-        }
-        // Publish availability state for device
-        this.online()
+        this.publishSubscribeDevice()
     }
 
     publishDiscovery() {
         // Build the MQTT discovery message
         const message = {
-            name: this.name,
+            name: this.device.name,
             unique_id: this.deviceId,
             availability_topic: this.availabilityTopic,
             payload_available: 'online',
@@ -53,7 +41,7 @@ class ModesPanel extends AlarmDevice {
 
     publishData() {
         let locationMode
-        switch(mode) {
+        switch(this.device.location.getLocationMode()) {
             case 'disarmed':
                 locationMode = 'disarmed'
                 break;
@@ -82,12 +70,12 @@ class ModesPanel extends AlarmDevice {
         // Try to set alarm mode and retry after delay if mode set fails
         // Initial attempt with no delay
         let delay = 0
-        let retries = 12
+        let retries = 6
         let setModeSuccess = false
         while (retries-- > 0 && !(setModeSuccess)) {
             setModeSuccess = await this.trySetMode(message, delay)
-            // On failure delay 10 seconds for next set attempt
-            delay = 1
+            // On failure delay 10 seconds before next set attempt
+            delay = 10
         }
         // Check the return status and print some debugging for failed states
         if (setModeSuccess == false ) {
@@ -117,7 +105,7 @@ class ModesPanel extends AlarmDevice {
         }
         this.device.location.setLocationMode(targetMode)
 
-        // Sleep a few seconds and check if location entered the requested mode
+        // Sleep a 10 seconds and check if location entered the requested mode
         await utils.sleep(10);
         if (this.device.location.getLocationMode() == targetMode) {
             debug('Location successfully entered mode: '+message)
