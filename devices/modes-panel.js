@@ -15,7 +15,6 @@ class ModesPanel extends AlarmDevice {
         this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
 
         // Device specific properties
-        this.deviceName = this.device.location.name + ' Mode Panel'
         this.currentMode =  this.currentMode ? this.currentMode : 'unknown'
 
         // Publish discovery message for HA and wait 2 seoonds before sending state
@@ -39,7 +38,7 @@ class ModesPanel extends AlarmDevice {
     publishDiscovery() {
         // Build the MQTT discovery message
         const message = {
-            name: this.deviceName,
+            name: this.device.location.name + ' Mode Panel',
             unique_id: this.deviceId,
             availability_topic: this.availabilityTopic,
             payload_available: 'online',
@@ -84,7 +83,7 @@ class ModesPanel extends AlarmDevice {
 
     // Set Alarm Mode on received MQTT command message
     async setLocationMode(message) {
-        debug('Received set mode command '+message+' for location: '+this.deviceName)
+        debug('Received set mode command '+message+' for location: '+this.device.location.name)
 
         // Try to set alarm mode and retry after delay if mode set fails
         // Initial attempt with no delay
@@ -124,10 +123,10 @@ class ModesPanel extends AlarmDevice {
         debug('Set location mode: '+targetMode)
         await this.device.location.setLocationMode(targetMode)
 
-        // Sleep a 10 seconds and check if location entered the requested mode
-        await utils.sleep(10);
-        if (targetMode == await this.device.location.getLocationMode()) {
-            debug('Location '+this.deviceName+' successfully entered mode: '+message)
+        // Sleep a 1 second and check if location entered the requested mode
+        await utils.sleep(1);
+        if (targetMode == (await this.device.location.getLocationMode()).mode) {
+            debug('Location '+this.device.location.name+' successfully entered mode: '+message)
             return true
         } else {
             debug('Location failed to enter requested mode!')
