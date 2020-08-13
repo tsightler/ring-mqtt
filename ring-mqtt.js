@@ -126,17 +126,17 @@ async function publishLocation(location, devices, mqttClient) {
         try {
             if (devices && devices.length > 0) {
                 devices.forEach((device) => {
+                    // If device is a camera standardize id and location with alarm devices
                     if (device instanceof RingCamera) {
-                        device.deviceId = device.data.device_id
+                        device.id = device.data.device_id
                         device.location = location
                         device.deviceType = 'camera'
-                        device.isCamera = true
                         publishDevice(device, mqttClient)
                     } else if (location.hasHubs && location.enablePublish) {
                         publishDevice(device, mqttClient)
                     }
                 })
-                // If modes enabled and location has mode support add a mode control panel virtual device
+                // If modes are enabled and location supports modes, publish a mode control panel virtual device
                 if (CONFIG.enable_modes && (await location.supportsLocationModeSwitching())) {
                     device = {
                         deviceType: 'location.mode',
@@ -204,7 +204,7 @@ function getDevice(device, mqttClient, ringTopic) {
 function publishDevice(device, mqttClient) {
     const existingDevice = publishedDevices.find(d => (d.deviceId == device.id && d.locationId == device.location.locationId))    
     if (existingDevice) {
-        if (!existingDevice.isCamera || (existingDevice.isCamera && existingDevice.availabilityState == 'online')) {
+        if (!existingDevice.cameraTopic || (existingDevice.cameraTopic && existingDevice.availabilityState == 'online')) {
             debug('Republishing existing device id: '+existingDevice.deviceId)
             existingDevice.init()
         }
