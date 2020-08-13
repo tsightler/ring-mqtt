@@ -13,6 +13,9 @@ class ModesPanel extends AlarmDevice {
         this.commandTopic = this.deviceTopic+'/mode_command'
         this.availabilityTopic = this.deviceTopic+'/status'
         this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
+
+        // Device specific properties
+        this.deviceName = this.device.location.name + ' Mode Panel'
         this.currentMode =  this.currentMode ? this.currentMode : 'unknown'
 
         // Publish discovery message for HA and wait 2 seoonds before sending state
@@ -25,8 +28,8 @@ class ModesPanel extends AlarmDevice {
             this.currentMode = 'republish'
             this.publishData(priorMode)
         } else {
-            this.device.location.onLocationMode.subscribe((newMode) => {
-                this.publishData(newMode)
+            this.device.location.onLocationMode.subscribe((mode) => {
+                this.publishData(mode)
             })
             this.subscribed = true
         }
@@ -36,7 +39,7 @@ class ModesPanel extends AlarmDevice {
     publishDiscovery() {
         // Build the MQTT discovery message
         const message = {
-            name: this.device.name,
+            name: this.deviceName,
             unique_id: this.deviceId,
             availability_topic: this.availabilityTopic,
             payload_available: 'online',
@@ -81,7 +84,7 @@ class ModesPanel extends AlarmDevice {
 
     // Set Alarm Mode on received MQTT command message
     async setLocationMode(message) {
-        debug('Received set mode command '+message+' for location ID: '+this.locationId)
+        debug('Received set mode command '+message+' for location: '+this.deviceName)
 
         // Try to set alarm mode and retry after delay if mode set fails
         // Initial attempt with no delay
@@ -119,12 +122,12 @@ class ModesPanel extends AlarmDevice {
                 return 'unknown'
         }
         debug('Set location mode: '+targetMode)
-        this.device.location.setLocationMode(targetMode)
+        await this.device.location.setLocationMode(targetMode)
 
         // Sleep a 10 seconds and check if location entered the requested mode
         await utils.sleep(10);
-        if (this.device.location.getLocationMode() == targetMode) {
-            debug('Location successfully entered mode: '+message)
+        if (targetMode == await this.device.location.getLocationMode()) {
+            debug('Location '+this.deviceName+' successfully entered mode: '+message)
             return true
         } else {
             debug('Location failed to enter requested mode!')

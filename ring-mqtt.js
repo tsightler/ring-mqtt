@@ -126,23 +126,25 @@ async function publishLocation(location, devices, mqttClient) {
         try {
             if (devices && devices.length > 0) {
                 devices.forEach((device) => {
-                    // If device is a camera standardize id and location with alarm devices
                     if (device instanceof RingCamera) {
+                        // Device is a camera so define id, location and deviceType properties
+                        // for consistency with alarm/hub devices 
                         device.id = device.data.device_id
                         device.location = location
                         device.deviceType = 'camera'
                         publishDevice(device, mqttClient)
                     } else if (location.hasHubs && location.enablePublish) {
+                        // Publish an alarm/hub device
                         publishDevice(device, mqttClient)
                     }
                 })
-                // If modes are enabled and location supports modes, publish a mode control panel virtual device
+                // If Ring modes support is enabled and this location supports modes
+                // publish a virtual control panel device for monitoring/changing modes
                 if (CONFIG.enable_modes && (await location.supportsLocationModeSwitching())) {
                     device = {
                         deviceType: 'location.mode',
                         location: location,
                         id: location.id + '_mode_settings',
-                        name: location.name + ' Mode Settings'
                     }
                     publishDevice(device, mqttClient)
                 }
