@@ -66,8 +66,8 @@ async function processLocations(mqttClient, ringClient) {
         // If camera support is enabled get cameras
         if (CONFIG.enable_cameras) {
             cameras = await location.cameras
+            devices = [...devices, ...cameras]
         }
-        devices = [...devices, ...cameras]
 
         // If this is initial publish for location add to publishedLocations
         if (!(publishedLocations.includes(location.locationId))) {
