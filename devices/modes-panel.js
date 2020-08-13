@@ -8,17 +8,29 @@ class ModesPanel extends AlarmDevice {
         this.component = 'alarm_control_panel'
         
         // Build required MQTT topics for device
-        this.deviceTopic = ringTopic+'/'+this.locationId+'/mode/'+this.component+'/'+this.deviceId
+        this.deviceTopic = this.ringTopic+'/'+this.locationId+'/mode/'+this.component+'/'+this.deviceId
         this.stateTopic = this.deviceTopic+'/mode_state'
-        this.commandTopic = this.deviceTopic+'/made_command'
+        this.commandTopic = this.deviceTopic+'/mode_command'
         this.availabilityTopic = this.deviceTopic+'/status'
         this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
+        this.currentMode =  this.currentMode ? this.currentMode : 'unknown'
 
         // Publish discovery message for HA and wait 2 seoonds before sending state
         this.publishDiscovery()
         await utils.sleep(2)
 
-        this.publishSubscribeDevice()
+        // This is a polled device so don't use common publish/subscribe function
+        if (this.subscribed) {
+            const priorMode = this.currentMode
+            this.currentMode = 'republish'
+            this.publishData(priorMode)
+        } else {
+            this.device.location.onLocationMode.subscribe((newMode) => {
+                this.publishData(newMode)
+            })
+            this.subscribed = true
+        }
+        this.online()
     }
 
     publishDiscovery() {
@@ -39,23 +51,27 @@ class ModesPanel extends AlarmDevice {
         this.mqttClient.subscribe(this.commandTopic)
     }
 
-    publishData() {
-        let locationMode
-        switch(this.device.location.getLocationMode()) {
+    async publishData(mode) {
+        let mqttMode
+        switch(mode) {
             case 'disarmed':
-                locationMode = 'disarmed'
+                mqttMode = 'disarmed'
                 break;
             case 'home':
-                locationMode = 'armed_home'
+                mqttMode = 'armed_home'
                 break;
             case 'away':
-                locationMode = 'armed_away'
+                mqttMode = 'armed_away'
                 break;
             default:
-                locationMode = 'disarmed'
+                mqttMode = 'disarmed'
         }
-        // Publish device sensor state
-        this.publishMqtt(this.stateTopic, locationMode, true)
+
+        // Publish device state if it's changed from prior state
+        if (this.currentMode !== mode) {
+            this.currentMode = mode
+            this.publishMqtt(this.stateTopic, mqttMode, true)
+        }
     }
     
     // Process messages from MQTT command topic
@@ -88,10 +104,9 @@ class ModesPanel extends AlarmDevice {
     async trySetMode(message, delay) {
         await utils.sleep(delay)
         let targetMode
-        debug('Set location mode: '+message)
         switch(message) {
             case 'DISARM':
-                targetMode = 'none'
+                targetMode = 'disarmed'
                 break
             case 'ARM_HOME':
                 targetMode = 'home'
@@ -103,6 +118,7 @@ class ModesPanel extends AlarmDevice {
                 debug('Cannot set alarm mode: Unknown')
                 return 'unknown'
         }
+        debug('Set location mode: '+targetMode)
         this.device.location.setLocationMode(targetMode)
 
         // Sleep a 10 seconds and check if location entered the requested mode
