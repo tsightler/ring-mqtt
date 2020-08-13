@@ -77,7 +77,7 @@ There are two primary ways to acquire this token:
 node node_modules/ring-client-api/ring-auth-cli.js
 ```
 
-   If you are using the Docker, you can execute:
+If you are using the Docker, you can execute:
 ```
 docker run -it --rm --entrypoint node_modules/ring-client-api/ring-auth-cli.js tsightler/ring-mqtt
 ```
@@ -88,11 +88,11 @@ For more details please check the [Two Factor Auth](https://github.com/dgreif/ri
 For more details please check the [Two Factor Auth](https://github.com/dgreif/ring/wiki/Two-Factor-Auth) documentation from the ring client API.
 
 ### ***Important Note regarding expiring refresh tokens***
-Refresh tokens do expire and this can cause issues during restarts since you may have to manually acquire a new token.  Starting with version 3.2.0 of this script updated refresh tokens are automatically stored in a persistent manner where possible.  The exact nature of how these updated tokens are stored vary slightly based on installation type as described below:
+Refresh tokens do expire and this can cause issues during restarts since you may have to manually acquire a new token.  Starting with version 3.2.0 of this script, updated refresh tokens are automatically stored in a persistent manner where possible.  The exact nature of how these updated tokens are stored varies slightly based on installation type as described below:
 
-**Standard Installation:** The script will attempt to automatically write new tokens to the config.json file.  Note that this means the script must be running under an account which has permissions to this file
+**Standard Installation:** The script will attempt to automatically write new tokens to the config.json file.  Note that this means the script must be running under an account which has permissions to this file/directory.
 
-**Docker Installation:** The script will attempt to store refresh tokens in /data/ring-state.json.  Note that for these to be persistent accross restarts you must provide a bind mount to this path during docker run stage as descibed in the Docker installtion section.  If /data/ring-state.json doesn't exist during startup, or if the system fails to authenticate using this token, it will fall back to using the RINGTOKEN envrionment variable, if defined.
+**Docker Installation:** The script will attempt to store refresh tokens in /data/ring-state.json.  Note that for this file to be persistent accross restarts you must provide a bind mount to this path during the docker run stage as descibed in the Docker installation section.  If /data/ring-state.json doesn't exist during startup, or if the system fails to authenticate using this token, it will fall back to using the RINGTOKEN envrionment variable, if defined.
 
 **Home Assistant Add-on:** The script will store refresh tokens in /data/ring-state.json.  If /data/ring-state.json doesn't exist during startup, or if the system fails to authenticate using this token, it will fall back to using the ring_token value defined in the configuration.  If no tokens are available, or if all tokens fail to authenticate, it will start the web service and allow you to generate a new token.  Note that it is no longer required to manually copy/paste the token into the config file in this case, once you generate the token via the web UI it will save the token in /data/ring-state.json and automatically attempt to connect using this new token.  The ring_token value can stay completely blank in this case, however, if you prefer to manually create a token without using the Web UI, it is still possible to set this value in the config, but it is no longer required.
 

@@ -2,7 +2,6 @@ const debug = require('debug')('ring-mqtt')
 const utils = require( '../lib/utils' )
 
 class Camera {
-
     constructor(camera, mqttClient, ringTopic) {
         this.camera = camera
         this.mqttClient = mqttClient

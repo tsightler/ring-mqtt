@@ -7,7 +7,8 @@ class AlarmDevice {
         this.mqttClient = mqttClient
         // Set device location and top level MQTT topics 
         this.locationId = this.device.location.locationId
-        this.deviceId = this.device.zid
+        this.deviceId = this.device.id
+        this.ringTopic = ringTopic
         this.alarmTopic = ringTopic+'/'+this.locationId+'/alarm'
         this.availabilityState = 'offline'
     }
