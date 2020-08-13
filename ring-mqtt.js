@@ -63,13 +63,13 @@ async function processLocations(mqttClient, ringClient) {
         // Get all devices for location
         devices = await location.getDevices()
 
-        // If camera support is enabled get cameras
+        // If camera support is enabled get cameras and join them with other devices
         if (CONFIG.enable_cameras) {
             cameras = await location.cameras
             devices = [...devices, ...cameras]
         }
 
-        // If this is initial publish for location add to publishedLocations
+        // If this is the initial publish for location add to publishedLocations
         if (!(publishedLocations.includes(location.locationId))) {
             publishedLocations.push(location.locationId)
             if (devices && devices.length > 0 && location.hasHubs) {
@@ -136,7 +136,7 @@ async function publishLocation(location, devices, mqttClient) {
                         publishDevice(device, mqttClient)
                     }
                 })
-                // If location has modes enabled add a mode control panel virtual device
+                // If modes enabled and location has mode support add a mode control panel virtual device
                 if (CONFIG.enable_modes && (await location.supportsLocationModeSwitching())) {
                     device = {
                         deviceType: 'location.mode',
@@ -144,7 +144,6 @@ async function publishLocation(location, devices, mqttClient) {
                         id: location.id + '_mode_settings',
                         name: location.name + ' Mode Settings'
                     }
-                    console.log(device.location.locationId)
                     publishDevice(device, mqttClient)
                 }
                 await utils.sleep(1)
@@ -205,10 +204,7 @@ function getDevice(device, mqttClient, ringTopic) {
 function publishDevice(device, mqttClient) {
     const existingDevice = publishedDevices.find(d => (d.deviceId == device.id && d.locationId == device.location.locationId))    
     if (existingDevice) {
-        if (existingDevice.isCamera && existingDevice.availabilityState == 'online') {
-            debug('Republishing existing device id: '+existingDevice.deviceId)
-            existingDevice.init()
-        } else {
+        if (!existingDevice.isCamera || (existingDevice.isCamera && existingDevice.availabilityState == 'online')) {
             debug('Republishing existing device id: '+existingDevice.deviceId)
             existingDevice.init()
         }
