@@ -58,6 +58,7 @@ Note that only **RINGTOKEN** is technically required but in practice at least **
 | MQTTUSER | blank |
 | MQTTPASSWORD | blank |
 | ENABLECAMERAS | false |
+| ENABLEMODES | false |
 | RINGLOCATIONIDS | blank |
 
 When submitting any issue with the Docker build, please be sure to add '-e "DEBUG=ring-mqtt"' to the Docker run command before submitting.
