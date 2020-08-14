@@ -54,8 +54,7 @@ async function processExit(options, exitCode) {
 
 // Loop through each location and call publishLocation for supported/connected devices
 async function processLocations(mqttClient, ringClient) {
-    let devices
-    let cameras
+    // Get all locations via API
     const locations = await ringClient.getLocations()
 
     // For each location get alarm devices and cameras
@@ -127,14 +126,14 @@ async function publishLocation(location, devices, mqttClient) {
             if (devices && devices.length > 0) {
                 devices.forEach((device) => {
                     if (device instanceof RingCamera) {
-                        // Device is a camera so define id, location and deviceType properties
-                        // for consistency with alarm/hub devices 
-                        device.id = device.data.device_id
+                        // Device is a camera, set deviceId, location and deviceType
+                        device.deviceId = device.data.device_id
                         device.location = location
-                        device.deviceType = 'camera'
+                        device.isCamera = true
                         publishDevice(device, mqttClient)
                     } else if (location.hasHubs && location.enablePublish) {
-                        // Publish an alarm/hub device
+                        // Device is alarm/hub device, only deviceID is required
+                        device.deviceId = device.id
                         publishDevice(device, mqttClient)
                     }
                 })
@@ -160,6 +159,7 @@ async function publishLocation(location, devices, mqttClient) {
 
 // Return supportted alarm device class
 function getDevice(device, mqttClient, ringTopic) {
+    if (device.isCamera) { return new Camera(device, mqttClient, ringTopic) }
     switch (device.deviceType) {
         case RingDeviceType.ContactSensor:
         case RingDeviceType.RetrofitZone:
@@ -189,8 +189,6 @@ function getDevice(device, mqttClient, ringTopic) {
                 }
         case RingDeviceType.Switch:
             return new Switch(device, mqttClient, ringTopic)
-        case 'camera':
-            return new Camera(device, mqttClient, ringTopic)
         case 'location.mode':
             return new ModesPanel(device, mqttClient,ringTopic)
     }
@@ -204,7 +202,7 @@ function getDevice(device, mqttClient, ringTopic) {
 
 // Publish a device
 function publishDevice(device, mqttClient) {
-    const existingDevice = publishedDevices.find(d => (d.deviceId == device.id && d.locationId == device.location.locationId))    
+    const existingDevice = publishedDevices.find(d => (d.deviceId == device.deviceId && d.locationId == device.location.locationId))    
     if (existingDevice) {
         if (!existingDevice.cameraTopic || (existingDevice.cameraTopic && existingDevice.availabilityState == 'online')) {
             debug('Republishing existing device id: '+existingDevice.deviceId)
