@@ -27,7 +27,6 @@ const Fan = require('./devices/fan')
 const Beam = require('./devices/beam')
 const Camera = require('./devices/camera')
 const ModesPanel = require('./devices/modes-panel')
-const { hasAlarm } = require('./lib/utils.js')
 
 var CONFIG
 var publishedLocations = new Array()
@@ -54,18 +53,19 @@ async function processExit(options, exitCode) {
 
 // Loop through each location and call publishLocation for supported/connected devices
 async function processLocations(mqttClient, ringClient) {
+    let devices
+    let cameras
     // Get all locations via API
     const locations = await ringClient.getLocations()
 
     // For each location get alarm devices and cameras
     locations.forEach(async location => {
         // Get all devices for location
-        devices = await location.getDevices()
+        const devices = await location.getDevices()
 
         // If camera support is enabled get cameras and join them with other devices
         if (CONFIG.enable_cameras) {
             cameras = await location.cameras
-            devices = [...devices, ...cameras]
         }
 
         // If this is the initial publish for location add to publishedLocations
@@ -85,13 +85,21 @@ async function processLocations(mqttClient, ringClient) {
                         setLocationOffline(location)
                     }
                 })
-            } else if (devices && devices.length > 0 && !location.hasHubs) {
-                publishLocation(location, devices, mqttClient)
-            } else {
+            }
+            if (cameras && cameras.length > 0) {
+                publishLocation(location, cameras, mqttClient)
+            }
+            if (!devices || !cameras){
                 debug('No devices found for location ID '+location.id)
             }
         } else {
-            publishLocation(location, devices, mqttClient)
+            if (devices && devices.length > 0 && location.hasHubs) {
+                publishLocation(location, devices, mqttClient)
+            }
+            if (cameras && cameras.length > 0 ) {
+                publishLocation(location, cameras, mqttClient)
+            }
+
         }
     })
 }
@@ -143,7 +151,8 @@ async function publishLocation(location, devices, mqttClient) {
                     device = {
                         deviceType: 'location.mode',
                         location: location,
-                        id: location.id + '_mode_settings',
+                        id: location.locationId + '_mode_settings',
+                        deviceId: location.locationId + '_mode_settings'
                     }
                     publishDevice(device, mqttClient)
                 }
