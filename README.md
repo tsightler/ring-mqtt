@@ -107,6 +107,7 @@ Because of this added risk, it's a good idea to create a second account dedicate
 | mqtt_pass | Password for MQTT broker | blank |
 | ring_token | The refresh token received after authenticating with 2FA - See Authentication section | blank
 | enable_cameras | Enable camera support, otherwise only alarm devices will be discovered | false |
+| enable_modes | Enable support for Location Modes for sites without a Ring Alarm Panel
 | location_ids | Array of location Ids in format: ["loc-id", "loc-id2"] | blank |
 
 By default, this script will discover and monitor enabled devices across all locations, even shared locations for which you have permissions.  To limit locations you can create a separate account and assign only the desired resources to it, or you can pass location_ids using the appropriate config option.  To get the location id from the ring website simply login to [Ring.com](https://ring.com/users/sign_in) and look at the address bar in the browser. It will look similar to ```https://app.ring.com/location/{location_id}``` with the last path element being the location id.
@@ -149,7 +150,7 @@ ring/<location_id>/camera/switch/<device_id>/siren_command          <-- Set sire
 ## Features and Plans
 ### Current features
 - Full support for 2FA including embedded web service to simplfiy generation of refresh token
-- Supports the following devices:
+- Supports the following devices and features:
   - Alarm Devices
     - Alarm control panel (Monitor arming state + Arm/Disarm actions)
     - Ring Contact and Motion Sensors
@@ -167,6 +168,10 @@ ring/<location_id>/camera/switch/<device_id>/siren_command          <-- Set sire
   - Smart Lighting
     - Lighting and motion sensor devices
     - Light groups
+  - Location Modes
+    - For locaitons without a Ring Alarm, can add a panel for controlling camera settings via Ring Location Modes
+    - Displays as an Alarm Panel in Home Assistant for setting modes and displaying mode state
+    - Must be explicitly enabled using "enabled_modes" config or ENABLEMODES envrionment variable
 - Provides battery and tamper status for supported Alarm devices via JSON attribute topic (visible in Home Assistant UI)
 - Full Home Assistant MQTT Discovery - devices appear automatically
 - Consistent topic creation based on location/device ID - easy to use with MQTT tools like Node-RED

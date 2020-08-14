@@ -7,5 +7,6 @@
     "mqtt_pass": "",
     "ring_token": "",
     "enable_cameras": false,
+    "enable_modes" : false,
     "location_ids": [""]
 }
