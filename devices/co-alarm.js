@@ -3,7 +3,6 @@ const utils = require( '../lib/utils' )
 const AlarmDevice = require('./alarm-device')
 
 class CoAlarm extends AlarmDevice {
-
     async init() {
        // Home Assistant component type and device class (set appropriate icon)
         this.component = 'binary_sensor'

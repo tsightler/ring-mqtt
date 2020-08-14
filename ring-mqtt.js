@@ -53,8 +53,6 @@ async function processExit(options, exitCode) {
 
 // Loop through each location and call publishLocation for supported/connected devices
 async function processLocations(mqttClient, ringClient) {
-    let devices
-    let cameras
     // Get all locations via API
     const locations = await ringClient.getLocations()
 
@@ -62,6 +60,7 @@ async function processLocations(mqttClient, ringClient) {
     locations.forEach(async location => {
         // Get all devices for location
         const devices = await location.getDevices()
+        let cameras
 
         // If camera support is enabled get cameras and join them with other devices
         if (CONFIG.enable_cameras) {
