@@ -38,7 +38,7 @@ class ModesPanel extends AlarmDevice {
     publishDiscovery() {
         // Build the MQTT discovery message
         const message = {
-            name: this.device.location.name + ' Mode Panel',
+            name: this.device.location.name + ' Mode',
             unique_id: this.deviceId,
             availability_topic: this.availabilityTopic,
             payload_available: 'online',
