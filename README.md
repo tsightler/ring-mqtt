@@ -1,17 +1,12 @@
 # ring-mqtt
 This script leverages the excellent [ring-client-api](https://github.com/dgreif/ring) to provide a bridge between MQTT and suppoted Ring devices such as alarm control panel, lights and cameras ([full list of supported devices and features](#current-features)).  It also provides support for Home Assistant style MQTT discovery which allows for simple Home Assistant integration with minimal configuration (assuming MQTT is already configured), including an optional [Hass.io Addon](https://github.com/tsightler/ring-mqtt-hassio-addon) for users of that platform.  It can also be used with any other tool capable of working with MQTT as it provides consistent topic naming based on location/device ID.
 
-## !!! Important changes for Home Assistant/HASS.io Users for MQTT !!!
-Previously it was highly recommended to manually configure MQTT Birth messages within Home Assistant using the following settings in Home Assistants configuration.yaml:
-```
-mqtt:
-  birth_message:
-    topic: 'hass/status'
-    payload: 'online'
-```
-However, modern versions of Home Assistant (>=0.113) have enabled birth/last will messages by default using the homeassistant/status topic (vs hass/status previously used by this addon).  The default config.json with this script has been modified to monitor the default topic so no special configuration is needed for new installs.
+## !!! Important MQTT changes for Home Assistant >=0.113 !!!
+Prior to Home Assistant 0.113 it was highly recommended to configure birth messages for the MQTT component by manually modifying configuration.yaml.  This way ring-mqtt could monitor for restarts of the Home Assistant server and automatically resend devices and state updates after a restart.  The example for this setting in the documtation, and prior versions of this script, used hass/status as the topic for these messages.
 
-For existing users who had implemented the previously recommended configuration, it will continue to work without changes, however, for consistency with future configurations it is now recommended to revert the Home Assistant MQTT configuraiton to defaults and modify the config.json file to change the hass_topic value from hass/status to homeassistant/status.  You can also completely switch to UI configuration for the MQTT component after making this change.
+However for Home Assistant >=0.113 birth/last will messages have been enabled by default but, unfortunately, uses the default topic of homeasssitant/status instead.  To comply with the defaults for Home Assistant going forward the config.json included with this script has been modified to use the homeassistant/status topic instead so, for new installs, no special configuration should be needed for most cases.
+
+For existing users who have implemented the previously recommended configuration, it will continue to work without changes after the upgrae, however, for consistency with future configurations it is now recommended to revert the Home Assistant MQTT configuraiton to defaults and modify the config.json file to change the hass_topic value from hass/status to homeassistant/status.  You can also completely switch to UI configuration for the MQTT component after making this change if you wish.
 
 ## Standard Installation (Linux)
 Make sure Node.js (tested with 10.16.x and higher) is installed on your system and then clone this repo:
