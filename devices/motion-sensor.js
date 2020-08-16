@@ -7,6 +7,7 @@ class MotionSensor extends AlarmDevice {
         // Home Assistant component type and device class (set appropriate icon)
         this.component = 'binary_sensor'
         this.className = 'motion'
+        this.deviceData.mdl = 'Motion Sensor'
 
         // Build required MQTT topics for device
         this.deviceTopic = this.alarmTopic+'/'+this.component+'/'+this.deviceId
@@ -16,6 +17,7 @@ class MotionSensor extends AlarmDevice {
         this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
 
         // Publish discovery message for HA and wait 2 seoonds before sending state
+        if (!this.discoveryData.length) { await this.createDiscoveryData() }
         this.publishDiscovery()
         await utils.sleep(2)
 
@@ -23,9 +25,10 @@ class MotionSensor extends AlarmDevice {
         this.publishSubscribeDevice()
     }
 
-    publishDiscovery() {
+    createDiscoveryData() {
+        const dd = new Object()
         // Build the MQTT discovery message
-        const message = {
+        dd.message = {
             name: this.device.name,
             unique_id: this.deviceId,
             availability_topic: this.availabilityTopic,
@@ -35,10 +38,8 @@ class MotionSensor extends AlarmDevice {
             json_attributes_topic: this.attributesTopic,
             device_class: this.className
         }
-
-        debug('HASS config topic: '+this.configTopic)
-        debug(message)
-        this.publishMqtt(this.configTopic, JSON.stringify(message))
+        dd.configTopic = this.configTopic
+        this.discoveryData.push(dd)
     }
 
     publishData() {

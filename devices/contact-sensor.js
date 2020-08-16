@@ -24,9 +24,9 @@ class ContactSensor extends AlarmDevice {
         this.attributesTopic = this.deviceTopic+'/attributes'
         this.availabilityTopic = this.deviceTopic+'/status'
         this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
-        if (!this.discoveryData.length) { await this.createDiscoveryData() }
 
         // Publish discovery message for HA and wait 2 seoonds before sending state
+        if (!this.discoveryData.length) { await this.createDiscoveryData() }
         this.publishDiscoveryData()
         await utils.sleep(2)
 
