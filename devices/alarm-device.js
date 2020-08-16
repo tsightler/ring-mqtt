@@ -14,7 +14,7 @@ class AlarmDevice {
         this.published = false
         this.discoveryData = new Array()
         this.deviceData = {
-            ids: [ this.deviceId, this.device.data.serialNumber ],
+            ids: [ this.deviceId ],
             name: this.device.name,
             mf: this.device.data.manufacturerName,
             mdl: this.device.deviceType
