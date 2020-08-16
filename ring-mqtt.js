@@ -29,8 +29,8 @@ const Camera = require('./devices/camera')
 const ModesPanel = require('./devices/modes-panel')
 
 var CONFIG
-var publishedLocations = new Array()
-var publishedDevices = new Array()
+var ringLocations = new Array()
+var ringDevices = new Array()
 var mqttConnected = false
 var republishCount = 10 // Republish config/state this many times after startup or HA start/restart
 var republishDelay = 30 // Seconds
@@ -43,131 +43,20 @@ process.on('uncaughtException', processExit.bind(null, 1))
 
 // Set unreachable status on exit
 async function processExit(options, exitCode) {
-    publishedDevices.forEach(publishedDevice => {
-        publishedDevice.offline()
+    ringDevices.forEach(ringDevice => {
+        if (ringDevice.availabilityState == 'online') { ringDevice.offline() }
     })
     if (exitCode || exitCode === 0) debug('Exit code: '+exitCode)
     await utils.sleep(1)
     process.exit()
 }
 
-// Loop through each location and call publishLocation for supported/connected devices
-async function processLocations(mqttClient, ringClient) {
-    // Get all locations via API
-    const locations = await ringClient.getLocations()
-
-    // For each location get alarm devices and cameras
-    locations.forEach(async location => {
-        // Get all devices for location
-        const devices = await location.getDevices()
-        let cameras
-
-        // If camera support is enabled get cameras and join them with other devices
-        if (CONFIG.enable_cameras) {
-            cameras = await location.cameras
-        }
-
-        // If this is the initial publish for location add to publishedLocations
-        if (!(publishedLocations.includes(location.locationId))) {
-            publishedLocations.push(location.locationId)
-            if (devices && devices.length > 0 && location.hasHubs) {
-                // Location has an alarm or lighting bridge so subscribe to websocket connection monitor
-                location.onConnected.subscribe(async connected => {
-                        if (connected) {
-                        debug('Location '+location.locationId+' is connected')
-                        location.enablePublish = true
-                        publishLocation(location, devices, mqttClient)
-                        setLocationOnline(location)
-                    } else {
-                        debug('Location '+location.locationId+' is disconnected')
-                        location.enablePublish = false
-                        setLocationOffline(location)
-                    }
-                })
-            }
-            if (cameras && cameras.length > 0) {
-                publishLocation(location, cameras, mqttClient)
-            }
-            if (!devices || !cameras){
-                debug('No devices found for location ID '+location.id)
-            }
-        } else {
-            if (devices && devices.length > 0 && location.hasHubs) {
-                publishLocation(location, devices, mqttClient)
-            }
-            if (cameras && cameras.length > 0 ) {
-                publishLocation(location, cameras, mqttClient)
-            }
-
-        }
-    })
-}
-
-// Set all devices for location online
-async function setLocationOnline(location) {
-    publishedDevices.forEach(async publishedDevice => {
-        if (publishedDevice.locationId == location.locationId && publishedDevice.device) { 
-            publishedDevice.online()
-        }
-    })
-}
-
-// Set all devices for location offline
-async function setLocationOffline(location) {
-    // Wait 30 seconds before setting devices offline in case disconnect is transient
-    // Keeps from creating "unknown" state for sensors if connection error is short lived
-    await utils.sleep(30)
-    if (location.onConnected._value) { return }
-    publishedDevices.forEach(async publishedDevice => {
-        if (publishedDevice.locationId == location.locationId && publishedDevice.device) { 
-            publishedDevice.offline()
-        }
-    })
-}
-
-// Publish devices/cameras for given location
-async function publishLocation(location, devices, mqttClient) {
-    if (republishCount < 1) { republishCount = 1 }
-    while (republishCount > 0 && mqttConnected) {
-        try {
-            if (devices && devices.length > 0) {
-                devices.forEach((device) => {
-                    if (device instanceof RingCamera) {
-                        // Device is a camera, set deviceId, location and deviceType
-                        device.deviceId = device.data.device_id
-                        device.location = location
-                        device.isCamera = true
-                        publishDevice(device, mqttClient)
-                    } else if (location.hasHubs && location.enablePublish) {
-                        // Device is alarm/hub device, only deviceID is required
-                        device.deviceId = device.id
-                        publishDevice(device, mqttClient)
-                    }
-                })
-                // If Ring modes support is enabled and this location supports modes
-                // publish a virtual control panel device for monitoring/changing modes
-                if (CONFIG.enable_modes && (await location.supportsLocationModeSwitching())) {
-                    device = {
-                        deviceType: 'location.mode',
-                        location: location,
-                        id: location.locationId + '_mode_settings',
-                        deviceId: location.locationId + '_mode_settings'
-                    }
-                    publishDevice(device, mqttClient)
-                }
-                await utils.sleep(1)
-            }
-        } catch (error) {
-            debug(error)
-        }
-        await utils.sleep(republishDelay)
-        republishCount--
+// Return supported device
+function getDevice(device, mqttClient) {
+    ringTopic = CONFIG.ring_topic
+    if (device instanceof RingCamera) {
+        return new Camera(device, mqttClient, ringTopic)
     }
-}
-
-// Return supportted alarm device class
-function getDevice(device, mqttClient, ringTopic) {
-    if (device.isCamera) { return new Camera(device, mqttClient, ringTopic) }
     switch (device.deviceType) {
         case RingDeviceType.ContactSensor:
         case RingDeviceType.RetrofitZone:
@@ -200,41 +89,162 @@ function getDevice(device, mqttClient, ringTopic) {
         case 'location.mode':
             return new ModesPanel(device, mqttClient,ringTopic)
     }
-
     if (/^lock($|\.)/.test(device.deviceType)) {
         return new Lock(device, mqttClient, ringTopic)
     }
-
     return null
 }
 
-// Publish a device
-function publishDevice(device, mqttClient) {
-    const existingDevice = publishedDevices.find(d => (d.deviceId == device.deviceId && d.locationId == device.location.locationId))    
-    if (existingDevice) {
-        if (!existingDevice.cameraTopic || (existingDevice.cameraTopic && existingDevice.availabilityState == 'online')) {
-            debug('Republishing existing device id: '+existingDevice.deviceId)
-            existingDevice.init()
-        }
-    } else {
-        const newDevice = getDevice(device, mqttClient, CONFIG.ring_topic)
-        if (newDevice) {
-            debug('Publishing new device id: '+newDevice.deviceId)
-            newDevice.init()
-            publishedDevices.push(newDevice)
+// Update all Ring location/device data
+async function updateRingData(mqttClient, ringClient) {
+    // Small delay makes debug output more readable
+    await utils.sleep(1)
+
+    // Get all Ring locations
+    const locations = await ringClient.getLocations()
+    
+    // Loop through each location and update stored locations/devices
+    for (const location of locations) {
+        let cameras = new Array()
+        const unsupportedDevices = new Array()
+
+        debug(colors.green('-'.repeat(80)))
+        let foundLocation = ringLocations.find(l => l.locationId == location.locationId)
+        // If new location, set custom properties and add to location list
+        if (foundLocation) {
+            debug(colors.green('Found existing location '+location.name+' with id '+location.id))
         } else {
-            debug('!!! Found unsupported device type: '+device.deviceType+' !!!')
+            debug(colors.green('Found new location '+location.name+' with id '+location.id))
+            if (location.hasHubs) { location.needsSubscribe = true }
+            ringLocations.push(location)
+            foundLocation = location
         }
+
+        // Get all location devices and, if configured, cameras
+        const devices = await foundLocation.getDevices()
+        if (CONFIG.enable_cameras) { cameras = await location.cameras }
+        const allDevices = [...devices, ...cameras]
+
+        // Add modes panel, if configured and the location supports it
+        if (CONFIG.enable_modes && (await foundLocation.supportsLocationModeSwitching())) {
+            allDevices.push({
+                deviceType: 'location.mode',
+                location: location,
+                id: location.locationId + '_mode',
+                deviceId: location.locationId + '_mode'
+            })
+        }
+
+        // Update Ring devices for location
+        for (const device of allDevices) {
+            const deviceId = (device instanceof RingCamera) ? device.data.device_id : device.id
+            const foundDevice = ringDevices.find(d => d.deviceId == deviceId && d.locationId == locationId)
+            if (foundDevice) {
+                debug(colors.green('  Existing device of type: '+device.deviceType))
+            } else {
+                const newDevice = getDevice(device, mqttClient)
+                if (newDevice) {
+                    ringDevices.push(newDevice)
+                    debug(colors.green('  New device of type: '+device.deviceType))
+                } else {
+                    // Save unsupported device type
+                    unsupportedDevices.push(device.deviceType)
+                }
+            }
+        }
+        // Output any unsupported devices to debug with warning
+        unsupportedDevices.forEach(deviceType => {
+            debug(colors.yellow('  Unsupported device of type: '+deviceType))
+        })
+    }
+    debug(colors.green('-'.repeat(80)))
+    debug('Ring location/device data updated, sleeping for 5 seconds.')
+    await utils.sleep(5)
+}
+
+// Set all devices for location online
+async function setLocationOnline(location) {
+    ringDevices.forEach(async ringDevice => {
+        if (ringDevice.locationId == location.locationId && ringDevice.device) { 
+            ringDevice.online()
+        }
+    })
+}
+
+// Set all devices for location offline
+async function setLocationOffline(location) {
+    // Wait 30 seconds before setting devices offline in case disconnect is transient
+    // Keeps from creating "unknown" state for sensors if connection error is short lived
+    await utils.sleep(30)
+    if (location.onConnected._value) { return }
+    ringDevices.forEach(async ringDevice => {
+        if (ringDevice.locationId == location.locationId && ringDevice.device) { 
+            ringDevice.offline()
+        }
+    })
+}
+
+// Publish devices/cameras for given location
+async function publishDevices(devices) {
+    republishCount = (republishCount < 1) ? 1 : republishCount
+    while (republishCount > 0 && mqttConnected) {
+        try {
+            if (devices && devices.length) {
+                devices.forEach((device) => {
+                    if (device.availabilityState !== 'offline') {
+                        device.init()
+                    }
+                })
+                await utils.sleep(1)
+            }
+        } catch (error) {
+            debug(error)
+        }
+        await utils.sleep(republishDelay)
+        republishCount--
     }
 }
+
+// Loop through each location and call publishLocation for supported/connected devices
+async function processLocations(mqttClient, ringClient) {
+    // Update Ring location and device data
+    await updateRingData(mqttClient, ringClient)
+ 
+    // For each location get existing alarm & camera devices
+    ringLocations.forEach(async location => {
+        const devices = await ringDevices.filter(d => d.locationId == location.locationId)
+        // If location has devices publish them
+        if (devices && devices.length) {
+            if (location.needsSubscribe) {
+                // Location has an alarm or smart bridge so subscribe to websocket connection monitor
+                location.needsSubscribe = false
+                location.onConnected.subscribe(async connected => {
+                    if (connected) {
+                        debug('Location '+location.locationId+' is connected')
+                        publishDevices(devices)
+                        setLocationOnline(location)
+                    } else {
+                        debug('Location '+location.locationId+' is disconnected')
+                        setLocationOffline(location)
+                    }
+                })
+            } else {
+                publishDevices(devices)
+            }
+        } else {
+            debug('No devices found for location ID '+location.id)
+        }
+    })
+}
+
 
 // Process received MQTT command
 async function processMqttMessage(topic, message, mqttClient, ringClient) {
     message = message.toString()
     if (topic === CONFIG.hass_topic) {
-        // Republish devices and state after 60 seconds if restart of HA is detected
         debug('Home Assistant state topic '+topic+' received message: '+message)
         if (message == 'online') {
+            // Republish devices and state after 60 seconds if restart of HA is detected
             debug('Resending device config/state in 30 seconds')
             // Make sure any existing republish dies
             republishCount = 0 
@@ -242,7 +252,6 @@ async function processMqttMessage(topic, message, mqttClient, ringClient) {
             // Reset republish counter and start publishing config/state
             republishCount = 10
             processLocations(mqttClient, ringClient)
-            debug('Resent device config/state information')
         }
     } else {
         topic = topic.split('/')
@@ -254,7 +263,7 @@ async function processMqttMessage(topic, message, mqttClient, ringClient) {
         const commandTopicLevel = topic[topic.length - 1]
 
         // Find existing device by matching location & device ID
-        const cmdDevice = publishedDevices.find(d => (d.deviceId == deviceId && d.locationId == locationId))
+        const cmdDevice = ringDevices.find(d => (d.deviceId == deviceId && d.locationId == locationId))
 
         if (cmdDevice) {
             cmdDevice.processCommand(message, commandTopicLevel)
@@ -329,6 +338,7 @@ async function startWeb() {
     })
 }
 
+// Initiate the connection to MQTT broker
 function initMqtt() {
     const mqtt = mqttApi.connect({
         host:CONFIG.host,
@@ -339,83 +349,84 @@ function initMqtt() {
     return mqtt
 }
 
+// MQTT initialization successful, setup actions for MQTT events
 function startMqtt(mqttClient, ringClient) {
-        // On MQTT connect/reconnect send config/state information after delay
-        mqttClient.on('connect', async function () {
-            if (!mqttConnected) {
-                mqttConnected = true
-                debug('MQTT connection established, sending config/state information in 5 seconds.')
-            }
-            await utils.sleep(5)
-            processLocations(mqttClient, ringClient)
-        })
-
-        mqttClient.on('reconnect', function () {
-            if (mqttConnected) {
-                debug('Connection to MQTT broker lost. Attempting to reconnect...')
-            } else {
-                debug('Attempting to reconnect to MQTT broker...')
-            }
-            mqttConnected = false
-        })
-
-        mqttClient.on('error', function (error) {
-            debug('Unable to connect to MQTT broker.', error.message)
-            mqttConnected = false
-        })
-
-        // Process MQTT messages from subscribed command topics
-        mqttClient.on('message', async function (topic, message) {
-            processMqttMessage(topic, message, mqttClient, ringClient)
-        })
-    }
-
-    // Create CONFIG object from file or envrionment variables
-    async function initConfig(configFile) {
-        debug('Using configuration file: '+configFile)
-        try {
-            CONFIG = require(configFile)
-        } catch (error) {
-            debug('Configuration file not found, attempting to use environment variables for configuration.')
-            CONFIG = {
-                "host": process.env.MQTTHOST,
-                "port": process.env.MQTTPORT,
-                "ring_topic": process.env.MQTTRINGTOPIC,
-                "hass_topic": process.env.MQTTHASSTOPIC,
-                "mqtt_user": process.env.MQTTUSER,
-                "mqtt_pass": process.env.MQTTPASSWORD,
-                "ring_token": process.env.RINGTOKEN,
-                "enable_cameras": process.env.ENABLECAMERAS,
-                "enable_modes" : process.env.ENABLEMODES,
-                "location_ids" : process.env.RINGLOCATIONIDS
-            }
-            if (CONFIG.enable_cameras && CONFIG.enable_cameras != 'true') { CONFIG.enable_cameras = false}
-            if (CONFIG.location_ids) { CONFIG.location_ids = CONFIG.location_ids.split(',') }
+    // On MQTT connect/reconnect send config/state information after delay
+    mqttClient.on('connect', async function () {
+        if (!mqttConnected) {
+            mqttConnected = true
+            debug('MQTT connection established, processing locations...')
         }
-        // Set some defaults if undefined
-        CONFIG.host = CONFIG.host ? CONFIG.host : 'localhost'
-        CONFIG.port = CONFIG.port ? CONFIG.port : '1883'
-        CONFIG.ring_topic = CONFIG.ring_topic ? CONFIG.ring_topic : 'ring'
-        CONFIG.hass_topic = CONFIG.hass_topic ? CONFIG.hass_topic : 'homeassistant/status'
-        if (!CONFIG.enable_cameras) { CONFIG.enable_cameras = false }
-        if (!CONFIG.enable_modes) { CONFIG.enable_modes = false }
-    }
+        processLocations(mqttClient, ringClient)
+    })
 
-    async function updateToken(newRefreshToken, oldRefreshToken, stateFile, configFile) {
-        if (!oldRefreshToken) { return }
-        if (process.env.HASSADDON || process.env.ISDOCKER) {
-            fs.writeFile(stateFile, JSON.stringify({ ring_token: newRefreshToken }), (err) => {
-                if (err) throw err;
-                debug('File ' + stateFile + ' saved with updated refresh token.')
-            })
-        } else if (configFile) {
-            CONFIG.ring_token = newRefreshToken
-            fs.writeFile(configFile, JSON.stringify(CONFIG, null, 4), (err) => {
-                if (err) throw err;
-                debug('Config file saved with updated refresh token.')
-            })
+    mqttClient.on('reconnect', function () {
+        if (mqttConnected) {
+            debug('Connection to MQTT broker lost. Attempting to reconnect...')
+        } else {
+            debug('Attempting to reconnect to MQTT broker...')
         }
+        mqttConnected = false
+    })
+
+    mqttClient.on('error', function (error) {
+        debug('Unable to connect to MQTT broker.', error.message)
+        mqttConnected = false
+    })
+
+    // Process MQTT messages from subscribed command topics
+    mqttClient.on('message', async function (topic, message) {
+        processMqttMessage(topic, message, mqttClient, ringClient)
+    })
+}
+
+// Create CONFIG object from file or envrionment variables
+async function initConfig(configFile) {
+    debug('Using configuration file: '+configFile)
+    try {
+        CONFIG = require(configFile)
+    } catch (error) {
+        debug('Configuration file not found, attempting to use environment variables for configuration.')
+        CONFIG = {
+            "host": process.env.MQTTHOST,
+            "port": process.env.MQTTPORT,
+            "ring_topic": process.env.MQTTRINGTOPIC,
+            "hass_topic": process.env.MQTTHASSTOPIC,
+            "mqtt_user": process.env.MQTTUSER,
+            "mqtt_pass": process.env.MQTTPASSWORD,
+            "ring_token": process.env.RINGTOKEN,
+            "enable_cameras": process.env.ENABLECAMERAS,
+            "enable_modes" : process.env.ENABLEMODES,
+            "location_ids" : process.env.RINGLOCATIONIDS
+        }
+        if (CONFIG.enable_cameras && CONFIG.enable_cameras != 'true') { CONFIG.enable_cameras = false}
+        if (CONFIG.location_ids) { CONFIG.location_ids = CONFIG.location_ids.split(',') }
     }
+    // Set some defaults if undefined
+    CONFIG.host = CONFIG.host ? CONFIG.host : 'localhost'
+    CONFIG.port = CONFIG.port ? CONFIG.port : '1883'
+    CONFIG.ring_topic = CONFIG.ring_topic ? CONFIG.ring_topic : 'ring'
+    CONFIG.hass_topic = CONFIG.hass_topic ? CONFIG.hass_topic : 'homeassistant/status'
+    if (!CONFIG.enable_cameras) { CONFIG.enable_cameras = false }
+    if (!CONFIG.enable_modes) { CONFIG.enable_modes = false }
+}
+
+// Save updated refresh token to config or state file
+async function updateToken(newRefreshToken, oldRefreshToken, stateFile, configFile) {
+    if (!oldRefreshToken) { return }
+    if (process.env.HASSADDON || process.env.ISDOCKER) {
+        fs.writeFile(stateFile, JSON.stringify({ ring_token: newRefreshToken }), (err) => {
+            if (err) throw err;
+            debug('File ' + stateFile + ' saved with updated refresh token.')
+        })
+    } else if (configFile) {
+        CONFIG.ring_token = newRefreshToken
+        fs.writeFile(configFile, JSON.stringify(CONFIG, null, 4), (err) => {
+            if (err) throw err;
+            debug('Config file saved with updated refresh token.')
+        })
+    }
+}
 /* End Functions */
 
 // Main code loop
@@ -551,7 +562,7 @@ const main = async(generatedToken) => {
             startMqtt(mqttClient, ringClient)
         } catch (error) {
             debug(error)
-            debug( colors.red('Couldn\'t connect to MQTT broker. Please check the broker and configuration settings.'))
+            debug( colors.red('Couldn\'t authenticate to MQTT broker. Please check the broker and configuration settings.'))
             process.exit(1)
         }
     }

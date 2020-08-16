@@ -26,7 +26,7 @@ class SecurityPanel extends AlarmDevice {
     publishDiscovery() {
         // Build the MQTT discovery message
         const message = {
-            name: this.device.name,
+            name: this.device.location.name+' Alarm',
             unique_id: this.deviceId,
             availability_topic: this.availabilityTopic,
             payload_available: 'online',

@@ -10,7 +10,9 @@ class AlarmDevice {
         this.deviceId = this.device.id
         this.ringTopic = ringTopic
         this.alarmTopic = ringTopic+'/'+this.locationId+'/alarm'
-        this.availabilityState = 'offline'
+        this.availabilityState = 'init'
+        this.published = false
+        this.discoveryData = new Array()
     }
 
     // Return batterylevel or convert battery status to estimated level
@@ -26,6 +28,17 @@ class AlarmDevice {
             return 'none'
         }
         return 0
+    }
+
+    publishDiscoveryData() {
+        const debugMsg = this.published ? 'Republishing existing ' : 'Publishing new '
+        debug(debugMsg+'device id: '+this.deviceId)
+        this.discoveryData.forEach(dd => {
+            debug('HASS config topic: '+dd.configTopic)
+            debug(dd.message)
+            this.publishMqtt(dd.configTopic, JSON.stringify(dd.message))
+        })
+        this.published = true
     }
 
     // Publish state messages with debug

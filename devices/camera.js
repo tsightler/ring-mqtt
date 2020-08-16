@@ -12,7 +12,8 @@ class Camera {
         this.deviceId = this.camera.data.device_id
         this.cameraTopic = ringTopic+'/'+this.locationId+'/camera'
         this.availabilityTopic = this.cameraTopic+'/'+this.deviceId+'/status'
-        this.availabilityState = 'offline'
+        this.availabilityState = 'init'
+        this.published = false
 
         // Create properties to store motion ding state
         this.motion = {
@@ -47,6 +48,9 @@ class Camera {
 
     // Initialize camera by publishing capabilities and state and subscribing to events
     async init() {
+        const debugMsg = this.published ? 'Republishing existing ' : 'Publishing new '
+        debug(debugMsg+'device id: '+this.deviceId)
+        this.published = true
 
         // Publish motion sensor feature for camera
         var capability = {
@@ -333,6 +337,7 @@ class Camera {
         //const enableDebug = this.availabilityState !== 'online'
         await utils.sleep(1)
         this.availabilityState = 'online'
+        this.published = true
         this.publishAvailabilityState(false)
     }
 
