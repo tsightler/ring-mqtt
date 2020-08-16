@@ -6,7 +6,7 @@ class SecurityPanel extends AlarmDevice {
     async init() {
         // Home Assistant component type and device class (set appropriate icon)
         this.component = 'alarm_control_panel'
-        this.deviceData.mdl = 'Alarm'
+        this.deviceData.mdl = 'Alarm Base Station'
 
         // Build required MQTT topics for device
         this.deviceTopic = this.alarmTopic+'/'+this.component+'/'+this.deviceId
