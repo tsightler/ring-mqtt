@@ -44,7 +44,7 @@ class ContactSensor extends AlarmDevice {
             state_topic: this.stateTopic,
             json_attributes_topic: this.attributesTopic,
             device_class: this.className,
-            device: { ids: [ this.deviceId ] }
+            device: this.deviceData
         }
         dd.configTopic = this.configTopic
         this.discoveryData.push(dd)

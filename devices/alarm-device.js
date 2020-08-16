@@ -13,6 +13,12 @@ class AlarmDevice {
         this.availabilityState = 'init'
         this.published = false
         this.discoveryData = new Array()
+        this.deviceData = {
+            ids: [ this.deviceId, this.device.serialNumber ],
+            name: this.device.name,
+            mf: this.device.manufacturerName,
+            mdl: this.device.deviceType
+        }
     }
 
     // Return batterylevel or convert battery status to estimated level
