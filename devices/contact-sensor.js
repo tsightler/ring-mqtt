@@ -10,10 +10,12 @@ class ContactSensor extends AlarmDevice {
             // Device is Retrofit Zone sensor
             this.className = 'safety'
             this.sensorType = 'zone'
+            this.deviceData.mdl = 'Retrofit Zone'
         } else {
             // Device is contact sensor
             this.className = (this.device.data.subCategoryId == 2) ? 'window' : 'door'
             this.sensorType = 'contact'
+            this.deviceData.mdl = 'Contact Sensor'
         }
 
         // Build required MQTT topics for device
