@@ -6,7 +6,9 @@ class ModesPanel extends AlarmDevice {
     async init() {
         // Home Assistant component type and device class (set appropriate icon)
         this.component = 'alarm_control_panel'
-        
+        this.deviceData.mdl = 'Location Modes'
+        this.deviceData.name = this.device.location.name + ' Mode'
+
         // Build required MQTT topics for device
         this.deviceTopic = this.ringTopic+'/'+this.locationId+'/mode/'+this.component+'/'+this.deviceId
         this.stateTopic = this.deviceTopic+'/mode_state'
@@ -17,9 +19,9 @@ class ModesPanel extends AlarmDevice {
         // Device specific properties
         this.currentMode =  this.currentMode ? this.currentMode : 'unknown'
 
-        // Publish discovery message for HA and wait 2 seoonds before sending state
-        this.publishDiscovery()
-        await utils.sleep(2)
+        // Publish discovery message
+        if (!this.discoveryData.length) { await this.initDiscoveryData() }
+        await this.publishDiscoveryData()
 
         // This is a polled device so don't use common publish/subscribe function
         if (this.subscribed) {
@@ -33,24 +35,26 @@ class ModesPanel extends AlarmDevice {
             this.subscribed = true
         }
         this.online()
+
+        // Subscribe to device command topic
+        this.mqttClient.subscribe(this.commandTopic)
     }
 
-    publishDiscovery() {
+    initDiscoveryData() {
         // Build the MQTT discovery message
-        const message = {
-            name: this.device.location.name + ' Mode',
-            unique_id: this.deviceId,
-            availability_topic: this.availabilityTopic,
-            payload_available: 'online',
-            payload_not_available: 'offline',
-            state_topic: this.stateTopic,
-            command_topic: this.commandTopic
-        }
-
-        debug('HASS config topic: '+this.configTopic)
-        debug(message)
-        this.publishMqtt(this.configTopic, JSON.stringify(message))
-        this.mqttClient.subscribe(this.commandTopic)
+        this.discoveryData.push({
+            message: {
+                name: this.device.location.name + ' Mode',
+                unique_id: this.deviceId,
+                availability_topic: this.availabilityTopic,
+                payload_available: 'online',
+                payload_not_available: 'offline',
+                state_topic: this.stateTopic,
+                command_topic: this.commandTopic,
+                device: this.deviceData
+            },
+            configTopic: this.configTopic
+        })
     }
 
     async publishData(mode) {

@@ -13,10 +13,13 @@ class AlarmDevice {
         this.availabilityState = 'init'
         this.published = false
         this.discoveryData = new Array()
-        this.deviceData = {
+        const mfName = (device.deviceType == 'security-panel' || device.deviceType == 'location.mode')
+                        ? 'Ring' 
+                        : this.device.data.manufacturerName
+        this.deviceData = { 
             ids: [ this.deviceId ],
             name: this.device.name,
-            mf: this.device.data.manufacturerName,
+            mf: mfName,
             mdl: this.device.deviceType
         }
     }
@@ -36,7 +39,7 @@ class AlarmDevice {
         return 0
     }
 
-    publishDiscoveryData() {
+    async publishDiscoveryData() {
         const debugMsg = this.published ? 'Republishing existing ' : 'Publishing new '
         debug(debugMsg+'device id: '+this.deviceId)
         this.discoveryData.forEach(dd => {
@@ -45,6 +48,8 @@ class AlarmDevice {
             this.publishMqtt(dd.configTopic, JSON.stringify(dd.message))
         })
         this.published = true
+        // Sleep for a few seconds to give HA time to process discovery message
+        await utils.sleep(2)
     }
 
     // Publish state messages with debug
