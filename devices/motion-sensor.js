@@ -18,7 +18,7 @@ class MotionSensor extends AlarmDevice {
 
         // Publish discovery message for HA and wait 2 seoonds before sending state
         if (!this.discoveryData.length) { await this.createDiscoveryData() }
-        this.publishDiscovery()
+        this.publishDiscoveryData() 
         await utils.sleep(2)
 
         // Publish device state data with optional subscribe
@@ -36,7 +36,8 @@ class MotionSensor extends AlarmDevice {
             payload_not_available: 'offline',
             state_topic: this.stateTopic,
             json_attributes_topic: this.attributesTopic,
-            device_class: this.className
+            device_class: this.className,
+            device: this.deviceData
         }
         dd.configTopic = this.configTopic
         this.discoveryData.push(dd)

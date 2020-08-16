@@ -6,6 +6,7 @@ class SecurityPanel extends AlarmDevice {
     async init() {
         // Home Assistant component type and device class (set appropriate icon)
         this.component = 'alarm_control_panel'
+        this.deviceData.mdl = 'Alarm'
 
         // Build required MQTT topics for device
         this.deviceTopic = this.alarmTopic+'/'+this.component+'/'+this.deviceId
@@ -16,16 +17,18 @@ class SecurityPanel extends AlarmDevice {
         this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
 
         // Publish discovery message for HA and wait 2 seoonds before sending state
-        this.publishDiscovery()
+        if (!this.discoveryData.length) { await this.createDiscoveryData() }
+        this.publishDiscoveryData() 
         await utils.sleep(2)
 
         // Publish device state data with optional subscribe
         this.publishSubscribeDevice()
     }
 
-    publishDiscovery() {
+    createDiscoveryData() {
+        const dd = new Object()
         // Build the MQTT discovery message
-        const message = {
+        dd.message = {
             name: this.device.location.name+' Alarm',
             unique_id: this.deviceId,
             availability_topic: this.availabilityTopic,
@@ -33,13 +36,11 @@ class SecurityPanel extends AlarmDevice {
             payload_not_available: 'offline',
             state_topic: this.stateTopic,
             json_attributes_topic: this.attributesTopic,
-            command_topic: this.commandTopic
+            command_topic: this.commandTopic,
+            device: this.deviceData
         }
-
-        debug('HASS config topic: '+this.configTopic)
-        debug(message)
-        this.publishMqtt(this.configTopic, JSON.stringify(message))
-        this.mqttClient.subscribe(this.commandTopic)
+        dd.configTopic = this.configTopic
+        this.discoveryData.push(dd)
     }
 
     publishData() {
