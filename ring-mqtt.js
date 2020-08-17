@@ -193,7 +193,7 @@ async function publishDevices(devices) {
                 for (const device of devices) {
                     if (device.availabilityState !== 'offline') {
                         device.init()
-                        await utils.msSleep(100)
+                        await utils.msSleep(1000)
                     }
                 }
             }
