@@ -194,7 +194,7 @@ async function publishDevices(devices) {
                     } else if (!device.camera) {
                         // Alarm devices are republished only if the websocket is connected
                         const location = ringLocations.find(l => device.locationId == l.locationId)
-                        if (location.onConnected._value) { 
+                        if (location.onConnected._value || device.deviceType == 'location.mode') { 
                             device.init()
                             device.online()
                         }
