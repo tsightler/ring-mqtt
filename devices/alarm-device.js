@@ -69,8 +69,6 @@ class AlarmDevice {
             })
             this.subscribed = true
         }
-        // Publish availability state for device
-        this.online()
     }
 
     // Publish device attributes
@@ -98,11 +96,13 @@ class AlarmDevice {
 
     // Set state topic offline
     offline() {
-        // Debug log output only if state changed from prior published state
-        // Prevents spamming debug log with online/offline events during republish
-        const enableDebug = (this.availabilityState == 'offline') ? false : true
-        this.availabilityState = 'offline'
-        this.publishMqtt(this.availabilityTopic, this.availabilityState, enableDebug)
+        if (this.availabilityState !== 'init') {
+            // Debug log output only if state changed from prior published state
+            // Prevents spamming debug log with online/offline events during republish
+            const enableDebug = (this.availabilityState == 'offline') ? false : true
+            this.availabilityState = 'offline'
+            this.publishMqtt(this.availabilityTopic, this.availabilityState, enableDebug)
+        }
     }
 }
 

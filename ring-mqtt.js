@@ -162,24 +162,15 @@ async function updateRingData(mqttClient, ringClient) {
     await utils.sleep(5)
 }
 
-// Set all devices for location online
-async function setLocationOnline(location) {
-    ringDevices.forEach(async ringDevice => {
-        if (ringDevice.locationId == location.locationId && ringDevice.device) { 
-            ringDevice.online()
-        }
-    })
-}
-
 // Set all devices for location offline
 async function setLocationOffline(location) {
     // Wait 30 seconds before setting devices offline in case disconnect is transient
     // Keeps from creating "unknown" state for sensors if connection error is short lived
     await utils.sleep(30)
     if (location.onConnected._value) { return }
-    ringDevices.forEach(async ringDevice => {
-        if (ringDevice.locationId == location.locationId && ringDevice.device) { 
-            ringDevice.offline()
+    ringDevices.forEach(device => {
+        if (device.locationId == location.locationId && !device.camera) {
+            device.offline()
         }
     })
 }
@@ -190,12 +181,25 @@ async function publishDevices(devices) {
     while (republishCount > 0 && mqttConnected) {
         try {
             if (devices && devices.length) {
-                for (const device of devices) {
-                    if (device.availabilityState !== 'offline') {
+                // I hate this logic but it works well enough for now
+                // Probably should move to device specific logic
+                devices.forEach(device => {
+                    if (device.availabilityState == 'init') {
+                        // Device has never been published, init and put online
                         device.init()
-                        await utils.msSleep(500)
+                        device.online()
+                    } else if (device.camera && device.availabilityState == 'online') {
+                        // Cameras track their own state since there's no websocket to monitor
+                        device.init()
+                    } else if (!device.camera) {
+                        // Alarm devices are republished only if the websocket is connected
+                        const location = ringLocations.find(l => device.locationId == l.locationId)
+                        if (location.onConnected._value) { 
+                            device.init()
+                            device.online()
+                        }
                     }
-                }
+                })
             }
         } catch (error) {
             debug(error)
@@ -220,12 +224,11 @@ async function processLocations(mqttClient, ringClient) {
                 location.needsSubscribe = false
                 location.onConnected.subscribe(async connected => {
                     if (connected) {
-                        debug('Location '+location.locationId+' is connected')
-                        publishDevices(devices)
-                        setLocationOnline(location)
+                        debug('Websocket for location id '+location.locationId+' is connected')
+                        await publishDevices(devices)
                     } else {
-                        debug('Location '+location.locationId+' is disconnected')
-                        setLocationOffline(location)
+                        debug('Websocket for location id '+location.locationId+' is disconnected')
+                        await setLocationOffline(location)
                     }
                 })
             } else {
