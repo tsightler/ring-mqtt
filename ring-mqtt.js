@@ -138,7 +138,7 @@ async function updateRingData(mqttClient, ringClient) {
         // Update Ring devices for location
         for (const device of allDevices) {
             const deviceId = (device instanceof RingCamera) ? device.data.device_id : device.id
-            const foundDevice = ringDevices.find(d => d.deviceId == deviceId && d.locationId == locationId)
+            const foundDevice = ringDevices.find(d => d.deviceId == deviceId && d.locationId == location.locationId)
             if (foundDevice) {
                 debug(colors.green('  Existing device of type: '+device.deviceType))
             } else {
