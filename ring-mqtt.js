@@ -190,12 +190,12 @@ async function publishDevices(devices) {
     while (republishCount > 0 && mqttConnected) {
         try {
             if (devices && devices.length) {
-                devices.forEach((device) => {
+                for (const device of devices) {
                     if (device.availabilityState !== 'offline') {
                         device.init()
+                        await utils.msSleep(100)
                     }
-                })
-                await utils.sleep(1)
+                }
             }
         } catch (error) {
             debug(error)
