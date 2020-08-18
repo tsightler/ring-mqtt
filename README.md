@@ -170,7 +170,7 @@ ring/<location_id>/camera/switch/<device_id>/siren_command          <-- Set sire
     - Lighting and motion sensor devices
     - Light groups
   - Location Modes
-    - For locaitons without a Ring Alarm, can add a panel for controlling camera settings via Ring Location Modes
+    - For locations without a Ring Alarm, can add a panel for controlling camera settings via Ring Location Modes
     - Displays as an Alarm Panel in Home Assistant for setting modes and displaying mode state
     - Must be explicitly enabled using "enabled_modes" config or ENABLEMODES envrionment variable
 - Provides battery and tamper status for supported Alarm devices via JSON attribute topic (visible in Home Assistant UI)
