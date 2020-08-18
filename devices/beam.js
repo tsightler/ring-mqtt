@@ -3,7 +3,9 @@ const utils = require( '../lib/utils' )
 const AlarmDevice = require('./alarm-device')
 
 class Beam extends AlarmDevice {
-    async init() {
+    async publish(locationConnected) { 
+        // Online initialize if location websocket is connected
+        if (!locationConnected) { return }
 
         this.availabilityTopic = this.alarmTopic+'/beam/'+this.deviceId+'/status'
         this.attributesTopic = this.alarmTopic+'/beam/'+this.deviceId+'/attributes'
@@ -32,35 +34,37 @@ class Beam extends AlarmDevice {
             this.commandTopic_brightness = this.deviceTopic_light+'brightness_command'
         }
 
-        // Publish discovery message for HA and wait 2 seoonds before sending state
-        this.publishDiscovery()
-        await utils.sleep(2)
+        // Publish discovery message
+        if (!this.discoveryData.length) { await this.initDiscoveryData() }
+        await this.publishDiscoveryData()
 
         // Publish device state data with optional subscribe
         this.publishSubscribeDevice()
+
+        // Subscribe to device command topics
+        if (this.commandTopic_light) { this.mqttClient.subscribe(this.commandTopic_brightness) }
+        if (this.commandTopic_brightness) { this.mqttClient.subscribe(this.commandTopic_brightness) }
     }
 
-    publishDiscovery() {
-        // Build the MQTT discovery messages and publish devices
-
+    initDiscoveryData() {
+        // Build the MQTT discovery messages for beam components
         if (this.stateTopic_motion) {
-            const message = {
-                name: this.device.name+' - Motion',
-                unique_id: this.deviceId+'_motion',
-                availability_topic: this.availabilityTopic,
-                payload_available: 'online',
-                payload_not_available: 'offline',
-                state_topic: this.stateTopic_motion,
-                json_attributes_topic: this.attributesTopic,
-                device_class: 'motion'
-            }
-            debug('HASS config topic: '+this.configTopic_motion)
-            debug(message)
-            this.publishMqtt(this.configTopic_motion, JSON.stringify(message))    
+            this.discoveryData.push({
+                message: {
+                    name: this.device.name+' - Motion',
+                    unique_id: this.deviceId+'_motion',
+                    availability_topic: this.availabilityTopic,
+                    payload_available: 'online',
+                    json_attributes_topic: this.attributesTopic,
+                    device_class: 'motion',
+                    device: this.deviceData
+                },
+                configTopic: this.configTopic_motion
+            })
         }
 
         if (this.stateTopic_light) {
-            const message = {
+            const discoveryMessage = {
                 name: this.device.name+' - Light',
                 unique_id: this.deviceId+'_light',
                 availability_topic: this.availabilityTopic,
@@ -71,17 +75,15 @@ class Beam extends AlarmDevice {
                 command_topic: this.commandTopic_light
             }
             if (this.stateTopic_brightness) {
-                message.brightness_scale = 100
-                message.brightness_state_topic = this.stateTopic_brightness,
-                message.brightness_command_topic = this.commandTopic_brightness
+                discoveryMessage.brightness_scale = 100
+                discoveryMessage.brightness_state_topic = this.stateTopic_brightness,
+                discoveryMessage.brightness_command_topic = this.commandTopic_brightness
             }
-            debug('HASS config topic: '+this.configTopic_light)
-            debug(message)
-            this.publishMqtt(this.configTopic_light, JSON.stringify(message))
-            this.mqttClient.subscribe(this.commandTopic_light)
-            if (this.commandTopic_brightness) { 
-                this.mqttClient.subscribe(this.commandTopic_brightness)
-            }            
+            discoveryMessage.device = this.deviceData
+            this.discoveryData.push({
+                message: discoveryMessage,
+                configTopic: this.configTopic_light
+            })        
         }
     }
 

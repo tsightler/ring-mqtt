@@ -3,7 +3,10 @@ const utils = require( '../lib/utils' )
 const AlarmDevice = require('./alarm-device')
 
 class MotionSensor extends AlarmDevice {
-    async init() {
+    async publish(locationConnected) {
+        // Online initialize if location websocket is connected
+        if (!locationConnected) { return }
+
         // Home Assistant component type and device class (set appropriate icon)
         this.component = 'binary_sensor'
         this.className = 'motion'

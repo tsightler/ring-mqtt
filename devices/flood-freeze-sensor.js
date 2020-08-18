@@ -3,7 +3,10 @@ const utils = require( '../lib/utils' )
 const AlarmDevice = require('./alarm-device')
 
 class FloodFreezeSensor extends AlarmDevice {
-    async init() {
+    async publish(locationConnected) {
+        // Online initialize if location websocket is connected
+        if (!locationConnected) { return }
+
         // Set Home Assistant component type and device class (appropriate icon in UI)
         this.className_flood = 'moisture'
         this.className_freeze = 'cold'

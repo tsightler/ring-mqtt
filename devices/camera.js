@@ -13,7 +13,14 @@ class Camera {
         this.cameraTopic = ringTopic+'/'+this.locationId+'/camera'
         this.availabilityTopic = this.cameraTopic+'/'+this.deviceId+'/status'
         this.availabilityState = 'init'
-        this.published = false
+
+        // Set some device data info for Home Assistant device model 
+        this.deviceData = { 
+            ids: [ this.deviceId ],
+            name: this.camera.name,
+            mf: 'Ring',
+            mdl: this.camera.model
+        }
 
         // Create properties to store motion ding state
         this.motion = {
@@ -45,10 +52,9 @@ class Camera {
 
     }
 
-
-    // Initialize camera by publishing capabilities and state and subscribing to events
-    async init() {
-        const debugMsg = this.published ? 'Republishing existing ' : 'Publishing new '
+    // Publishing camera capabilities and state and subscribe to events
+    async publish() {
+        const debugMsg = (this.availabilityState == 'init') ? 'Publishing new ' : 'Republishing existing '
         debug(debugMsg+'device id: '+this.deviceId)
         this.published = true
 
@@ -141,7 +147,6 @@ class Camera {
 
     // Build and publish a Home Assistant MQTT discovery packet for camera capability
     publishCapability(capability) {
-
         const componentTopic = this.cameraTopic+'/'+capability.component+'/'+this.deviceId
         const configTopic = 'homeassistant/'+capability.component+'/'+this.locationId+'/'+this.deviceId+'_'+capability.type+'/config'
 
@@ -161,6 +166,7 @@ class Camera {
             message.command_topic = commandTopic
             this.mqttClient.subscribe(commandTopic)
         }
+        message.device = this.deviceData
 
         debug('HASS config topic: '+configTopic)
         debug(message)
@@ -257,7 +263,7 @@ class Camera {
                     _this.offline()
                 } else {
                     // If camera switching to online republish discovery and state before going online
-                    _this.init()
+                    _this.publish()
                     await utils.sleep(2)
                     _this.online()
                 }
@@ -337,7 +343,6 @@ class Camera {
         //const enableDebug = this.availabilityState !== 'online'
         await utils.sleep(1)
         this.availabilityState = 'online'
-        this.published = true
         this.publishAvailabilityState(false)
     }
 

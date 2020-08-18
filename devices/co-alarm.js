@@ -3,8 +3,11 @@ const utils = require( '../lib/utils' )
 const AlarmDevice = require('./alarm-device')
 
 class CoAlarm extends AlarmDevice {
-    async init() {
-       // Home Assistant component type and device class (set appropriate icon)
+    async publish(locationConnected) {
+        // Online initialize if location websocket is connected
+        if (!locationConnected) { return }
+
+        // Home Assistant component type and device class (set appropriate icon)
         this.component = 'binary_sensor'
         this.className = 'gas'
         this.deviceData.mdl = 'CO Alarm'

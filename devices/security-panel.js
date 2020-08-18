@@ -3,7 +3,10 @@ const utils = require( '../lib/utils' )
 const AlarmDevice = require('./alarm-device')
 
 class SecurityPanel extends AlarmDevice {
-    async init() {
+    async publish(locationConnected) {
+        // Online initialize if location websocket is connected
+        if (!locationConnected) { return }
+
         // Home Assistant component type and device class (set appropriate icon)
         this.component = 'alarm_control_panel'
         this.deviceData.mdl = 'Alarm Base Station'
@@ -118,7 +121,7 @@ class SecurityPanel extends AlarmDevice {
         }
 
         // Sleep a few seconds and check if alarm entered requested mode
-        await utils.sleep(2);
+        await utils.sleep(1);
         if (this.device.data.mode == alarmTargetMode) {
             debug('Alarm successfully entered mode: '+message)
             return true

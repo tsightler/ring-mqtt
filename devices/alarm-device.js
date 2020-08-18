@@ -11,8 +11,8 @@ class AlarmDevice {
         this.ringTopic = ringTopic
         this.alarmTopic = ringTopic+'/'+this.locationId+'/alarm'
         this.availabilityState = 'init'
-        this.published = false
         this.discoveryData = new Array()
+        // Set some device data info for Home Assistant device model, may be overridden by individual devices
         const mfName = (device.deviceType == 'security-panel' || device.deviceType == 'location.mode')
                         ? 'Ring' 
                         : this.device.data.manufacturerName
@@ -39,15 +39,15 @@ class AlarmDevice {
         return 0
     }
 
+    // Publish all discovery data for device
     async publishDiscoveryData() {
-        const debugMsg = this.published ? 'Republishing existing ' : 'Publishing new '
+        const debugMsg = (this.availabilityState == 'init') ? 'Publishing new ' : 'Republishing existing '
         debug(debugMsg+'device id: '+this.deviceId)
         this.discoveryData.forEach(dd => {
             debug('HASS config topic: '+dd.configTopic)
             debug(dd.message)
             this.publishMqtt(dd.configTopic, JSON.stringify(dd.message))
         })
-        this.published = true
         // Sleep for a few seconds to give HA time to process discovery message
         await utils.sleep(2)
     }
@@ -64,11 +64,10 @@ class AlarmDevice {
         if (this.subscribed) {
             this.publishData()
         } else {
-            this.device.onData.subscribe(() => {
-                this.publishData()
-            })
+            this.device.onData.subscribe(() => { this.publishData() })
             this.subscribed = true
         }
+        this.online()
     }
 
     // Publish device attributes
@@ -96,13 +95,11 @@ class AlarmDevice {
 
     // Set state topic offline
     offline() {
-        if (this.availabilityState !== 'init') {
-            // Debug log output only if state changed from prior published state
-            // Prevents spamming debug log with online/offline events during republish
-            const enableDebug = (this.availabilityState == 'offline') ? false : true
-            this.availabilityState = 'offline'
-            this.publishMqtt(this.availabilityTopic, this.availabilityState, enableDebug)
-        }
+        // Debug log output only if state changed from prior published state
+        // Prevents spamming debug log with online/offline events during republish
+        const enableDebug = (this.availabilityState == 'offline') ? false : true
+        this.availabilityState = 'offline'
+        this.publishMqtt(this.availabilityTopic, this.availabilityState, enableDebug)
     }
 }
 

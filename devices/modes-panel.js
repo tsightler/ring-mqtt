@@ -3,7 +3,7 @@ const utils = require( '../lib/utils' )
 const AlarmDevice = require('./alarm-device')
 
 class ModesPanel extends AlarmDevice {
-    async init() {
+    async publish() {
         // Home Assistant component type and device class (set appropriate icon)
         this.component = 'alarm_control_panel'
         this.deviceData.mdl = 'Location Modes'
@@ -16,7 +16,7 @@ class ModesPanel extends AlarmDevice {
         this.availabilityTopic = this.deviceTopic+'/status'
         this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
 
-        // Device specific properties
+        // Save current mode if known
         this.currentMode =  this.currentMode ? this.currentMode : 'unknown'
 
         // Publish discovery message

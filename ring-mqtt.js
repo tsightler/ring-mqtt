@@ -176,29 +176,14 @@ async function setLocationOffline(location) {
 }
 
 // Publish devices/cameras for given location
-async function publishDevices(devices) {
+async function publishDevices(devices, location) {
     republishCount = (republishCount < 1) ? 1 : republishCount
     while (republishCount > 0 && mqttConnected) {
         try {
             if (devices && devices.length) {
-                // I hate this logic but it works well enough for now
-                // Probably should move to device specific logic
                 devices.forEach(device => {
-                    if (device.availabilityState == 'init') {
-                        // Device has never been published, init and put online
-                        device.init()
-                        device.online()
-                    } else if (device.camera && device.availabilityState == 'online') {
-                        // Cameras track their own state since there's no websocket to monitor
-                        device.init()
-                    } else if (!device.camera) {
-                        // Alarm devices are republished only if the websocket is connected
-                        const location = ringLocations.find(l => device.locationId == l.locationId)
-                        if (location.onConnected._value || device.deviceType == 'location.mode') { 
-                            device.init()
-                            device.online()
-                        }
-                    }
+                    // Provide location websocket connection state to device
+                    device.publish(location.onConnected._value)
                 })
             }
         } catch (error) {
@@ -225,14 +210,14 @@ async function processLocations(mqttClient, ringClient) {
                 location.onConnected.subscribe(async connected => {
                     if (connected) {
                         debug('Websocket for location id '+location.locationId+' is connected')
-                        await publishDevices(devices)
+                        await publishDevices(devices, location)
                     } else {
                         debug('Websocket for location id '+location.locationId+' is disconnected')
                         await setLocationOffline(location)
                     }
                 })
             } else {
-                publishDevices(devices)
+                publishDevices(devices, location)
             }
         } else {
             debug('No devices found for location ID '+location.id)
