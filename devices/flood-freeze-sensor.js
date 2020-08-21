@@ -61,6 +61,8 @@ class FloodFreezeSensor extends AlarmDevice {
             },
             configTopic: this.configTopic_freeze
         })
+
+        this.initInfoDiscoveryData()
     }
 
     publishData() {

@@ -46,6 +46,8 @@ class Switch extends AlarmDevice {
             },
             configTopic: this.configTopic_smoke
         })
+
+        this.initInfoDiscoveryData()
     }
 
     publishData() {

@@ -54,6 +54,8 @@ class Fan extends AlarmDevice {
             },
             configTopic: this.configTopic
         })
+
+        this.initInfoDiscoveryData()
     }
 
     publishData() {

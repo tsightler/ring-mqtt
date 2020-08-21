@@ -52,6 +52,8 @@ class MultiLevelSwitch extends AlarmDevice {
             },
             configTopic: this.configTopic
         })
+
+        this.initInfoDiscoveryData()
     }
 
     publishData() {

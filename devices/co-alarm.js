@@ -18,7 +18,7 @@ class CoAlarm extends AlarmDevice {
         this.attributesTopic = this.deviceTopic+'/attributes'
         this.availabilityTopic = this.deviceTopic+'/status'
         this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
-
+ 
         // Publish discovery message
         if (!this.discoveryData.length) { await this.initDiscoveryData() }
         await this.publishDiscoveryData()
@@ -43,6 +43,8 @@ class CoAlarm extends AlarmDevice {
             },
             configTopic: this.configTopic
         })
+
+        this.initInfoDiscoveryData()
     }
 
     publishData() {

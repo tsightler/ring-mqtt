@@ -46,6 +46,8 @@ class Lock extends AlarmDevice {
             },
             configTopic: this.configTopic_flood
         })
+        
+        this.initInfoDiscoveryData()
     }
 
     publishData() {

@@ -62,6 +62,8 @@ class SmokeCoListener extends AlarmDevice {
             },
             configTopic: this.configTopic_co
         })
+
+        this.initInfoDiscoveryData()
     }
 
     publishData() {

@@ -53,44 +53,46 @@ async function processExit(options, exitCode) {
 
 // Return supported device
 function getDevice(device, mqttClient) {
-    ringTopic = CONFIG.ring_topic
+    const deviceInfo = {
+        device: device,
+        mqttClient: mqttClient,
+        ringTopic: CONFIG.ring_topic
+    }
     if (device instanceof RingCamera) {
-        return new Camera(device, mqttClient, ringTopic)
+        return new Camera(deviceInfo)
     }
     switch (device.deviceType) {
         case RingDeviceType.ContactSensor:
         case RingDeviceType.RetrofitZone:
-            return new ContactSensor(device, mqttClient, ringTopic)
+            return new ContactSensor(deviceInfo)
         case RingDeviceType.MotionSensor:
-            return new MotionSensor(device, mqttClient, ringTopic)
+            return new MotionSensor(deviceInfo)
         case RingDeviceType.FloodFreezeSensor:
-            return new FloodFreezeSensor(device, mqttClient, ringTopic)
+            return new FloodFreezeSensor(deviceInfo)
         case RingDeviceType.SecurityPanel:
-            return new SecurityPanel(device, mqttClient, ringTopic)
+            return new SecurityPanel(deviceInfo)
         case RingDeviceType.SmokeAlarm:
-            return new SmokeAlarm(device, mqttClient, ringTopic)
+            return new SmokeAlarm(deviceInfo)
         case RingDeviceType.CoAlarm:
-            return new CoAlarm(device, mqttClient, ringTopic)
+            return new CoAlarm(deviceInfo)
         case RingDeviceType.SmokeCoListener:
-            return new SmokeCoListener(device, mqttClient, ringTopic)
+            return new SmokeCoListener(deviceInfo)
         case RingDeviceType.BeamsMotionSensor:
         case RingDeviceType.BeamsSwitch:
         case RingDeviceType.BeamsTransformerSwitch:
         case RingDeviceType.BeamsLightGroupSwitch:
-            return new Beam(device, mqttClient, ringTopic)
+            return new Beam(deviceInfo)
         case RingDeviceType.MultiLevelSwitch:
-                if (device.categoryId == 17) {
-                    return new Fan(device, mqttClient, ringTopic)
-                } else {
-                    return new MultiLevelSwitch(device, mqttClient, ringTopic)
-                }
+            return device = (device.categoryId === 17) 
+                ? new Fan(deviceInfo)
+                : new MultiLevelSwitch(deviceInfo)
         case RingDeviceType.Switch:
-            return new Switch(device, mqttClient, ringTopic)
+            return new Switch(deviceInfo)
         case 'location.mode':
-            return new ModesPanel(device, mqttClient,ringTopic)
+            return new ModesPanel(deviceInfo)
     }
     if (/^lock($|\.)/.test(device.deviceType)) {
-        return new Lock(device, mqttClient, ringTopic)
+        return new Lock(deviceInfo)
     }
     return null
 }
@@ -210,10 +212,10 @@ async function processLocations(mqttClient, ringClient) {
                 location.onConnected.subscribe(async connected => {
                     if (connected) {
                         debug('Websocket for location id '+location.locationId+' is connected')
-                        await publishDevices(devices, location)
+                        publishDevices(devices, location)
                     } else {
                         debug('Websocket for location id '+location.locationId+' is disconnected')
-                        await setLocationOffline(location)
+                        setLocationOffline(location)
                     }
                 })
             } else {
@@ -224,7 +226,6 @@ async function processLocations(mqttClient, ringClient) {
         }
     })
 }
-
 
 // Process received MQTT command
 async function processMqttMessage(topic, message, mqttClient, ringClient) {

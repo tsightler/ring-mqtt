@@ -64,7 +64,7 @@ class Beam extends AlarmDevice {
         }
 
         if (this.stateTopic_light) {
-            const discoveryMessage = {
+            let discoveryMessage = {
                 name: this.device.name+' - Light',
                 unique_id: this.deviceId+'_light',
                 availability_topic: this.availabilityTopic,
@@ -85,6 +85,8 @@ class Beam extends AlarmDevice {
                 configTopic: this.configTopic_light
             })        
         }
+
+        this.initInfoDiscoveryData()
     }
 
     publishData() {

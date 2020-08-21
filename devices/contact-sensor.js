@@ -52,6 +52,8 @@ class ContactSensor extends AlarmDevice {
             },
             configTopic: this.configTopic
         })
+
+        this.initInfoDiscoveryData()
     }
 
     publishData() {

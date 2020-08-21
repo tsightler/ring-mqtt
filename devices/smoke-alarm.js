@@ -18,7 +18,7 @@ class SmokeAlarm extends AlarmDevice {
         this.attributesTopic = this.deviceTopic+'/attributes'
         this.availabilityTopic = this.deviceTopic+'/status'
         this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
-
+        
         // Publish discovery message
         if (!this.discoveryData.length) { await this.initDiscoveryData() }
         await this.publishDiscoveryData()
@@ -27,7 +27,7 @@ class SmokeAlarm extends AlarmDevice {
         this.publishSubscribeDevice()
     }
 
-    initDiscoverydata() {
+    initDiscoveryData() {
         // Build the MQTT discovery message
         this.discoveryData.push({
             message: {
@@ -43,8 +43,8 @@ class SmokeAlarm extends AlarmDevice {
             },
             configTopic: this.configTopic
         })
-
-        this.publishMqtt(this.configTopic, JSON.stringify(message))
+        
+        this.initInfoDiscoveryData()
     }
 
     publishData() {

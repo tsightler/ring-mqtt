@@ -2,25 +2,26 @@ const debug = require('debug')('ring-mqtt')
 const utils = require( '../lib/utils' )
 
 class Camera {
-    constructor(camera, mqttClient, ringTopic) {
-        this.camera = camera
-        this.mqttClient = mqttClient
+    constructor(deviceInfo) {
+        // Set default properties for camera device object model 
+        this.camera = deviceInfo.device
+        this.mqttClient = deviceInfo.mqttClient
         this.subscribed = false
-
-        // Set device location and top level MQTT topics
+        this.availabilityState = 'init'
         this.locationId = this.camera.data.location_id
         this.deviceId = this.camera.data.device_id
-        this.cameraTopic = ringTopic+'/'+this.locationId+'/camera'
-        this.availabilityTopic = this.cameraTopic+'/'+this.deviceId+'/status'
-        this.availabilityState = 'init'
 
-        // Set some device data info for Home Assistant device model 
+        // Set device data for Home Assistant device registry 
         this.deviceData = { 
             ids: [ this.deviceId ],
             name: this.camera.name,
             mf: 'Ring',
             mdl: this.camera.model
         }
+
+        // Set device location and top level MQTT topics
+        this.cameraTopic = deviceInfo.ringTopic+'/'+this.locationId+'/camera'
+        this.availabilityTopic = this.cameraTopic+'/'+this.deviceId+'/status'
 
         // Create properties to store motion ding state
         this.motion = {
@@ -59,47 +60,43 @@ class Camera {
         this.published = true
 
         // Publish motion sensor feature for camera
-        var capability = {
+        this.publishCapability({
             type: 'motion',
             component: 'binary_sensor',
             className: 'motion',
             suffix: 'Motion',
             hasCommand: false,
-        }
-        this.publishCapability(capability)
+        })
 
         // If camera is a doorbell publish doorbell sensor
         if (this.camera.isDoorbot) {
-            capability = {
+            this.publishCapability({
                 type: 'ding',
                 component: 'binary_sensor',
                 className: 'occupancy',
                 suffix: 'Ding',
                 hasCommand: false
-            }
-            this.publishCapability(capability)
+            })
         }
 
         // If camera has a light publish light component
         if (this.camera.hasLight) {
-            capability = {
+            this.publishCapability({
                 type: 'light',
                 component: 'light',
                 suffix: 'Light',
                 hasCommand: true
-            }
-            this.publishCapability(capability)
+            })
         }
 
         // If camera has a siren publish switch component
         if (this.camera.hasSiren) {
-            capability = {
+            this.publishCapability({
                 type: 'siren',
                 component: 'switch',
                 suffix: 'Siren',
                 hasCommand: true
-            }
-            this.publishCapability(capability) 
+            })
         }
 
         // Give Home Assistant time to configure device before sending first state data
@@ -111,10 +108,10 @@ class Camera {
             this.camera.onNewDing.subscribe(ding => {
                 this.publishDingState(ding)
             })
-            // Since this is initial publish of device publish ding state as well
+            // Since this is initial publish of device publish current ding state as well
             this.publishDingState()
 
-            // If camers as light/siren subsribed to those events as well (only polls, default 20 seconds)
+            // If camera has light/siren subscribe to those events as well (only polls, default 20 seconds)
             if (this.camera.hasLight || this.camera.hasSiren) {
                 this.camera.onData.subscribe(() => {
                     this.publishPolledState()
@@ -122,7 +119,7 @@ class Camera {
             }
             this.subscribed = true
 
-            // Start monitor of availability state for device
+            // Start monitor of availability state for camera
             this.monitorCameraConnection()
 
             // Set camera online (sends availability status via MQTT)
@@ -137,7 +134,7 @@ class Camera {
             }
             this.publishAvailabilityState()
         }
-}
+    }
 
     // Publish state messages via MQTT with optional debug
     publishMqtt(topic, message, enableDebug) {

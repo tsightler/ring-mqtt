@@ -6,7 +6,7 @@ class ModesPanel extends AlarmDevice {
     async publish() {
         // Home Assistant component type and device class (set appropriate icon)
         this.component = 'alarm_control_panel'
-        this.deviceData.mdl = 'Location Modes'
+        this.deviceData.mdl = 'Mode Control Panel'
         this.deviceData.name = this.device.location.name + ' Mode'
 
         // Build required MQTT topics for device
@@ -44,7 +44,7 @@ class ModesPanel extends AlarmDevice {
         // Build the MQTT discovery message
         this.discoveryData.push({
             message: {
-                name: this.device.location.name + ' Mode',
+                name: this.deviceData.name,
                 unique_id: this.deviceId,
                 availability_topic: this.availabilityTopic,
                 payload_available: 'online',
@@ -87,7 +87,7 @@ class ModesPanel extends AlarmDevice {
 
     // Set Alarm Mode on received MQTT command message
     async setLocationMode(message) {
-        debug('Received set mode command '+message+' for location: '+this.device.location.name)
+        debug('Received set mode command '+message+' for location '+this.device.location.name+' ('+this.location+')')
 
         // Try to set alarm mode and retry after delay if mode set fails
         // Initial attempt with no delay
@@ -101,7 +101,7 @@ class ModesPanel extends AlarmDevice {
         }
         // Check the return status and print some debugging for failed states
         if (setModeSuccess == false ) {
-            debug('Could not enter proper mode state after all retries...Giving up!')
+            debug('Location could not enter proper mode after all retries...Giving up!')
         } else if (setModeSuccess == 'unknown') {
             debug('Ignoring unknown command.')
         }
@@ -130,10 +130,10 @@ class ModesPanel extends AlarmDevice {
         // Sleep a 1 second and check if location entered the requested mode
         await utils.sleep(1);
         if (targetMode == (await this.device.location.getLocationMode()).mode) {
-            debug('Location '+this.device.location.name+' successfully entered mode: '+message)
+            debug('Location '+this.device.location.name+' successfully entered '+message+' mode')
             return true
         } else {
-            debug('Location failed to enter requested mode!')
+            debug('Location '+this.device.location.name+' failed to enter requested mode!')
             return false
         }
     }
