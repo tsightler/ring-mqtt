@@ -66,7 +66,7 @@ class AlarmDevice {
                 json_attributes_topic: this.stateTopic_info,
                 icon: "mdi:information-outline",
                 ... value.template ? { value_template: value.template } : {},
-                ... value.uom ? { unit_of_measure: value.uom } : {},
+                ... value.uom ? { unit_of_measurement: value.uom } : {},
                 device: this.deviceData
             },
             configTopic: this.configTopic_info
@@ -124,7 +124,7 @@ class AlarmDevice {
         attributes = {
             ... alarmState ? { alarmState: alarmState } : {},
             ... this.device.data.acStatus ? { acStatus: this.device.data.acStatus } : {},
-            ... this.device.data.batteryLevel ? { batteryLevel: this.device.data.batteryLevel } : {},
+            ... this.device.data.batteryLevel ? { batteryLevel: batteryLevel } : {},
             ... this.device.data.batteryStatus ? { batteryStatus: this.device.data.batteryStatus } : {},
             ... this.device.data.commStatus ? { commStatus: this.device.data.commStatus } : {},
             ... this.device.data.firmwareUpdate ? { firmwareStatus: this.device.data.firmwareUpdate.state } : {},
