@@ -114,9 +114,7 @@ class AlarmDevice {
 
         let alarmInfo
         if (this.device.deviceType === 'security-panel') {
-            alarmInfo = this.device.data.alarmInfo
-                ? { alarmInfo: this.device.data.alarmInfo }
-                : { alarmInfo: 'all-clear' }
+            alarmInfo = this.device.data.alarmInfo ? this.device.data.alarmInfo : 'all-clear'
         }
         // Get full set of device data and publish to info topic
         attributes = {
