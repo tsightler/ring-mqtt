@@ -124,8 +124,12 @@ class AlarmDevice {
         attributes = {
             ... alarmState ? { alarmState: alarmState } : {},
             ... this.device.data.acStatus ? { acStatus: this.device.data.acStatus } : {},
-            ... this.device.data.batteryLevel ? { batteryLevel: batteryLevel } : {},
-            ... this.device.data.batteryStatus ? { batteryStatus: this.device.data.batteryStatus } : {},
+            ... this.device.data.batteryLevel
+                ? { batteryLevel: this.device.data.batteryLevel === 99 ? 100 : this.device.data.batteryLevel }
+                : {},
+            ... this.device.data.batteryStatus && this.device.data.batteryStatus !== 'none'
+                ? { batteryStatus: this.device.data.batteryStatus }
+                : {},
             ... this.device.data.commStatus ? { commStatus: this.device.data.commStatus } : {},
             ... this.device.data.firmwareUpdate ? { firmwareStatus: this.device.data.firmwareUpdate.state } : {},
             ... this.device.data.lastCommTime ? { lastCommTime: new Date(this.device.data.lastCommTime).toISOString() } : {},
