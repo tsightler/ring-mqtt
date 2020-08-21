@@ -52,7 +52,7 @@ class AlarmDevice {
         // Init info entity (extended device data)
         this.discoveryData.push({
             message: {
-                name: this.deviceData.name,
+                name: this.deviceData.name+' Info',
                 unique_id: this.deviceId+'_info',
                 availability_topic: this.availabilityTopic,
                 payload_available: 'online',
@@ -111,10 +111,16 @@ class AlarmDevice {
             attributes.tamper_status = this.device.data.tamperStatus
         }
         this.publishMqtt(this.attributesTopic, JSON.stringify(attributes), true)
-        
+
+        let alarmInfo
+        if (this.deviceType === 'security-panel') {
+            alarmInfo = this.device.data.alarmInfo
+                ? { alarmInfo: this.device.data.alarmInfo }
+                : { alarmInfo: 'all-clear' }
+        }
         // Get full set of device data and publish to info topic
         attributes = {
-            ... this.device.data.alarmInfo ? { alarmInfo: this.device.data.alarmInfo } : {alarmInfo: 'all-clear'},
+            ... alarmInfo ? { alarmInfo: alarmInfo } : {},
             ... this.device.data.acStatus ? { acStatus: this.device.data.acStatus } : {},
             ... this.device.data.batteryLevel ? { batteryLevel: this.device.data.batteryLevel } : {},
             ... this.device.data.batteryStatus ? { batteryStatus: this.device.data.batteryStatus } : {},
