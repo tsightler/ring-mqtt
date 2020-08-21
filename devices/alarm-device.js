@@ -112,13 +112,13 @@ class AlarmDevice {
         }
         this.publishMqtt(this.attributesTopic, JSON.stringify(attributes), true)
 
-        let alarmInfo
+        let alarmState
         if (this.device.deviceType === 'security-panel') {
-            alarmInfo = this.device.data.alarmInfo ? this.device.data.alarmInfo : { state: 'all-clear' }
+            alarmState = this.device.data.alarmInfo ? this.device.data.alarmInfo.state : 'all-clear'
         }
         // Get full set of device data and publish to info topic
         attributes = {
-            ... alarmInfo ? { alarmInfo: alarmInfo } : {},
+            ... alarmState ? { alarmState: alarmState } : {},
             ... this.device.data.acStatus ? { acStatus: this.device.data.acStatus } : {},
             ... this.device.data.batteryLevel ? { batteryLevel: this.device.data.batteryLevel } : {},
             ... this.device.data.batteryStatus ? { batteryStatus: this.device.data.batteryStatus } : {},
