@@ -49,7 +49,7 @@ class SecurityPanel extends AlarmDevice {
             configTopic: this.configTopic
         })
 
-        this.initInfoDiscoveryData()
+        this.initInfoDiscoveryData('alarmState')
     }
 
     publishData() {
