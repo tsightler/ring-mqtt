@@ -121,7 +121,7 @@ class AlarmDevice {
                 ? { batteryStatus: this.device.data.batteryStatus }
                 : {},
             ... this.device.data.brightness ? {brightness: this.device.data.brightness } : {},
-            ... this.device.data.chirps ? {chirps: this.device.data.chirps } : {},
+            ... this.device.data.chirps && this.device.deviceType == 'security-keypad' ? {chirps: this.device.data.chirps } : {},
             ... this.device.data.commStatus ? { commStatus: this.device.data.commStatus } : {},
             ... this.device.data.firmwareUpdate ? { firmwareStatus: this.device.data.firmwareUpdate.state } : {},
             ... this.device.data.lastCommTime ? { lastCommTime: new Date(this.device.data.lastCommTime).toISOString() } : {},
