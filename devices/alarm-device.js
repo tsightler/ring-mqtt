@@ -113,7 +113,7 @@ class AlarmDevice {
         this.publishMqtt(this.attributesTopic, JSON.stringify(attributes), true)
 
         let alarmInfo
-        if (this.deviceType === 'security-panel') {
+        if (this.device.deviceType === 'security-panel') {
             alarmInfo = this.device.data.alarmInfo
                 ? { alarmInfo: this.device.data.alarmInfo }
                 : { alarmInfo: 'all-clear' }
