@@ -50,7 +50,9 @@ class AlarmDevice {
     // Create device discovery data
     initInfoDiscoveryData(deviceValue) {
         // If set override value tempate setting with device specific
-        deviceValue = deviceValue ? deviceValue : 'batteryLevel'
+        const value = deviceValue
+            ? { template: '{{value_json["'+deviceValue+'"]}}' }
+            : { template: '{{value_json["batteryLevel"]}}', uom: '%' }
 
         // Init info entity (extended device data)
         this.discoveryData.push({
@@ -63,9 +65,8 @@ class AlarmDevice {
                 state_topic: this.stateTopic_info,
                 json_attributes_topic: this.stateTopic_info,
                 icon: "mdi:information-outline",
-                ... this.device.data.batteryLevel 
-                    ? { value_template: '{{value_json["'+deviceValue+'"]}}', unit_of_meas: '%' } 
-                    : {},
+                ... value.template ? { value_template: value.template } : {},
+                ... value.uom ? { unit_of_measure: value.uom } : {},
                 device: this.deviceData
             },
             configTopic: this.configTopic_info
