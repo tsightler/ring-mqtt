@@ -107,7 +107,7 @@ class AlarmDevice {
     // Publish device attributes
     publishAttributes() {
         let attributes = {}
-        const batteryLevel = this.getBatteryLevel()
+        let batteryLevel = this.getBatteryLevel()
         if (batteryLevel !== 'none') {
             attributes.battery_level = batteryLevel
         }
@@ -120,6 +120,7 @@ class AlarmDevice {
         if (this.device.deviceType === 'security-panel') {
             alarmState = this.device.data.alarmInfo ? this.device.data.alarmInfo.state : 'all-clear'
         }
+
         // Get full set of device data and publish to info topic
         attributes = {
             ... alarmState ? { alarmState: alarmState } : {},
