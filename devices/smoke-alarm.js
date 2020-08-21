@@ -13,10 +13,7 @@ class SmokeAlarm extends AlarmDevice {
         this.deviceData.mdl = 'Smoke Alarm'
 
         // Build required MQTT topics for device
-        this.deviceTopic = this.alarmTopic+'/'+this.component+'/'+this.deviceId
-        this.stateTopic = this.deviceTopic+'/smoke_state'
-        this.attributesTopic = this.deviceTopic+'/attributes'
-        this.availabilityTopic = this.deviceTopic+'/status'
+        this.stateTopic = this.deviceTopic+'/smoke/state'
         this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
         
         // Publish discovery message
@@ -37,7 +34,6 @@ class SmokeAlarm extends AlarmDevice {
                 payload_available: 'online',
                 payload_not_available: 'offline',
                 state_topic: this.stateTopic,
-                json_attributes_topic: this.attributesTopic,
                 device_class: this.className,
                 device: this.deviceData
             },

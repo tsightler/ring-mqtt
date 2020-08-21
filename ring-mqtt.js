@@ -27,6 +27,7 @@ const Fan = require('./devices/fan')
 const Beam = require('./devices/beam')
 const Camera = require('./devices/camera')
 const ModesPanel = require('./devices/modes-panel')
+const Keypad = require('./devices/keypad')
 
 var CONFIG
 var ringLocations = new Array()
@@ -88,6 +89,8 @@ function getDevice(device, mqttClient) {
                 : new MultiLevelSwitch(deviceInfo)
         case RingDeviceType.Switch:
             return new Switch(deviceInfo)
+        case RingDeviceType.Keypad:
+            return new Keypad(deviceInfo)
         case 'location.mode':
             return new ModesPanel(deviceInfo)
     }
@@ -243,19 +246,17 @@ async function processMqttMessage(topic, message, mqttClient, ringClient) {
             processLocations(mqttClient, ringClient)
         }
     } else {
-        topic = topic.split('/')
         // Parse topic to get location/device ID
-        const locationId = topic[topic.length - 5]
-        const deviceId = topic[topic.length - 2]
-
-        // Some devices use the command topic level to determine the device action
-        const commandTopicLevel = topic[topic.length - 1]
+        const ringTopicLevels = (CONFIG.ring_topic).split('/').length
+        splitTopic = topic.split('/')
+        const locationId = splitTopic[ringTopicLevels]
+        const deviceId = splitTopic[ringTopicLevels + 2]
 
         // Find existing device by matching location & device ID
         const cmdDevice = ringDevices.find(d => (d.deviceId == deviceId && d.locationId == locationId))
 
         if (cmdDevice) {
-            cmdDevice.processCommand(message, commandTopicLevel)
+            cmdDevice.processCommand(message, topic)
         } else {
             debug('Received MQTT message for device Id '+deviceId+' at location Id '+locationId+' but could not find matching device')
         }

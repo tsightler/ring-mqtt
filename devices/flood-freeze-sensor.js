@@ -14,11 +14,8 @@ class FloodFreezeSensor extends AlarmDevice {
         this.deviceData.mdl = 'Flood & Freeze Sensor'
 
         // Build a save MQTT topics for future use
-        this.deviceTopic = this.alarmTopic+'/'+this.component+'/'+this.deviceId
-        this.stateTopic_flood = this.deviceTopic+'/flood_state'
-        this.stateTopic_freeze = this.deviceTopic+'/freeze_state'
-        this.attributesTopic = this.deviceTopic+'/attributes'
-        this.availabilityTopic = this.deviceTopic+'/status'
+        this.stateTopic_flood = this.deviceTopic+'/flood/state'
+        this.stateTopic_freeze = this.deviceTopic+'/freeze/state'
         this.configTopic_flood = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'_flood/config'
         this.configTopic_freeze = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'_freeze/config'
 
@@ -34,13 +31,12 @@ class FloodFreezeSensor extends AlarmDevice {
         // Build the MQTT discovery messages
         this.discoveryData.push({
             message: {
-                name: this.device.name+' - Flood',
+                name: this.device.name+' Flood',
                 unique_id: this.deviceId+'_'+this.className_flood,
                 availability_topic: this.availabilityTopic,
                 payload_available: 'online',
                 payload_not_available: 'offline',
                 state_topic: this.stateTopic_flood,
-                json_attributes_topic: this.attributesTopic,
                 device_class: this.className_flood,
                 device: this.deviceData
             },
@@ -49,7 +45,7 @@ class FloodFreezeSensor extends AlarmDevice {
 
         this.discoveryData.push({
             message: {
-                name: this.device.name+' - Freeze',
+                name: this.device.name+' Freeze',
                 unique_id: this.deviceId+'_'+this.className_freeze,
                 availability_topic: this.availabilityTopic,
                 payload_available: 'online',

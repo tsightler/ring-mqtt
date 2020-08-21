@@ -6,9 +6,6 @@ class Beam extends AlarmDevice {
     async publish(locationConnected) { 
         // Online initialize if location websocket is connected
         if (!locationConnected) { return }
-
-        this.availabilityTopic = this.alarmTopic+'/beam/'+this.deviceId+'/status'
-        this.attributesTopic = this.alarmTopic+'/beam/'+this.deviceId+'/attributes'
         
         // Build required MQTT topics for device for each entity        
         if (this.device.data.deviceType === 'group.light-group.beams') {
@@ -17,21 +14,19 @@ class Beam extends AlarmDevice {
         }
 
         if (this.deviceType !== 'switch.transformer.beams') {
-            this.deviceTopic_motion = this.alarmTopic+'/binary_sensor/'+this.deviceId
-            this.stateTopic_motion = this.deviceTopic_motion+'/motion_state'
+            this.stateTopic_motion = this.deviceTopic+'/motion/state'
             this.configTopic_motion = 'homeassistant/binary_sensor/'+this.locationId+'/'+this.deviceId+'/config'
         }
 
         if (this.deviceType !== 'motion-sensor.beams') {
-            this.deviceTopic_light = this.alarmTopic+'/light/'+this.deviceId
-            this.stateTopic_light = this.deviceTopic_light+'/switch_state'
-            this.commandTopic_light = this.deviceTopic_light+'/switch_command'
+            this.stateTopic_light = this.deviceTopic+'/light/state'
+            this.commandTopic_light = this.deviceTopic+'/light/command'
             this.configTopic_light = 'homeassistant/light/'+this.locationId+'/'+this.deviceId+'/config'
         }
 
         if (this.deviceType === 'switch.multilevel.beams') {
-            this.stateTopic_brightness = this.deviceTopic_light+'brightness_state'
-            this.commandTopic_brightness = this.deviceTopic_light+'brightness_command'
+            this.stateTopic_brightness = this.deviceTopic+'/light/brightness_state'
+            this.commandTopic_brightness = this.deviceTopic+'/light/brightness_command'
         }
 
         // Publish discovery message
@@ -51,11 +46,10 @@ class Beam extends AlarmDevice {
         if (this.stateTopic_motion) {
             this.discoveryData.push({
                 message: {
-                    name: this.device.name+' - Motion',
+                    name: this.device.name+' Motion',
                     unique_id: this.deviceId+'_motion',
                     availability_topic: this.availabilityTopic,
                     payload_available: 'online',
-                    json_attributes_topic: this.attributesTopic,
                     device_class: 'motion',
                     device: this.deviceData
                 },
@@ -65,13 +59,12 @@ class Beam extends AlarmDevice {
 
         if (this.stateTopic_light) {
             let discoveryMessage = {
-                name: this.device.name+' - Light',
+                name: this.device.name+' Light',
                 unique_id: this.deviceId+'_light',
                 availability_topic: this.availabilityTopic,
                 payload_available: 'online',
                 payload_not_available: 'offline',
                 state_topic: this.stateTopic_light,
-                json_attributes_topic: this.attributesTopic,
                 command_topic: this.commandTopic_light
             }
             if (this.stateTopic_brightness) {
@@ -108,13 +101,13 @@ class Beam extends AlarmDevice {
     }
 
     // Process messages from MQTT command topic
-    processCommand(message, cmdTopicLevel) {
-        if (cmdTopicLevel == 'switch_command') {
+    processCommand(message, topic) {
+        if (topic == this.commandTopic_light) {
             this.setSwitchState(message)
-        } else if (cmdTopicLevel == 'brightness_command') {
+        } else if (topic == this.commandTopic_brightness) {
             this.setSwitchLevel(message)
         } else {
-            debug('Somehow received unknown command topic level '+cmdTopicLevel+' for switch Id: '+this.deviceId)
+            debug('Somehow received unknown command topic '+topic+' for switch Id: '+this.deviceId)
         }
     }
 

@@ -20,8 +20,8 @@ class Camera {
         }
 
         // Set device location and top level MQTT topics
-        this.cameraTopic = deviceInfo.ringTopic+'/'+this.locationId+'/camera'
-        this.availabilityTopic = this.cameraTopic+'/'+this.deviceId+'/status'
+        this.cameraTopic = deviceInfo.ringTopic+'/'+this.locationId+'/camera/'+this.deviceId
+        this.availabilityTopic = this.cameraTopic+'/status'
 
         // Create properties to store motion ding state
         this.motion = {
@@ -144,7 +144,7 @@ class Camera {
 
     // Build and publish a Home Assistant MQTT discovery packet for camera capability
     publishCapability(capability) {
-        const componentTopic = this.cameraTopic+'/'+capability.component+'/'+this.deviceId
+        const componentTopic = this.cameraTopic+'/'+capability.type
         const configTopic = 'homeassistant/'+capability.component+'/'+this.locationId+'/'+this.deviceId+'_'+capability.type+'/config'
 
         const message = {
@@ -153,13 +153,13 @@ class Camera {
             availability_topic: this.availabilityTopic,
             payload_available: 'online',
             payload_not_available: 'offline',
-            state_topic: componentTopic+'/'+capability.type+'_state'
+            state_topic: componentTopic+'/state'
         }
 
         if (capability.className) { message.device_class = capability.className }
 
         if (capability.hasCommand) {
-            const commandTopic = componentTopic+'/'+capability.type+'_command'
+            const commandTopic = componentTopic+'/command'
             message.command_topic = commandTopic
             this.mqttClient.subscribe(commandTopic)
         }
@@ -172,13 +172,11 @@ class Camera {
 
     // Process a ding event from camera or publish existing ding state
     async publishDingState(ding) {
-        const componentTopic = this.cameraTopic+'/binary_sensor/'+this.deviceId
-
         // Is it an active ding (i.e. from a subscribed event)?
         if (ding) {
             // Is it a motion or doorbell ding?
             const dingType = ding.kind
-            const stateTopic = componentTopic+'/'+dingType+'_state'
+            const stateTopic = this.cameraTopic+'/'+dingType+'/state'
 
             // Update time for most recent ding and expire time of ding (Ring seems to be 180 seconds for all dings)
             this[dingType].last_ding = Math.floor(ding.now)
@@ -210,9 +208,9 @@ class Camera {
             }
         } else {
             // Not an active ding so just publish existing ding state
-            this.publishMqtt(componentTopic+'/motion_state', (this.motion.active_ding ? 'ON' : 'OFF'), true)
+            this.publishMqtt(this.cameraTopic+'/motion/state', (this.motion.active_ding ? 'ON' : 'OFF'), true)
             if (this.camera.isDoorbot) {
-                this.publishMqtt(componentTopic+'/ding_state', (this.ding.active_ding ? 'ON' : 'OFF'), true)
+                this.publishMqtt(this.cameraTopic+'/ding/state', (this.ding.active_ding ? 'ON' : 'OFF'), true)
             }
         }
     }
@@ -222,16 +220,14 @@ class Camera {
     // when values change from previous polling interval
     publishPolledState() {
         if (this.camera.hasLight) {
-            const componentTopic = this.cameraTopic+'/light/'+this.deviceId
-            const stateTopic = componentTopic+'/light_state'
+            const stateTopic = this.cameraTopic+'/light/state'
             if (this.camera.data.led_status !== this.publishedLightState) {
                 this.publishMqtt(stateTopic, (this.camera.data.led_status === 'on' ? 'ON' : 'OFF'), true)
                 this.publishedLightState = this.camera.data.led_status
             }
         }
         if (this.camera.hasSiren) {
-            const componentTopic = this.cameraTopic+'/switch/'+this.deviceId
-            const stateTopic = componentTopic+'/siren_state'
+            const stateTopic = this.cameraTopic+'/siren/state'
             const sirenStatus = this.camera.data.siren_status.seconds_remaining > 0 ? 'ON' : 'OFF'
             if (sirenStatus !== this.publishedSirenState) {
                 this.publishMqtt(stateTopic, sirenStatus, true)
@@ -285,12 +281,14 @@ class Camera {
     }
 
     // Process messages from MQTT command topic
-    processCommand(message, cmdTopicLevel) {
-        switch(cmdTopicLevel) {
-            case 'light_command':
+    processCommand(message, topic) {
+        topic = topic.split('/')
+        const component = topic[topic.length - 2]
+        switch(component) {
+            case 'light':
                 this.setLightState(message)
                 break;
-            case 'siren_command':
+            case 'siren':
                 this.setSirenState(message)
                 break;
             default:
@@ -310,7 +308,7 @@ class Camera {
                 this.camera.setLight(false)
                 break;
             default:
-                debug('Received unkonw command for light on camera ID '+this.deviceId)
+                debug('Received unknown command for light on camera ID '+this.deviceId)
         }
     }
 

@@ -12,13 +12,10 @@ class Fan extends AlarmDevice {
         this.deviceData.mdl = 'Fan Control'
 
         // Build required MQTT topics for device
-        this.deviceTopic = this.alarmTopic+'/'+this.component+'/'+this.deviceId
-        this.stateTopic = this.deviceTopic+'/fan_state'
-        this.commandTopic = this.deviceTopic+'/fan_command'
-        this.speedStateTopic = this.deviceTopic+'/fan_speed_state'
-        this.speedCommandTopic = this.deviceTopic+'/fan_speed_command'
-        this.attributesTopic = this.deviceTopic+'/attributes'
-        this.availabilityTopic = this.deviceTopic+'/status'
+        this.stateTopic_fan = this.deviceTopic+'/fan/state'
+        this.commandTopic_fan = this.deviceTopic+'/fan/command'
+        this.stateTopic_speed = this.deviceTopic+'/fan/speed_state'
+        this.commandTopic_speed = this.deviceTopic+'/fan/speed_command'
         this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
         this.prevFanState = undefined
         this.targetFanLevel = undefined
@@ -31,8 +28,8 @@ class Fan extends AlarmDevice {
         this.publishSubscribeDevice()
 
         // Subscribe to device command topics
-        this.mqttClient.subscribe(this.commandTopic)
-        this.mqttClient.subscribe(this.speedCommandTopic)
+        this.mqttClient.subscribe(this.commandTopic_fan)
+        this.mqttClient.subscribe(this.commandTopic_speed)
     }
 
     initDiscoveryData() {
@@ -44,11 +41,10 @@ class Fan extends AlarmDevice {
                 availability_topic: this.availabilityTopic,
                 payload_available: 'online',
                 payload_not_available: 'offline',
-                state_topic: this.stateTopic,
-                json_attributes_topic: this.attributesTopic,
-                command_topic: this.commandTopic,
-                speed_state_topic: this.speedStateTopic,
-                speed_command_topic: this.speedCommandTopic,
+                state_topic: this.stateTopic_fan,
+                command_topic: this.commandTopic_fan,
+                speed_state_topic: this.stateTopic_speed,
+                speed_command_topic: this.commandTopic_speed,
                 speeds: [ "low", "medium", "high" ],
                 device: this.deviceData
             },
@@ -75,24 +71,24 @@ class Fan extends AlarmDevice {
         // Publish device state
         // targetFanLevel is a hack to work around Home Assistant UI behavior
         if (this.targetFanLevel && this.targetFanLevel != fanLevel) {
-            this.publishMqtt(this.speedStateTopic, this.targetFanLevel, true)
+            this.publishMqtt(this.stateTopic_speed, this.targetFanLevel, true)
         } else {
-            this.publishMqtt(this.speedStateTopic, fanLevel, true)
+            this.publishMqtt(this.stateTopic_speed, fanLevel, true)
         }
-        this.publishMqtt(this.stateTopic, fanState, true)
+        this.publishMqtt(this.stateTopic_fan, fanState, true)
 
         // Publish device attributes (batterylevel, tamper status)
         this.publishAttributes()
     }
     
     // Process messages from MQTT command topic
-    processCommand(message, cmdTopicLevel) {
-        if (cmdTopicLevel == 'fan_command') {
+    processCommand(message, topic) {
+        if (topic == this.commandTopic_fan) {
             this.setFanState(message)
-        } else if (cmdTopicLevel == 'fan_speed_command') {
+        } else if (topic == this.commandTopic_speed) {
             this.setFanLevel(message)
         } else {
-            debug('Somehow received unknown command topic level '+cmdTopicLevel+' for fan Id: '+this.deviceId)
+            debug('Somehow received unknown command topic '+topic+' for fan Id: '+this.deviceId)
         }
     }
 

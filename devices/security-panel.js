@@ -14,11 +14,8 @@ class SecurityPanel extends AlarmDevice {
         this.deviceData.name = this.device.location.name + ' Alarm'
 
         // Build required MQTT topics for device
-        this.deviceTopic = this.alarmTopic+'/'+this.component+'/'+this.deviceId
-        this.stateTopic = this.deviceTopic+'/alarm_state'
-        this.commandTopic = this.deviceTopic+'/alarm_command'
-        this.attributesTopic = this.deviceTopic+'/attributes'
-        this.availabilityTopic = this.deviceTopic+'/status'
+        this.stateTopic = this.deviceTopic+'/alarm/state'
+        this.commandTopic = this.deviceTopic+'/alarm/command'
         this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
         
         // Publish discovery message
@@ -42,7 +39,6 @@ class SecurityPanel extends AlarmDevice {
                 payload_available: 'online',
                 payload_not_available: 'offline',
                 state_topic: this.stateTopic,
-                json_attributes_topic: this.attributesTopic,
                 command_topic: this.commandTopic,
                 device: this.deviceData
             },

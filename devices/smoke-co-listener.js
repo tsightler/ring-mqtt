@@ -14,11 +14,8 @@ class SmokeCoListener extends AlarmDevice {
         this.deviceData.mdl = 'Smoke & CO Listener'
 
         // Build a save MQTT topics for future use
-        this.deviceTopic = this.alarmTopic+'/'+this.component+'/'+this.deviceId
-        this.stateTopic_smoke = this.deviceTopic+'/smoke_state'
-        this.stateTopic_co = this.deviceTopic+'/co_state'
-        this.attributesTopic = this.deviceTopic+'/attributes'
-        this.availabilityTopic = this.deviceTopic+'/status'
+        this.stateTopic_smoke = this.deviceTopic+'/smoke/state'
+        this.stateTopic_co = this.deviceTopic+'/co/state'
         this.configTopic_smoke = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'_smoke/config'
         this.configTopic_co = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'_gas/config'
 
@@ -34,13 +31,12 @@ class SmokeCoListener extends AlarmDevice {
         // Build the MQTT discovery message for smoke detector
         this.discoveryData.push({
             message: {
-                name: this.device.name+' - Smoke',
+                name: this.device.name+' Smoke',
                 unique_id: this.deviceId+'_'+this.className_smoke,
                 availability_topic: this.availabilityTopic,
                 payload_available: 'online',
                 payload_not_available: 'offline',
                 state_topic: this.stateTopic_smoke,
-                json_attributes_topic: this.attributesTopic,
                 device_class: this.className_smoke,
                 device: this.deviceData
             },
@@ -50,13 +46,12 @@ class SmokeCoListener extends AlarmDevice {
         // Build the MQTT discovery message for co detector
         this.discoveryData.push({
             message: {
-                name: this.device.name+' - CO',
+                name: this.device.name+' CO',
                 unique_id: this.deviceId+'_'+this.className_co,
                 availability_topic: this.availabilityTopic,
                 payload_available: 'online',
                 payload_not_available: 'offline',
                 state_topic: this.stateTopic_co,
-                json_attributes_topic: this.attributesTopic,
                 device_class: this.className_co,
                 device: this.deviceData
             },

@@ -12,11 +12,8 @@ class Switch extends AlarmDevice {
         this.deviceData.mdl = (this.device.data.categoryId === 2) ? 'Light' : 'Switch'
 
         // Build required MQTT topics for device
-        this.deviceTopic = this.alarmTopic+'/'+this.component+'/'+this.deviceId
-        this.stateTopic = this.deviceTopic+'/switch_state'
-        this.commandTopic = this.deviceTopic+'/switch_command'
-        this.attributesTopic = this.deviceTopic+'/attributes'
-        this.availabilityTopic = this.deviceTopic+'/status'
+        this.stateTopic = this.deviceTopic+'/'+this.component+'/state'
+        this.commandTopic = this.deviceTopic+'/'+this.component+'/command'
         this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
 
         // Publish discovery message
@@ -40,11 +37,10 @@ class Switch extends AlarmDevice {
                 payload_available: 'online',
                 payload_not_available: 'offline',
                 state_topic: this.stateTopic,
-                json_attributes_topic: this.attributesTopic,
                 command_topic: this.commandTopic,
                 device: this.deviceData
             },
-            configTopic: this.configTopic_smoke
+            configTopic: this.configTopic
         })
 
         this.initInfoDiscoveryData('commStatus')

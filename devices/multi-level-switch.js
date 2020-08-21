@@ -12,13 +12,10 @@ class MultiLevelSwitch extends AlarmDevice {
         this.deviceData.mdl = 'Dimmer Switch'
 
         // Build required MQTT topics for device
-        this.deviceTopic = this.alarmTopic+'/'+this.component+'/'+this.deviceId
-        this.stateTopic = this.deviceTopic+'/switch_state'
-        this.commandTopic = this.deviceTopic+'/switch_command'
-        this.brightnessStateTopic = this.deviceTopic+'/brightness_state'
-        this.brightnessCommandTopic = this.deviceTopic+'/brightness_command'
-        this.attributesTopic = this.deviceTopic+'/attributes'
-        this.availabilityTopic = this.deviceTopic+'/status'
+        this.stateTopic_light = this.deviceTopic+'/light/state'
+        this.commandTopic_light = this.deviceTopic+'/light/command'
+        this.stateTopic_brightness = this.deviceTopic+'/light/brightness_state'
+        this.commandTopic_brightness = this.deviceTopic+'/light/brightness_command'
         this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
 
         // Publish discovery message
@@ -29,8 +26,8 @@ class MultiLevelSwitch extends AlarmDevice {
         this.publishSubscribeDevice()
 
         // Subscribe to device command topics
-        this.mqttClient.subscribe(this.commandTopic)
-        this.mqttClient.subscribe(this.brightnessCommandTopic)
+        this.mqttClient.subscribe(this.commandTopic_light)
+        this.mqttClient.subscribe(this.commandTopic_brightness)
     }
 
     initDiscoveryData() {
@@ -42,12 +39,11 @@ class MultiLevelSwitch extends AlarmDevice {
                 availability_topic: this.availabilityTopic,
                 payload_available: 'online',
                 payload_not_available: 'offline',
-                state_topic: this.stateTopic,
-                json_attributes_topic: this.attributesTopic,
-                command_topic: this.commandTopic,
+                state_topic: this.stateTopic_light,
+                command_topic: this.commandTopic_light,
                 brightness_scale: 100,
-                brightness_state_topic: this.brightnessStateTopic,
-                brightness_command_topic: this.brightnessCommandTopic,
+                brightness_state_topic: this.stateTopic_brightness,
+                brightness_command_topic: this.commandTopic_brightness,
                 device: this.deviceData
             },
             configTopic: this.configTopic
@@ -60,20 +56,20 @@ class MultiLevelSwitch extends AlarmDevice {
         const switchState = this.device.data.on ? "ON" : "OFF"
         const switchLevel = (this.device.data.level && !isNaN(this.device.data.level) ? Math.round(100 * this.device.data.level) : 0) 
         // Publish device state
-        this.publishMqtt(this.stateTopic, switchState, true)
-        this.publishMqtt(this.brightnessStateTopic, switchLevel.toString(), true)
+        this.publishMqtt(this.stateTopic_light, switchState, true)
+        this.publishMqtt(this.stateTopic_brightness, switchLevel.toString(), true)
         // Publish device attributes (batterylevel, tamper status)
         this.publishAttributes()
     }
     
     // Process messages from MQTT command topic
-    processCommand(message, cmdTopicLevel) {
-        if (cmdTopicLevel == 'switch_command') {
+    processCommand(message, topic) {
+        if (topic == this.commandTopic_light) {
             this.setSwitchState(message)
-        } else if (cmdTopicLevel == 'brightness_command') {
+        } else if (topic == this.commandTopic_brightness) {
             this.setSwitchLevel(message)
         } else {
-            debug('Somehow received unknown command topic level '+cmdTopicLevel+' for switch Id: '+this.deviceId)
+            debug('Somehow received unknown command topic '+topic+' for switch Id: '+this.deviceId)
         }
     }
 

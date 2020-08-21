@@ -10,10 +10,8 @@ class ModesPanel extends AlarmDevice {
         this.deviceData.name = this.device.location.name + ' Mode'
 
         // Build required MQTT topics for device
-        this.deviceTopic = this.ringTopic+'/'+this.locationId+'/mode/'+this.component+'/'+this.deviceId
-        this.stateTopic = this.deviceTopic+'/mode_state'
-        this.commandTopic = this.deviceTopic+'/mode_command'
-        this.availabilityTopic = this.deviceTopic+'/status'
+        this.stateTopic = this.deviceTopic+'/mode/state'
+        this.commandTopic = this.deviceTopic+'/mode/command'
         this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
 
         // Save current mode if known

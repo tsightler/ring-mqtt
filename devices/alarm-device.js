@@ -22,14 +22,13 @@ class AlarmDevice {
         }
         
         // Set device location and top level MQTT topics 
-        this.locationId = this.device.location.locationId
         this.ringTopic = deviceInfo.ringTopic
-        this.alarmTopic = this.ringTopic+'/'+this.locationId+'/alarm'
+        this.deviceTopic = this.ringTopic+'/'+this.locationId+'/alarm/'+this.deviceId
+        this.availabilityTopic = this.deviceTopic+'/status'
         
         // Create info device topics
-        this.stateTopic_info = this.alarmTopic+'/sensor/'+this.deviceId+'/info_state'
+        this.stateTopic_info = this.deviceTopic+'/info/state'
         this.configTopic_info = 'homeassistant/sensor/'+this.locationId+'/'+this.deviceId+'_info/config'
-
     }
 
     // Return batterylevel or convert battery status to estimated level
@@ -49,7 +48,7 @@ class AlarmDevice {
 
     // Create device discovery data
     initInfoDiscoveryData(deviceValue) {
-        // If set override value tempate setting with device specific
+        // If set override value tempate setting with device specific value
         const value = deviceValue
             ? { template: '{{value_json["'+deviceValue+'"]}}' }
             : { template: '{{value_json["batteryLevel"]}}', uom: '%' }
@@ -104,40 +103,34 @@ class AlarmDevice {
         this.online()
     }
 
-    // Publish device attributes
+    // Publish device info
     publishAttributes() {
-        let attributes = {}
-        let batteryLevel = this.getBatteryLevel()
-        if (batteryLevel !== 'none') {
-            attributes.battery_level = batteryLevel
-        }
-        if (this.device.data.tamperStatus) {
-            attributes.tamper_status = this.device.data.tamperStatus
-        }
-        this.publishMqtt(this.attributesTopic, JSON.stringify(attributes), true)
-
         let alarmState
         if (this.device.deviceType === 'security-panel') {
             alarmState = this.device.data.alarmInfo ? this.device.data.alarmInfo.state : 'all-clear'
         }
 
         // Get full set of device data and publish to info topic
-        attributes = {
-            ... alarmState ? { alarmState: alarmState } : {},
+        const attributes = {
             ... this.device.data.acStatus ? { acStatus: this.device.data.acStatus } : {},
+            ... alarmState ? { alarmState: alarmState } : {},
             ... this.device.data.batteryLevel
                 ? { batteryLevel: this.device.data.batteryLevel === 99 ? 100 : this.device.data.batteryLevel }
                 : {},
             ... this.device.data.batteryStatus && this.device.data.batteryStatus !== 'none'
                 ? { batteryStatus: this.device.data.batteryStatus }
                 : {},
+            ... this.device.data.brightness ? {brightness: this.device.data.brightness } : {},
+            ... this.device.data.chirps ? {chirps: this.device.data.chirps } : {},
             ... this.device.data.commStatus ? { commStatus: this.device.data.commStatus } : {},
             ... this.device.data.firmwareUpdate ? { firmwareStatus: this.device.data.firmwareUpdate.state } : {},
             ... this.device.data.lastCommTime ? { lastCommTime: new Date(this.device.data.lastCommTime).toISOString() } : {},
             ... this.device.data.lastUpdate ? { lastUpdate: new Date(this.device.data.lastUpdate).toISOString() } : {},
             ... this.device.data.linkQuality ? { linkQuality: this.device.data.linkQuality } : {},
+            ... this.device.data.powerSave ? {powerSave: this.device.data.powerSave } : {},
             ... this.device.data.serialNumber ? { serialNumber: this.device.data.serialNumber } : {},
-            ... this.device.data.tamperStatus ? { tamperStatus: this.device.data.tamperStatus } : {}
+            ... this.device.data.tamperStatus ? { tamperStatus: this.device.data.tamperStatus } : {},
+            ... this.device.data.volume ? {volume: this.device.data.volume } : {},
         }
         this.publishMqtt(this.stateTopic_info, JSON.stringify(attributes), true)
     }
