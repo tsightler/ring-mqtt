@@ -58,7 +58,7 @@ class SecurityPanel extends AlarmDevice {
 
         // If alarm is active report triggered or, if entry-delay, pending
         if (alarmStates.includes(alarmInfo.state))  {
-            alarmMode = alarmInfo.state !== 'entry-delay' ? 'pending' : 'triggered'
+            alarmMode = alarmInfo.state === 'entry-delay' ? 'pending' : 'triggered'
         } else {
             switch(this.device.data.mode) {
                 case 'none':
