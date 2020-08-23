@@ -263,7 +263,6 @@ async function processMqttMessage(topic, message, mqttClient, ringClient) {
     }
 }
 
-
 // This is a quick and dirty hack to provide a web based method for
 // acquiring a refresh token from Ring.com.  It's ugly, and has too
 // little error handling, but seems to work well enough for now.
