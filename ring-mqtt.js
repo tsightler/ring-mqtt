@@ -272,7 +272,9 @@ async function startWeb() {
     let restClient
 
     const listener = webTokenApp.listen(55123, () => {
-        debug('Go to http://<host_ip_address>:55123/ to generate a valid token.')
+        if (!process.env.HASSADDON) {
+            debug('Go to http://<host_ip_address>:55123/ to generate a valid token.')
+        }
     })
 
     webTokenApp.use(bodyParser.urlencoded({ extended: false }))
@@ -281,7 +283,7 @@ async function startWeb() {
         res.sendFile('./web/account.html', {root: __dirname})
     })
 
-    webTokenApp.post('/submit-account', async (req, res) => {
+    webTokenApp.post('./submit-account', async (req, res) => {
         const email = req.body.email
         const password = req.body.password
         let errmsg
@@ -302,7 +304,7 @@ async function startWeb() {
         }
     })
 
-    webTokenApp.post('/submit-code', async (req, res) => {
+    webTokenApp.post('./submit-code', async (req, res) => {
         let token
         const code = req.body.code
         try {
