@@ -17,6 +17,17 @@ class SecurityPanel extends AlarmDevice {
         this.stateTopic = this.deviceTopic+'/alarm/state'
         this.commandTopic = this.deviceTopic+'/alarm/command'
         this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
+
+        if (this.config.enable_panic) {
+            // Build required MQTT topics for device
+            this.stateTopic_police = this.deviceTopic+'/police/state'
+            this.commandTopic_police = this.deviceTopic+'/police/command'
+            this.configTopic_police = 'homeassistant/switch/'+this.locationId+'/'+this.deviceId+'_police/config'
+
+            this.stateTopic_fire = this.deviceTopic+'/fire/state'
+            this.commandTopic_fire = this.deviceTopic+'/fire/command'
+            this.configTopic_fire = 'homeassistant/switch/'+this.locationId+'/'+this.deviceId+'_fire/config'
+        }
         
         // Publish discovery message
         if (!this.discoveryData.length) { await this.initDiscoveryData() }
@@ -27,6 +38,10 @@ class SecurityPanel extends AlarmDevice {
 
         // Subscribe to device command topic
         this.mqttClient.subscribe(this.commandTopic)
+        if (this.config.enable_panic) {
+            this.mqttClient.subscribe(this.commandTopic_police)
+            this.mqttClient.subscribe(this.commandTopic_fire)
+        }
     }
 
     initDiscoveryData() {
@@ -44,6 +59,36 @@ class SecurityPanel extends AlarmDevice {
             },
             configTopic: this.configTopic
         })
+
+        if (this.config.enable_panic) {
+            this.discoveryData.push({
+                message: {
+                    name: this.device.location.name+' Police Panic',
+                    unique_id: this.deviceId+'_police',
+                    availability_topic: this.availabilityTopic,
+                    payload_available: 'online',
+                    payload_not_available: 'offline',
+                    state_topic: this.stateTopic_police,
+                    command_topic: this.commandTopic_police,
+                    device: this.deviceData
+                },
+                configTopic: this.configTopic_police
+            })
+
+            this.discoveryData.push({
+                message: {
+                    name: this.device.location.name+' Fire Panic',
+                    unique_id: this.deviceId+'_fire',
+                    availability_topic: this.availabilityTopic,
+                    payload_available: 'online',
+                    payload_not_available: 'offline',
+                    state_topic: this.stateTopic_fire,
+                    command_topic: this.commandTopic_fire,
+                    device: this.deviceData
+                },
+                configTopic: this.configTopic_fire
+            })
+        }
 
         this.initInfoDiscoveryData('alarmState')
     }
@@ -72,13 +117,42 @@ class SecurityPanel extends AlarmDevice {
         }
         // Publish device sensor state
         this.publishMqtt(this.stateTopic, alarmMode, true)
+
+        if (this.config.enable_panic) {
+            let policeState = 'OFF'
+            let fireState = 'OFF'
+            const alarmState = this.device.data.alarmInfo ? this.device.data.alarmInfo.state : ''
+            switch (alarmState) {
+                case 'burglar-alarm':
+                case 'user-verified-burglar-alarm':
+                case 'burglar-accelerated-alarm':
+                    policeState = 'ON'
+                    debug('Burgler alarm is active for '+this.device.location.name)
+                case 'fire-alarm':
+                case 'user-verified-fire-alarm':
+                case 'fire-accelerated-alarm':
+                    fireState = 'ON'
+                    debug('Fire alarm is active for '+this.device.location.name)
+            }
+            this.publishMqtt(this.stateTopic_police, policeState, true)
+            this.publishMqtt(this.stateTopic_fire, fireState, true)
+        }
+
         // Publish device attributes (batterylevel, tamper status)
         this.publishAttributes()
     }
     
     // Process messages from MQTT command topic
-    processCommand(message) {
-        this.setAlarmMode(message)
+    processCommand(message, topic) {
+        if (topic == this.commandTopic) {
+            this.setAlarmMode(message)
+        } else if (topic == this.commandTopic_police) {
+            this.setPoliceMode(message)
+        } else if (topic == this.commandTopic_fire) {
+            this.setFireMode(message)
+        } else {
+            debug('Somehow received unknown command topic '+topic+' for switch Id: '+this.deviceId)
+        }
     }
 
     // Set Alarm Mode on received MQTT command message
@@ -107,16 +181,16 @@ class SecurityPanel extends AlarmDevice {
         await utils.sleep(delay)
         var alarmTargetMode
         debug('Set alarm mode: '+message)
-        switch(message) {
-            case 'DISARM':
+        switch(message.toLowerCase()) {
+            case 'disarm':
                 this.device.location.disarm().catch(err => { debug(err) })
                 alarmTargetMode = 'none'
                 break
-            case 'ARM_HOME':
+            case 'arm_home':
                 this.device.location.armHome().catch(err => { debug(err) })
                 alarmTargetMode = 'some'
                 break
-            case 'ARM_AWAY':
+            case 'arm_away':
                 this.device.location.armAway().catch(err => { debug(err) })
                 alarmTargetMode = 'all'
                 break
@@ -133,6 +207,38 @@ class SecurityPanel extends AlarmDevice {
         } else {
             debug('Alarm for location '+this.device.location.name+' failed to enter requested arm/disarm mode!')
             return false
+        }
+    }
+
+    async setPoliceMode(message) {
+        switch(message.toLowerCase()) {
+            case 'on':
+                debug('Activating burglar alarm for '+this.device.location.name)
+                this.device.location.triggerBurglarAlarm().catch(err => { debug(err) })
+                break;
+            case 'off': {
+                debug('Deactivating burglar alarm for '+this.device.location.name)
+                this.device.location.setAlarmMode('none').catch(err => { debug(err) })
+                break;
+            }
+            default:
+                debug('Received invalid command for panic!')
+        }
+    }
+
+    async setFireMode(message) {
+        switch(message.toLowerCase()) {
+            case 'on':
+                debug('Activating fire alarm for '+this.device.location.name)
+                this.device.location.triggerFireAlarm().catch(err => { debug(err) })
+                break;
+            case 'off': {
+                debug('Deactivating fire alarm for '+this.device.location.name)
+                this.device.location.setAlarmMode('none').catch(err => { debug(err) })
+                break;
+            }
+            default:
+                debug('Received invalid command for panic!')
         }
     }
 }

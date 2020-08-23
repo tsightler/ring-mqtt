@@ -57,7 +57,7 @@ function getDevice(device, mqttClient) {
     const deviceInfo = {
         device: device,
         mqttClient: mqttClient,
-        ringTopic: CONFIG.ring_topic
+        CONFIG
     }
     if (device instanceof RingCamera) {
         return new Camera(deviceInfo)

@@ -8,5 +8,6 @@
     "ring_token": "",
     "enable_cameras": false,
     "enable_modes" : false,
+    "enable_panic" : false,
     "location_ids": [""]
 }

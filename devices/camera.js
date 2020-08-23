@@ -20,7 +20,7 @@ class Camera {
         }
 
         // Set device location and top level MQTT topics
-        this.cameraTopic = deviceInfo.ringTopic+'/'+this.locationId+'/camera/'+this.deviceId
+        this.cameraTopic = deviceInfo.CONFIG.ring_topic+'/'+this.locationId+'/camera/'+this.deviceId
         this.availabilityTopic = this.cameraTopic+'/status'
 
         // Create properties to store motion ding state

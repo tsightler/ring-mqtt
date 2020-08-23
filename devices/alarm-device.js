@@ -10,7 +10,8 @@ class AlarmDevice {
         this.availabilityState = 'init'
         this.discoveryData = new Array()
         this.deviceId = this.device.id
-        this.locationId = this.device.location.locationId        
+        this.locationId = this.device.location.locationId
+        this.config = deviceInfo.CONFIG
 
         // Set default device data for Home Assistant device registry
         // Values may be overridden by individual devices
@@ -22,7 +23,7 @@ class AlarmDevice {
         }
         
         // Set device location and top level MQTT topics 
-        this.ringTopic = deviceInfo.ringTopic
+        this.ringTopic = this.config.ring_topic
         this.deviceTopic = this.ringTopic+'/'+this.locationId+'/alarm/'+this.deviceId
         this.availabilityTopic = this.deviceTopic+'/status'
         
