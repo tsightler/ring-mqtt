@@ -283,28 +283,27 @@ async function startWeb() {
         res.sendFile('./web/account.html', {root: __dirname})
     })
 
-    webTokenApp.post('./submit-account', async (req, res) => {
+    webTokenApp.post(/.*submit-account$/, async (req, res) => {
         const email = req.body.email
         const password = req.body.password
         let errmsg
         restClient = await new RingRestClient({ email, password })
         // Check if the user/password was accepted
         try {
-            await restClient.getAuth()
+            await restClient.getCurrentAuth()
         } catch(error) {
-            errmsg = error.message
-        }
-        debug(errmsg)
-        if (errmsg.match(/^Your Ring account is configured to use 2-factor authentication.*$/)) {
-            debug('Username/Password was accepted, waiting for 2FA code to be entered.')
-            res.sendFile('./web/code.html', {root: __dirname})
-        } else {
-            debug('Authentication error, check username/password and try again.')
-            res.sendFile('./web/account-error.html', {root: __dirname})
+            if (restClient.using2fa) {
+                debug('Username/Password was accepted, waiting for 2FA code to be entered.')
+                res.sendFile('./web/code.html', {root: __dirname})
+            } else {
+                debug(error.message)
+                debug('Authentication error, check username/password and try again.')
+                res.sendFile('./web/account-error.html', {root: __dirname})
+            }
         }
     })
 
-    webTokenApp.post('./submit-code', async (req, res) => {
+    webTokenApp.post(/.*submit-code$/, async (req, res) => {
         let token
         const code = req.body.code
         try {
