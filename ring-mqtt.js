@@ -392,13 +392,22 @@ async function initConfig(configFile) {
         if (CONFIG.enable_cameras && CONFIG.enable_cameras != 'true') { CONFIG.enable_cameras = false}
         if (CONFIG.location_ids) { CONFIG.location_ids = CONFIG.location_ids.split(',') }
     }
-    // Set some defaults if undefined
+    // If Home Assistant addon, try config or environment for MQTT settings
+    if (process.env.HASSADDON) {
+        CONFIG.host = CONFIG.host ? CONFIG.host : process.env.MQTTHOST
+        CONFIG.port = CONFIG.port ? CONFIG.port : process.env.MQTTPORT
+        CONFIG.mqtt_user = CONFIG.mqtt_user ? CONFIG.mqtt_user : process.env.MQTTUSER
+        CONFIG.mqtt_pass = CONFIG.mqtt_pass ? CONFIG.mqtt_pass : process.env.MQTTPASSWORD
+    }
+
+    // If there's still no configured settings, force some defaults.
     CONFIG.host = CONFIG.host ? CONFIG.host : 'localhost'
     CONFIG.port = CONFIG.port ? CONFIG.port : '1883'
     CONFIG.ring_topic = CONFIG.ring_topic ? CONFIG.ring_topic : 'ring'
     CONFIG.hass_topic = CONFIG.hass_topic ? CONFIG.hass_topic : 'homeassistant/status'
     if (!CONFIG.enable_cameras) { CONFIG.enable_cameras = false }
     if (!CONFIG.enable_modes) { CONFIG.enable_modes = false }
+    if (!CONFIG.enable_panic) { CONFIG.enable_panic = false }
 }
 
 // Save updated refresh token to config or state file
@@ -430,8 +439,13 @@ const main = async(generatedToken) => {
 
     // For HASSIO and DOCKER latest token is saved in /data/ring-state.json
     if (process.env.HASSADDON || process.env.ISDOCKER) { 
-        configFile = (process.env.HASSADDON) ? '/data/options.json' : '/data/config.json'
         stateFile = '/data/ring-state.json'
+        if (process.env.HASSADDON) {
+            configFile = '/data/options.json'
+            startWeb() // Web service runs all the time for addon
+        } else {
+            configFile = '/data/config.json'
+        }
     }
 
     // Initiate CONFIG object from file or environment variables
@@ -458,10 +472,11 @@ const main = async(generatedToken) => {
         } else {
             if (process.env.HASSADDON) {
                 debug('No refresh token was found in saved state file or config file.')
+                debug('Use the web interface to generate a new token.')
             } else {
                 debug('No refresh token was found in config file.')
+                startWeb()
             }
-            startWeb()
         }
     } else {
         // There is at least one token in state file or config
@@ -513,7 +528,6 @@ const main = async(generatedToken) => {
                 debug(colors.brightRed('or maybe all available refresh tokens are invalid.'))
                 if (process.env.HASSADDON) {
                     debug('Restart the addon to try again or use the web interface to generate a new token.')
-                    startWeb()
                 } else {
                     debug('Please check the configuration and network settings, or generate a new refresh token, and try again.')
                     process.exit(2)
@@ -527,7 +541,6 @@ const main = async(generatedToken) => {
             } else if (process.env.HASSADDON) {
                 debug('Could not connect with saved refresh token and no refresh token exist in config file.')
                 debug('Restart the addon to try again or use the web interface to generate a new token.')
-                startWeb()
             }
         }
     }
