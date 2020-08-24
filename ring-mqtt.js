@@ -10,9 +10,8 @@ const isOnline = require ('is-online')
 const debug = require('debug')('ring-mqtt')
 const colors = require('colors/safe')
 const utils = require('./lib/utils.js')
+const tokenApp = require('./lib/tokenapp.js')
 const fs = require('fs')
-const express = require('express')
-const bodyParser = require("body-parser")
 const SecurityPanel = require('./devices/security-panel')
 const ContactSensor = require('./devices/contact-sensor')
 const MotionSensor = require('./devices/motion-sensor')
@@ -263,71 +262,6 @@ async function processMqttMessage(topic, message, mqttClient, ringClient) {
     }
 }
 
-// This is a quick and dirty hack to provide a web based method for
-// acquiring a refresh token from Ring.com.  It's ugly, and has too
-// little error handling, but seems to work well enough for now.
-async function startWeb() {
-    const webTokenApp = express()
-    let restClient
-
-    const listener = webTokenApp.listen(55123, () => {
-        if (!process.env.HASSADDON) {
-            debug('Go to http://<host_ip_address>:55123/ to generate a valid token.')
-        }
-    })
-
-    webTokenApp.use(bodyParser.urlencoded({ extended: false }))
-
-    webTokenApp.get('/', (req, res) => {
-        res.sendFile('./web/account.html', {root: __dirname})
-    })
-
-    webTokenApp.post(/.*submit-account$/, async (req, res) => {
-        const email = req.body.email
-        const password = req.body.password
-        let errmsg
-        restClient = await new RingRestClient({ email, password })
-        // Check if the user/password was accepted
-        try {
-            await restClient.getCurrentAuth()
-        } catch(error) {
-            if (restClient.using2fa) {
-                debug('Username/Password was accepted, waiting for 2FA code to be entered.')
-                res.sendFile('./web/code.html', {root: __dirname})
-            } else {
-                debug(error.message)
-                debug('Authentication error, check username/password and try again.')
-                res.sendFile('./web/account-error.html', {root: __dirname})
-            }
-        }
-    })
-
-    webTokenApp.post(/.*submit-code$/, async (req, res) => {
-        let token
-        const code = req.body.code
-        try {
-            token = await restClient.getAuth(code)
-        } catch(error) {
-            token = ''
-            debug(error.message)
-            res.sendFile('./web/code-error.html', {root: __dirname})
-        }
-        if (token) {
-            if (process.env.HASSADDON) {
-                res.sendFile('./web/restart.html', {root: __dirname})
-                listener.close()
-                main(token.refresh_token)
-            } else {
-                // Super ugly...don't judge me!!!  :)
-                const head = '<html><head><style>body {font-family: Arial, Helvetica, sans-serif; max-width: 500px;margin-top: 20px;word-wrap: break-word;}.button { background-color: #47a9e6; color: white; padding: 12px 20px; border: none; border-radius: 4px; cursor: pointer;}.button:hover {background-color: #315b82}</style></head><body><h3>Refresh Token</h3><b>Copy and paste the following string, exactly as shown, to ring_token:</b><br><br><textarea rows = "6" cols = "70" type="text" id="token">'
-                const tail = '</textarea><br><br><button class="button" onclick="copyToClipboard()">Copy to clipboard</button><script> function copyToClipboard() { var copyText = document.getElementById("token");copyText.select();copyText.setSelectionRange(0, 99999);document.execCommand("copy");alert("The refresh token has been copied to the clipboard.");}</script></body></html>'
-                res.send(head+token.refresh_token+tail)
-                process.exit(0)
-            }
-        }
-    })
-}
-
 // Initiate the connection to MQTT broker
 function initMqtt() {
     const mqtt = mqttApi.connect({
@@ -442,7 +376,13 @@ const main = async(generatedToken) => {
         stateFile = '/data/ring-state.json'
         if (process.env.HASSADDON) {
             configFile = '/data/options.json'
-            startWeb() // Web service runs all the time for addon
+            // For addon config is performed via Web UI
+            if (!tokenApp.listener) {
+                tokenApp.start()
+                tokenApp.token.registerListener(function(generatedToken) {
+                    main(generatedToken)
+                })
+            }
         } else {
             configFile = '/data/config.json'
         }
@@ -475,7 +415,7 @@ const main = async(generatedToken) => {
                 debug('Use the web interface to generate a new token.')
             } else {
                 debug('No refresh token was found in config file.')
-                startWeb()
+                tokenApp.start()
             }
         }
     } else {
@@ -547,6 +487,10 @@ const main = async(generatedToken) => {
 
     if (ringClient) {
         debug('Connection to Ring API successful')
+
+        // Update the web app with current connected refresh token
+        const currentAuth = await ringClient.restClient.authPromise
+        tokenApp.updateConnectedToken(currentAuth.refresh_token)
 
         // Subscribed to token update events and save new token
         ringClient.onRefreshTokenUpdated.subscribe(async ({ newRefreshToken, oldRefreshToken }) => {

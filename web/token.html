@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+body {
+    font-family: Arial, Helvetica, sans-serif; 
+    max-width: 500px;
+    margin-top: 20px;
+    word-wrap: break-word;
+}
+
+.button { 
+    background-color: #47a9e6; 
+    color: white; 
+    padding: 12px 20px; 
+    border: none; 
+    border-radius: 4px; 
+    cursor: pointer;
+}
+
+.button:hover {
+    background-color: #315b82
+}
+</style>
+</head>
+<body>
+<h3>Refresh Token</h3>
+<b>Copy and paste the following string, exactly as shown, to ring_token:</b><br><br>
+<textarea rows = "6" cols = "70" type="text" id="token"></textarea><br><br>
+<button class="button" onclick="copyToClipboard()">Copy to clipboard</button>
+<script>
+function getCookie(key) {
+    var keyValue = document.cookie.match('(^|;) ?' + key + '=([^;]*)(;|$)');
+    return keyValue ? keyValue[2] : null;
+}
+if (getCookie('token')) {
+    document.getElementById("token").innerHTML = getCookie('token')
+}
+function copyToClipboard() { 
+    var copyText = document.getElementById("token");
+    copyText.select();
+    copyText.setSelectionRange(0, 99999);
+    document.execCommand("copy");
+    alert("The refresh token has been copied to the clipboard.");
+}
+</script>
+</body>
+</html>
