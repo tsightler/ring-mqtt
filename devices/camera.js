@@ -99,6 +99,14 @@ class Camera {
             })
         }
 
+        // Publish info sensor for camera
+        this.publishCapability({
+            type: 'info',
+            component: 'sensor',
+            suffix: 'Info',
+            hasCommand: false,
+        })
+
         // Give Home Assistant time to configure device before sending first state data
         await utils.sleep(2)
 
@@ -119,6 +127,9 @@ class Camera {
             }
             this.subscribed = true
 
+            // Publish info state for device
+            this.publishInfoState()
+
             // Start monitor of availability state for camera
             this.monitorCameraConnection()
 
@@ -132,6 +143,7 @@ class Camera {
                 if (this.camera.hasSiren) { this.publishedSirenState = 'republish' }
                 this.publishPolledState()
             }
+            this.publishInfoState()
             this.publishAvailabilityState()
         }
     }
@@ -143,7 +155,7 @@ class Camera {
     }
 
     // Build and publish a Home Assistant MQTT discovery packet for camera capability
-    publishCapability(capability) {
+    async publishCapability(capability) {
         const componentTopic = this.cameraTopic+'/'+capability.type
         const configTopic = 'homeassistant/'+capability.component+'/'+this.locationId+'/'+this.deviceId+'_'+capability.type+'/config'
 
@@ -163,6 +175,26 @@ class Camera {
             message.command_topic = commandTopic
             this.mqttClient.subscribe(commandTopic)
         }
+
+        // Set the primary state value for info sensors based on power (battery/wired)
+        // and connectivity (Wifi/ethernet)
+        if (capability.type === 'info') {
+            const deviceHealth = 
+                await Promise.race([this.camera.getHealth(), utils.sleep(5)]).then(function(result) {
+                    return result;
+                })
+            if (deviceHealth) {
+                if (deviceHealth.network_connection && deviceHealth.network_connection === 'ethernet') {
+                    message.value_template = '{{value_json["wiredNetwork"]}}'
+                } else {
+                    // Device is connected via wifi, track that as primary
+                    message.value_template = '{{value_json["wifiStrength"]}}'
+                    message.unit_of_measurement = 'RSSI'
+                }
+            }
+        }
+
+        // Add device data for Home Assistant device registry
         message.device = this.deviceData
 
         debug('HASS config topic: '+configTopic)
@@ -236,11 +268,39 @@ class Camera {
         }
     }
 
+    // Publish device data to info topic
+    async publishInfoState(deviceHealth) {
+        if (!deviceHealth) { 
+            deviceHealth = await Promise.race([this.camera.getHealth(), utils.sleep(5)]).then(function(result) {
+                return result;
+            })
+        }
+        
+        if (deviceHealth) {
+            const attributes = {}
+            if (this.camera.hasBattery) {
+                attributes.batteryLevel = deviceHealth.battery_percentage
+            }
+            attributes.firmwareStatus = deviceHealth.firmware
+            attributes.lastUpdate = deviceHealth.updated_at
+            if (deviceHealth.network_connection && deviceHealth.network_connection === 'ethernet') {
+                attributes.wiredNetwork = this.camera.data.alerts.connection
+            } else {
+                attributes.wirelessNetwork = deviceHealth.wifi_name
+                attributes.wirelessSignal = deviceHealth.latest_signal_strength
+            }
+            this.publishMqtt(this.cameraTopic+'/info/state', JSON.stringify(attributes), true)
+        }
+    }
+
     // Interval loop to check communications with cameras/Ring API since, unlike alarm,
     // there's no websocket to monitor.
     // Also monitor subscriptions to ding/motion events and attempt resubscribe if false
+    // and call function to update info data on every 5th cycle
     monitorCameraConnection() {
         const _this = this
+        let intervalCount = 1
+        let cameraState
         setInterval(async function() {
             const camera = _this.camera
 
@@ -248,7 +308,17 @@ class Camera {
             const deviceHealth = await Promise.race([camera.getHealth(), utils.sleep(60)]).then(function(result) {
                 return result;
             });
-            const cameraState = (deviceHealth) ? 'online' : 'offline'
+
+            // Every 5th loop (~5 minutes) publish device info sensor data
+            if (deviceHealth) {
+                cameraState = 'online'
+                if (intervalCount % 5 === 0) {
+                    _this.publishInfoState(deviceHealth)
+                }
+                intervalCount++
+            } else {
+                cameraState = 'offline'
+            }
 
             // Publish camera availability state if different from prior state
             if (_this.availabilityState !== cameraState) {
