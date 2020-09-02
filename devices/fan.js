@@ -4,14 +4,16 @@ const AlarmDevice = require('./alarm-device')
 
 class Fan extends AlarmDevice {
     async publish(locationConnected) {
-        // Online initialize if location websocket is connected
+        // Only publish if location websocket is connected
         if (!locationConnected) { return }
 
-        // Home Assistant component type and device class (set appropriate icon)
+        // Home Assistant component type
         this.component = 'fan'
+
+        // Device data for Home Assistant device registry
         this.deviceData.mdl = 'Fan Control'
 
-        // Build required MQTT topics for device
+        // Build required MQTT topics 
         this.stateTopic_fan = this.deviceTopic+'/fan/state'
         this.commandTopic_fan = this.deviceTopic+'/fan/command'
         this.stateTopic_speed = this.deviceTopic+'/fan/speed_state'

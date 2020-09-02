@@ -4,11 +4,13 @@ const AlarmDevice = require('./alarm-device')
 
 class Switch extends AlarmDevice {
     async publish(locationConnected) {
-        // Online initialize if location websocket is connected
+        // Only publish if location websocket is connected
         if (!locationConnected) { return }
 
-        // Home Assistant component type and device class (set appropriate icon)
+        // Home Assistant component type
         this.component = (this.device.data.categoryId === 2) ? 'light' : 'switch'
+
+        // Device data for Home Assistant device registry
         this.deviceData.mdl = (this.device.data.categoryId === 2) ? 'Light' : 'Switch'
 
         // Build required MQTT topics for device

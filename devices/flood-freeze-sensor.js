@@ -4,16 +4,18 @@ const AlarmDevice = require('./alarm-device')
 
 class FloodFreezeSensor extends AlarmDevice {
     async publish(locationConnected) {
-        // Online initialize if location websocket is connected
+        // Only publish if location websocket is connected
         if (!locationConnected) { return }
 
         // Set Home Assistant component type and device class (appropriate icon in UI)
         this.className_flood = 'moisture'
         this.className_freeze = 'cold'
         this.component = 'binary_sensor'
+
+        // Device data for Home Assistant device registry
         this.deviceData.mdl = 'Flood & Freeze Sensor'
 
-        // Build a save MQTT topics for future use
+        // Build a save MQTT topics
         this.stateTopic_flood = this.deviceTopic+'/flood/state'
         this.stateTopic_freeze = this.deviceTopic+'/freeze/state'
         this.configTopic_flood = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'_flood/config'
@@ -51,7 +53,6 @@ class FloodFreezeSensor extends AlarmDevice {
                 payload_available: 'online',
                 payload_not_available: 'offline',
                 state_topic: this.stateTopic_freeze,
-                json_attributes_topic: this.attributesTopic,
                 device_class: this.className_freeze,
                 device: this.deviceData
             },

@@ -4,7 +4,6 @@
 const RingApi = require('ring-client-api').RingApi
 const RingDeviceType = require('ring-client-api').RingDeviceType
 const RingCamera = require('ring-client-api').RingCamera
-const RingRestClient = require('./node_modules/ring-client-api/lib/api/rest-client').RingRestClient
 const mqttApi = require ('mqtt')
 const isOnline = require ('is-online')
 const debug = require('debug')('ring-mqtt')
@@ -27,6 +26,7 @@ const Beam = require('./devices/beam')
 const Camera = require('./devices/camera')
 const ModesPanel = require('./devices/modes-panel')
 const Keypad = require('./devices/keypad')
+const BaseStation = require('./devices/base-station')
 
 var CONFIG
 var ringLocations = new Array()
@@ -83,13 +83,19 @@ function getDevice(device, mqttClient) {
         case RingDeviceType.BeamsLightGroupSwitch:
             return new Beam(deviceInfo)
         case RingDeviceType.MultiLevelSwitch:
-            return device = (device.categoryId === 17) 
+            return newDevice = (device.categoryId === 17) 
                 ? new Fan(deviceInfo)
                 : new MultiLevelSwitch(deviceInfo)
         case RingDeviceType.Switch:
             return new Switch(deviceInfo)
         case RingDeviceType.Keypad:
             return new Keypad(deviceInfo)
+        case RingDeviceType.BaseStation:
+            return new BaseStation(deviceInfo)
+        case RingDeviceType.Sensor:
+            return newDevice = (device.name.toLowerCase().includes('motion'))
+                ? new MotionSensor(deviceInfo)
+                : new ContactSensor(deviceInfo)
         case 'location.mode':
             return new ModesPanel(deviceInfo)
     }

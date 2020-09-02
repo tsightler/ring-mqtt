@@ -4,12 +4,14 @@ const AlarmDevice = require('./alarm-device')
 
 class ModesPanel extends AlarmDevice {
     async publish() {
-        // Home Assistant component type and device class (set appropriate icon)
+        // Home Assistant component type
         this.component = 'alarm_control_panel'
+
+        // Device data for Home Assistant device registry
         this.deviceData.mdl = 'Mode Control Panel'
         this.deviceData.name = this.device.location.name + ' Mode'
 
-        // Build required MQTT topics for device
+        // Build required MQTT topics
         this.stateTopic = this.deviceTopic+'/mode/state'
         this.commandTopic = this.deviceTopic+'/mode/command'
         this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'

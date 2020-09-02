@@ -4,16 +4,18 @@ const AlarmDevice = require('./alarm-device')
 
 class SmokeCoListener extends AlarmDevice {
     async publish(locationConnected) {
-        // Online initialize if location websocket is connected
+        // Only publish if location websocket is connected
         if (!locationConnected) { return }
 
-        // Set Home Assistant component type and device class (appropriate icon in UI)
+        // Home Assistant component type and device class (set appropriate icon)
         this.className_smoke = 'smoke'
         this.className_co = 'gas'
         this.component = 'binary_sensor'
+
+        // Device data for Home Assistant device registry
         this.deviceData.mdl = 'Smoke & CO Listener'
 
-        // Build a save MQTT topics for future use
+        // Build a save MQTT topics
         this.stateTopic_smoke = this.deviceTopic+'/smoke/state'
         this.stateTopic_co = this.deviceTopic+'/co/state'
         this.configTopic_smoke = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'_smoke/config'

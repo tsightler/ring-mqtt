@@ -4,15 +4,17 @@ const AlarmDevice = require('./alarm-device')
 
 class CoAlarm extends AlarmDevice {
     async publish(locationConnected) {
-        // Online initialize if location websocket is connected
+        // Only publish if location websocket is connected
         if (!locationConnected) { return }
 
         // Home Assistant component type and device class (set appropriate icon)
         this.component = 'binary_sensor'
         this.className = 'gas'
+
+        // Device data for Home Assistant device registry
         this.deviceData.mdl = 'CO Alarm'
 
-        // Build required MQTT topics for device
+        // Build required MQTT topics
         this.stateTopic = this.deviceTopic+'/co/state'
         this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
  

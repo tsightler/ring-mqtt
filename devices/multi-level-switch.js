@@ -4,14 +4,16 @@ const AlarmDevice = require('./alarm-device')
 
 class MultiLevelSwitch extends AlarmDevice {
     async publish(locationConnected) {
-        // Online initialize if location websocket is connected
+        // Only publish if location websocket is connected
         if (!locationConnected) { return }
 
-        // Home Assistant component type and device class (set appropriate icon)
+        // Home Assistant component type
         this.component = 'light'
+
+        // Device data for Home Assistant device registry
         this.deviceData.mdl = 'Dimmer Switch'
 
-        // Build required MQTT topics for device
+        // Build required MQTT topics
         this.stateTopic_light = this.deviceTopic+'/light/state'
         this.commandTopic_light = this.deviceTopic+'/light/command'
         this.stateTopic_brightness = this.deviceTopic+'/light/brightness_state'

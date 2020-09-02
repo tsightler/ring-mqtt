@@ -5,18 +5,23 @@ const alarmStates = require('ring-client-api').allAlarmStates
 
 class SecurityPanel extends AlarmDevice {
     async publish(locationConnected) {
-        // Online initialize if location websocket is connected
+        // Only publish if location websocket is connected
         if (!locationConnected) { return }
 
-        // Home Assistant component type and device class (set appropriate icon)
+        // Home Assistant component type
         this.component = 'alarm_control_panel'
+
+        // Device data for Home Assistant device registry
         this.deviceData.mdl = 'Alarm Control Panel'
         this.deviceData.name = this.device.location.name + ' Alarm'
 
-        // Build required MQTT topics for device
+        // Build required MQTT topics
         this.stateTopic = this.deviceTopic+'/alarm/state'
         this.commandTopic = this.deviceTopic+'/alarm/command'
         this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
+        this.stateTopic_siren = this.deviceTopic+'/siren/state'
+        this.commandTopic_siren = this.deviceTopic+'/siren/command'
+        this.configTopic_siren = 'homeassistant/switch/'+this.locationId+'/'+this.deviceId+'_siren/config'
 
         if (this.config.enable_panic) {
             // Build required MQTT topics for device
@@ -38,6 +43,7 @@ class SecurityPanel extends AlarmDevice {
 
         // Subscribe to device command topic
         this.mqttClient.subscribe(this.commandTopic)
+        this.mqttClient.subscribe(this.commandTopic_siren)
         if (this.config.enable_panic) {
             this.mqttClient.subscribe(this.commandTopic_police)
             this.mqttClient.subscribe(this.commandTopic_fire)
@@ -45,7 +51,7 @@ class SecurityPanel extends AlarmDevice {
     }
 
     initDiscoveryData() {
-        // Build the MQTT discovery message
+        // Build the MQTT discovery messages
         this.discoveryData.push({
             message: {
                 name: this.deviceData.name,
@@ -60,10 +66,24 @@ class SecurityPanel extends AlarmDevice {
             configTopic: this.configTopic
         })
 
+        this.discoveryData.push({
+            message: {
+                name: this.device.location.name+' Siren',
+                unique_id: this.deviceId+'_siren',
+                availability_topic: this.availabilityTopic,
+                payload_available: 'online',
+                payload_not_available: 'offline',
+                state_topic: this.stateTopic_siren,
+                command_topic: this.commandTopic_siren,
+                device: this.deviceData
+            },
+            configTopic: this.configTopic_siren
+        })
+
         if (this.config.enable_panic) {
             this.discoveryData.push({
                 message: {
-                    name: this.device.location.name+' Police Panic',
+                    name: this.device.location.name+' Panic - Police',
                     unique_id: this.deviceId+'_police',
                     availability_topic: this.availabilityTopic,
                     payload_available: 'online',
@@ -77,7 +97,7 @@ class SecurityPanel extends AlarmDevice {
 
             this.discoveryData.push({
                 message: {
-                    name: this.device.location.name+' Fire Panic',
+                    name: this.device.location.name+' Panic - Fire',
                     unique_id: this.deviceId+'_fire',
                     availability_topic: this.availabilityTopic,
                     payload_available: 'online',
@@ -89,7 +109,6 @@ class SecurityPanel extends AlarmDevice {
                 configTopic: this.configTopic_fire
             })
         }
-
         this.initInfoDiscoveryData('alarmState')
     }
 
@@ -117,6 +136,10 @@ class SecurityPanel extends AlarmDevice {
         }
         // Publish device sensor state
         this.publishMqtt(this.stateTopic, alarmMode, true)
+
+        // Publish siren state
+        const sirenState = (this.device.data.siren && this.device.data.siren.state === 'on') ? 'ON' : 'OFF'
+        this.publishMqtt(this.stateTopic_siren, sirenState, true)
 
         if (this.config.enable_panic) {
             let policeState = 'OFF'
@@ -146,6 +169,8 @@ class SecurityPanel extends AlarmDevice {
     processCommand(message, topic) {
         if (topic == this.commandTopic) {
             this.setAlarmMode(message)
+        } else if (topic == this.commandTopic_siren) {
+            this.setSirenMode(message)
         } else if (topic == this.commandTopic_police) {
             this.setPoliceMode(message)
         } else if (topic == this.commandTopic_fire) {
@@ -207,6 +232,22 @@ class SecurityPanel extends AlarmDevice {
         } else {
             debug('Alarm for location '+this.device.location.name+' failed to enter requested arm/disarm mode!')
             return false
+        }
+    }
+
+    async setSirenMode(message) {
+        switch(message.toLowerCase()) {
+            case 'on':
+                debug('Activating siren for '+this.device.location.name)
+                this.device.location.soundSiren().catch(err => { debug(err) })
+                break;
+            case 'off': {
+                debug('Deactivating siren for '+this.device.location.name)
+                this.device.location.silenceSiren().catch(err => { debug(err) })
+                break;
+            }
+            default:
+                debug('Received invalid command for siren!')
         }
     }
 

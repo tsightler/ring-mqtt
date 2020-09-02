@@ -4,9 +4,12 @@ const AlarmDevice = require('./alarm-device')
 
 class Beam extends AlarmDevice {
     async publish(locationConnected) { 
-        // Online initialize if location websocket is connected
+        // Only initialize if location websocket is connected
         if (!locationConnected) { return }
         
+        // Ovverride default device topic to use "lighting" instead of "alarm"
+        this.deviceTopic = this.ringTopic+'/'+this.locationId+'/smart_lighting/'+this.deviceId
+
         // Build required MQTT topics for device for each entity        
         if (this.device.data.deviceType === 'group.light-group.beams') {
             this.isLightGroup = true

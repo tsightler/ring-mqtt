@@ -4,24 +4,27 @@ const AlarmDevice = require('./alarm-device')
 
 class ContactSensor extends AlarmDevice {
     async publish(locationConnected) {
-        // Online initialize if location websocket is connected
+        // Only publish if location websocket is connected
         if (!locationConnected) { return }
 
-        // Home Assistant component type and device class (set appropriate icon)
         this.component = 'binary_sensor'
         if (this.device.deviceType == 'sensor.zone') {
-            // Device is Retrofit Zone sensor
+            // Home Assistant component type and device class (set appropriate icon)
             this.className = 'safety'
             this.sensorType = 'zone'
+
+            // Device data for Home Assistant device registry
             this.deviceData.mdl = 'Retrofit Zone'
         } else {
-            // Device is contact sensor
+            // Home Assistant component type and device class (set appropriate icon)
             this.className = (this.device.data.subCategoryId == 2) ? 'window' : 'door'
             this.sensorType = 'contact'
+
+            // Device data for Home Assistant device registry
             this.deviceData.mdl = 'Contact Sensor'
         }
 
-        // Build required MQTT topics for device
+        // Build required MQTT topics
         this.stateTopic = this.deviceTopic+'/'+this.sensorType+'/state'
         this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
 

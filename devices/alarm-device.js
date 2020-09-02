@@ -107,6 +107,7 @@ class AlarmDevice {
     // Publish device info
     publishAttributes() {
         let alarmState
+
         if (this.device.deviceType === 'security-panel') {
             alarmState = this.device.data.alarmInfo ? this.device.data.alarmInfo.state : 'all-clear'
         }
@@ -134,6 +135,15 @@ class AlarmDevice {
             ... this.device.data.volume ? {volume: this.device.data.volume } : {},
         }
         this.publishMqtt(this.stateTopic_info, JSON.stringify(attributes), true)
+
+        // If first publish schedule attributes to be resent every 5 minutes
+        if (!this.attributesScheduled) { 
+            this.attributesScheduled = true
+            const _this = this
+            setInterval(function () {
+                if (_this.availabilityState = 'online') { _this.publishAttributes() }
+            }, 300000)
+        }
     }
 
     // Set state topic online

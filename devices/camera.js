@@ -11,7 +11,7 @@ class Camera {
         this.locationId = this.camera.data.location_id
         this.deviceId = this.camera.data.device_id
 
-        // Set device data for Home Assistant device registry 
+        // Sevice data for Home Assistant device registry 
         this.deviceData = { 
             ids: [ this.deviceId ],
             name: this.camera.name,
@@ -179,16 +179,15 @@ class Camera {
         // Set the primary state value for info sensors based on power (battery/wired)
         // and connectivity (Wifi/ethernet)
         if (capability.type === 'info') {
-            const deviceHealth = 
-                await Promise.race([this.camera.getHealth(), utils.sleep(5)]).then(function(result) {
-                    return result;
-                })
+            message.json_attributes_topic = componentTopic+'/state'
+            message.icon = 'mdi:information-outline'
+            const deviceHealth = await Promise.race([this.camera.getHealth(), utils.sleep(5)]).then(function(result) { return result; })
             if (deviceHealth) {
                 if (deviceHealth.network_connection && deviceHealth.network_connection === 'ethernet') {
                     message.value_template = '{{value_json["wiredNetwork"]}}'
                 } else {
                     // Device is connected via wifi, track that as primary
-                    message.value_template = '{{value_json["wifiStrength"]}}'
+                    message.value_template = '{{value_json["wirelessSignal"]}}'
                     message.unit_of_measurement = 'RSSI'
                 }
             }
@@ -405,17 +404,17 @@ class Camera {
 
     // Set state topic online
     async online() {
-        //const enableDebug = this.availabilityState !== 'online'
+        const enableDebug = (this.availabilityState == 'online') ? false : true
         await utils.sleep(1)
         this.availabilityState = 'online'
-        this.publishAvailabilityState(false)
+        this.publishAvailabilityState(enableDebug)
     }
 
     // Set state topic offline
     offline() {
-        //const enableDebug = this.availabilityState !== 'offline'
+        const enableDebug = (this.availabilityState == 'offline') ? false : true
         this.availabilityState = 'offline'
-        this.publishAvailabilityState(false)
+        this.publishAvailabilityState(enableDebug)
     }
 }
 
