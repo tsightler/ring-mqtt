@@ -15,28 +15,53 @@ Each device also inlcudes an "info" sensor where the state topic includes variou
 
 For the individual device capbilities the state and command topics are simple text strings (not JSON), which use the default values for the equivalent Home Assistant device integration.  Some sensors may have multiple attribues, such as a multi-level-switch as both on/off and brightness, so they will have a standard state/command topic and an additional topic in the format of <attribute>_state and <attribute>_topic.  Below is a listing of all currently supported devices and topics.
 
+Alarm Control Panel (virtual device):
+```
+ring/<location_id>/alarm/<device_id>/alarm/state     <-- Alarm arming state (pending = entry delay)
+                                                         disarmed/armed_home/armed_away/pending/triggered
+ring/<location_id>/alarm/<device_id>/siren/state     <-- Get ON/OFF Siren State
+ring/<location_id>/alarm/<device_id>/siren/command   <-- Set ON/OFF Siren State
+ring/<location_id>/alarm/<device_id>/police/state    <-- Get ON/OFF Police Panic State
+ring/<location_id>/alarm/<device_id>/police/command  <-- Set ON/OFF Police Panic State
+ring/<location_id>/alarm/<device_id>/fire/state      <-- Get ON/OFF Fire Panic State
+ring/<location_id>/alarm/<device_id>/fire/command    <-- Set ON/OFF Fire Panic State
+ring/<location_id>/alarm/<device_id>/info/state      <-- Device info sensor
+```
+
+Alarm Base Station:
+```
+ring/<location_id>/alarm/<device_id>/info/state      <-- Device info sensor
+ring/<location_id>/alarm/<device_id>/volume/state    <-- Get Volume State (0-100)
+ring/<location_id>/alarm/<device_id>/volume/command  <-- Set Volume State (0-100)
+                                                         (Requires master account, shared account does not have permission to control base station volume)
+```
+
+Ring CO detector:
+```
+ring/<location_id>/alarm/<device_id>/co/state        <-- ON = CO Detected
+```
+
 First Alert Smoke/CO detector and Ring Smoke/CO listener:
 ```
-ring/<location_id>/alarm/<device_id>/smoke/state                <-- (ON = Smoke Detected)
-ring/<location_id>/alarm/<device_id>/co/state                   <-- (ON = CO Detected)
-
+ring/<location_id>/alarm/<device_id>/smoke/state     <-- ON = Smoke Detected
+ring/<location_id>/alarm/<device_id>/co/state        <-- ON = CO Detected
 ```
 
-3rd party multi-level switch:
+Multi-level switch:
 ```
-ring/<location_id>/alarm/<device_id>/switch/state               <-- For on/off state
-ring/<location_id>/alarm/<device_id>/switch/command             <-- Set on/off state
-ring/<location_id>/alarm/<device_id>/switch/brightness_state    <-- For brightness state (0-100)
+ring/<location_id>/alarm/<device_id>/switch/state               <-- Get ON/OFF state
+ring/<location_id>/alarm/<device_id>/switch/command             <-- Set ON/OF state
+ring/<location_id>/alarm/<device_id>/switch/brightness_state    <-- Get brightness state (0-100)
 ring/<location_id>/alarm/<device_id>/switch/brightness_command  <-- Set brightness state (0-100)
 
 ```
 
 Cameras:
 ```
-ring/<location_id>/camera/<device_id>/ding/state                <-- Doorbell state (ON = Ding Detected)
-ring/<location_id>/camera/<device_id>/motion/state              <-- Motion state (ON = Motion Detected)
-ring/<location_id>/camera/<device_id>/light/state               <-- Light on/off state
-ring/<location_id>/camera/<device_id>/light/command             <-- Set light on/off state
-ring/<location_id>/camera/<device_id>/siren/state               <-- Siren state
-ring/<location_id>/camera/<device_id>/siren/command             <-- Set siren state
+ring/<location_id>/camera/<device_id>/ding/state                <-- ON = Doorbell Ding Detected
+ring/<location_id>/camera/<device_id>/motion/state              <-- ON = Motion Detected
+ring/<location_id>/camera/<device_id>/light/state               <-- Get ON/OFF Light State
+ring/<location_id>/camera/<device_id>/light/command             <-- Set ON/OFF Light State
+ring/<location_id>/camera/<device_id>/siren/state               <-- Get ON/OFF Siren State
+ring/<location_id>/camera/<device_id>/siren/command             <-- Set ON/OFF Siren State
 ```
