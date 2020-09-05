@@ -2,17 +2,26 @@ const debug = require('debug')('ring-mqtt')
 const utils = require( '../lib/utils' )
 
 class Camera {
-    constructor(camera, mqttClient, ringTopic) {
-        this.camera = camera
-        this.mqttClient = mqttClient
+    constructor(deviceInfo) {
+        // Set default properties for camera device object model 
+        this.camera = deviceInfo.device
+        this.mqttClient = deviceInfo.mqttClient
         this.subscribed = false
-
-        // Set device location and top level MQTT topics
+        this.availabilityState = 'init'
         this.locationId = this.camera.data.location_id
         this.deviceId = this.camera.data.device_id
-        this.cameraTopic = ringTopic+'/'+this.locationId+'/camera'
-        this.availabilityTopic = this.cameraTopic+'/'+this.deviceId+'/status'
-        this.availabilityState = 'offline'
+
+        // Sevice data for Home Assistant device registry 
+        this.deviceData = { 
+            ids: [ this.deviceId ],
+            name: this.camera.name,
+            mf: 'Ring',
+            mdl: this.camera.model
+        }
+
+        // Set device location and top level MQTT topics
+        this.cameraTopic = deviceInfo.CONFIG.ring_topic+'/'+this.locationId+'/camera/'+this.deviceId
+        this.availabilityTopic = this.cameraTopic+'/status'
 
         // Create properties to store motion ding state
         this.motion = {
@@ -44,53 +53,59 @@ class Camera {
 
     }
 
-
-    // Initialize camera by publishing capabilities and state and subscribing to events
-    async init() {
+    // Publishing camera capabilities and state and subscribe to events
+    async publish() {
+        const debugMsg = (this.availabilityState == 'init') ? 'Publishing new ' : 'Republishing existing '
+        debug(debugMsg+'device id: '+this.deviceId)
+        this.published = true
 
         // Publish motion sensor feature for camera
-        var capability = {
+        this.publishCapability({
             type: 'motion',
             component: 'binary_sensor',
             className: 'motion',
             suffix: 'Motion',
             hasCommand: false,
-        }
-        this.publishCapability(capability)
+        })
 
         // If camera is a doorbell publish doorbell sensor
         if (this.camera.isDoorbot) {
-            capability = {
+            this.publishCapability({
                 type: 'ding',
                 component: 'binary_sensor',
                 className: 'occupancy',
                 suffix: 'Ding',
                 hasCommand: false
-            }
-            this.publishCapability(capability)
+            })
         }
 
         // If camera has a light publish light component
         if (this.camera.hasLight) {
-            capability = {
+            this.publishCapability({
                 type: 'light',
                 component: 'light',
                 suffix: 'Light',
                 hasCommand: true
-            }
-            this.publishCapability(capability)
+            })
         }
 
         // If camera has a siren publish switch component
         if (this.camera.hasSiren) {
-            capability = {
+            this.publishCapability({
                 type: 'siren',
                 component: 'switch',
                 suffix: 'Siren',
                 hasCommand: true
-            }
-            this.publishCapability(capability) 
+            })
         }
+
+        // Publish info sensor for camera
+        this.publishCapability({
+            type: 'info',
+            component: 'sensor',
+            suffix: 'Info',
+            hasCommand: false,
+        })
 
         // Give Home Assistant time to configure device before sending first state data
         await utils.sleep(2)
@@ -101,10 +116,10 @@ class Camera {
             this.camera.onNewDing.subscribe(ding => {
                 this.publishDingState(ding)
             })
-            // Since this is initial publish of device publish ding state as well
+            // Since this is initial publish of device publish current ding state as well
             this.publishDingState()
 
-            // If camers as light/siren subsribed to those events as well (only polls, default 20 seconds)
+            // If camera has light/siren subscribe to those events as well (only polls, default 20 seconds)
             if (this.camera.hasLight || this.camera.hasSiren) {
                 this.camera.onData.subscribe(() => {
                     this.publishPolledState()
@@ -112,7 +127,10 @@ class Camera {
             }
             this.subscribed = true
 
-            // Start monitor of availability state for device
+            // Publish info state for device
+            this.publishInfoState()
+
+            // Start monitor of availability state for camera
             this.monitorCameraConnection()
 
             // Set camera online (sends availability status via MQTT)
@@ -125,9 +143,10 @@ class Camera {
                 if (this.camera.hasSiren) { this.publishedSirenState = 'republish' }
                 this.publishPolledState()
             }
+            this.publishInfoState()
             this.publishAvailabilityState()
         }
-}
+    }
 
     // Publish state messages via MQTT with optional debug
     publishMqtt(topic, message, enableDebug) {
@@ -136,9 +155,8 @@ class Camera {
     }
 
     // Build and publish a Home Assistant MQTT discovery packet for camera capability
-    publishCapability(capability) {
-
-        const componentTopic = this.cameraTopic+'/'+capability.component+'/'+this.deviceId
+    async publishCapability(capability) {
+        const componentTopic = this.cameraTopic+'/'+capability.type
         const configTopic = 'homeassistant/'+capability.component+'/'+this.locationId+'/'+this.deviceId+'_'+capability.type+'/config'
 
         const message = {
@@ -147,16 +165,36 @@ class Camera {
             availability_topic: this.availabilityTopic,
             payload_available: 'online',
             payload_not_available: 'offline',
-            state_topic: componentTopic+'/'+capability.type+'_state'
+            state_topic: componentTopic+'/state'
         }
 
         if (capability.className) { message.device_class = capability.className }
 
         if (capability.hasCommand) {
-            const commandTopic = componentTopic+'/'+capability.type+'_command'
+            const commandTopic = componentTopic+'/command'
             message.command_topic = commandTopic
             this.mqttClient.subscribe(commandTopic)
         }
+
+        // Set the primary state value for info sensors based on power (battery/wired)
+        // and connectivity (Wifi/ethernet)
+        if (capability.type === 'info') {
+            message.json_attributes_topic = componentTopic+'/state'
+            message.icon = 'mdi:information-outline'
+            const deviceHealth = await Promise.race([this.camera.getHealth(), utils.sleep(5)]).then(function(result) { return result; })
+            if (deviceHealth) {
+                if (deviceHealth.network_connection && deviceHealth.network_connection === 'ethernet') {
+                    message.value_template = '{{value_json["wiredNetwork"]}}'
+                } else {
+                    // Device is connected via wifi, track that as primary
+                    message.value_template = '{{value_json["wirelessSignal"]}}'
+                    message.unit_of_measurement = 'RSSI'
+                }
+            }
+        }
+
+        // Add device data for Home Assistant device registry
+        message.device = this.deviceData
 
         debug('HASS config topic: '+configTopic)
         debug(message)
@@ -165,13 +203,11 @@ class Camera {
 
     // Process a ding event from camera or publish existing ding state
     async publishDingState(ding) {
-        const componentTopic = this.cameraTopic+'/binary_sensor/'+this.deviceId
-
         // Is it an active ding (i.e. from a subscribed event)?
         if (ding) {
             // Is it a motion or doorbell ding?
             const dingType = ding.kind
-            const stateTopic = componentTopic+'/'+dingType+'_state'
+            const stateTopic = this.cameraTopic+'/'+dingType+'/state'
 
             // Update time for most recent ding and expire time of ding (Ring seems to be 180 seconds for all dings)
             this[dingType].last_ding = Math.floor(ding.now)
@@ -203,9 +239,9 @@ class Camera {
             }
         } else {
             // Not an active ding so just publish existing ding state
-            this.publishMqtt(componentTopic+'/motion_state', (this.motion.active_ding ? 'ON' : 'OFF'), true)
+            this.publishMqtt(this.cameraTopic+'/motion/state', (this.motion.active_ding ? 'ON' : 'OFF'), true)
             if (this.camera.isDoorbot) {
-                this.publishMqtt(componentTopic+'/ding_state', (this.ding.active_ding ? 'ON' : 'OFF'), true)
+                this.publishMqtt(this.cameraTopic+'/ding/state', (this.ding.active_ding ? 'ON' : 'OFF'), true)
             }
         }
     }
@@ -215,16 +251,14 @@ class Camera {
     // when values change from previous polling interval
     publishPolledState() {
         if (this.camera.hasLight) {
-            const componentTopic = this.cameraTopic+'/light/'+this.deviceId
-            const stateTopic = componentTopic+'/light_state'
+            const stateTopic = this.cameraTopic+'/light/state'
             if (this.camera.data.led_status !== this.publishedLightState) {
                 this.publishMqtt(stateTopic, (this.camera.data.led_status === 'on' ? 'ON' : 'OFF'), true)
                 this.publishedLightState = this.camera.data.led_status
             }
         }
         if (this.camera.hasSiren) {
-            const componentTopic = this.cameraTopic+'/switch/'+this.deviceId
-            const stateTopic = componentTopic+'/siren_state'
+            const stateTopic = this.cameraTopic+'/siren/state'
             const sirenStatus = this.camera.data.siren_status.seconds_remaining > 0 ? 'ON' : 'OFF'
             if (sirenStatus !== this.publishedSirenState) {
                 this.publishMqtt(stateTopic, sirenStatus, true)
@@ -233,11 +267,39 @@ class Camera {
         }
     }
 
+    // Publish device data to info topic
+    async publishInfoState(deviceHealth) {
+        if (!deviceHealth) { 
+            deviceHealth = await Promise.race([this.camera.getHealth(), utils.sleep(5)]).then(function(result) {
+                return result;
+            })
+        }
+        
+        if (deviceHealth) {
+            const attributes = {}
+            if (this.camera.hasBattery) {
+                attributes.batteryLevel = deviceHealth.battery_percentage
+            }
+            attributes.firmwareStatus = deviceHealth.firmware
+            attributes.lastUpdate = deviceHealth.updated_at
+            if (deviceHealth.network_connection && deviceHealth.network_connection === 'ethernet') {
+                attributes.wiredNetwork = this.camera.data.alerts.connection
+            } else {
+                attributes.wirelessNetwork = deviceHealth.wifi_name
+                attributes.wirelessSignal = deviceHealth.latest_signal_strength
+            }
+            this.publishMqtt(this.cameraTopic+'/info/state', JSON.stringify(attributes), true)
+        }
+    }
+
     // Interval loop to check communications with cameras/Ring API since, unlike alarm,
     // there's no websocket to monitor.
     // Also monitor subscriptions to ding/motion events and attempt resubscribe if false
+    // and call function to update info data on every 5th cycle
     monitorCameraConnection() {
         const _this = this
+        let intervalCount = 1
+        let cameraState
         setInterval(async function() {
             const camera = _this.camera
 
@@ -245,7 +307,17 @@ class Camera {
             const deviceHealth = await Promise.race([camera.getHealth(), utils.sleep(60)]).then(function(result) {
                 return result;
             });
-            const cameraState = (deviceHealth) ? 'online' : 'offline'
+
+            // Every 5th loop (~5 minutes) publish device info sensor data
+            if (deviceHealth) {
+                cameraState = 'online'
+                if (intervalCount % 5 === 0) {
+                    _this.publishInfoState(deviceHealth)
+                }
+                intervalCount++
+            } else {
+                cameraState = 'offline'
+            }
 
             // Publish camera availability state if different from prior state
             if (_this.availabilityState !== cameraState) {
@@ -253,7 +325,7 @@ class Camera {
                     _this.offline()
                 } else {
                     // If camera switching to online republish discovery and state before going online
-                    _this.init()
+                    _this.publish()
                     await utils.sleep(2)
                     _this.online()
                 }
@@ -278,12 +350,14 @@ class Camera {
     }
 
     // Process messages from MQTT command topic
-    processCommand(message, cmdTopicLevel) {
-        switch(cmdTopicLevel) {
-            case 'light_command':
+    processCommand(message, topic) {
+        topic = topic.split('/')
+        const component = topic[topic.length - 2]
+        switch(component) {
+            case 'light':
                 this.setLightState(message)
                 break;
-            case 'siren_command':
+            case 'siren':
                 this.setSirenState(message)
                 break;
             default:
@@ -303,7 +377,7 @@ class Camera {
                 this.camera.setLight(false)
                 break;
             default:
-                debug('Received unkonw command for light on camera ID '+this.deviceId)
+                debug('Received unknown command for light on camera ID '+this.deviceId)
         }
     }
 
@@ -330,17 +404,17 @@ class Camera {
 
     // Set state topic online
     async online() {
-        //const enableDebug = this.availabilityState !== 'online'
+        const enableDebug = (this.availabilityState == 'online') ? false : true
         await utils.sleep(1)
         this.availabilityState = 'online'
-        this.publishAvailabilityState(false)
+        this.publishAvailabilityState(enableDebug)
     }
 
     // Set state topic offline
     offline() {
-        //const enableDebug = this.availabilityState !== 'offline'
+        const enableDebug = (this.availabilityState == 'offline') ? false : true
         this.availabilityState = 'offline'
-        this.publishAvailabilityState(false)
+        this.publishAvailabilityState(enableDebug)
     }
 }
 

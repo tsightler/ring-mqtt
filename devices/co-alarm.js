@@ -3,42 +3,46 @@ const utils = require( '../lib/utils' )
 const AlarmDevice = require('./alarm-device')
 
 class CoAlarm extends AlarmDevice {
-    async init() {
-       // Home Assistant component type and device class (set appropriate icon)
+    async publish(locationConnected) {
+        // Only publish if location websocket is connected
+        if (!locationConnected) { return }
+
+        // Home Assistant component type and device class (set appropriate icon)
         this.component = 'binary_sensor'
         this.className = 'gas'
 
-        // Build required MQTT topics for device
-        this.deviceTopic = this.alarmTopic+'/'+this.component+'/'+this.deviceId
-        this.stateTopic = this.deviceTopic+'/co_state'
-        this.attributesTopic = this.deviceTopic+'/attributes'
-        this.availabilityTopic = this.deviceTopic+'/status'
-        this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
+        // Device data for Home Assistant device registry
+        this.deviceData.mdl = 'CO Alarm'
 
-        // Publish discovery message for HA and wait 2 seoonds before sending state
-        this.publishDiscovery()
-        await utils.sleep(2)
+        // Build required MQTT topics
+        this.stateTopic = this.deviceTopic+'/co/state'
+        this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
+ 
+        // Publish discovery message
+        if (!this.discoveryData.length) { await this.initDiscoveryData() }
+        await this.publishDiscoveryData()
 
         // Publish device state data with optional subscribe
         this.publishSubscribeDevice()
     }
 
-    publishDiscovery() {
+    initDiscoveryData() {
         // Build the MQTT discovery message
-        const message = {
-            name: this.device.name,
-            unique_id: this.deviceId,
-            availability_topic: this.availabilityTopic,
-            payload_available: 'online',
-            payload_not_available: 'offline',
-            state_topic: this.stateTopic,
-            json_attributes_topic: this.attributesTopic,
-            device_class: this.className
-        }
+        this.discoveryData.push({
+            message: {
+                name: this.device.name,
+                unique_id: this.deviceId,
+                availability_topic: this.availabilityTopic,
+                payload_available: 'online',
+                payload_not_available: 'offline',
+                state_topic: this.stateTopic,
+                device_class: this.className,
+                device: this.deviceData
+            },
+            configTopic: this.configTopic
+        })
 
-        debug('HASS config topic: '+this.configTopic)
-        debug(message)
-        this.publishMqtt(this.configTopic, JSON.stringify(message))
+        this.initInfoDiscoveryData()
     }
 
     publishData() {

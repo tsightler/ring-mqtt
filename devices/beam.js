@@ -3,11 +3,13 @@ const utils = require( '../lib/utils' )
 const AlarmDevice = require('./alarm-device')
 
 class Beam extends AlarmDevice {
-    async init() {
-
-        this.availabilityTopic = this.alarmTopic+'/beam/'+this.deviceId+'/status'
-        this.attributesTopic = this.alarmTopic+'/beam/'+this.deviceId+'/attributes'
+    async publish(locationConnected) { 
+        // Only initialize if location websocket is connected
+        if (!locationConnected) { return }
         
+        // Ovverride default device topic to use "lighting" instead of "alarm"
+        this.deviceTopic = this.ringTopic+'/'+this.locationId+'/smart_lighting/'+this.deviceId
+
         // Build required MQTT topics for device for each entity        
         if (this.device.data.deviceType === 'group.light-group.beams') {
             this.isLightGroup = true
@@ -15,74 +17,72 @@ class Beam extends AlarmDevice {
         }
 
         if (this.deviceType !== 'switch.transformer.beams') {
-            this.deviceTopic_motion = this.alarmTopic+'/binary_sensor/'+this.deviceId
-            this.stateTopic_motion = this.deviceTopic_motion+'/motion_state'
+            this.stateTopic_motion = this.deviceTopic+'/motion/state'
             this.configTopic_motion = 'homeassistant/binary_sensor/'+this.locationId+'/'+this.deviceId+'/config'
         }
 
         if (this.deviceType !== 'motion-sensor.beams') {
-            this.deviceTopic_light = this.alarmTopic+'/light/'+this.deviceId
-            this.stateTopic_light = this.deviceTopic_light+'/switch_state'
-            this.commandTopic_light = this.deviceTopic_light+'/switch_command'
+            this.stateTopic_light = this.deviceTopic+'/light/state'
+            this.commandTopic_light = this.deviceTopic+'/light/command'
             this.configTopic_light = 'homeassistant/light/'+this.locationId+'/'+this.deviceId+'/config'
         }
 
         if (this.deviceType === 'switch.multilevel.beams') {
-            this.stateTopic_brightness = this.deviceTopic_light+'brightness_state'
-            this.commandTopic_brightness = this.deviceTopic_light+'brightness_command'
+            this.stateTopic_brightness = this.deviceTopic+'/light/brightness_state'
+            this.commandTopic_brightness = this.deviceTopic+'/light/brightness_command'
         }
 
-        // Publish discovery message for HA and wait 2 seoonds before sending state
-        this.publishDiscovery()
-        await utils.sleep(2)
+        // Publish discovery message
+        if (!this.discoveryData.length) { await this.initDiscoveryData() }
+        await this.publishDiscoveryData()
 
         // Publish device state data with optional subscribe
         this.publishSubscribeDevice()
+
+        // Subscribe to device command topics
+        if (this.commandTopic_light) { this.mqttClient.subscribe(this.commandTopic_brightness) }
+        if (this.commandTopic_brightness) { this.mqttClient.subscribe(this.commandTopic_brightness) }
     }
 
-    publishDiscovery() {
-        // Build the MQTT discovery messages and publish devices
-
+    initDiscoveryData() {
+        // Build the MQTT discovery messages for beam components
         if (this.stateTopic_motion) {
-            const message = {
-                name: this.device.name+' - Motion',
-                unique_id: this.deviceId+'_motion',
-                availability_topic: this.availabilityTopic,
-                payload_available: 'online',
-                payload_not_available: 'offline',
-                state_topic: this.stateTopic_motion,
-                json_attributes_topic: this.attributesTopic,
-                device_class: 'motion'
-            }
-            debug('HASS config topic: '+this.configTopic_motion)
-            debug(message)
-            this.publishMqtt(this.configTopic_motion, JSON.stringify(message))    
+            this.discoveryData.push({
+                message: {
+                    name: this.device.name+' Motion',
+                    unique_id: this.deviceId+'_motion',
+                    availability_topic: this.availabilityTopic,
+                    payload_available: 'online',
+                    device_class: 'motion',
+                    device: this.deviceData
+                },
+                configTopic: this.configTopic_motion
+            })
         }
 
         if (this.stateTopic_light) {
-            const message = {
-                name: this.device.name+' - Light',
+            let discoveryMessage = {
+                name: this.device.name+' Light',
                 unique_id: this.deviceId+'_light',
                 availability_topic: this.availabilityTopic,
                 payload_available: 'online',
                 payload_not_available: 'offline',
                 state_topic: this.stateTopic_light,
-                json_attributes_topic: this.attributesTopic,
                 command_topic: this.commandTopic_light
             }
             if (this.stateTopic_brightness) {
-                message.brightness_scale = 100
-                message.brightness_state_topic = this.stateTopic_brightness,
-                message.brightness_command_topic = this.commandTopic_brightness
+                discoveryMessage.brightness_scale = 100
+                discoveryMessage.brightness_state_topic = this.stateTopic_brightness,
+                discoveryMessage.brightness_command_topic = this.commandTopic_brightness
             }
-            debug('HASS config topic: '+this.configTopic_light)
-            debug(message)
-            this.publishMqtt(this.configTopic_light, JSON.stringify(message))
-            this.mqttClient.subscribe(this.commandTopic_light)
-            if (this.commandTopic_brightness) { 
-                this.mqttClient.subscribe(this.commandTopic_brightness)
-            }            
+            discoveryMessage.device = this.deviceData
+            this.discoveryData.push({
+                message: discoveryMessage,
+                configTopic: this.configTopic_light
+            })        
         }
+
+        this.initInfoDiscoveryData()
     }
 
     publishData() {
@@ -104,13 +104,13 @@ class Beam extends AlarmDevice {
     }
 
     // Process messages from MQTT command topic
-    processCommand(message, cmdTopicLevel) {
-        if (cmdTopicLevel == 'switch_command') {
+    processCommand(message, topic) {
+        if (topic == this.commandTopic_light) {
             this.setSwitchState(message)
-        } else if (cmdTopicLevel == 'brightness_command') {
+        } else if (topic == this.commandTopic_brightness) {
             this.setSwitchLevel(message)
         } else {
-            debug('Somehow received unknown command topic level '+cmdTopicLevel+' for switch Id: '+this.deviceId)
+            debug('Somehow received unknown command topic '+topic+' for switch Id: '+this.deviceId)
         }
     }
 

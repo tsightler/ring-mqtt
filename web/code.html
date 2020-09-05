@@ -41,13 +41,22 @@ input[type=submit]:hover {
 <body>
 
 <h3>Enter 2FA Code</h3>
+<p style="color:Red;" id="errormsg"></p></p>
 <div class="container">
-  <form action="/submit-code" method="post">
+  <form action="./submit-code" method="post">
     <label for="2facode">Code</label>
     <input type="text" id="code" name="code">
     <input type="submit" value="Submit">
   </form>
 </div>
-
+<script>
+  function getCookie(key) {
+      var keyValue = document.cookie.match('(^|;) ?' + key + '=([^;]*)(;|$)');
+      return keyValue ? keyValue[2] : null;
+  }
+  if (getCookie('error')) {
+      document.getElementById("errormsg").innerHTML = getCookie('error')
+  }
+  </script>
 </body>
 </html>

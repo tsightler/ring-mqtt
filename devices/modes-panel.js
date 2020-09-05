@@ -3,23 +3,25 @@ const utils = require( '../lib/utils' )
 const AlarmDevice = require('./alarm-device')
 
 class ModesPanel extends AlarmDevice {
-    async init() {
-        // Home Assistant component type and device class (set appropriate icon)
+    async publish() {
+        // Home Assistant component type
         this.component = 'alarm_control_panel'
-        
-        // Build required MQTT topics for device
-        this.deviceTopic = this.ringTopic+'/'+this.locationId+'/mode/'+this.component+'/'+this.deviceId
-        this.stateTopic = this.deviceTopic+'/mode_state'
-        this.commandTopic = this.deviceTopic+'/mode_command'
-        this.availabilityTopic = this.deviceTopic+'/status'
+
+        // Device data for Home Assistant device registry
+        this.deviceData.mdl = 'Mode Control Panel'
+        this.deviceData.name = this.device.location.name + ' Mode'
+
+        // Build required MQTT topics
+        this.stateTopic = this.deviceTopic+'/mode/state'
+        this.commandTopic = this.deviceTopic+'/mode/command'
         this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
 
-        // Device specific properties
+        // Save current mode if known
         this.currentMode =  this.currentMode ? this.currentMode : 'unknown'
 
-        // Publish discovery message for HA and wait 2 seoonds before sending state
-        this.publishDiscovery()
-        await utils.sleep(2)
+        // Publish discovery message
+        if (!this.discoveryData.length) { await this.initDiscoveryData() }
+        await this.publishDiscoveryData()
 
         // This is a polled device so don't use common publish/subscribe function
         if (this.subscribed) {
@@ -33,24 +35,26 @@ class ModesPanel extends AlarmDevice {
             this.subscribed = true
         }
         this.online()
+
+        // Subscribe to device command topic
+        this.mqttClient.subscribe(this.commandTopic)
     }
 
-    publishDiscovery() {
+    initDiscoveryData() {
         // Build the MQTT discovery message
-        const message = {
-            name: this.device.location.name + ' Mode',
-            unique_id: this.deviceId,
-            availability_topic: this.availabilityTopic,
-            payload_available: 'online',
-            payload_not_available: 'offline',
-            state_topic: this.stateTopic,
-            command_topic: this.commandTopic
-        }
-
-        debug('HASS config topic: '+this.configTopic)
-        debug(message)
-        this.publishMqtt(this.configTopic, JSON.stringify(message))
-        this.mqttClient.subscribe(this.commandTopic)
+        this.discoveryData.push({
+            message: {
+                name: this.deviceData.name,
+                unique_id: this.deviceId,
+                availability_topic: this.availabilityTopic,
+                payload_available: 'online',
+                payload_not_available: 'offline',
+                state_topic: this.stateTopic,
+                command_topic: this.commandTopic,
+                device: this.deviceData
+            },
+            configTopic: this.configTopic
+        })
     }
 
     async publishData(mode) {
@@ -83,7 +87,7 @@ class ModesPanel extends AlarmDevice {
 
     // Set Alarm Mode on received MQTT command message
     async setLocationMode(message) {
-        debug('Received set mode command '+message+' for location: '+this.device.location.name)
+        debug('Received set mode command '+message+' for location '+this.device.location.name+' ('+this.location+')')
 
         // Try to set alarm mode and retry after delay if mode set fails
         // Initial attempt with no delay
@@ -97,7 +101,7 @@ class ModesPanel extends AlarmDevice {
         }
         // Check the return status and print some debugging for failed states
         if (setModeSuccess == false ) {
-            debug('Could not enter proper mode state after all retries...Giving up!')
+            debug('Location could not enter proper mode after all retries...Giving up!')
         } else if (setModeSuccess == 'unknown') {
             debug('Ignoring unknown command.')
         }
@@ -126,10 +130,10 @@ class ModesPanel extends AlarmDevice {
         // Sleep a 1 second and check if location entered the requested mode
         await utils.sleep(1);
         if (targetMode == (await this.device.location.getLocationMode()).mode) {
-            debug('Location '+this.device.location.name+' successfully entered mode: '+message)
+            debug('Location '+this.device.location.name+' successfully entered '+message+' mode')
             return true
         } else {
-            debug('Location failed to enter requested mode!')
+            debug('Location '+this.device.location.name+' failed to enter requested mode!')
             return false
         }
     }

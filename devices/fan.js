@@ -3,51 +3,57 @@ const utils = require( '../lib/utils' )
 const AlarmDevice = require('./alarm-device')
 
 class Fan extends AlarmDevice {
-    async init() {
-        // Home Assistant component type and device class (set appropriate icon)
+    async publish(locationConnected) {
+        // Only publish if location websocket is connected
+        if (!locationConnected) { return }
+
+        // Home Assistant component type
         this.component = 'fan'
 
-        // Build required MQTT topics for device
-        this.deviceTopic = this.alarmTopic+'/'+this.component+'/'+this.deviceId
-        this.stateTopic = this.deviceTopic+'/fan_state'
-        this.commandTopic = this.deviceTopic+'/fan_command'
-        this.speedStateTopic = this.deviceTopic+'/fan_speed_state'
-        this.speedCommandTopic = this.deviceTopic+'/fan_speed_command'
-        this.attributesTopic = this.deviceTopic+'/attributes'
-        this.availabilityTopic = this.deviceTopic+'/status'
+        // Device data for Home Assistant device registry
+        this.deviceData.mdl = 'Fan Control'
+
+        // Build required MQTT topics 
+        this.stateTopic_fan = this.deviceTopic+'/fan/state'
+        this.commandTopic_fan = this.deviceTopic+'/fan/command'
+        this.stateTopic_speed = this.deviceTopic+'/fan/speed_state'
+        this.commandTopic_speed = this.deviceTopic+'/fan/speed_command'
         this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
         this.prevFanState = undefined
         this.targetFanLevel = undefined
 
-        // Publish discovery message for HA and wait 2 seoonds before sending state
-        this.publishDiscovery()
-        await utils.sleep(2)
+        // Publish discovery message
+        if (!this.discoveryData.length) { await this.initDiscoveryData() }
+        await this.publishDiscoveryData()
 
         // Publish device state data with optional subscribe
         this.publishSubscribeDevice()
+
+        // Subscribe to device command topics
+        this.mqttClient.subscribe(this.commandTopic_fan)
+        this.mqttClient.subscribe(this.commandTopic_speed)
     }
 
-    publishDiscovery() {
+    initDiscoveryData() {
         // Build the MQTT discovery message
-        const message = {
-            name: this.device.name,
-            unique_id: this.deviceId,
-            availability_topic: this.availabilityTopic,
-            payload_available: 'online',
-            payload_not_available: 'offline',
-            state_topic: this.stateTopic,
-            json_attributes_topic: this.attributesTopic,
-            command_topic: this.commandTopic,
-            speed_state_topic: this.speedStateTopic,
-            speed_command_topic: this.speedCommandTopic,
-            speeds: [ "low", "medium", "high" ]
-        }
+        this.discoveryData.push({
+            message: {
+                name: this.device.name,
+                unique_id: this.deviceId,
+                availability_topic: this.availabilityTopic,
+                payload_available: 'online',
+                payload_not_available: 'offline',
+                state_topic: this.stateTopic_fan,
+                command_topic: this.commandTopic_fan,
+                speed_state_topic: this.stateTopic_speed,
+                speed_command_topic: this.commandTopic_speed,
+                speeds: [ "low", "medium", "high" ],
+                device: this.deviceData
+            },
+            configTopic: this.configTopic
+        })
 
-        debug('HASS config topic: '+this.configTopic)
-        debug(message)
-        this.publishMqtt(this.configTopic, JSON.stringify(message))
-        this.mqttClient.subscribe(this.commandTopic)
-        this.mqttClient.subscribe(this.speedCommandTopic)
+        this.initInfoDiscoveryData('commStatus')
     }
 
     publishData() {
@@ -67,24 +73,24 @@ class Fan extends AlarmDevice {
         // Publish device state
         // targetFanLevel is a hack to work around Home Assistant UI behavior
         if (this.targetFanLevel && this.targetFanLevel != fanLevel) {
-            this.publishMqtt(this.speedStateTopic, this.targetFanLevel, true)
+            this.publishMqtt(this.stateTopic_speed, this.targetFanLevel, true)
         } else {
-            this.publishMqtt(this.speedStateTopic, fanLevel, true)
+            this.publishMqtt(this.stateTopic_speed, fanLevel, true)
         }
-        this.publishMqtt(this.stateTopic, fanState, true)
+        this.publishMqtt(this.stateTopic_fan, fanState, true)
 
         // Publish device attributes (batterylevel, tamper status)
         this.publishAttributes()
     }
     
     // Process messages from MQTT command topic
-    processCommand(message, cmdTopicLevel) {
-        if (cmdTopicLevel == 'fan_command') {
+    processCommand(message, topic) {
+        if (topic == this.commandTopic_fan) {
             this.setFanState(message)
-        } else if (cmdTopicLevel == 'fan_speed_command') {
+        } else if (topic == this.commandTopic_speed) {
             this.setFanLevel(message)
         } else {
-            debug('Somehow received unknown command topic level '+cmdTopicLevel+' for fan Id: '+this.deviceId)
+            debug('Somehow received unknown command topic '+topic+' for fan Id: '+this.deviceId)
         }
     }
 
