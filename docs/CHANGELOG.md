@@ -1,4 +1,4 @@
-##v4.0.0
+## v4.0.0
 - Support for Home Assistant Device Registry
 - Each device has an "info" sensor updated at least every 5 minutes. State is JSON data with values unique to each device type (battery level, tamper status, AC state, wireless strength, firmware info, serial number, etc)
 - Support for monitoring alarm state
