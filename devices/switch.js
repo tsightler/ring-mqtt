@@ -14,8 +14,8 @@ class Switch extends AlarmDevice {
         this.deviceData.mdl = (this.device.data.categoryId === 2) ? 'Light' : 'Switch'
 
         // Build required MQTT topics for device
-        this.stateTopic = this.deviceTopic+'/'+this.component+'/state'
-        this.commandTopic = this.deviceTopic+'/'+this.component+'/command'
+        this.stateTopic = this.deviceTopic+'/switch/state'
+        this.commandTopic = this.deviceTopic+'/switch/command'
         this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
 
         // Publish discovery message

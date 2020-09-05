@@ -152,7 +152,8 @@ class SecurityPanel extends AlarmDevice {
                     policeState = 'ON'
                     debug('Burgler alarm is active for '+this.device.location.name)
                 case 'fire-alarm':
-                case 'user-verified-fire-alarm':
+                case 'co-alarm':
+                case 'user-verified-co-or-fire-alarm':
                 case 'fire-accelerated-alarm':
                     fireState = 'ON'
                     debug('Fire alarm is active for '+this.device.location.name)
