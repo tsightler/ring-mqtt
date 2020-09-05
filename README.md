@@ -4,9 +4,9 @@ This script leverages the excellent [ring-client-api](https://github.com/dgreif/
 ## !!! Important Changes for the 4.0.0 Release !!!
 The primary goal of the 4.0.0 release was to improve supportability and reliability while also adding some long requested features.  Unfortunately the development of these capapabilities required introducing a few breaking changes.  Most of these changes will not impact Home Assistant users as they will be handled automatically but the MQTT discovery process however, if you were previously using the old JSON attribute topic to monitor battery levels or tamper status, you will need to modify those automations to use the new device level info sensor JSON topic which includes this information and much more.
 
-For non-Home Assistant users, the topic levels have changed in this release to provide better consistency.  This new model is descibed in docs/TOPICS.md.
+For non-Home Assistant users, the topic levels have changed in this release to provide better consistency.  This new model is descibed in [docs/TOPICS.md](docs/TOPICS.md).
 
-For a full list of changes and new features please see docs/CHANGELOG.md.
+For a full list of changes and new features please see [docs/CHANGELOG.md](docs/CHANGELOG.md).
 
 ## !!! Important MQTT changes for Home Assistant >=0.113 !!!
 Prior to Home Assistant 0.113 it was highly recommended to configure birth messages for the MQTT [component by manual settings](https://www.home-assistant.io/docs/mqtt/birth_will/) in configuration.yaml.  With this configuration ring-mqtt could monitor for restarts of the Home Assistant server and automatically resend devices and state updates after a restart.  In prior Home Assistant documentation, and prior versions of this script, the topic used was hass/status.
@@ -121,7 +121,7 @@ By default, this script will discover and monitor enabled devices across all loc
 
 ## Using with MQTT tools other than Home Assistant (ex: Node Red)
 
-MQTT topics are built consistently during each startup.  The easiest way to determine the device topics is to run the script with debug output.  More details about the topic format for all devices is available in doc/TOPICS.md
+MQTT topics are built consistently during each startup.  The easiest way to determine the device topics is to run the script with debug output.  More details about the topic format for all devices is available in [docs/TOPICS.md](docs/TOPICS.md).
 
 ## Features and Plans
 ### Current features
