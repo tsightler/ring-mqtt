@@ -80,7 +80,7 @@ class BaseStation extends AlarmDevice {
         if (this.setVolume) {
             // Publish volume state to switch entity
             const audioVolume = (this.device.data.volume && !isNaN(this.device.data.volume) ? Math.round(100 * this.device.data.volume) : 0)
-            const audioState = (audioVolume > 0) ? "ON" : "OFF" 
+            const audioState = (audioVolume > 0) ? "ON" : "OFF"
             this.publishMqtt(this.stateTopic_audio, audioState, true)
             this.publishMqtt(this.stateTopic_audio_volume, audioVolume.toString(), true)
         }
@@ -102,14 +102,18 @@ class BaseStation extends AlarmDevice {
 
     // Set switch target state on received MQTT command message
     setAudioState(message) {
-        const command = message.toLowerCase()
+        const audioVolume = (this.device.data.volume && !isNaN(this.device.data.volume) ? Math.round(100 * this.device.data.volume) : 0)
+        const audioState = (audioVolume > 0) ? "ON" : "OFF"
+        const command = message.toUpperCase()
         switch(command) {
-            case 'on':
-            case 'off': {
-                debug('Received command to turn '+command+' audio for base station Id: '+this.deviceId)
-                const volume = (command === 'on') ? .65 : 0
-                debug('Setting volume level to '+volume*100+'%')
-                this.device.setVolume(volume)
+            case 'ON':
+            case 'OFF': {
+                if (command !== audioState) {
+                    debug('Received command to turn '+command+' audio for base station Id: '+this.deviceId)
+                    const volume = (command === 'on') ? .65 : 0
+                    debug('Setting volume level to '+volume*100+'%')
+                    this.device.setVolume(volume)
+                }
                 break;
             }
             default:
