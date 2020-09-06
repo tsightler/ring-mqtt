@@ -334,10 +334,10 @@ async function initConfig(configFile) {
     }
     // If Home Assistant addon, try config or environment for MQTT settings
     if (process.env.HASSADDON) {
-        CONFIG.host = CONFIG.host ? CONFIG.host : process.env.MQTTHOST
-        CONFIG.port = CONFIG.port ? CONFIG.port : process.env.MQTTPORT
-        CONFIG.mqtt_user = CONFIG.mqtt_user ? CONFIG.mqtt_user : process.env.MQTTUSER
-        CONFIG.mqtt_pass = CONFIG.mqtt_pass ? CONFIG.mqtt_pass : process.env.MQTTPASSWORD
+        CONFIG.host = process.env.MQTTHOST
+        CONFIG.port = process.env.MQTTPORT
+        CONFIG.mqtt_user = process.env.MQTTUSER
+        CONFIG.mqtt_pass = process.env.MQTTPASSWORD
     }
 
     // If there's still no configured settings, force some defaults.
