@@ -66,7 +66,6 @@ class BaseStation extends AlarmDevice {
                     brightness_scale: 100,
                     brightness_state_topic: this.stateTopic_audio_volume,
                     brightness_command_topic: this.commandTopic_audio_volume,
-                    on_command_type: 'brightness',
                     device: this.deviceData
                 },
                 configTopic: this.configTopic_audio
