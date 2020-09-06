@@ -76,15 +76,16 @@ class Keypad extends AlarmDevice {
 
     // Set switch target state on received MQTT command message
     setAudioState(message) {
-        const audioVolume = (this.device.data.volume && !isNaN(this.device.data.volume) ? Math.round(100 * this.device.data.volume) : 0)
-        const audioState = (audioVolume > 0) ? "ON" : "OFF"
+        const currentVolume = (this.device.data.volume && !isNaN(this.device.data.volume) ? Math.round(100 * this.device.data.volume) : 0)
+        const currentState = (currentVolume > 0) ? "ON" : "OFF"
         const command = message.toUpperCase()
         switch(command) {
             case 'ON':
             case 'OFF': {
-                if (command !== audioState) {
+                if (command !== currentState) {
                     debug('Received command to turn '+command+' audio for keypad Id: '+this.deviceId)
-                    const volume = (command === 'on') ? .65 : 0
+                    // For off set volume to zero, for on set to current volume or 65% if unknown
+                    const volume = command === 'OFF' ? 0 : currentVolume === 0 ? .65 : currentVolume
                     debug('Setting volume level to '+volume*100+'%')
                     this.device.setVolume(volume)
                 }
