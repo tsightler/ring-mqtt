@@ -67,7 +67,6 @@ class BaseStation extends AlarmDevice {
                     brightness_state_topic: this.stateTopic_audio_volume,
                     brightness_command_topic: this.commandTopic_audio_volume,
                     on_command_type: 'brightness',
-                    icon: "mdi:volume-high",
                     device: this.deviceData
                 },
                 configTopic: this.configTopic_audio
@@ -75,7 +74,7 @@ class BaseStation extends AlarmDevice {
         }
 
         // Device has no sensors, only publish info data
-        this.initInfoDiscoveryData()
+        this.initInfoDiscoveryData('acStatus')
     }
 
     publishData() {
