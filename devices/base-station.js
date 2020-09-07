@@ -17,10 +17,10 @@ class BaseStation extends AlarmDevice {
             if (this.device.data.volume === testVolume) {
                 debug('Account has access to set volume on base station, enabling volume control')
                 this.device.setVolume(origVolume)
-                this.setVolume = true
+                this.canSetVolume = true
             } else {
                 debug('Account does not have access to set volume on base station, disabling volume control')
-                this.setVolume = false
+                this.canSetVolume = false
             }
         }
 
@@ -28,7 +28,7 @@ class BaseStation extends AlarmDevice {
         this.deviceData.mdl = 'Alarm Base Station'
         this.deviceData.name = this.device.location.name + ' Base Station'
 
-        if (this.setVolume) {
+        if (this.canSetVolume) {
             // Build required MQTT topics
             this.stateTopic_audio = this.deviceTopic+'/audio/state'
             this.commandTopic_audio = this.deviceTopic+'/audio/command'
@@ -44,7 +44,7 @@ class BaseStation extends AlarmDevice {
         // Publish device state data with optional subscribe
         this.publishSubscribeDevice()
 
-        if (this.setVolume) {
+        if (this.canSetVolume) {
             // Subscribe to device command topics
             this.mqttClient.subscribe(this.commandTopic_audio)
             this.mqttClient.subscribe(this.commandTopic_audio_volume)
@@ -52,7 +52,7 @@ class BaseStation extends AlarmDevice {
     }
 
     initDiscoveryData() {
-        if (this.setVolume) {
+        if (this.canSetVolume) {
             // Build the MQTT discovery messages
             this.discoveryData.push({
                 message: {
@@ -77,12 +77,13 @@ class BaseStation extends AlarmDevice {
     }
 
     publishData() {
-        if (this.setVolume) {
+        if (this.canSetVolume) {
             // Publish volume state to switch entity
             const audioVolume = (this.device.data.volume && !isNaN(this.device.data.volume) ? Math.round(100 * this.device.data.volume) : 0)
             const audioState = (audioVolume > 0) ? "ON" : "OFF"
             this.publishMqtt(this.stateTopic_audio, audioState, true)
             this.publishMqtt(this.stateTopic_audio_volume, audioVolume.toString(), true)
+            this.volumeUpdatePending = false
         }
 
         // Publish device attributes (batterylevel, tamper status)
@@ -101,29 +102,32 @@ class BaseStation extends AlarmDevice {
     }
 
     // Set switch target state on received MQTT command message
-    setAudioState(message) {
-        const currentVolume = (this.device.data.volume && !isNaN(this.device.data.volume) ? Math.round(100 * this.device.data.volume) : 0)
-        const currentState = (currentVolume > 0) ? "ON" : "OFF"
-        const command = message.toUpperCase()
-        switch(command) {
-            case 'ON':
-            case 'OFF': {
-                if (command !== currentState) {
-                    debug('Received command to turn '+command+' audio for base station Id: '+this.deviceId)
-                    // For off set volume to zero, for on set to current volume or 65% if unknown
-                    const volume = command === 'OFF' ? 0 : currentVolume === 0 ? .65 : currentVolume
-                    debug('Setting volume level to '+volume*100+'%')
-                    this.device.setVolume(volume)
+    async setAudioState(message) {
+        if (!this.volumeUpdatePending) {
+            const currentVolume = (this.device.data.volume && !isNaN(this.device.data.volume) ? Math.round(100 * this.device.data.volume) : 0)
+            const currentState = (currentVolume > 0) ? "ON" : "OFF"
+            const command = message.toUpperCase()
+            switch(command) {
+                case 'ON':
+                case 'OFF': {
+                    if (command !== currentState) {
+                        debug('Received command to turn '+command+' audio for base station Id: '+this.deviceId)
+                        // For off set volume to zero, for on set to current volume or 65% if unknown
+                        const volume = command === 'OFF' ? 0 : currentVolume === 0 ? .65 : currentVolume
+                        debug('Setting volume level to '+volume*100+'%')
+                        this.device.setVolume(volume)
+                    }
+                    break;
                 }
-                break;
+                default:
+                    debug('Received invalid audio command for keypad!')
             }
-            default:
-                debug('Received invalid audio command for keypad!')
         }
     }
 
     // Set switch target state on received MQTT command message
     setVolumeLevel(message) {
+        this.volumeUpdatePending = true
         const volume = message
         debug('Received set volume level to '+volume+'% for base station Id: '+this.deviceId)
         debug('Location Id: '+ this.locationId)
