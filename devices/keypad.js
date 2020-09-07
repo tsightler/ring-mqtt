@@ -53,11 +53,12 @@ class Keypad extends AlarmDevice {
     }
 
     publishData() {
-        const audioVolume = (this.device.data.volume && !isNaN(this.device.data.volume) ? Math.round(100 * this.device.data.volume) : 0)
-        const audioState = (audioVolume > 0) ? "ON" : "OFF" 
+        const currentVolume = (this.device.data.volume && !isNaN(this.device.data.volume) ? Math.round(100 * this.device.data.volume) : 0)
+        const currentState = (currentVolume > 0) ? "ON" : "OFF" 
         // Publish device state
-        this.publishMqtt(this.stateTopic_audio, audioState, true)
-        this.publishMqtt(this.stateTopic_audio_volume, audioVolume.toString(), true)
+        this.publishMqtt(this.stateTopic_audio, currentState, true)
+        this.publishMqtt(this.stateTopic_audio_volume, currentVolume.toString(), true)
+        this.volumeUpdatePending = false
 
         // Publish device attributes (batterylevel, tamper status)
         this.publishAttributes()
@@ -75,24 +76,32 @@ class Keypad extends AlarmDevice {
     }
 
     // Set switch target state on received MQTT command message
-    setAudioState(message) {
-        const command = message.toLowerCase()
-        switch(command) {
-            case 'on':
-            case 'off': {
-                debug('Received command to turn '+command+' audio for keypad Id: '+this.deviceId)
-                const volume = (command === 'on') ? .65 : 0
-                debug('Setting volume level to '+volume*100+'%')
-                this.device.setVolume(volume)
-                break;
+    async setAudioState(message) {
+        if (!this.volumeUpdatePending) {
+            const currentVolume = (this.device.data.volume && !isNaN(this.device.data.volume) ? Math.round(100 * this.device.data.volume) : 0)
+            const currentState = (currentVolume > 0) ? "ON" : "OFF"
+            const command = message.toUpperCase()
+            switch(command) {
+                case 'ON':
+                case 'OFF': {
+                    if (command !== currentState) {
+                        debug('Received command to turn '+command+' audio for keypad Id: '+this.deviceId)
+                        // For off set volume to zero, for on set to current volume or 65% if unknown
+                        const volume = command === 'OFF' ? 0 : currentVolume === 0 ? .65 : currentVolume
+                        debug('Setting volume level to '+volume*100+'%')
+                        this.device.setVolume(volume)
+                    }
+                    break;
+                }
+                default:
+                    debug('Received invalid audio command for keypad!')
             }
-            default:
-                debug('Received invalid audio command for keypad!')
         }
     }
 
     // Set switch target state on received MQTT command message
     setVolumeLevel(message) {
+        this.volumeUpdatePending = true
         const volume = message
         debug('Received set volume level to '+volume+'% for keypad Id: '+this.deviceId)
         debug('Location Id: '+ this.locationId)
