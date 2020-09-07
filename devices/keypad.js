@@ -54,11 +54,11 @@ class Keypad extends AlarmDevice {
 
     publishData() {
         const currentVolume = (this.device.data.volume && !isNaN(this.device.data.volume) ? Math.round(100 * this.device.data.volume) : 0)
-        const currentState = (audioVolume > 0) ? "ON" : "OFF" 
+        const currentState = (currentVolume > 0) ? "ON" : "OFF" 
         // Publish device state
         this.publishMqtt(this.stateTopic_audio, currentState, true)
         this.publishMqtt(this.stateTopic_audio_volume, currentVolume.toString(), true)
-        this.volUpdatePending = false
+        this.volumeUpdatePending = false
 
         // Publish device attributes (batterylevel, tamper status)
         this.publishAttributes()
@@ -77,7 +77,7 @@ class Keypad extends AlarmDevice {
 
     // Set switch target state on received MQTT command message
     async setAudioState(message) {
-        if (!volumeUpdatePending) {
+        if (!this.volumeUpdatePending) {
             const currentVolume = (this.device.data.volume && !isNaN(this.device.data.volume) ? Math.round(100 * this.device.data.volume) : 0)
             const currentState = (currentVolume > 0) ? "ON" : "OFF"
             const command = message.toUpperCase()

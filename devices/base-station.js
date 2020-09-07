@@ -79,10 +79,10 @@ class BaseStation extends AlarmDevice {
     publishData() {
         if (this.canSetVolume) {
             // Publish volume state to switch entity
-            const audioVolume = (this.device.data.volume && !isNaN(this.device.data.volume) ? Math.round(100 * this.device.data.volume) : 0)
-            const audioState = (audioVolume > 0) ? "ON" : "OFF"
-            this.publishMqtt(this.stateTopic_audio, audioState, true)
-            this.publishMqtt(this.stateTopic_audio_volume, audioVolume.toString(), true)
+            const currentVolume = (this.device.data.volume && !isNaN(this.device.data.volume) ? Math.round(100 * this.device.data.volume) : 0)
+            const currentState = (currentVolume > 0) ? "ON" : "OFF"
+            this.publishMqtt(this.stateTopic_audio, currentState, true)
+            this.publishMqtt(this.stateTopic_audio_volume, currentVolume.toString(), true)
             this.volumeUpdatePending = false
         }
 
