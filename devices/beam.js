@@ -41,7 +41,7 @@ class Beam extends AlarmDevice {
         this.publishSubscribeDevice()
 
         // Subscribe to device command topics
-        if (this.commandTopic_light) { this.mqttClient.subscribe(this.commandTopic_brightness) }
+        if (this.commandTopic_light) { this.mqttClient.subscribe(this.commandTopic_light) }
         if (this.commandTopic_brightness) { this.mqttClient.subscribe(this.commandTopic_brightness) }
     }
 
