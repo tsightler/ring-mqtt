@@ -18,12 +18,8 @@ class CoAlarm extends AlarmDevice {
         this.stateTopic = this.deviceTopic+'/co/state'
         this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
  
-        // Publish discovery message
-        if (!this.discoveryData.length) { await this.initDiscoveryData() }
-        await this.publishDiscoveryData()
-
-        // Publish device state data with optional subscribe
-        this.publishSubscribeDevice()
+        // Publish device data
+        this.publishDevice()
     }
 
     initDiscoveryData() {

@@ -34,20 +34,8 @@ class SecurityPanel extends AlarmDevice {
             this.configTopic_fire = 'homeassistant/switch/'+this.locationId+'/'+this.deviceId+'_fire/config'
         }
         
-        // Publish discovery message
-        if (!this.discoveryData.length) { await this.initDiscoveryData() }
-        await this.publishDiscoveryData()
-
-        // Publish device state data with optional subscribe
-        this.publishSubscribeDevice()
-
-        // Subscribe to device command topic
-        this.mqttClient.subscribe(this.commandTopic)
-        this.mqttClient.subscribe(this.commandTopic_siren)
-        if (this.config.enable_panic) {
-            this.mqttClient.subscribe(this.commandTopic_police)
-            this.mqttClient.subscribe(this.commandTopic_fire)
-        }
+        // Publish device data
+        this.publishDevice()
     }
 
     initDiscoveryData() {

@@ -22,16 +22,8 @@ class Fan extends AlarmDevice {
         this.prevFanState = undefined
         this.targetFanLevel = undefined
 
-        // Publish discovery message
-        if (!this.discoveryData.length) { await this.initDiscoveryData() }
-        await this.publishDiscoveryData()
-
-        // Publish device state data with optional subscribe
-        this.publishSubscribeDevice()
-
-        // Subscribe to device command topics
-        this.mqttClient.subscribe(this.commandTopic_fan)
-        this.mqttClient.subscribe(this.commandTopic_speed)
+        // Publish device data
+        this.publishDevice()
     }
 
     initDiscoveryData() {

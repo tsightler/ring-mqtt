@@ -7,8 +7,12 @@ class BaseStation extends AlarmDevice {
         // Only publish if location websocket is connected
         if (!locationConnected) { return }
 
+        // Device data for Home Assistant device registry
+        this.deviceData.mdl = 'Alarm Base Station'
+        this.deviceData.name = this.device.location.name + ' Base Station'
+
         // If this is the very first publish for this device (device is not yet subscribed)
-        // check if account has access set volume and, if so, enable volume control
+        // check if account has access set volume and add volume control if so
         if (!this.subscribed) {
             const origVolume = (this.device.data.volume && !isNaN(this.device.data.volume) ? this.device.data.volume : 0)
             const testVolume = (origVolume === 1) ? .99 : origVolume+.01
@@ -17,42 +21,23 @@ class BaseStation extends AlarmDevice {
             if (this.device.data.volume === testVolume) {
                 debug('Account has access to set volume on base station, enabling volume control')
                 this.device.setVolume(origVolume)
-                this.canSetVolume = true
+                // Build required MQTT topics
+                this.stateTopic_audio = this.deviceTopic+'/audio/state'
+                this.commandTopic_audio = this.deviceTopic+'/audio/command'
+                this.stateTopic_audio_volume = this.deviceTopic+'/audio/volume_state'
+                this.commandTopic_audio_volume = this.deviceTopic+'/audio/volume_command'
+                this.configTopic_audio = 'homeassistant/light/'+this.locationId+'/'+this.deviceId+'_audio/config'
             } else {
                 debug('Account does not have access to set volume on base station, disabling volume control')
-                this.canSetVolume = false
             }
         }
 
-        // Device data for Home Assistant device registry
-        this.deviceData.mdl = 'Alarm Base Station'
-        this.deviceData.name = this.device.location.name + ' Base Station'
-
-        if (this.canSetVolume) {
-            // Build required MQTT topics
-            this.stateTopic_audio = this.deviceTopic+'/audio/state'
-            this.commandTopic_audio = this.deviceTopic+'/audio/command'
-            this.stateTopic_audio_volume = this.deviceTopic+'/audio/volume_state'
-            this.commandTopic_audio_volume = this.deviceTopic+'/audio/volume_command'
-            this.configTopic_audio = 'homeassistant/light/'+this.locationId+'/'+this.deviceId+'_audio/config'
-        }
-
-        // Publish discovery message
-        if (!this.discoveryData.length) { await this.initDiscoveryData() }
-        await this.publishDiscoveryData()
-
-        // Publish device state data with optional subscribe
-        this.publishSubscribeDevice()
-
-        if (this.canSetVolume) {
-            // Subscribe to device command topics
-            this.mqttClient.subscribe(this.commandTopic_audio)
-            this.mqttClient.subscribe(this.commandTopic_audio_volume)
-        }
+        // Publish device data
+        this.publishDevice()
     }
 
     initDiscoveryData() {
-        if (this.canSetVolume) {
+        if (this.stateTopic_audio) {
             // Build the MQTT discovery messages
             this.discoveryData.push({
                 message: {
@@ -77,7 +62,7 @@ class BaseStation extends AlarmDevice {
     }
 
     publishData() {
-        if (this.canSetVolume) {
+        if (this.stateTopic_audio) {
             // Publish volume state to switch entity
             const currentVolume = (this.device.data.volume && !isNaN(this.device.data.volume) ? Math.round(100 * this.device.data.volume) : 0)
             const currentState = (currentVolume > 0) ? "ON" : "OFF"

@@ -29,15 +29,18 @@ class ModesPanel extends AlarmDevice {
             this.currentMode = 'republish'
             this.publishData(priorMode)
         } else {
+            // Subscribe to data updates for location modes
             this.device.location.onLocationMode.subscribe((mode) => {
                 this.publishData(mode)
             })
+
+            // Subscribe to device command topic
+            this.mqttClient.subscribe(this.commandTopic)
+
+            // Mark device as subscribed
             this.subscribed = true
         }
         this.online()
-
-        // Subscribe to device command topic
-        this.mqttClient.subscribe(this.commandTopic)
     }
 
     initDiscoveryData() {

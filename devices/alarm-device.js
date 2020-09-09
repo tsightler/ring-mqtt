@@ -24,7 +24,7 @@ class AlarmDevice {
         
         // Set device location and top level MQTT topics 
         this.ringTopic = this.config.ring_topic
-        this.deviceTopic = this.ringTopic+'/'+this.locationId+'/alarm/'+this.deviceId
+        this.deviceTopic = this.ringTopic+'/'+this.locationId+'/'+deviceInfo.category+'/'+this.deviceId
         this.availabilityTopic = this.deviceTopic+'/status'
         
         // Create info device topics
@@ -93,12 +93,26 @@ class AlarmDevice {
     }
 
     // Publish device state data and subscribe to
-    // device events if not previously subscribed
-    publishSubscribeDevice() {
+    // device data events and command topics as needed
+    async publishDevice() {
+        // Publish discovery message
+        if (!this.discoveryData.length) { await this.initDiscoveryData() }
+        await this.publishDiscoveryData()
+
         if (this.subscribed) {
             this.publishData()
         } else {
+            // Subscribe to data updates for device
             this.device.onData.subscribe(() => { this.publishData() })
+
+            // Subscribe to any device command topics
+            const properties = Object.getOwnPropertyNames(this)
+            const commandTopics = properties.filter(p => p.match(/^commandTopic.*/g))
+            commandTopics.forEach(commandTopic => {
+                this.mqttClient.subscribe(this[commandTopic])
+            })
+
+            // Mark device as subscribed
             this.subscribed = true
         }
         this.online()

@@ -55,6 +55,7 @@ async function processExit(options, exitCode) {
 function getDevice(device, mqttClient) {
     const deviceInfo = {
         device: device,
+        category: 'alarm',
         mqttClient: mqttClient,
         CONFIG
     }
@@ -81,6 +82,7 @@ function getDevice(device, mqttClient) {
         case RingDeviceType.BeamsSwitch:
         case RingDeviceType.BeamsTransformerSwitch:
         case RingDeviceType.BeamsLightGroupSwitch:
+            deviceInfo.category = 'lighting'
             return new Beam(deviceInfo)
         case RingDeviceType.MultiLevelSwitch:
             return newDevice = (device.categoryId === 17) 
