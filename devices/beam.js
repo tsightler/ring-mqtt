@@ -7,8 +7,9 @@ class Beam extends AlarmDevice {
         // Only initialize if location websocket is connected
         if (!locationConnected) { return }
         
-        // Ovverride default device topic to use "lighting" instead of "alarm"
+        // Override default topics to use "smart_lighting" instead of "alarm"
         this.deviceTopic = this.ringTopic+'/'+this.locationId+'/smart_lighting/'+this.deviceId
+        this.availabilityTopic = this.deviceTopic+'/status'
 
         // Build required MQTT topics for device for each entity        
         if (this.device.data.deviceType === 'group.light-group.beams') {
@@ -53,6 +54,8 @@ class Beam extends AlarmDevice {
                     unique_id: this.deviceId+'_motion',
                     availability_topic: this.availabilityTopic,
                     payload_available: 'online',
+                    payload_not_available: 'offline',
+                    state_topic: this.stateTopic_motion,
                     device_class: 'motion',
                     device: this.deviceData
                 },
