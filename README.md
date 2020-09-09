@@ -38,16 +38,17 @@ Note that the only absolutely required parameter for initial start is **RINGTOKE
 
 | Environment Variable Name | Default |
 | --- | --- |
+| RINGTOKEN | blank - must be set for first run |
 | MQTTHOST | localhost |
 | MQTTPORT | 1883 |
-| MQTTRINGTOPIC | ring  |
-| MQTTHASSTOPIC | hass/status |
 | MQTTUSER | blank |
 | MQTTPASSWORD | blank |
 | ENABLECAMERAS | false |
 | ENABLEMODES | false |
 | ENABLEPANIC | false |
 | RINGLOCATIONIDS | blank |
+| MQTTRINGTOPIC | ring  |
+| MQTTHASSTOPIC | homeassistant/status |
 
 When submitting any issue with the Docker build, please be sure to add '-e "DEBUG=ring-mqtt"' to the Docker run command before submitting.
 
@@ -107,17 +108,17 @@ Because of this added risk, it's a good idea to create a second account dedicate
 ## Config Options
 | Config Option | Description | Default |
 | --- | --- | --- |
+| ring_token | The refresh token received after authenticating with 2FA - See Authentication section | blank
 | host | Hostname for MQTT broker | localhost |
 | port | Port number for MQTT broker | 1883 |
-| ring_topic | Top level topic for ring devices, default should be fine for most cases | ring |
-| hass_topic | Home Assistant state topic, used to monitor for restarts to automatically republish devices | hass/status |
 | mqtt_user | Username for MQTT broker | blank |
 | mqtt_pass | Password for MQTT broker | blank |
-| ring_token | The refresh token received after authenticating with 2FA - See Authentication section | blank
 | enable_cameras | Enable camera support, otherwise only alarm devices will be discovered | false |
 | enable_modes | Enable support for Location Modes for sites without a Ring Alarm Panel | false |
 | enable_panic | Enable panic buttons on Alarm Control Panel device | false |
 | location_ids | Array of location Ids in format: ["loc-id", "loc-id2"] | blank |
+| ring_topic | Top level topic for ring devices, default should be fine for most cases | ring |
+| hass_topic | Home Assistant state topic, used to monitor for restarts to automatically republish devices | homeassistant/status |
 
 By default, this script will discover and monitor enabled devices across all locations, even shared locations for which you have permissions.  To limit locations you can create a separate account and assign only the desired resources to it, or you can pass location_ids using the appropriate config option.  To get the location id from the ring website simply login to [Ring.com](https://ring.com/users/sign_in) and look at the address bar in the browser. It will look similar to ```https://app.ring.com/location/{location_id}``` with the last path element being the location id.
 
