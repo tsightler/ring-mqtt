@@ -6,43 +6,42 @@ class Beam extends AlarmDevice {
     async publish(locationConnected) { 
         // Only initialize if location websocket is connected
         if (!locationConnected) { return }
-        
-        // Override default topics to use "smart_lighting" instead of "alarm"
-        this.deviceTopic = this.ringTopic+'/'+this.locationId+'/smart_lighting/'+this.deviceId
-        this.availabilityTopic = this.deviceTopic+'/status'
 
-        // Build required MQTT topics for device for each entity        
-        if (this.device.data.deviceType === 'group.light-group.beams') {
-            this.isLightGroup = true
-            this.groupId = this.device.data.groupId
+        // Setup device topics based on capabilities.
+        switch (this.device.data.deviceType) {
+            case 'group.light-group.beams':
+                this.deviceData.mdl = 'Lighting Group'
+                this.isLightGroup = true
+                this.groupId = this.device.data.groupId
+                this.stateTopic_motion = this.deviceTopic+'/motion/state'
+                this.configTopic_motion = 'homeassistant/binary_sensor/'+this.locationId+'/'+this.deviceId+'/config'
+                this.stateTopic_light = this.deviceTopic+'/light/state'
+                this.commandTopic_light = this.deviceTopic+'/light/command'
+                this.configTopic_light = 'homeassistant/light/'+this.locationId+'/'+this.deviceId+'/config'
+                break;
+            case 'switch.transformer.beams':
+                this.deviceData.mdl = 'Lighting Transformer'
+                this.stateTopic_light = this.deviceTopic+'/light/state'
+                this.commandTopic_light = this.deviceTopic+'/light/command'
+                this.configTopic_light = 'homeassistant/light/'+this.locationId+'/'+this.deviceId+'/config'
+                break;
+            case 'switch.multilevel.beams':
+                this.deviceData.mdl = 'Lighting Switch/Light'
+                this.stateTopic_motion = this.deviceTopic+'/motion/state'
+                this.configTopic_motion = 'homeassistant/binary_sensor/'+this.locationId+'/'+this.deviceId+'/config'
+                this.stateTopic_light = this.deviceTopic+'/light/state'
+                this.commandTopic_light = this.deviceTopic+'/light/command'
+                this.configTopic_light = 'homeassistant/light/'+this.locationId+'/'+this.deviceId+'/config'
+                break;
+            case 'motion-sensor.beams':
+                this.deviceData.mdl = 'Lighting Motion Sensor'
+                this.stateTopic_motion = this.deviceTopic+'/motion/state'
+                this.configTopic_motion = 'homeassistant/binary_sensor/'+this.locationId+'/'+this.deviceId+'/config'
+                break;
         }
 
-        if (this.deviceType !== 'switch.transformer.beams') {
-            this.stateTopic_motion = this.deviceTopic+'/motion/state'
-            this.configTopic_motion = 'homeassistant/binary_sensor/'+this.locationId+'/'+this.deviceId+'/config'
-        }
-
-        if (this.deviceType !== 'motion-sensor.beams') {
-            this.stateTopic_light = this.deviceTopic+'/light/state'
-            this.commandTopic_light = this.deviceTopic+'/light/command'
-            this.configTopic_light = 'homeassistant/light/'+this.locationId+'/'+this.deviceId+'/config'
-        }
-
-        if (this.deviceType === 'switch.multilevel.beams') {
-            this.stateTopic_brightness = this.deviceTopic+'/light/brightness_state'
-            this.commandTopic_brightness = this.deviceTopic+'/light/brightness_command'
-        }
-
-        // Publish discovery message
-        if (!this.discoveryData.length) { await this.initDiscoveryData() }
-        await this.publishDiscoveryData()
-
-        // Publish device state data with optional subscribe
-        this.publishSubscribeDevice()
-
-        // Subscribe to device command topics
-        if (this.commandTopic_light) { this.mqttClient.subscribe(this.commandTopic_light) }
-        if (this.commandTopic_brightness) { this.mqttClient.subscribe(this.commandTopic_brightness) }
+        // Publish device data
+        this.publishDevice()
     }
 
     initDiscoveryData() {

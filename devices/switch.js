@@ -18,15 +18,8 @@ class Switch extends AlarmDevice {
         this.commandTopic = this.deviceTopic+'/switch/command'
         this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
 
-        // Publish discovery message
-        if (!this.discoveryData.length) { await this.initDiscoveryData() }
-        await this.publishDiscoveryData()
-
-        // Publish device state data with optional subscribe
-        this.publishSubscribeDevice()
-
-        // Subscribe to device command topic
-        this.mqttClient.subscribe(this.commandTopic)
+        // Publish device data
+        this.publishDevice()
     }
 
     initDiscoveryData() {

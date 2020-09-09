@@ -21,12 +21,8 @@ class FloodFreezeSensor extends AlarmDevice {
         this.configTopic_flood = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'_flood/config'
         this.configTopic_freeze = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'_freeze/config'
 
-        // Publish discovery messages
-        if (!this.discoveryData.length) { await this.initDiscoveryData() }
-        await this.publishDiscoveryData()
-
-        // Publish device state data with optional subscribe
-        this.publishSubscribeDevice()
+        // Publish device data
+        this.publishDevice()
     }
 
     initDiscoveryData() {

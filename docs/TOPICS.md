@@ -8,7 +8,7 @@ The <ring_category> is either "alarm", "smart_lighting", or "camera" based on th
 
 The script monitors cameras by polling health status every 60 seconds and monitors the websocket connections for alarm and smart lighting devices, automatically updating the online/offline state of the devices based on this connectivity information.  As this is device level connectivity is published to "status" at the device_id level:
 ```
-ring/<location_id>/<ring_category>/<device_id>/status
+ring/<location_id>/<product_category>/<device_id>/status
 ```
 
 Each device also inlcudes an "info" sensor where the state topic includes various supplemental data for the device in JSON format.  This information varies by devies and includes data such as battery level, tamper status, communicaton state, volume, wifi signal strength, and other device specific data.
@@ -137,15 +137,15 @@ ring/<location_id>/camera/<device_id>/light/state    <-- Get ON/OFF Light State
 ring/<location_id>/camera/<device_id>/light/command  <-- Set ON/OFF Light State
 ring/<location_id>/camera/<device_id>/siren/state    <-- Get ON/OFF Siren State
 ring/<location_id>/camera/<device_id>/siren/command  <-- Set ON/OFF Siren State
-ring/<location_id>/alarm/<device_id>/info/state      <-- Device info sensor
+ring/<location_id>/camera/<device_id>/info/state      <-- Device info sensor
 ```
 
 Ring Smart Lighting (available topics vary by device capabilities)
 ```
-ring/<location_id>/alarm/<device_id>/motion/state              <-- ON = Motion Detected
-ring/<location_id>/alarm/<device_id>/light/state               <-- Get ON/OFF state
-ring/<location_id>/alarm/<device_id>/light/command             <-- Set ON/OF state
-ring/<location_id>/alarm/<device_id>/light/brightness_state    <-- Get brightness state (0-100)
-ring/<location_id>/alarm/<device_id>/light/brightness_command  <-- Set brightness state (0-100)
-ring/<location_id>/alarm/<device_id>/info/state                <-- Device info sensor
+ring/<location_id>/lighting/<device_id>/motion/state              <-- ON = Motion Detected
+ring/<location_id>/lighting/<device_id>/light/state               <-- Get ON/OFF state
+ring/<location_id>/lighting/<device_id>/light/command             <-- Set ON/OF state
+ring/<location_id>/lighting/<device_id>/light/brightness_state    <-- Get brightness state (0-100)
+ring/<location_id>/lighting/<device_id>/light/brightness_command  <-- Set brightness state (0-100)
+ring/<location_id>/lighting/<device_id>/info/state                <-- Device info sensor
 ```

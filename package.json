@@ -1,6 +1,6 @@
 {
   "name": "ring-mqtt",
-  "version": "4.0.3",
+  "version": "4.0.4",
   "description": "Ring to MQTT Bridge",
   "main": "ring-mqtt.js",
   "dependencies": {
@@ -8,9 +8,8 @@
     "debug": "^4.1.1",
     "express": "^4.17.1",
     "is-online": "^8.4.0",
-    "mqtt": "^4.2.0",
-    "ring-client-api": "^9.9.0",
-    "yargs-parser": "^19.0.1"
+    "mqtt": "^4.2.1",
+    "ring-client-api": "^9.9.0"
   },
   "devDependencies": {
     "eslint": "^7.7.0"

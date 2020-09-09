@@ -20,16 +20,8 @@ class MultiLevelSwitch extends AlarmDevice {
         this.commandTopic_brightness = this.deviceTopic+'/light/brightness_command'
         this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
 
-        // Publish discovery message
-        if (!this.discoveryData.length) { await this.initDiscoveryData() }
-        await this.publishDiscoveryData()
-
-        // Publish device state data with optional subscribe
-        this.publishSubscribeDevice()
-
-        // Subscribe to device command topics
-        this.mqttClient.subscribe(this.commandTopic_light)
-        this.mqttClient.subscribe(this.commandTopic_brightness)
+        // Publish device data
+        this.publishDevice()
     }
 
     initDiscoveryData() {

@@ -17,16 +17,8 @@ class Keypad extends AlarmDevice {
         this.commandTopic_audio_volume = this.deviceTopic+'/audio/volume_command'
         this.configTopic_audio = 'homeassistant/light/'+this.locationId+'/'+this.deviceId+'_audio/config'
 
-        // Publish discovery message
-        if (!this.discoveryData.length) { await this.initDiscoveryData() }
-        await this.publishDiscoveryData()
-
-        // Publish device state data with optional subscribe
-        this.publishSubscribeDevice()
-
-        // Subscribe to device command topics
-        this.mqttClient.subscribe(this.commandTopic_audio)
-        this.mqttClient.subscribe(this.commandTopic_audio_volume)
+        // Publish device data
+        this.publishDevice()
     }
 
     initDiscoveryData() {
