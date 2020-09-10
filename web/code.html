@@ -38,9 +38,9 @@ input[type=submit]:hover {
 }
 </style>
 </head>
-<body>
+<body onload="checkDarkMode()">
 
-<h3>Enter 2FA Code</h3>
+<h3 id="txt1">Enter 2FA Code</h3>
 <p style="color:Red;" id="errormsg"></p></p>
 <div class="container">
   <form action="./submit-code" method="post">
@@ -50,13 +50,18 @@ input[type=submit]:hover {
   </form>
 </div>
 <script>
-  function getCookie(key) {
-      var keyValue = document.cookie.match('(^|;) ?' + key + '=([^;]*)(;|$)');
-      return keyValue ? keyValue[2] : null;
+function getCookie(key) {
+  var keyValue = document.cookie.match('(^|;) ?' + key + '=([^;]*)(;|$)');
+  return keyValue ? keyValue[2] : null;
+}
+if (getCookie('error')) {
+  document.getElementById("errormsg").innerHTML = getCookie('error')
+}
+function checkDarkMode() {
+  if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    document.getElementById("txt1").style.color = "white";
   }
-  if (getCookie('error')) {
-      document.getElementById("errormsg").innerHTML = getCookie('error')
-  }
-  </script>
+}
+</script>
 </body>
 </html>

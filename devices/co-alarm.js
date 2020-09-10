@@ -13,6 +13,7 @@ class CoAlarm extends AlarmDevice {
 
         // Device data for Home Assistant device registry
         this.deviceData.mdl = 'CO Alarm'
+        this.deviceData.mf = 'First Alert' // Hardcode for now since manufacturer is only listed in parent device
 
         // Build required MQTT topics
         this.stateTopic = this.deviceTopic+'/co/state'

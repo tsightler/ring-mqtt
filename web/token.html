@@ -23,9 +23,9 @@ body {
 }
 </style>
 </head>
-<body>
-<h3>Refresh Token</h3>
-<b>Copy and paste the following string, exactly as shown, to ring_token:</b><br><br>
+<body onload="checkDarkMode()">
+<h3 id="txt1">Refresh Token</h3>
+<p id="txt2"><b>Copy and paste the following string, exactly as shown, to ring_token:</b><br><br></p>
 <textarea rows = "6" cols = "70" type="text" id="token"></textarea><br><br>
 <button class="button" onclick="copyToClipboard()">Copy to clipboard</button>
 <script>
@@ -42,6 +42,12 @@ function copyToClipboard() {
     copyText.setSelectionRange(0, 99999);
     document.execCommand("copy");
     alert("The refresh token has been copied to the clipboard.");
+}
+function checkDarkMode() {
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.getElementById("txt1").style.color = "white";
+        document.getElementById("txt2").style.color = "white";
+    }
 }
 </script>
 </body>

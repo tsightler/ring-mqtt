@@ -23,13 +23,21 @@ input[type=submit]:hover {
 }
 </style>
 </head>
-<body>
-<h3>Ring Device Addon Connected</h3>
-It appears that this addon is already connected to Ring. To force generation of a new token click the button below.
+<body onload="checkDarkMode()">
+<h3 id="txt1">Ring Device Addon Connected</h3>
+<p id="txt2">It appears that this addon is already connected to Ring. To force generation of a new token click the button below.</p>
 <div class="container">
     <form action="./force-token-generation" method="get">
       <input type="submit" value="Regenerate Token">
     </form>
   </div>
+<script>
+function checkDarkMode() {
+  if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    document.getElementById("txt1").style.color = "white";
+    document.getElementById("txt2").style.color = "white";
+  }
+}
+</script>
 </body>
 </html>

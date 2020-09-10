@@ -6,9 +6,17 @@
 body {font-family: Arial, Helvetica, sans-serif;}
 </style>
 </head>
-<body>
-<h3>Refresh Token Generation Complete</h3>
-The Home Assistant <b>ring-mqtt addon</b> will now automatically connect using the generated token.<br>
-No additional configuration steps are required, please check the addon logs to monitor progress.
+<body onload="checkDarkMode()">
+<h3 id="txt1">Refresh Token Generation Complete</h3>
+<p id="txt2">The Home Assistant <b>ring-mqtt addon</b> will now automatically connect using the generated token.<br>
+No additional configuration steps are required, please check the addon logs to monitor progress.</p>
+<script>
+function checkDarkMode() {
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.getElementById("txt1").style.color = "white";
+        document.getElementById("txt2").style.color = "white";
+    }
+}
+</script>
 </body>
 </html>

@@ -49,12 +49,12 @@ input[type=submit]:hover {
 }
 </style>
 </head>
-<body>
+<body onload="checkDarkMode()">
 
-<h3>Acquire Refresh Token</h3>
-Use this form to acquire a refresh token from Ring.com.  Submit the login information for the desired account and then the 2FA code.  Upon succesful 2FA authentication the refresh token will be displayed. Simply copy the entire string and paste into the config file.<br>
+<h3 id="txt1">Acquire Refresh Token</h3>
+<p id="txt2">Use this form to acquire a refresh token from Ring.com.  Submit the login information for the desired account and then the 2FA code.  Upon succesful 2FA authentication the refresh token will be displayed. Simply copy the entire string and paste into the config file.</p><br>
 <p style="color:Red;" id="errormsg"></p>
-<h3>Login</h3>
+<h3 id="txt3">Login</h3>
 <div class="container">
   <form action="./submit-account" method="post">
     <label for="email">Email</label>
@@ -68,19 +68,26 @@ Use this form to acquire a refresh token from Ring.com.  Submit the login inform
 </div>
 <script>
 function showPassword() {
-    var x = document.getElementById("password");
-    if (x.type === "password") {
-        x.type = "text";
-    } else {
-        x.type = "password";
-    }
+  var x = document.getElementById("password");
+  if (x.type === "password") {
+    x.type = "text";
+  } else {
+    x.type = "password";
+  }
 }
 function getCookie(key) {
-    var keyValue = document.cookie.match('(^|;) ?' + key + '=([^;]*)(;|$)');
-    return keyValue ? keyValue[2] : null;
+  var keyValue = document.cookie.match('(^|;) ?' + key + '=([^;]*)(;|$)');
+  return keyValue ? keyValue[2] : null;
 }
 if (getCookie('error')) {
-    document.getElementById("errormsg").innerHTML = getCookie('error')
+  document.getElementById("errormsg").innerHTML = getCookie('error');
+}
+function checkDarkMode() {
+  if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    document.getElementById("txt1").style.color = "white";
+    document.getElementById("txt2").style.color = "white";
+    document.getElementById("txt3").style.color = "white";
+  }
 }
 </script>
 </body>
