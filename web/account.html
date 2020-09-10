@@ -57,9 +57,14 @@ input[type=submit]:hover {
   background-color: #f2f2f2;
   padding: 20px;
 }
+@media (prefers-color-scheme:dark) {
+  html {
+    color: white
+  }
+}
 </style>
 </head>
-<body onload="checkDarkMode()">
+<body>
 
 <h3 id="txt1">Acquire Refresh Token</h3>
 <p id="txt2">Use this form to acquire a refresh token from Ring.com.  Submit the login information for the desired account and then the 2FA code.  Upon succesful 2FA authentication the refresh token will be displayed. Simply copy the entire string and paste into the config file.</p><br>
@@ -91,13 +96,6 @@ function getCookie(key) {
 }
 if (getCookie('error')) {
   document.getElementById("errormsg").innerHTML = getCookie('error');
-}
-function checkDarkMode() {
-  //if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-    document.getElementById("txt1").style.color = "white";
-    document.getElementById("txt2").style.color = "white";
-    document.getElementById("txt3").style.color = "white";
-  //}
 }
 </script>
 </body>
