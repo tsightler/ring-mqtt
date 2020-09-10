@@ -68,25 +68,9 @@ input[type=submit]:hover {
   </form>
 </div>
 <script>
-var rgb = window.top.document.body.style.backgroundColor;
-var rgbVals = rgb.substring(rgb.indexOf('(')+1, rgb.length-1).split(', ');
-document.getElementById("errormsg").innerHTML = rgb;
-if (rgbVals.length === 4 && rgbVals[3] == 0 ) {
-  document.getElementById("txt1").style.color = "white";
-  document.getElementById("txt2").style.color = "white";
-  document.getElementById("txt3").style.color = "white";
-} else {
-  var o = Math.round(((parseInt(rgb[1]) * 299) + (parseInt(rgb[2]) * 587) + (parseInt(rgb[3]) * 114)) /1000);
-  if(o > 125) {
-    document.getElementById("txt1").style.color = "white";
-    document.getElementById("txt2").style.color = "white";
-    document.getElementById("txt3").style.color = "white";
-  } else {
-    document.getElementById("txt1").style.color = "white";
-    document.getElementById("txt2").style.color = "white";
-    document.getElementById("txt3").style.color = "white";
-  }
-}
+//var rgb = window.parent.document.body.style.backgroundColor;
+//var rgbVals = rgb.substring(rgb.indexOf('(')+1, rgb.length-1).split(', ');
+console.log(window.parent.document.getElementById('framed-lead-form').style.backgroundColor)
 function showPassword() {
   var x = document.getElementById("password");
   if (x.type === "password") {
