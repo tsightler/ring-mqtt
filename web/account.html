@@ -72,15 +72,15 @@ var rgb = window.getComputedStyle(document.getElementById("txt1")).getPropertyVa
 var rgbVals = rgb.substring(rgb.indexOf('(')+1, rgb.length-1).split(', ');
 document.getElementById("errormsg").innerHTML = rgb;
 if (rgbVals.length === 4 && rgbVals[3] == 0 ) {
-  document.getElementById("txt1").style.color = "black";
-  document.getElementById("txt2").style.color = "black";
-  document.getElementById("txt3").style.color = "black";
+  document.getElementById("txt1").style.color = "white";
+  document.getElementById("txt2").style.color = "white";
+  document.getElementById("txt3").style.color = "white";
 } else {
   var o = Math.round(((parseInt(rgb[1]) * 299) + (parseInt(rgb[2]) * 587) + (parseInt(rgb[3]) * 114)) /1000);
   if(o > 125) {
-    document.getElementById("txt1").style.color = "black";
-    document.getElementById("txt2").style.color = "black";
-    document.getElementById("txt3").style.color = "black";
+    document.getElementById("txt1").style.color = "white";
+    document.getElementById("txt2").style.color = "white";
+    document.getElementById("txt3").style.color = "white";
   } else {
     document.getElementById("txt1").style.color = "white";
     document.getElementById("txt2").style.color = "white";
