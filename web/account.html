@@ -52,10 +52,10 @@ input[type=submit]:hover {
 </head>
 <body>
 
-<h3>Acquire Refresh Token</h3>
-Use this form to acquire a refresh token from Ring.com.  Submit the login information for the desired account and then the 2FA code.  Upon succesful 2FA authentication the refresh token will be displayed. Simply copy the entire string and paste into the config file.<br>
+<h3 id="txt1">Acquire Refresh Token</h3>
+<p id="txt2">Use this form to acquire a refresh token from Ring.com.  Submit the login information for the desired account and then the 2FA code.  Upon succesful 2FA authentication the refresh token will be displayed. Simply copy the entire string and paste into the config file.<br></p>
 <p style="color:Red;" id="errormsg"></p>
-<h3>Login</h3>
+<h3 id="txt3">Login</h3>
 <div class="container">
   <form action="./submit-account" method="post">
     <label for="email">Email</label>
@@ -68,17 +68,23 @@ Use this form to acquire a refresh token from Ring.com.  Submit the login inform
   </form>
 </div>
 <script>
-var rgb = window.getComputedStyle(document.body).getPropertyValue('background-color');
+var rgb = window.getComputedStyle(document.getElementById("txt1")).getPropertyValue('background-color');
 var rgbVals = rgb.substring(rgb.indexOf('(')+1, rgb.length-1).split(', ');
-document.getElementById("errormsg").innerHTML = rgbVals;
+document.getElementById("errormsg").innerHTML = rgb;
 if (rgbVals.length === 4 && rgbVals[3] == 0 ) {
-  document.body.style.color = "black";
+  document.getElementById("txt1").style.color = "black";
+  document.getElementById("txt2").style.color = "black";
+  document.getElementById("txt3").style.color = "black";
 } else {
   var o = Math.round(((parseInt(rgb[1]) * 299) + (parseInt(rgb[2]) * 587) + (parseInt(rgb[3]) * 114)) /1000);
   if(o > 125) {
-	  document.body.style.color = "black";
-  } else { 
-    document.body.style.color = "white";
+    document.getElementById("txt1").style.color = "black";
+    document.getElementById("txt2").style.color = "black";
+    document.getElementById("txt3").style.color = "black";
+  } else {
+    document.getElementById("txt1").style.color = "white";
+    document.getElementById("txt2").style.color = "white";
+    document.getElementById("txt3").style.color = "white";
   }
 }
 function showPassword() {
