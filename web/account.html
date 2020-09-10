@@ -1,6 +1,16 @@
 <!DOCTYPE html>
 <html>
 <head>
+<script type="text/javascript">
+  window.onload = function() {
+      if (parent) {
+          var oHead = document.getElementsByTagName("head")[0];
+          var arrStyleSheets = parent.document.getElementsByTagName("style");
+          for (var i = 0; i < arrStyleSheets.length; i++)
+              oHead.appendChild(arrStyleSheets[i].cloneNode(true));
+      }
+  }
+  </script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
 body {font-family: Arial, Helvetica, sans-serif; max-width: 500px;}
