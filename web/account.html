@@ -70,7 +70,7 @@ input[type=submit]:hover {
 <script>
 //var rgb = window.parent.document.body.style.backgroundColor;
 //var rgbVals = rgb.substring(rgb.indexOf('(')+1, rgb.length-1).split(', ');
-console.log(window.parent.document.getElementById('framed-lead-form').style.backgroundColor)
+console.log(window.parent.document.getElementsByTagName("body")[0].style.backgroundColor);
 function showPassword() {
   var x = document.getElementById("password");
   if (x.type === "password") {
