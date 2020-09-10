@@ -70,6 +70,7 @@ Use this form to acquire a refresh token from Ring.com.  Submit the login inform
 <script>
 var rgb = window.getComputedStyle(document.body).getPropertyValue('background-color');
 var rgbVals = rgb.substring(rgb.indexOf('(')+1, rgb.length-1).split(', ');
+document.getElementById("errormsg").innerHTML = rgbVals;
 if (rgbVals.length === 4 && rgbVals[3] == 0 ) {
   document.body.style.color = "black";
 } else {
