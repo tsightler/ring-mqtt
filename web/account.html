@@ -68,7 +68,7 @@ input[type=submit]:hover {
   </form>
 </div>
 <script>
-var rgb = parent.document.body.style.backgroundColor;
+var rgb = window.top.document.body.style.backgroundColor;
 var rgbVals = rgb.substring(rgb.indexOf('(')+1, rgb.length-1).split(', ');
 document.getElementById("errormsg").innerHTML = rgb;
 if (rgbVals.length === 4 && rgbVals[3] == 0 ) {
