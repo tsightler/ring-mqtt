@@ -13,18 +13,15 @@ if [ -f /data/options.json ]; then
     export BRANCH=$(bashio::config "branch")
     if [ "${BRANCH}" = "latest" ]; then
         /app/ring-mqtt/scripts/update2latest.sh
+        echo "-------------------------------------------------------"
     elif [ "${BRANCH}" = "dev" ]; then
         /app/ring-mqtt/scripts/update2dev.sh
+        echo "-------------------------------------------------------"
     fi
     exec /app/ring-mqtt/scripts/run-addon.sh
 else
     # No options.json found, assume we are in running in standard Docker
     set +o nounset
-    if [ "${BRANCH}" = "latest" ]; then
-        /app/ring-mqtt/scripts/update2latest.sh
-    elif [ "${BRANCH}" = "dev" ]; then
-        /app/ring-mqtt/scripts/update2dev.sh
-    fi
     if [ ! -z "${DEBUG}" ]; then
         echo "  ------------------------------------------"
         echo "  | Ring Devices via MQTT                  |"
@@ -32,6 +29,15 @@ else
         echo "  | Report issues at:                      |"
         echo "  | https://github.com/tsightler/ring-mqtt |"
         echo "  ------------------------------------------"
+    set +o nounset
+    if [ "${BRANCH}" = "latest" ]; then
+        /app/ring-mqtt/scripts/update2latest.sh
+        echo "  ------------------------------------------"
+    elif [ "${BRANCH}" = "dev" ]; then
+        /app/ring-mqtt/scripts/update2dev.sh
+        echo "  ------------------------------------------"
+    fi
+    if [ ! -z "${DEBUG}" ]; then
         echo -n "  ring-mqtt.js version: "
         echo $(cat /app/ring-mqtt/package.json | grep version | cut -f4 -d'"')
         echo "  ------------------------------------------"

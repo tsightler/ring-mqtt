@@ -8,4 +8,3 @@ git clone -b dev https://github.com/tsightler/ring-mqtt
 cd ring-mqtt
 npm install --no-progress
 chmod +x ring-mqtt.js scripts/*.sh
-echo "-------------------------------------------------------"
