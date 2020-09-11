@@ -29,15 +29,17 @@ else
         echo "  | Report issues at:                      |"
         echo "  | https://github.com/tsightler/ring-mqtt |"
         echo "  ------------------------------------------"
+    fi
     set +o nounset
     if [ "${BRANCH}" = "latest" ]; then
         /app/ring-mqtt/scripts/update2latest.sh
-        echo "  ------------------------------------------"
     elif [ "${BRANCH}" = "dev" ]; then
         /app/ring-mqtt/scripts/update2dev.sh
-        echo "  ------------------------------------------"
     fi
     if [ ! -z "${DEBUG}" ]; then
+        if [ "${BRANCH}" = "latest" ] || [ "${BRANCH}" = "dev" ] ; then
+            echo "  ------------------------------------------"
+        fi
         echo -n "  ring-mqtt.js version: "
         echo $(cat /app/ring-mqtt/package.json | grep version | cut -f4 -d'"')
         echo "  ------------------------------------------"
