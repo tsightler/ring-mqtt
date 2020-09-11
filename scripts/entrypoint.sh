@@ -20,6 +20,11 @@ if [ -f /data/options.json ]; then
 else
     # No options.json found, assume we are in running in standard Docker
     set +o nounset
+    if [ ${BRANCH} = 'latest' ]; then
+        /app/ring-mqtt/scripts/update2latest.sh
+    elif [ ${BRANCH} = 'dev' ]; then
+        /app/ring-mqtt/scripts/update2dev.sh
+    fi
     if [ ! -z  ${DEBUG} ]; then
         echo "  ------------------------------------------"
         echo "  | Ring Devices via MQTT                  |"
