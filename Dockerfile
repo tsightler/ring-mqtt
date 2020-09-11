@@ -8,6 +8,7 @@ RUN apk add --no-cache nodejs npm git && \
     mkdir /data && \
     chmod 777 /data && \
     cd /ring-mqtt && \
-    npm install
+    npm install && \
+    chmod +x ring-mqtt.js
 ENTRYPOINT [ "/init/entrypoint.sh" ]
 

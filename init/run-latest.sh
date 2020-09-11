@@ -76,5 +76,4 @@ else
 fi
 echo "-------------------------------------------------------"
 echo Running ring-mqtt...
-chmod +x ring-mqtt.js
 DEBUG=ring-mqtt HASSADDON=true exec /ring-mqtt/ring-mqtt.js
