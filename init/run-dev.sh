@@ -11,11 +11,6 @@ echo Node version $(node -v)
 echo NPM version $(npm -v)
 git --version
 echo "-------------------------------------------------------"
-echo "Running \"npm audit fix\" to update packages with any vulnerabilities..."
-cd /ring-mqtt
-npm audit fix
-chmod +x ring-mqtt.js
-echo "-------------------------------------------------------"
 # Setup the MQTT environment options based on addon configuration settings
 export MQTTHOST=$(bashio::config "mqtt_host")
 export MQTTPORT=$(bashio::config "mqtt_port")
