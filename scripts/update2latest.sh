@@ -1,4 +1,4 @@
-#!/usr/bin/sh
+#!/usr/bin/env sh
 echo "-------------------------------------------------------"
 echo "Updating ring-mqtt to latest main branch version..."
 cd /app

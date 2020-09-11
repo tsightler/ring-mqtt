@@ -11,7 +11,7 @@ if [ -f /data/options.json ]; then
     fi
     echo "-------------------------------------------------------"
     echo "| Ring Device Integration via MQTT                    |"
-    echo "| Addon for Hass.io                                   |"
+    echo "| Addon for Home Assistant                            |"
     echo "|                                                     |"
     echo "| Report issues at:                                   |"
     echo "| https://github.com/tsightler/ring-mqtt-hassio-addon |"
@@ -22,7 +22,7 @@ else
     set +o nounset
     if [ ! -z  ${DEBUG} ]; then
         echo "  ------------------------------------------"
-        echo "  | Ring Devices to MQTT                   |"
+        echo "  | Ring Devices via MQTT                  |"
         echo "  |                                        |"
         echo "  | Report issues at:                      |"
         echo "  | https://github.com/tsightler/ring-mqtt |"
