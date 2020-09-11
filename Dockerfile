@@ -1,14 +1,12 @@
 FROM hassioaddons/base
 ENV LANG C.UTF-8
-COPY . /ring-mqtt
+COPY . /app/ring-mqtt
 RUN apk add --no-cache nodejs npm git && \
-    rm -f /init && \
-    mv /ring-mqtt/init / && \
-    chmod +x /init/*.sh && \
+    chmod +x /app/ring-mqtt/scripts/*.sh && \
     mkdir /data && \
-    chmod 777 /data && \
-    cd /ring-mqtt && \
+    chmod 777 /data /app && \
+    cd /app/ring-mqtt && \
     npm install && \
     chmod +x ring-mqtt.js
-ENTRYPOINT [ "/init/entrypoint.sh" ]
+ENTRYPOINT [ "/app/ring-mqtt/scripts/entrypoint.sh" ]
 
