@@ -2,11 +2,11 @@
 
 # If options.json exist we are running as addon
 if [ -f /data/options.json ]; then
-    # Use bashio to get configured release version
-    export RELEASE=$(bashio::config "release")
-    if [ $RELEASE = 'latest' ]; then
+    # Use bashio to get configured branch
+    export BRANCH=$(bashio::config "branch")
+    if [ ${BRANCH} = 'latest' ]; then
         /app/ring-mqtt/scripts/update2latest.sh
-    elif [ $RELEASE = 'dev' ]; then
+    elif [ ${BRANCH} = 'dev' ]; then
         /app/ring-mqtt/scripts/update2dev.sh
     fi
     echo "-------------------------------------------------------"
