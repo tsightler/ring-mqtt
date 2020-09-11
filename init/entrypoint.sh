@@ -12,15 +12,17 @@ if [ -f /data/options.json ]; then
         exec /init/run-prod.sh
     fi 
 else
-    if [ "${DEBUG}" ]; then
-        echo " -------------------------------------------------------"
-        echo " | Ring Device Integration via MQTT                    |"
-        echo " |                                                     |"
-        echo " | Report issues at:                                   |"
-        echo " | https://github.com/tsightler/ring-mqtt              |"
-        echo " -------------------------------------------------------"
-        echo   ring-mqtt.js version: $(cat /ring-mqtt/package.json | grep version | cut -f4 -d'"')
-        echo " -------------------------------------------------------"
+    set +o nounset
+    if [ ! -z  ${DEBUG} ]; then
+        echo "  -------------------------------------------------------"
+        echo "  | Ring Device Integration via MQTT                    |"
+        echo "  |                                                     |"
+        echo "  | Report issues at:                                   |"
+        echo "  | https://github.com/tsightler/ring-mqtt              |"
+        echo "  -------------------------------------------------------"
+        echo -n "  ring-mqtt.js version: "
+        echo $(cat /ring-mqtt/package.json | grep version | cut -f4 -d'"')
+        echo "  -------------------------------------------------------"
     fi
     # If there's no options.json assume we are in standard Docker container
     ISDOCKER=true exec /ring-mqtt/ring-mqtt.js
