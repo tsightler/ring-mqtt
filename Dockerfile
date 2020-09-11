@@ -4,7 +4,7 @@ COPY . /ring-mqtt
 RUN apk add --no-cache nodejs npm git && \
     rm -f /init && \
     mv /ring-mqtt/init / && \
-    chmod +x /init/entrypoint.sh && \
+    chmod +x /init/*.sh && \
     mkdir /data && \
     chmod 777 /data && \
     cd /ring-mqtt && \
