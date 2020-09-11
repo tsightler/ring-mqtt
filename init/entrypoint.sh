@@ -12,7 +12,7 @@ if [ -f /data/options.json ]; then
         exec /init/run-prod.sh
     fi 
 else
-    if [ -n ${DEBUG+x} ]; then
+    if [ -n ${DEBUG:+1} ]; then
         echo "-------------------------------------------------------"
         echo "| Ring Device Integration via MQTT                    |"
         echo "|                                                     |"
