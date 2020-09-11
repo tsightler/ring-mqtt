@@ -1,10 +1,10 @@
 #!/usr/bin/env sh
 HOME=/app
-echo "Please be patient while ring-mqtt is updated to"
-echo "the development version from GitHub..."
+echo "Updating ring-mqtt to the development version..."
 cd /app
 mv ring-mqtt ring-mqtt.orig
 git clone -b dev https://github.com/tsightler/ring-mqtt
 cd ring-mqtt
-npm install --no-progress
+echo "Installing node module dependencies, please wait..."
+npm install --no-progress > /dev/null 2>&1
 chmod +x ring-mqtt.js scripts/*.sh
