@@ -47,10 +47,18 @@ Note that the only absolutely required parameter for initial start is **RINGTOKE
 | ENABLEMODES | false |
 | ENABLEPANIC | false |
 | RINGLOCATIONIDS | blank |
-| MQTTRINGTOPIC | ring  |
-| MQTTHASSTOPIC | homeassistant/status |
+| BRANCH | blank |
 
 When submitting any issue with the Docker build, please be sure to add '-e "DEBUG=ring-mqtt"' to the Docker run command before submitting.
+
+## Branch Feature
+The Docker image includes a feature that allows for easy, temporary testing of the latest code from the master or dev branch of ring-mqtt from Github, without requiring the installation of a new image.  This feature was designed to simplify testing of newer code for users of the addon, but Docker users can leverage it as well.  Normally, when running the Docker image, the local copy of ring-mqtt is used, however, sometimes the latest code in the Github repo master branch may be a few versions ahead, while waiting on the code to stabilize, or a user may need to test code in the dev branch to see if it corrects a reported issue.  This feature allows this to be done very easily.  To use this feature simple add the **BRANCH** environment variable as follows:
+**BRANCH="latest"**
+When this option is set, upon starting the Docker container the startup script will use git to fetch the lastest code from the master branch before running
+**BRANCH="dev"**
+When this option is set, upon starting the Docker container the startup script will use git to fetch the lastest code from the dev branch before running
+
+To revert to the code in the Docker image simply run the container without the BRANCH setting.
 
 ## Standard Installation (Linux)
 Stanard installation is still fully supported, please make sure Node.js is installed (tested with 12.18.x and higher) on your system and then clone this repo:
@@ -117,8 +125,6 @@ Because of this added risk, it's a good idea to create a second account dedicate
 | enable_modes | Enable support for Location Modes for sites without a Ring Alarm Panel | false |
 | enable_panic | Enable panic buttons on Alarm Control Panel device | false |
 | location_ids | Array of location Ids in format: ["loc-id", "loc-id2"] | blank |
-| ring_topic | Top level topic for ring devices, default should be fine for most cases | ring |
-| hass_topic | Home Assistant state topic, used to monitor for restarts to automatically republish devices | homeassistant/status |
 
 By default, this script will discover and monitor enabled devices across all locations, even shared locations for which you have permissions.  To limit locations you can create a separate account and assign only the desired resources to it, or you can pass location_ids using the appropriate config option.  To get the location id from the ring website simply login to [Ring.com](https://ring.com/users/sign_in) and look at the address bar in the browser. It will look similar to ```https://app.ring.com/location/{location_id}``` with the last path element being the location id.
 

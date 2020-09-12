@@ -3,7 +3,7 @@
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-body {font-family: Arial, Helvetica, sans-serif; max-width: 500px;}
+body {font-family: Arial, Helvetica, sans-serif; max-width: 500px; color: white; background-color: gray;}
 * {box-sizing: border-box;}
 
 input[type=text], select, textarea {
@@ -46,6 +46,7 @@ input[type=submit]:hover {
   border-radius: 5px;
   background-color: #f2f2f2;
   padding: 20px;
+  color: black;
 }
 </style>
 </head>
@@ -53,7 +54,7 @@ input[type=submit]:hover {
 
 <h3>Acquire Refresh Token</h3>
 Use this form to acquire a refresh token from Ring.com.  Submit the login information for the desired account and then the 2FA code.  Upon succesful 2FA authentication the refresh token will be displayed. Simply copy the entire string and paste into the config file.<br>
-<p style="color:Red;" id="errormsg"></p>
+<p style="background-color:red" id="errormsg"></p>
 <h3>Login</h3>
 <div class="container">
   <form action="./submit-account" method="post">
