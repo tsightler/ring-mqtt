@@ -23,12 +23,12 @@ else
     # No options.json found, assume we are in running in standard Docker
     set +o nounset
     if [ ! -z "${DEBUG}" ]; then
-        echo "  ------------------------------------------"
-        echo "  | Ring Devices via MQTT                  |"
-        echo "  |                                        |"
-        echo "  | Report issues at:                      |"
-        echo "  | https://github.com/tsightler/ring-mqtt |"
-        echo "  ------------------------------------------"
+        echo "-------------------------------------------------------"
+        echo "| Ring Devices via MQTT                               |"
+        echo "|                                                     |"
+        echo "| Report issues at:                                   |"
+        echo "| https://github.com/tsightler/ring-mqtt              |"
+        echo "-------------------------------------------------------"
     fi
     set +o nounset
     if [ "${BRANCH}" = "latest" ]; then
@@ -38,11 +38,12 @@ else
     fi
     if [ ! -z "${DEBUG}" ]; then
         if [ "${BRANCH}" = "latest" ] || [ "${BRANCH}" = "dev" ] ; then
-            echo "  ------------------------------------------"
+            echo "-------------------------------------------------------"
         fi
-        echo -n "  ring-mqtt.js version: "
+        echo -n "ring-mqtt.js version: "
         echo $(cat /app/ring-mqtt/package.json | grep version | cut -f4 -d'"')
-        echo "  ------------------------------------------"
+        echo "-------------------------------------------------------"
     fi
+    echo "Running ring-mqtt..."
     ISDOCKER=true exec /app/ring-mqtt/ring-mqtt.js
 fi
