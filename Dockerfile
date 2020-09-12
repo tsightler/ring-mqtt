@@ -10,3 +10,5 @@ RUN apk add --no-cache nodejs npm git && \
     rm -Rf /root/.npm && \
     chmod +x ring-mqtt.js
 ENTRYPOINT [ "/app/ring-mqtt/scripts/entrypoint.sh" ]
+ARG VERSION
+LABEL io.hass.version=$VERSION io.hass.type="addon"
