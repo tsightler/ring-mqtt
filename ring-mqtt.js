@@ -329,6 +329,7 @@ async function initConfig(configFile) {
             "ring_token": process.env.RINGTOKEN,
             "enable_cameras": process.env.ENABLECAMERAS,
             "enable_modes" : process.env.ENABLEMODES,
+            "enable_panic" : process.env.ENABLEPANIC,
             "location_ids" : process.env.RINGLOCATIONIDS
         }
         if (CONFIG.enable_cameras && CONFIG.enable_cameras != 'true') { CONFIG.enable_cameras = false}
