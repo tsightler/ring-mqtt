@@ -93,7 +93,7 @@ There are two primary ways to acquire this token:
 **Docker Installs**
 For Docker it is possible to use the CLI to acquire a token for initial startup by executing the following:
 ```
-docker run -it --rm --entrypoint node_modules/ring-client-api/ring-auth-cli.js tsightler/ring-mqtt
+docker run -it --rm --entrypoint /app/ring-mqtt/node_modules/ring-client-api/ring-auth-cli.js tsightler/ring-mqtt
 ```
 
 **Standard Installs** For standard installs the script as an emedded web interface to make acquiring a token as simple as possible or you can manually acquire a token via the command line.
