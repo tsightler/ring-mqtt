@@ -27,6 +27,7 @@ const Camera = require('./devices/camera')
 const ModesPanel = require('./devices/modes-panel')
 const Keypad = require('./devices/keypad')
 const BaseStation = require('./devices/base-station')
+const RangeExtender = require('./devices/range-extender')
 
 var CONFIG
 var ringLocations = new Array()
@@ -94,6 +95,8 @@ function getDevice(device, mqttClient) {
             return new Keypad(deviceInfo)
         case RingDeviceType.BaseStation:
             return new BaseStation(deviceInfo)
+        case RingDeviceType.RangeExtender:
+            return new RangeExtender(deviceInfo)
         case RingDeviceType.Sensor:
             return newDevice = (device.name.toLowerCase().includes('motion'))
                 ? new MotionSensor(deviceInfo)

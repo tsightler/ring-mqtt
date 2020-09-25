@@ -52,7 +52,7 @@ Note that the only absolutely required parameter for initial start is **RINGTOKE
 When submitting any issue with the Docker build, please be sure to add '-e "DEBUG=ring-mqtt"' to the Docker run command before submitting.
 
 ## Branch Feature
-The Docker image includes a feature that allows for easy, temporary testing of the latest code from the master or dev branch of ring-mqtt from Github, without requiring the installation of a new image.  This feature was designed to simplify testing of newer code for users of the addon, but Docker users can leverage it as well.  Normally, when running the Docker image, the local copy of ring-mqtt is used, however, sometimes the latest code in the Github repo master branch may be a few versions ahead, while waiting on the code to stabilize, or a user may need to test code in the dev branch to see if it corrects a reported issue.  This feature allows this to be done very easily.  To use this feature simple add the **BRANCH** environment variable as follows:
+The Docker image includes a feature that allows for easy, temporary testing of the latest code from the master or dev branch of ring-mqtt from Github, without requiring the installation of a new image.  This feature was designed to simplify testing of newer code for users of the addon, but Docker users can leverage it as well.  When running the Docker image normally the local image copy of ring-mqtt is used, however, sometimes the latest code in the Github repo master branch may be a few versions ahead, while waiting on the code to stabilize, or a user may need to test code in the dev branch to see if it corrects a reported issue.  This feature allows this to be done very easily without having to push or build a new Docker image.  To use this feature simple add the **BRANCH** environment variable as follows:
 **BRANCH="latest"**
 When this option is set, upon starting the Docker container the startup script will use git to fetch the lastest code from the master branch before running
 **BRANCH="dev"**
@@ -93,7 +93,7 @@ There are two primary ways to acquire this token:
 **Docker Installs**
 For Docker it is possible to use the CLI to acquire a token for initial startup by executing the following:
 ```
-docker run -it --rm --entrypoint node_modules/ring-client-api/ring-auth-cli.js tsightler/ring-mqtt
+docker run -it --rm --entrypoint /app/ring-mqtt/node_modules/ring-client-api/ring-auth-cli.js tsightler/ring-mqtt
 ```
 
 **Standard Installs** For standard installs the script as an emedded web interface to make acquiring a token as simple as possible or you can manually acquire a token via the command line.
