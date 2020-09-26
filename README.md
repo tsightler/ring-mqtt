@@ -39,9 +39,9 @@ Note that the only absolutely required parameter for initial start is **RINGTOKE
 | ENABLECAMERAS | Enable camera support, otherwise only alarm devices will be discovered | false |
 | ENABLEMODES | Enable support for Location Modes for sites without a Ring Alarm Panel | false |
 | ENABLEPANIC | Enable panic buttons on Alarm Control Panel device | false |
-| ENABLEVOLUME | Enable volume control on Keypad and Base Station. Please read [Volume Control](#volume-control) for important information about this feature | false |
+| ENABLEVOLUME | Enable volume control on Keypads and Base Station. Please read [Volume Control](#volume-control) for important information about this feature | false |
 | RINGLOCATIONIDS | Array of location Ids in format: ["loc-id", "loc-id2"] | blank |
-| BRANCH | During startup pull latest master/dev branch from Github instead of running local copy | blank |
+| BRANCH | During startup pull latest master/dev branch from Github instead of running local copy, see [Branch Feature](#branch-feature) for details | blank |
 
 #### Starting the Docker container automatically during boot
 To start the ring-mqtt docker container automatically during boot you can simply use the standard Docker methods, for example, adding ```--restart unless-stopped``` to the ```docker run``` command will cause Docker to automatically restart the container unless it has been explicitly stopped.
