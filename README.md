@@ -48,7 +48,7 @@ Note that the only absolutely required parameter for initial start is **RINGTOKE
 | ENABLEPANIC | Enable panic buttons on Alarm Control Panel device | false |
 | ENABLEVOLUME | Enable volume control for Keypad/Base Station (account must have access, please read [Volume Control](#volume-control)) before enabling | false |
 | RINGLOCATIONIDS | Array of location Ids in format: ["loc-id", "loc-id2"] | blank |
-| BRANCH | During startup pull latest master/dev branch from Github instead of running local copy | blank |
+| BRANCH | During startup pull latest master/dev branch from Github instead of running local copy, see [Branch Feature](#branch-feature) for details | blank |
 
 When submitting any issue with the Docker build, please be sure to add '-e "DEBUG=ring-mqtt"' to the Docker run command before submitting.
 
