@@ -209,10 +209,10 @@ This option is also useful when using the script with external MQTT tools as it 
 **Debug messages from all modules** (Warning, this very verbose!)
 ```DEBUG=*```
 
-**Example for Docker**
+**Example for Docker**\
 ```docker run -it --rm --mount type=bind,source=/etc/ring-mqtt,target=/data -e "MQTTHOST=<host_name>" -e "MQTTUSER=<mqtt_user>" -e "MQTTPASSWORD=<mqtt_pw>" -e "RINGTOKEN=<ring_refreshToken>" -e "DEBUG=ring-mqtt" tsightler/ring-mqtt```
 
-**Example for Standard Install**
+**Example for Standard Install**\
 ```DEBUG=ring-mqtt ./ring-mqtt```
 
 ## Thanks
