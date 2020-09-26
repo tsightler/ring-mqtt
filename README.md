@@ -39,9 +39,9 @@ Note that the only absolutely required parameter for initial start is **RINGTOKE
 | ENABLECAMERAS | Enable camera support, otherwise only alarm devices will be discovered | false |
 | ENABLEMODES | Enable support for Location Modes for sites without a Ring Alarm Panel | false |
 | ENABLEPANIC | Enable panic buttons on Alarm Control Panel device | false |
-| ENABLEVOLUME | Enable volume control on Keypads and Base Station. Please read [Volume Control](#volume-control) for important information about this feature | false |
-| RINGLOCATIONIDS | Array of location Ids in format: ["loc-id", "loc-id2"] | blank |
-| BRANCH | During startup pull latest master/dev branch from Github instead of running local copy, see [Branch Feature](#branch-feature) for details | blank |
+| ENABLEVOLUME | Enable volume control on Keypads and Base Station, see [Volume Control](#volume-control) for important information about this feature | false |
+| RINGLOCATIONIDS | Array of location Ids in format: ["loc-id", "loc-id2"], see [Limiting Locations](#limiting-locations) for details | blank |
+| BRANCH | During startup pull latest master/dev branch from Github instead of running local copy, see [Branch Feature](#branch-feature) for details. | blank |
 
 #### Starting the Docker container automatically during boot
 To start the ring-mqtt docker container automatically during boot you can simply use the standard Docker methods, for example, adding ```--restart unless-stopped``` to the ```docker run``` command will cause Docker to automatically restart the container unless it has been explicitly stopped.
@@ -80,8 +80,8 @@ This will install all required dependencies.  Edit config.js to configure your R
 | enable_cameras | Enable camera support, otherwise only alarm devices will be discovered | false |
 | enable_modes | Enable support for Location Modes for sites without a Ring Alarm Panel | false |
 | enable_panic | Enable panic buttons on Alarm Control Panel device | false |
-| enable_volume | Enable volume control on Keypad and Base Station. Please see [Volume Control](#volume-control) for important information about this feature | false |
-| location_ids | Array of location Ids in format: ["loc-id", "loc-id2"] | blank |
+| enable_volume | Enable volume control on Keypad and Base Station.  See [Volume Control](#volume-control) for important information about this feature | false |
+| location_ids | Array of location Ids in format: ["loc-id", "loc-id2"], see [Limiting Locations](#limiting-locations) for details | blank |
 
 #### Starting ring-mqtt during boot
 For standalone installs the repo includes a sample unit file which can be used to automaticlly start the script during system boot as long as your system uses systemd (most modern Linux distros).  The unit file assumes that the script is installed in /opt/ring-mqtt and it runs the script as the root user (to make sure it has permissions to write config.json), but you can easily modify this to any path and user you'd like.  Just edit the file as required and drop it in /lib/systemd/system then run the following:
@@ -202,11 +202,11 @@ MQTT topics are built consistently during each startup.  The easiest way to dete
 ## Debugging
 By default the script should produce no console output, however, the debug output is available by leveraging the terriffic [debug](https://www.npmjs.com/package/debug) package.  To get debug output simply set the DEBUG environment variable as appropriate on the run command.
 
-**Debug messages from ring-mqtt only**
+**Debug messages from ring-mqtt only**\
 ```DEBUG=ring-mqtt```
 This option is also useful when using the script with external MQTT tools as it dumps all discovered sensors and their topics.  Also allows you to monitor sensor states in real-time on the console.
 
-**Debug messages from all modules** (Warning, this very verbose!)
+**Debug messages from all modules** (Warning, this very verbose!)\
 ```DEBUG=*```
 
 **Example for Docker**\
