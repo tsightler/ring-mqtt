@@ -46,12 +46,16 @@ Note that the only absolutely required parameter for initial start is **RINGTOKE
 | ENABLECAMERAS | Enable camera support, otherwise only alarm devices will be discovered | false |
 | ENABLEMODES | Enable support for Location Modes for sites without a Ring Alarm Panel | false |
 | ENABLEPANIC | Enable panic buttons on Alarm Control Panel device | false |
-| ENABLEVOLUME | Enable volume control on Keypad and Base Station. Please read #volume-control section | false |
+| ENABLEVOLUME | Enable volume control for Keypad/Base Station (account must have access, see #volume-control) | false |
 | RINGLOCATIONIDS | Array of location Ids in format: ["loc-id", "loc-id2"] | blank |
 | BRANCH | During startup pull latest master/dev branch from Github instead of running local copy | blank |
 
 When submitting any issue with the Docker build, please be sure to add '-e "DEBUG=ring-mqtt"' to the Docker run command before submitting.
 
+## Volume Control
+Volume Control for Ring Keypads and Base Stations is available using this script, however, starting with version 4.1.2 and later, volume control must be explicitely enabled using config/environment variables.  Shared users do not have access to controlling the Base Station volume (this is true even in the Ring App) so, if you want to use this function for the base station you must use the primary Ring account.
+
+** Important Note ** Due to the limitaitons of availabe MQTT integration components with Home Assistant, volume controls will appears as a "light" with brightness function.  The brighntess control is used to set the volume level while the turning the switch off immediate sets the volume to zero and turning the switch on sets the volume to 65%, although you can also turn the volume back on by setting the slider volume to any level other than zero.  Overall this works well, you can override icons to make it look reasonable in Lovelace and automations can be used to set volumes base on time-of-day, etc, but this approach can have some unexpected side effects.  For example, if you have an automation that "turns of all lights" it will also silence volumes on the keypad/base station.  Just be aware of these possible behaviors before enabling the volume control feature.
 
 ## Branch Feature
 The Docker image includes a feature that allows for easy, temporary testing of the latest code from the master or dev branch of ring-mqtt from Github, without requiring the installation of a new image.  This feature was designed to simplify testing of newer code for users of the addon, but Docker users can leverage it as well.  When running the Docker image normally the local image copy of ring-mqtt is used, however, sometimes the latest code in the Github repo master branch may be a few versions ahead, while waiting on the code to stabilize, or a user may need to test code in the dev branch to see if it corrects a reported issue.  This feature allows this to be done very easily without having to push or build a new Docker image.  To use this feature simple add the **BRANCH** environment variable as follows:
@@ -126,6 +130,7 @@ Because of this added risk, it's a good idea to create a second account dedicate
 | enable_cameras | Enable camera support, otherwise only alarm devices will be discovered | false |
 | enable_modes | Enable support for Location Modes for sites without a Ring Alarm Panel | false |
 | enable_panic | Enable panic buttons on Alarm Control Panel device | false |
+| enable_volume | Enable volume control for Keypad/Base Station (account must have access, see #volume-control) | false |
 | location_ids | Array of location Ids in format: ["loc-id", "loc-id2"] | blank |
 
 By default, this script will discover and monitor enabled devices across all locations, even shared locations for which you have permissions.  To limit locations you can create a separate account and assign only the desired resources to it, or you can pass location_ids using the appropriate config option.  To get the location id from the ring website simply login to [Ring.com](https://ring.com/users/sign_in) and look at the address bar in the browser. It will look similar to ```https://app.ring.com/location/{location_id}``` with the last path element being the location id.
