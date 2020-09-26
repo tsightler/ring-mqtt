@@ -40,7 +40,7 @@ Note that the only absolutely required parameter for initial start is **RINGTOKE
 | ENABLEMODES | Enable support for Location Modes for sites without a Ring Alarm Panel | false |
 | ENABLEPANIC | Enable panic buttons on Alarm Control Panel device | false |
 | ENABLEVOLUME | Enable volume control on Keypads and Base Station, see [Volume Control](#volume-control) for important information about this feature | false |
-| RINGLOCATIONIDS | Array of location Ids in format: ["loc-id", "loc-id2"], see [Limiting Locations](#limiting-locations) for details | blank |
+| RINGLOCATIONIDS | Array of location Ids in format: "loc-id","loc-id2", see [Limiting Locations](#limiting-locations) for details | blank |
 | BRANCH | During startup pull latest master/dev branch from Github instead of running local copy, see [Branch Feature](#branch-feature) for details. | blank |
 
 #### Starting the Docker container automatically during boot
@@ -98,38 +98,41 @@ Ring has made two factor authentication (2FA) mandatory thus the script now only
 
 There are two primary ways to acquire this token:
 
-**Docker Installs**
+**Docker Installs**\
 For Docker it is possible to use the bundled ring-client-api auth CLI to acquire a token for initial startup by executing the following:
 ```
 docker run -it --rm --entrypoint /app/ring-mqtt/node_modules/ring-client-api/ring-auth-cli.js tsightler/ring-mqtt
 ```
 
-**Standard Installs** For standard installs the script has an emedded web interface to make acquiring a token as simple as possible or you can manually acquire a token via the command line.
+**Standard Installs**\
+For standard installs the script has an emedded web interface to make acquiring a token as simple as possible or you can manually acquire a token via the command line.
 
-**Web Interface**
+**Web Interface**\
 If the script is started and the ring_token config parameter is empty, it will start a small web service at http://<ip_of_server>:55123.  Simply go to this URL with your browser, enter your username/password and then 2FA code, and it will display the Ring refresh token that you can just copy/paste into the config file.
 
-**CLI Option** Use ring-auth-cli from the command line.  This command can be run from any system with NodeJS installed.  If you are using the standard installation method after running the "npm install" step you can execute the following from the ring-mqtt directory: 
+**CLI Option**\
+Use ring-auth-cli from the command line.  This command can be run from any system with NodeJS installed.  If you are using the standard installation method after running the "npm install" step you can execute the following from the ring-mqtt directory: 
 ```
 npx -p ring-client-api ring-auth-cli
 ```
 
 For more details please check the [Refresh Tokens](https://github.com/dgreif/ring/wiki/Refresh-Tokens) documentation from the ring client API Wiki.
 
-**!!! Important Note regarding the security of your refresh token !!!**
+**!!! Important Note regarding the security of your refresh token !!!**\
 Using 2FA authentication opens up the possibility that, if the environment runinng ring-mqtt is comporomised, an attacker can acquire the refresh token and use this to authenticate to your Ring account without knowing your username/password and completely bypassing any 2FA protections.  Please secure your environment carefully.
 
 Because of this added risk, it's a good idea to create a second account dedicated to use with ring-mqtt.  This allows actions performed by this script to be easily audited since they will show up in activity logs with their own name instead of that of the primary account.  Also, you can control what devices the script has access to and easily disable access if nafarious activity is detected.
 
 ### Limiting Locations
-By default, this script will discover and monitor enabled devices across all locations, even shared locations for which you have permissions.  To limit locations you can create a separate account and assign only the desired resources to it, or you can pass location_ids using the appropriate config option.  To get the location id from the ring website simply login to [Ring.com](https://ring.com/users/sign_in) and look at the address bar in the browser. It will look similar to ```https://app.ring.com/location/{location_id}``` with the last path element being the location id.
+By default, this script will discover and monitor enabled devices across all locations, even shared locations for which you have permissions.  To limit monitored locations you can create a separate account and assign only the desired resources to it, or you can pass location_ids using the appropriate config option.  To get the location id from the ring website simply login to [Ring.com](https://ring.com/users/sign_in) and look at the address bar in the browser. It will look similar to ```https://app.ring.com/location/{location_id}``` with the last path element being the location id.
 
 ### Volume Control
-Volume Control for Ring Keypads and Base Stations is available using this script, however, starting with version 4.1.2 and later, volume control must be explicitely enabled using config/environment variables.  Shared users do not have access to controlling the Base Station volume (this is true even in the Ring App) so, if you want to use this function for the base station you must use the primary Ring account.
+Volume Control for Ring Keypads and Base Stations is supported, however, starting with version 4.1.2 and later, volume control must be explicitly enabled using config options.  Note that Ring shared users do not have access to control the Base Station volume so, if you want to control the Base Station volume using this script, you must generate the refresh token using the primary Ring account.  During startup the system attempts to detect if the account can control the base station volume and only shows the volume control if it determines the accout has access.  This is a limitation of the Ring API as even the offical Ring App does not offer volume control to shared users.
 
-** Important Note ** Due to the limitaitons of availabe MQTT integration components with Home Assistant, volume controls will appears as a "light" with brightness function.  The brighntess control is used to set the volume level while the turning the switch off immediate sets the volume to zero and turning the switch on sets the volume to 65%, although you can also turn the volume back on by setting the slider volume to any level other than zero.  Overall this works well, you can override icons to make it look reasonable in the Lovelace UI and automations can be used to set device volume based on time-of-day, alarm mode, etc, but this approach can have some unexpected side effects.  For example, if you have an automation that turns off all lights when you leave, this automation will likely also silence the volume on the keypad/base station because Home Assistant thinks it is a "light".  Be aware of these possible behaviors before enabling the volume control feature.
+** Important Note **\
+Due to the limitaitons of availabe MQTT integration components with Home Assistant, volume controls will appears as a "light" with brightness function.  The brighntess control is used to set the volume level while the turning the switch off immediate sets the volume to zero and turning the switch on sets the volume to 65%, although you can also turn the volume back on by setting the slider volume to any level other than zero.  Overall this works well, you can override icons to make it look reasonable in the Lovelace UI and automations can be used to set device volume based on time-of-day, alarm mode, etc, but this approach can have some unexpected side effects.  For example, if you have an automation that turns off all lights when you leave, this automation will likely also silence the volume on the keypad/base station because Home Assistant thinks it is a "light".  Be aware of these possible behaviors before enabling the volume control feature.
 
-## Using with MQTT tools other than Home Assistant (ex: Node Red)
+## Using with non-Home Assistant MQTT Tools (ex: Node Red)
 MQTT topics are built consistently during each startup.  The easiest way to determine the device topics is to run the script with debug output.  More details about the topic format for all devices is available in [docs/TOPICS.md](docs/TOPICS.md).
 
 ## Features and Plans
@@ -203,8 +206,8 @@ MQTT topics are built consistently during each startup.  The easiest way to dete
 By default the script should produce no console output, however, the debug output is available by leveraging the terriffic [debug](https://www.npmjs.com/package/debug) package.  To get debug output simply set the DEBUG environment variable as appropriate on the run command.
 
 **Debug messages from ring-mqtt only**\
+This option is also useful when using the script with external MQTT tools as it dumps all discovered sensors and their topics.  Also allows you to monitor sensor states in real-time on the console.\
 ```DEBUG=ring-mqtt```
-This option is also useful when using the script with external MQTT tools as it dumps all discovered sensors and their topics.  Also allows you to monitor sensor states in real-time on the console.
 
 **Debug messages from all modules** (Warning, this very verbose!)\
 ```DEBUG=*```
