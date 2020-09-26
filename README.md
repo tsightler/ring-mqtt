@@ -1,19 +1,19 @@
 # ring-mqtt
 This script leverages the excellent [ring-client-api](https://github.com/dgreif/ring) to provide a bridge between MQTT and suppoted Ring devices such as alarm control panel, lights and cameras ([full list of supported devices and features](#current-features)).  It also provides support for Home Assistant style MQTT auto-discovery which allows for easy Home Assistant integration with minimal configuration (requires Home Assistant MQTT integration to be enabled).  This also includes an optional [Home Assistant Addon](https://github.com/tsightler/ring-mqtt-ha-addon) for users of HassOS/Home Assistant Installer.  It can also be used with any other tool capable of working with MQTT as it provides consistent topic naming based on location/device ID.
 
-## !!! Important notices -- Please Read !!!
+## !!! Important Notices - Please Read !!!
 If you are upgrading from ring-mqtt prior to version 4.0.0, or from Home Assistant versions < 0.113, please read the approciate section in [docs/NOTICES.md](docs/NOTICES.md)
  
 ## Installation
-Starting with the 4.0.0 release of ring-mqtt, Docker is now the recommended installation method, however, standard, non-Docker installation is still fully supported.  Please skip to the [Standard Installtion](#standard-installation) section for details on this install method.
+Starting with the 4.0.0 release of ring-mqtt, Docker is now the recommended installation method, however, standard, non-Docker installation is still fully supported.  Please skip to the [Standard Install](#standard-install) section for details on this installation method.
 
-### Docker
+### Docker Install
 For Docker installtion details, please read this section entirely.  While it is possible to build the image locally from the included Dockerfile, it is recommended to install and update by pulling the official image directly from Docker Hub.  You can pull the image with the following command:
 ```
 docker pull tsightler/ring-mqtt
 ```
 
-Alternatively, you can issue "docker run" and Docker will automatically pull the image if it doesn't already exist locally (the command below is just an example, please see the [Environment Variables](#environment-variables) section for all available options):
+Alternatively, you can issue "docker run" and Docker will automatically pull the image if it doesn't already exist locally (the command below is just an example, please see the [Environment Variables](#environment-variables) section for all available configuration options):
 ```
 docker run --rm -e "MQTTHOST=<host_name>" -e "MQTTPORT=<host_port>" -e "MQTTRINGTOPIC=<ring_topic>" -e "MQTTHASSTOPIC=<hass_topic>" -e "MQTTUSER=<mqtt_user>" -e "MQTTPASSWORD=<mqtt_pw>" -e "RINGTOKEN=<ring_refreshToken>" -e "ENABLECAMERAS=<true-or-false>" -e "RINGLOCATIONIDS=<comma-separated location IDs>" tsightler/ring-mqtt
 ```
@@ -31,7 +31,7 @@ Note that the only absolutely required parameter for initial start is **RINGTOKE
 
 | Environment Variable Name | Description | Default |
 | --- | --- | --- |
-| RINGTOKEN | The refresh token received after authenticating with 2FA - See Authentication section | blank - must be set for first run |
+| RINGTOKEN | The refresh token received after authenticating with 2FA, see [Authentication](#authentication) section for details | blank - must be set for first run |
 | MQTTHOST | Hostname for MQTT broker | localhost |
 | MQTTPORT | Port number for MQTT broker | 1883 |
 | MQTTUSER | Username for MQTT broker | blank - Use anonymous connection |
@@ -55,7 +55,7 @@ When this option is set, upon starting the Docker container the startup script w
 
 To revert to the code in the Docker image simply run the container without the BRANCH setting.
 
-### Standard Installation
+### Standard Install
 Stanard installation is fully supported, please make sure Node.js is installed (tested with 12.18.x but should work on 10.x and higher) on your system and then clone this repo:
 
 `git clone https://github.com/tsightler/ring-mqtt.git`
@@ -72,7 +72,7 @@ This will install all required dependencies.  Edit config.js to configure your R
 #### Config Options
 | Config Option | Description | Default |
 | --- | --- | --- |
-| ring_token | The refresh token received after authenticating with 2FA - See Authentication section | blank
+| ring_token | The refresh token received after authenticating with 2FA, see [Authentication](#authentication) section for details | blank
 | host | Hostname for MQTT broker | localhost |
 | port | Port number for MQTT broker | 1883 |
 | mqtt_user | Username for MQTT broker | blank |
@@ -99,17 +99,17 @@ Ring has made two factor authentication (2FA) mandatory thus the script now only
 There are two primary ways to acquire this token:
 
 **Docker Installs**
-For Docker it is possible to use the CLI to acquire a token for initial startup by executing the following:
+For Docker it is possible to use the bundled ring-client-api auth CLI to acquire a token for initial startup by executing the following:
 ```
 docker run -it --rm --entrypoint /app/ring-mqtt/node_modules/ring-client-api/ring-auth-cli.js tsightler/ring-mqtt
 ```
 
-**Standard Installs** For standard installs the script as an emedded web interface to make acquiring a token as simple as possible or you can manually acquire a token via the command line.
+**Standard Installs** For standard installs the script has an emedded web interface to make acquiring a token as simple as possible or you can manually acquire a token via the command line.
 
 **Web Interface**
-If the script is started and the ring_token parameter is empty it will start a small web service at http://<ip_of_server>:55123.  Simply go to this URL with your browser, enter your username/password and then 2FA code, and it will display the Ring refresh token that you can just copy/paste into the config file.
+If the script is started and the ring_token config parameter is empty, it will start a small web service at http://<ip_of_server>:55123.  Simply go to this URL with your browser, enter your username/password and then 2FA code, and it will display the Ring refresh token that you can just copy/paste into the config file.
 
-**CLI Option** Use ring-auth-cli from the command line.  This command can be run from any system with NodeJS installed.  If you are using the standard Linux installation method after running the "npm install" step you can execute the following from the ring-mqtt directory: 
+**CLI Option** Use ring-auth-cli from the command line.  This command can be run from any system with NodeJS installed.  If you are using the standard installation method after running the "npm install" step you can execute the following from the ring-mqtt directory: 
 ```
 npx -p ring-client-api ring-auth-cli
 ```
