@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-
 // Defines
 const RingApi = require('ring-client-api').RingApi
 const RingDeviceType = require('ring-client-api').RingDeviceType
