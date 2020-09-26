@@ -27,6 +27,7 @@ const Camera = require('./devices/camera')
 const ModesPanel = require('./devices/modes-panel')
 const Keypad = require('./devices/keypad')
 const BaseStation = require('./devices/base-station')
+const RangeExtender = require('./devices/range-extender')
 
 var CONFIG
 var ringLocations = new Array()
@@ -94,6 +95,8 @@ function getDevice(device, mqttClient) {
             return new Keypad(deviceInfo)
         case RingDeviceType.BaseStation:
             return new BaseStation(deviceInfo)
+        case RingDeviceType.RangeExtender:
+            return new RangeExtender(deviceInfo)
         case RingDeviceType.Sensor:
             return newDevice = (device.name.toLowerCase().includes('motion'))
                 ? new MotionSensor(deviceInfo)
@@ -240,7 +243,7 @@ async function processLocations(mqttClient, ringClient) {
 // Process received MQTT command
 async function processMqttMessage(topic, message, mqttClient, ringClient) {
     message = message.toString()
-    if (topic === CONFIG.hass_topic) {
+    if (topic === CONFIG.hass_topic || topic === 'hass/status') {
         debug('Home Assistant state topic '+topic+' received message: '+message)
         if (message == 'online') {
             // Republish devices and state after 60 seconds if restart of HA is detected
@@ -330,6 +333,7 @@ async function initConfig(configFile) {
             "enable_cameras": process.env.ENABLECAMERAS,
             "enable_modes" : process.env.ENABLEMODES,
             "enable_panic" : process.env.ENABLEPANIC,
+            "enable_volume" : process.env.ENABLEVOLUME,
             "location_ids" : process.env.RINGLOCATIONIDS
         }
         if (CONFIG.enable_cameras && CONFIG.enable_cameras != 'true') { CONFIG.enable_cameras = false}
@@ -351,6 +355,7 @@ async function initConfig(configFile) {
     if (!CONFIG.enable_cameras) { CONFIG.enable_cameras = false }
     if (!CONFIG.enable_modes) { CONFIG.enable_modes = false }
     if (!CONFIG.enable_panic) { CONFIG.enable_panic = false }
+    if (!CONFIG.enable_volume) { CONFIG.enable_volume = false }
 }
 
 // Save updated refresh token to config or state file
@@ -514,7 +519,10 @@ const main = async(generatedToken) => {
                 mqttConnected = true
                 debug('MQTT connection established, sending config/state information in 5 seconds.')
             }
+            // Monitor configured/default Home Assistant status topic
             mqttClient.subscribe(CONFIG.hass_topic)
+            // Monitor legacy Home Assistant status topic
+            mqttClient.subscribe('hass/status')
             startMqtt(mqttClient, ringClient)
         } catch (error) {
             debug(error)

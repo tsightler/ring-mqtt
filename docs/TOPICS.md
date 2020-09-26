@@ -1,4 +1,4 @@
-With 4.0.0 topics levels have been refactored for consistency using the following general format
+With this 4.x release topic levels have been refactored for consistency using the following general format
 ```
 ring/<location_id>/<ring_category>/<device_id>/<device_type>/state
 ring/<location_id>/<ring_category>/<device_id>/<device_type>/command

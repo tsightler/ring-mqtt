@@ -1,3 +1,14 @@
+## v4.2.0
+- Add support for Zwave Range Extender info sensor data (thanks to @alexanv1)
+- Make volume control support configurable
+- Minor fix for running on 10.x Node versions
+- Monitor legacy hass/status stopic for Home Assistant restarts
+- Documentation updates and cleanups
+
+## v4.1.1
+- Fix enabling panic buttons for Docker
+- Fix branch feature when running Docker as unprivileged user
+
 ## v4.1.0
 - New Feature: Branches
   Simple testing of latest git repo versions from master or dev branch without updating addon.

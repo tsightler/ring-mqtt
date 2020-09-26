@@ -9,5 +9,6 @@
     "enable_cameras": false,
     "enable_modes" : false,
     "enable_panic" : false,
+    "enable_volume" : false,
     "location_ids": [""]
 }

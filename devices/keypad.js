@@ -10,47 +10,53 @@ class Keypad extends AlarmDevice {
         // Device data for Home Assistant device registry
         this.deviceData.mdl = 'Security Keypad'
 
-        // Build required MQTT topics
-        this.stateTopic_audio = this.deviceTopic+'/audio/state'
-        this.commandTopic_audio = this.deviceTopic+'/audio/command'
-        this.stateTopic_audio_volume = this.deviceTopic+'/audio/volume_state'
-        this.commandTopic_audio_volume = this.deviceTopic+'/audio/volume_command'
-        this.configTopic_audio = 'homeassistant/light/'+this.locationId+'/'+this.deviceId+'_audio/config'
+        if (this.config.enable_volume) {
+            // Build required MQTT topics for volume control
+            this.stateTopic_audio = this.deviceTopic+'/audio/state'
+            this.commandTopic_audio = this.deviceTopic+'/audio/command'
+            this.stateTopic_audio_volume = this.deviceTopic+'/audio/volume_state'
+            this.commandTopic_audio_volume = this.deviceTopic+'/audio/volume_command'
+            this.configTopic_audio = 'homeassistant/light/'+this.locationId+'/'+this.deviceId+'_audio/config'
+        }
 
         // Publish device data
         this.publishDevice()
     }
 
     initDiscoveryData() {
-        // Build the MQTT discovery messages
-        this.discoveryData.push({
-            message: {
-                name: this.device.name+' Audio Settings',
-                unique_id: this.deviceId+'_audio',
-                availability_topic: this.availabilityTopic,
-                payload_available: 'online',
-                payload_not_available: 'offline',
-                state_topic: this.stateTopic_audio,
-                command_topic: this.commandTopic_audio,
-                brightness_scale: 100,
-                brightness_state_topic: this.stateTopic_audio_volume,
-                brightness_command_topic: this.commandTopic_audio_volume,
-                device: this.deviceData
-            },
-            configTopic: this.configTopic_audio
-        })
+        // Build the MQTT discovery messages if volume control is enabled
+        if (this.stateTopic_audio) {
+            this.discoveryData.push({
+                message: {
+                    name: this.device.name+' Audio Settings',
+                    unique_id: this.deviceId+'_audio',
+                    availability_topic: this.availabilityTopic,
+                    payload_available: 'online',
+                    payload_not_available: 'offline',
+                    state_topic: this.stateTopic_audio,
+                    command_topic: this.commandTopic_audio,
+                    brightness_scale: 100,
+                    brightness_state_topic: this.stateTopic_audio_volume,
+                    brightness_command_topic: this.commandTopic_audio_volume,
+                    device: this.deviceData
+                },
+                configTopic: this.configTopic_audio
+            })
+        }
         
         // Device has no sensors, only publish info data
         this.initInfoDiscoveryData()
     }
 
     publishData() {
-        const currentVolume = (this.device.data.volume && !isNaN(this.device.data.volume) ? Math.round(100 * this.device.data.volume) : 0)
-        const currentState = (currentVolume > 0) ? "ON" : "OFF" 
-        // Publish device state
-        this.publishMqtt(this.stateTopic_audio, currentState, true)
-        this.publishMqtt(this.stateTopic_audio_volume, currentVolume.toString(), true)
-        this.volumeUpdatePending = false
+        if (this.stateTopic_audio) {
+            const currentVolume = (this.device.data.volume && !isNaN(this.device.data.volume) ? Math.round(100 * this.device.data.volume) : 0)
+            const currentState = (currentVolume > 0) ? "ON" : "OFF" 
+            // Publish device state
+            this.publishMqtt(this.stateTopic_audio, currentState, true)
+            this.publishMqtt(this.stateTopic_audio_volume, currentVolume.toString(), true)
+            this.volumeUpdatePending = false
+        }
 
         // Publish device attributes (batterylevel, tamper status)
         this.publishAttributes()
