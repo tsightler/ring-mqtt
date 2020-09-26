@@ -13,7 +13,7 @@ class BaseStation extends AlarmDevice {
 
         // If this is the very first publish for this device (device is not yet subscribed)
         // check if account has access set volume and add volume control if so
-        if (!this.subscribed) {
+        if (!this.subscribed && this.config.enable_volume) {
             const origVolume = (this.device.data.volume && !isNaN(this.device.data.volume) ? this.device.data.volume : 0)
             const testVolume = (origVolume === 1) ? .99 : origVolume+.01
             this.device.setVolume(testVolume)

@@ -333,6 +333,7 @@ async function initConfig(configFile) {
             "enable_cameras": process.env.ENABLECAMERAS,
             "enable_modes" : process.env.ENABLEMODES,
             "enable_panic" : process.env.ENABLEPANIC,
+            "enable_volume" : process.env.ENABLEVOLUME,
             "location_ids" : process.env.RINGLOCATIONIDS
         }
         if (CONFIG.enable_cameras && CONFIG.enable_cameras != 'true') { CONFIG.enable_cameras = false}
@@ -354,6 +355,7 @@ async function initConfig(configFile) {
     if (!CONFIG.enable_cameras) { CONFIG.enable_cameras = false }
     if (!CONFIG.enable_modes) { CONFIG.enable_modes = false }
     if (!CONFIG.enable_panic) { CONFIG.enable_panic = false }
+    if (!CONFIG.enable_volume) { CONFIG.enable_volume = false }
 }
 
 // Save updated refresh token to config or state file

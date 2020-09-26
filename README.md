@@ -36,20 +36,22 @@ docker run --rm --mount type=bind,source=/etc/ring-mqtt,target=/data -e "MQTTHOS
 ```
 Note that the only absolutely required parameter for initial start is **RINGTOKEN** but, in practice, at least **MQTTHOST** will likely be required as well, and **MQTTUSER/MQTTPASSWORD** will be required if the MQTT broker does not accept anonymous connections.  Default values for the environment values if they are not defined are as follows:
 
-| Environment Variable Name | Default |
-| --- | --- |
-| RINGTOKEN | blank - must be set for first run |
-| MQTTHOST | localhost |
-| MQTTPORT | 1883 |
-| MQTTUSER | blank |
-| MQTTPASSWORD | blank |
-| ENABLECAMERAS | false |
-| ENABLEMODES | false |
-| ENABLEPANIC | false |
-| RINGLOCATIONIDS | blank |
-| BRANCH | blank |
+| Environment Variable Name | Description | Default |
+| --- | --- | --- |
+| RINGTOKEN | The refresh token received after authenticating with 2FA - See Authentication section | blank - must be set for first run |
+| MQTTHOST | Hostname for MQTT broker | localhost |
+| MQTTPORT | Port number for MQTT broker | 1883 |
+| MQTTUSER | Username for MQTT broker | blank - Use anonymous connection |
+| MQTTPASSWORD | Password for MQTT broker | blank - Use anonymous connection |
+| ENABLECAMERAS | Enable camera support, otherwise only alarm devices will be discovered | false |
+| ENABLEMODES | Enable support for Location Modes for sites without a Ring Alarm Panel | false |
+| ENABLEPANIC | Enable panic buttons on Alarm Control Panel device | false |
+| ENABLEVOLUME | Enable volume control on Keypad and Base Station. Please read #volume-control section | false |
+| RINGLOCATIONIDS | Array of location Ids in format: ["loc-id", "loc-id2"] | blank |
+| BRANCH | During startup pull latest master/dev branch from Github instead of running local copy | blank |
 
 When submitting any issue with the Docker build, please be sure to add '-e "DEBUG=ring-mqtt"' to the Docker run command before submitting.
+
 
 ## Branch Feature
 The Docker image includes a feature that allows for easy, temporary testing of the latest code from the master or dev branch of ring-mqtt from Github, without requiring the installation of a new image.  This feature was designed to simplify testing of newer code for users of the addon, but Docker users can leverage it as well.  When running the Docker image normally the local image copy of ring-mqtt is used, however, sometimes the latest code in the Github repo master branch may be a few versions ahead, while waiting on the code to stabilize, or a user may need to test code in the dev branch to see if it corrects a reported issue.  This feature allows this to be done very easily without having to push or build a new Docker image.  To use this feature simple add the **BRANCH** environment variable as follows:
@@ -145,9 +147,9 @@ MQTT topics are built consistently during each startup.  The easiest way to dete
     - Base Station
       - Panic Buttons
       - Siren
-      - Volume Control (if account has access to change volume)
+      - Volume Control (if account has access to change volume and enabled)
     - Keypad
-      - Volume Control
+      - Volume Control (if enabled)
       - Battery level
       - AC/Charging state
     - Ring Contact and Motion Sensors
@@ -156,6 +158,7 @@ MQTT topics are built consistently during each startup.  The easiest way to dete
     - First Alert Z-Wave Smoke/CO Detector
     - Ring Retro Kit Zones
     - Ring integrated door locks (status and lock control)
+    - Ring Range Extender
     - 3rd party Z-Wave switches, dimmers, and fans
     - 3rd party motion/contact sensors (basic support)
     - Device info sensor with detailed state information such as (exact info varies by device):
