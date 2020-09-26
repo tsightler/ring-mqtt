@@ -52,12 +52,12 @@ Note that the only absolutely required parameter for initial start is **RINGTOKE
 
 When submitting any issue with the Docker build, please be sure to add '-e "DEBUG=ring-mqtt"' to the Docker run command before submitting.
 
-## Volume Control
+### Volume Control
 Volume Control for Ring Keypads and Base Stations is available using this script, however, starting with version 4.1.2 and later, volume control must be explicitely enabled using config/environment variables.  Shared users do not have access to controlling the Base Station volume (this is true even in the Ring App) so, if you want to use this function for the base station you must use the primary Ring account.
 
 ** Important Note ** Due to the limitaitons of availabe MQTT integration components with Home Assistant, volume controls will appears as a "light" with brightness function.  The brighntess control is used to set the volume level while the turning the switch off immediate sets the volume to zero and turning the switch on sets the volume to 65%, although you can also turn the volume back on by setting the slider volume to any level other than zero.  Overall this works well, you can override icons to make it look reasonable in Lovelace and automations can be used to set volumes base on time-of-day, etc, but this approach can have some unexpected side effects.  For example, if you have an automation that "turns of all lights" it will also silence volumes on the keypad/base station.  Just be aware of these possible behaviors before enabling the volume control feature.
 
-## Branch Feature
+### Branch Feature
 The Docker image includes a feature that allows for easy, temporary testing of the latest code from the master or dev branch of ring-mqtt from Github, without requiring the installation of a new image.  This feature was designed to simplify testing of newer code for users of the addon, but Docker users can leverage it as well.  When running the Docker image normally the local image copy of ring-mqtt is used, however, sometimes the latest code in the Github repo master branch may be a few versions ahead, while waiting on the code to stabilize, or a user may need to test code in the dev branch to see if it corrects a reported issue.  This feature allows this to be done very easily without having to push or build a new Docker image.  To use this feature simple add the **BRANCH** environment variable as follows:
 **BRANCH="latest"**
 When this option is set, upon starting the Docker container the startup script will use git to fetch the lastest code from the master branch before running
