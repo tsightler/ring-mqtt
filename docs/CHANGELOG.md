@@ -3,7 +3,7 @@
 - Make volume control support configurable
 - Minor fix for running on 10.x Node versions
 - Monitor legacy hass/status stopic for Home Assistant restarts
-- Documentation cleanups
+- Documentation updates and cleanups
 
 ## v4.1.1
 - Fix enabling panic buttons for Docker
