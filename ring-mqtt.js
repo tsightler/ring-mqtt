@@ -66,6 +66,7 @@ function getDevice(device, mqttClient) {
     switch (device.deviceType) {
         case RingDeviceType.ContactSensor:
         case RingDeviceType.RetrofitZone:
+        case 'sensor.tilt':
             return new ContactSensor(deviceInfo)
         case RingDeviceType.MotionSensor:
             return new MotionSensor(deviceInfo)

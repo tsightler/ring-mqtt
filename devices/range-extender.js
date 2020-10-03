@@ -9,6 +9,7 @@ class RangeExtender extends AlarmDevice {
 
         // Device data for Home Assistant device registry
         this.deviceData.mdl = 'Z-Wave Range Extender'
+        this.deviceData.name = this.device.location.name + ' Range Extender'
 
         // Publish device data
         this.publishDevice()

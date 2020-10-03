@@ -15,7 +15,7 @@ docker pull tsightler/ring-mqtt
 
 Alternatively, you can issue "docker run" and Docker will automatically pull the image if it doesn't already exist locally (the command below is just an example, please see the [Environment Variables](#environment-variables) section for all available configuration options):
 ```
-docker run --rm -e "MQTTHOST=<host_name>" -e "MQTTPORT=<host_port>" -e "MQTTRINGTOPIC=<ring_topic>" -e "MQTTHASSTOPIC=<hass_topic>" -e "MQTTUSER=<mqtt_user>" -e "MQTTPASSWORD=<mqtt_pw>" -e "RINGTOKEN=<ring_refreshToken>" -e "ENABLECAMERAS=<true-or-false>" -e "RINGLOCATIONIDS=<comma-separated location IDs>" tsightler/ring-mqtt
+docker run --rm -e "MQTTHOST=host_name" -e "MQTTPORT=host_port" -e "MQTTRINGTOPIC=ring_topic" -e "MQTTHASSTOPIC=hass_topic" -e "MQTTUSER=mqtt_user" -e "MQTTPASSWORD=mqtt_pw" -e "RINGTOKEN=ring_refreshToken" -e "ENABLECAMERAS=true-or-false" -e "RINGLOCATIONIDS=comma-separated_location_IDs" tsightler/ring-mqtt
 ```
 
 #### Storing Updated Refresh Tokens
@@ -23,7 +23,7 @@ The Docker container supports the use of a bind mount to provide persistent stor
 
 You can use any directory on the host for this persistent store, but it must be mounted to /data in the container.  The following is an example docker run command using a bind mount to mount the host directory /etc/ring-mqtt to the container path /data:
 ```
-docker run --rm --mount type=bind,source=/etc/ring-mqtt,target=/data -e "MQTTHOST=<host_name>" -e "MQTTUSER=<mqtt_user>" -e "MQTTPASSWORD=<mqtt_pw>" -e "RINGTOKEN=<ring_refreshToken>" tsightler/ring-mqtt
+docker run --rm --mount type=bind,source=/etc/ring-mqtt,target=/data -e "MQTTHOST=host_name" -e "MQTTUSER=mqtt_user" -e "MQTTPASSWORD=mqtt_pw" -e "RINGTOKEN=ring_refreshToken" tsightler/ring-mqtt
 ```
 
 #### Environment Variables
@@ -161,7 +161,7 @@ MQTT topics are built consistently during each startup.  The easiest way to dete
     - Ring integrated door locks (status and lock control)
     - Ring Range Extender
     - 3rd party Z-Wave switches, dimmers, and fans
-    - 3rd party motion/contact sensors (basic support)
+    - 3rd party motion/contact/tilt sensors (basic support)
     - Device info sensor with detailed state information such as (exact info varies by device):
       - Battery level
       - Tamper state
@@ -213,7 +213,7 @@ This option is also useful when using the script with external MQTT tools as it 
 ```DEBUG=*```
 
 **Example for Docker**\
-```docker run -it --rm --mount type=bind,source=/etc/ring-mqtt,target=/data -e "MQTTHOST=<host_name>" -e "MQTTUSER=<mqtt_user>" -e "MQTTPASSWORD=<mqtt_pw>" -e "RINGTOKEN=<ring_refreshToken>" -e "DEBUG=ring-mqtt" tsightler/ring-mqtt```
+```docker run -it --rm --mount type=bind,source=/etc/ring-mqtt,target=/data -e "MQTTHOST=host_name" -e "MQTTUSER=mqtt_user" -e "MQTTPASSWORD=mqtt_pw" -e "RINGTOKEN=ring_refreshToken" -e "DEBUG=ring-mqtt" tsightler/ring-mqtt```
 
 **Example for Standard Install**\
 ```DEBUG=ring-mqtt ./ring-mqtt```

@@ -8,20 +8,23 @@ class ContactSensor extends AlarmDevice {
         if (!locationConnected) { return }
 
         this.component = 'binary_sensor'
-        if (this.device.deviceType == 'sensor.zone') {
-            // Home Assistant component type and device class (set appropriate icon)
-            this.className = 'safety'
-            this.sensorType = 'zone'
-
-            // Device data for Home Assistant device registry
-            this.deviceData.mdl = 'Retrofit Zone'
-        } else {
-            // Home Assistant component type and device class (set appropriate icon)
-            this.className = (this.device.data.subCategoryId == 2) ? 'window' : 'door'
-            this.sensorType = 'contact'
-
-            // Device data for Home Assistant device registry
-            this.deviceData.mdl = 'Contact Sensor'
+        switch (this.device.deviceType) {
+            case 'sensor.zone':
+                // Home Assistant component type and device class (set appropriate icon)
+                this.className = 'safety'
+                this.sensorType = 'zone'
+                this.deviceData.mdl = 'Retrofit Zone'
+                break;
+            case 'sensor.tilt':
+                // Home Assistant component type and device class (set appropriate icon)
+                this.className = 'garage_door'
+                this.sensorType = 'tilt'
+                this.deviceData.mdl = 'Tilt Sensor'
+                break;
+            default:
+                this.className = (this.device.data.subCategoryId == 2) ? 'window' : 'door'
+                this.sensorType = 'contact'
+                this.deviceData.mdl = 'Contact Sensor'
         }
 
         // Build required MQTT topics
