@@ -146,9 +146,9 @@ MQTT topics are built consistently during each startup.  The easiest way to dete
         - Pending (entry delay)
         - Triggered
     - Base Station
-      - Panic Buttons - what do these do?
-        - Police
-        - Fire
+      - Panic Buttons (note: Paid professional monitoring is required):
+        - Police - summons the police
+        - Fire - summons the fire department
       - Siren
       - Volume Control (if account has access to change volume and enabled)
     - Keypad
