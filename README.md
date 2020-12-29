@@ -18,6 +18,8 @@ Alternatively, you can issue "docker run" and Docker will automatically pull the
 docker run --rm -e "MQTTHOST=host_name" -e "MQTTPORT=host_port" -e "MQTTRINGTOPIC=ring_topic" -e "MQTTHASSTOPIC=hass_topic" -e "MQTTUSER=mqtt_user" -e "MQTTPASSWORD=mqtt_pw" -e "RINGTOKEN=ring_refreshToken" -e "ENABLECAMERAS=true-or-false" -e "RINGLOCATIONIDS=comma-separated_location_IDs" tsightler/ring-mqtt
 ```
 
+Note: For users also running home-assistant through docker, you must use the same --net parameter as your docker instance. (i.e. --net=host)
+
 #### Storing Updated Refresh Tokens
 The Docker container supports the use of a bind mount to provide persistent storage.  While the Docker container will run without this storage, using the bind mount is highly recommended as, otherwise, it will likely be required to generate a new token each time the container starts since there is nowhere for the script to save renewed tokens which are typically generated every hour. For more details on acquiring an initial refresh token please see ([Authentication](#authentication)).
 
