@@ -1,18 +1,18 @@
 {
   "name": "ring-mqtt",
-  "version": "4.2.1",
+  "version": "4.2.2",
   "description": "Ring to MQTT Bridge",
   "main": "ring-mqtt.js",
   "dependencies": {
     "body-parser": "^1.19.0",
-    "debug": "^4.1.1",
+    "debug": "^4.3.1",
     "express": "^4.17.1",
-    "is-online": "^8.4.0",
-    "mqtt": "^4.2.1",
-    "ring-client-api": "^9.9.0"
+    "is-online": "^9.0.0",
+    "mqtt": "^4.2.6",
+    "ring-client-api": "^9.14.2"
   },
   "devDependencies": {
-    "eslint": "^7.7.0"
+    "eslint": "^7.19.0"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
