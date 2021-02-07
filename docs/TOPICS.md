@@ -137,7 +137,8 @@ ring/<location_id>/camera/<device_id>/light/state    <-- Get ON/OFF Light State
 ring/<location_id>/camera/<device_id>/light/command  <-- Set ON/OFF Light State
 ring/<location_id>/camera/<device_id>/siren/state    <-- Get ON/OFF Siren State
 ring/<location_id>/camera/<device_id>/siren/command  <-- Set ON/OFF Siren State
-ring/<location_id>/camera/<device_id>/info/state      <-- Device info sensor
+ring/<location_id>/camera/<device_id>/info/state     <-- Device info sensor
+ring/<location_id>/camera/<device_id>/snapshot       <-- Binary snapshot images on motion events
 ```
 
 Ring Smart Lighting (available topics vary by device capabilities)

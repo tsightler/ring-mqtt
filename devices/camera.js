@@ -322,7 +322,7 @@ class Camera {
 
     async publishSnapshot() {
         const snapshot = await this.camera.getSnapshot()
-        debug(this.cameraTopic+'/snapshot', '<binary_image>')
+        debug(this.cameraTopic+'/snapshot', '<binary_image_data>')
         this.publishMqtt(this.cameraTopic+'/snapshot', snapshot)
     }
 
