@@ -10,6 +10,7 @@ class Camera {
         this.availabilityState = 'init'
         this.locationId = this.camera.data.location_id
         this.deviceId = this.camera.data.device_id
+        this.config = deviceInfo.CONFIG
 
         // Sevice data for Home Assistant device registry 
         this.deviceData = { 
@@ -57,7 +58,6 @@ class Camera {
     async publish() {
         const debugMsg = (this.availabilityState == 'init') ? 'Publishing new ' : 'Republishing existing '
         debug(debugMsg+'device id: '+this.deviceId)
-        this.published = true
 
         // Publish motion sensor feature for camera
         this.publishCapability({
@@ -68,7 +68,17 @@ class Camera {
             hasCommand: false,
         })
 
-        // If camera is a doorbell publish doorbell sensor
+        // If snapshots enabled, publish snapshot capability
+        if (this.config.enable_snapshots) {
+            this.publishCapability({
+                type: 'snapshot',
+                component: 'camera',
+                suffix: 'Snapshot',
+                hasCommand: false,
+            })
+        }
+
+        // If doorbell publish doorbell sensor
         if (this.camera.isDoorbot) {
             this.publishCapability({
                 type: 'ding',
@@ -220,6 +230,10 @@ class Camera {
             // Will republish to MQTT for new dings even if ding is already active
             this.publishMqtt(stateTopic, 'ON', true)
 
+            if (dingType === 'motion' && this.config.enable_snapshots) {
+                this.publishSnapshot()
+            }
+
             // If ding was not already active, set active ding state property and begin loop
             // to check for ding expiration
             if (!this[dingType].active_ding) {
@@ -290,6 +304,11 @@ class Camera {
             }
             this.publishMqtt(this.cameraTopic+'/info/state', JSON.stringify(attributes), true)
         }
+    }
+
+    async publishSnapshot() {
+        const snapshot = await this.camera.getSnapshot()
+        this.publishMqtt(this.cameraTopic+'/camera/snapshot', snapshot)
     }
 
     // Interval loop to check communications with cameras/Ring API since, unlike alarm,
