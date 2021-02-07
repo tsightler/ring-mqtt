@@ -1,3 +1,15 @@
+## v4.3.0
+ - Add support for sending snapshot images on camera motion events (must be explicitly enabled)
+
+## v4.2.2
+ - Bump dependencies to latest versions
+ - Rebuild Docker image with latest base to pull in latest node v12 version (12.20.1)
+
+## v4.2.1
+- Add tilt sensor support (Garage Doors)
+- Fix range extender device name
+- Minor doc updates
+
 ## v4.2.0
 - Add support for Zwave Range Extender info sensor data (thanks to @alexanv1)
 - Make volume control support configurable
