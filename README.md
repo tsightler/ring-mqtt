@@ -78,6 +78,7 @@ This will install all required dependencies.  Edit config.js to configure your R
 | mqtt_user | Username for MQTT broker | blank |
 | mqtt_pass | Password for MQTT broker | blank |
 | enable_cameras | Enable camera support, otherwise only alarm devices will be discovered | false |
+| enable_snapshots | When enabled, binary snapshot image data is sent via snapshot topic on motion events | false |
 | enable_modes | Enable support for Location Modes for sites without a Ring Alarm Panel | false |
 | enable_panic | Enable panic buttons on Alarm Control Panel device | false |
 | enable_volume | Enable volume control on Keypad and Base Station.  See [Volume Control](#volume-control) for important information about this feature | false |
@@ -175,6 +176,7 @@ MQTT topics are built consistently during each startup.  The easiest way to dete
     - Doorbell (Ding) Events
     - Lights (for devices with lights)
     - Siren (for devices with siren support)
+    - Camera (snapshot images on motion events)
     - Device info sensor with detailed state information such as (exact info varies by device):
       - Wireless Signal/Info
       - Wired network status
