@@ -174,8 +174,13 @@ class Camera {
             unique_id: this.deviceId+'_'+capability.type,
             availability_topic: this.availabilityTopic,
             payload_available: 'online',
-            payload_not_available: 'offline',
-            state_topic: componentTopic+'/state'
+            payload_not_available: 'offline'
+        }
+
+        if (capability.type === 'snapshot') {
+            message.topic = componentTopic
+        } else {
+            message.state_topic = componentTopic+'/state'
         }
 
         if (capability.className) { message.device_class = capability.className }
@@ -308,7 +313,7 @@ class Camera {
 
     async publishSnapshot() {
         const snapshot = await this.camera.getSnapshot()
-        this.publishMqtt(this.cameraTopic+'/camera/snapshot', snapshot)
+        this.publishMqtt(this.cameraTopic+'/snapshot', snapshot)
     }
 
     // Interval loop to check communications with cameras/Ring API since, unlike alarm,
