@@ -137,6 +137,11 @@ class Camera {
             }
             this.subscribed = true
 
+            // Publish snapshot if enabled
+            if (this.config.enable_snapshots) {
+                this.publishSnapshot()
+            }
+
             // Publish info state for device
             this.publishInfoState()
 
@@ -153,6 +158,10 @@ class Camera {
                 if (this.camera.hasSiren) { this.publishedSirenState = 'republish' }
                 this.publishPolledState()
             }
+            // Publish snapshot if enabled
+            if (this.config.enable_snapshots) {
+                this.publishSnapshot()
+            }            
             this.publishInfoState()
             this.publishAvailabilityState()
         }
@@ -313,6 +322,7 @@ class Camera {
 
     async publishSnapshot() {
         const snapshot = await this.camera.getSnapshot()
+        debug(topic, '<binary_image_data>')
         this.publishMqtt(this.cameraTopic+'/snapshot', snapshot)
     }
 
