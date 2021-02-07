@@ -37,6 +37,7 @@ Note that the only absolutely required parameter for initial start is **RINGTOKE
 | MQTTUSER | Username for MQTT broker | blank - Use anonymous connection |
 | MQTTPASSWORD | Password for MQTT broker | blank - Use anonymous connection |
 | ENABLECAMERAS | Enable camera support, otherwise only alarm devices will be discovered | false |
+| ENABLESNAPSHOTS | When enabled, binary snapshot image data is sent via snapshot topic on motion events | false |
 | ENABLEMODES | Enable support for Location Modes for sites without a Ring Alarm Panel | false |
 | ENABLEPANIC | Enable panic buttons on Alarm Control Panel device | false |
 | ENABLEVOLUME | Enable volume control on Keypads and Base Station, see [Volume Control](#volume-control) for important information about this feature | false |
