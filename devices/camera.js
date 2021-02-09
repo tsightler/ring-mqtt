@@ -11,12 +11,12 @@ class Camera {
         this.locationId = this.camera.data.location_id
         this.deviceId = this.camera.data.device_id
         this.config = deviceInfo.CONFIG
-        this.snapRefresh = true
+        this.enableSnapshotRefresh = true
 
         // If snapshot capture is enabled, set approprate values
         if (this.camera.hasBattery) {                
             if (this.camera.data.settings.hasOwnProperty(lite_24x7) && this.camera.data.settings.lite_24x7.enabled) {
-                this.snapRefreshFreq = this.camera.data.settings.lite_24x7.frequency_secs
+                this.snapRefreshInterval = this.camera.data.settings.lite_24x7.frequency_secs
             } else {
                 this.snapRefreshInterval = 600
             }
@@ -157,8 +157,8 @@ class Camera {
             if (this.config.enable_snapshots) {
                 this.publishSnapshot()
                 // If snapshot refresh enabled start snapshot update loop
-                if (this.snapRefresh) {
-                    publishSnapshotRefresh()
+                if (this.enableSnapshotRefresh) {
+                    this.queueSnapshotRefresh()
                 }
             }
 
@@ -348,13 +348,13 @@ class Camera {
     }
 
     // Publish snapshots on refresh schedule
-    async publishSnapshotRefresh() {
+    async queueSnapshotRefresh() {
         await utils.sleep(this.snapRefreshInterval)
         // During active motion events stop interval snapshots
         if (!this.motion.active_ding) { 
             this.publishSnapshot()
         }
-        this.publishSnapRefresh()
+        this.queueSnapshotRefresh()
     }
 
     // Interval loop to check communications with cameras/Ring API since, unlike alarm,
