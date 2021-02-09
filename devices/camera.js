@@ -15,12 +15,10 @@ class Camera {
 
         // If snapshot capture is enabled, set approprate values
         if (this.camera.hasBattery) {                
-            if (this.camera.data.settings.hasOwnProperty(lite_24x7)) {
-                if (this.camera.data.settings.lite_24x7.enabled) {
-                    this.snapRefreshInterval = this.camera.data.settings.lite_24x7.frequency_secs
-                } else {
-                    this.snapRefreshInterval = 600
-                }
+            if (this.camera.data.settings.hasOwnProperty('lite_24x7') && this.camera.data.settings.lite_24x7.enabled) {
+                this.snapRefreshInterval = this.camera.data.settings.lite_24x7.frequency_secs
+            } else {
+                this.snapRefreshInterval = 600
             }
         } else {
             this.snapRefreshInterval = 30
