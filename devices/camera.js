@@ -11,6 +11,18 @@ class Camera {
         this.locationId = this.camera.data.location_id
         this.deviceId = this.camera.data.device_id
         this.config = deviceInfo.CONFIG
+        this.snapRefresh = true
+
+        // If snapshot capture is enabled, set approprate values
+        if (this.camera.hasBattery) {                
+            if (this.camera.data.settings.hasOwnProperty(lite_24x7) && this.camera.data.settings.lite_24x7.enabled) {
+                this.snapRefreshFreq = this.camera.data.settings.lite_24x7.frequency_secs
+            } else {
+                this.snapRefreshInterval = 600
+            }
+        } else {
+            this.snapRefreshInterval = 30
+        }
 
         // Sevice data for Home Assistant device registry 
         this.deviceData = { 
@@ -68,16 +80,6 @@ class Camera {
             hasCommand: false,
         })
 
-        // If snapshots enabled, publish snapshot capability
-        if (this.config.enable_snapshots) {
-            this.publishCapability({
-                type: 'snapshot',
-                component: 'camera',
-                suffix: 'Snapshot',
-                hasCommand: false,
-            })
-        }
-
         // If doorbell publish doorbell sensor
         if (this.camera.isDoorbot) {
             this.publishCapability({
@@ -117,6 +119,16 @@ class Camera {
             hasCommand: false,
         })
 
+        // If snapshots enabled, publish snapshot capability
+        if (this.config.enable_snapshots) {
+            this.publishCapability({
+                type: 'snapshot',
+                component: 'camera',
+                suffix: 'Snapshot',
+                hasCommand: false,
+            })
+        }
+        
         // Give Home Assistant time to configure device before sending first state data
         await utils.sleep(2)
 
@@ -133,6 +145,10 @@ class Camera {
             if (this.camera.hasLight || this.camera.hasSiren) {
                 this.camera.onData.subscribe(() => {
                     this.publishPolledState()
+                    // Update snapshot frequency in case it's changed
+                    if (this.snapCapture && this.camera.data.settings.hasOwnProperty(lite_24x7)) {
+                        this.snapCaptureFreq = this.camera.data.settings.lite_24x7.frequency_secs
+                    }
                 })
             }
             this.subscribed = true
@@ -140,6 +156,10 @@ class Camera {
             // Publish snapshot if enabled
             if (this.config.enable_snapshots) {
                 this.publishSnapshot()
+                // If snapshot refresh enabled start snapshot update loop
+                if (this.snapRefresh) {
+                    publishSnapshotRefresh()
+                }
             }
 
             // Publish info state for device
@@ -320,10 +340,21 @@ class Camera {
         }
     }
 
+    // Update and publish new snapshot image
     async publishSnapshot() {
         const snapshot = await this.camera.getSnapshot()
         debug(this.cameraTopic+'/snapshot', '<binary_image_data>')
         this.publishMqtt(this.cameraTopic+'/snapshot', snapshot)
+    }
+
+    // Publish snapshots on refresh schedule
+    async publishSnapshotRefresh() {
+        await utils.sleep(this.snapRefreshInterval)
+        // During active motion events stop interval snapshots
+        if (!this.motion.active_ding) { 
+            this.publishSnapshot()
+        }
+        this.publishSnapRefresh()
     }
 
     // Interval loop to check communications with cameras/Ring API since, unlike alarm,
