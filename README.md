@@ -37,7 +37,7 @@ Note that the only absolutely required parameter for initial start is **RINGTOKE
 | MQTTUSER | Username for MQTT broker | blank - Use anonymous connection |
 | MQTTPASSWORD | Password for MQTT broker | blank - Use anonymous connection |
 | ENABLECAMERAS | Enable camera support, otherwise only alarm devices will be discovered | false |
-| ENABLESNAPSHOTS | When enabled, binary snapshot image data is sent via snapshot topic on motion events | false |
+| ENABLESNAPSHOTS | Enable snapshot images from camera, see [Snapshot Options](#snapshot-options) for details | 'none' |
 | ENABLEMODES | Enable support for Location Modes for sites without a Ring Alarm Panel | false |
 | ENABLEPANIC | Enable panic buttons on Alarm Control Panel device | false |
 | ENABLEVOLUME | Enable volume control on Keypads and Base Station, see [Volume Control](#volume-control) for important information about this feature | false |
@@ -79,7 +79,7 @@ This will install all required dependencies.  Edit config.js to configure your R
 | mqtt_user | Username for MQTT broker | blank |
 | mqtt_pass | Password for MQTT broker | blank |
 | enable_cameras | Enable camera support, otherwise only alarm devices will be discovered | false |
-| enable_snapshots | When enabled, binary snapshot image data is sent via snapshot topic on motion events | false |
+| enable_snapshots | Enable snapshot images from camera, see [Snapshot Options](#snapshot-options) for details | 'none' |
 | enable_modes | Enable support for Location Modes for sites without a Ring Alarm Panel | false |
 | enable_panic | Enable panic buttons on Alarm Control Panel device | false |
 | enable_volume | Enable volume control on Keypad and Base Station.  See [Volume Control](#volume-control) for important information about this feature | false |
@@ -127,6 +127,22 @@ Because of this added risk, it's a good idea to create a second account dedicate
 
 ### Limiting Locations
 By default, this script will discover and monitor enabled devices across all locations, even shared locations for which you have permissions.  To limit monitored locations you can create a separate account and assign only the desired resources to it, or you can pass location_ids using the appropriate config option.  To get the location id from the ring website simply login to [Ring.com](https://ring.com/users/sign_in) and look at the address bar in the browser. It will look similar to ```https://app.ring.com/location/{location_id}``` with the last path element being the location id.
+
+### Snapshot Options
+Since ring-mqtt version 4.3 ring-mqtt has the ability to send still image snapshots.  These images will automatically display in many home automation platforms such as Home Assistant as a camera entity.  Please note that these are not live action as MQTT is limited in this regard, however, even these snapshots can be quite useful.  There are a few modes that can be enabled:
+
+| Mode | Description |
+| --- | --- |
+| none | No snapshot support |
+| motion | Snapshots are refreshed only on detected motion events |
+| interval | Snapshots are refreshed on scheduled interval only |
+| all | Snapshots are refreshed on both scheduled and motion events, scheduled snapshots are paused during active motions events |
+
+When snapshot support is enabled, the script always attempts to grab a snapshot on initial startup.
+
+When interval mode is selected, snapshots of cameras with wired power supply are taken every 30 seconds by default, for battery powered cameras taking a snapshot every 30 seconds leads to signifcant power drain so snapshots are taken every 10 minutes, however, if the Ring Snapshot Capture feature is enabled, snapshots are instead taken at the frequency selected in the Ring app for this feature (minium 5 minutes for battery powere cameras).
+
+It is also possible to manually override the snapshot interval, although the minimum time is 10 seconds.  Simply send the value in seconds to the ring/<location_id>/camera/<device_id>/snapshot/interval topic for the specific camera to override the default refresh interval.
 
 ### Volume Control
 Volume Control for Ring Keypads and Base Stations is supported, however, starting with version 4.1.2 and later, volume control must be explicitly enabled using config options.  Note that Ring shared users do not have access to control the Base Station volume so, if you want to control the Base Station volume using this script, you must generate the refresh token using the primary Ring account.  During startup the system attempts to detect if the account can control the base station volume and only shows the volume control if it determines the accout has access.  This is a limitation of the Ring API as even the offical Ring App does not offer volume control to shared users.
@@ -177,7 +193,7 @@ MQTT topics are built consistently during each startup.  The easiest way to dete
     - Doorbell (Ding) Events
     - Lights (for devices with lights)
     - Siren (for devices with siren support)
-    - Camera (snapshot images on motion events)
+    - Camera (snapshot images refreshe on motion events or scheduled refresh interval).  Please note that live video is NOT supported by this addon and likely will not ever be due to limitation of MQTT.
     - Device info sensor with detailed state information such as (exact info varies by device):
       - Wireless Signal/Info
       - Wired network status

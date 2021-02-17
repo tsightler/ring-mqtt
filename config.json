@@ -7,9 +7,11 @@
     "mqtt_pass": "",
     "ring_token": "",
     "enable_cameras": false,
-    "enable_snapshots": false,
-    "enable_modes" : false,
-    "enable_panic" : false,
-    "enable_volume" : false,
-    "location_ids": [""]
+    "enable_snapshots": "none",
+    "enable_modes": false,
+    "enable_panic": false,
+    "enable_volume": false,
+    "location_ids": [
+        ""
+    ]
 }
