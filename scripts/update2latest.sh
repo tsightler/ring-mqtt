@@ -3,6 +3,9 @@ HOME=/app
 echo "Updating ring-mqtt to the latest version..."
 cd /app
 rm ring-mqtt
+if [ -d /ring-mqtt-latest ]; then
+    rm -Rf ring-mqtt-latest
+fi
 git clone https://github.com/tsightler/ring-mqtt ring-mqtt-latest
 ln -s ring-mqtt-latest ring-mqtt
 cd ring-mqtt
