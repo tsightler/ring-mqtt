@@ -361,7 +361,7 @@ async function initConfig(configFile) {
     if (!CONFIG.enable_snapshots) {
         CONFIG.enable_snapshots = false 
     } else if (CONFIG.enable_snapshots === true) {
-        CONFIG.enable_snapshots = 'all'
+        CONFIG.enable_snapshots = 'motion'
     }
 }
 
