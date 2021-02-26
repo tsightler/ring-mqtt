@@ -133,7 +133,7 @@ Since ring-mqtt version 4.3 ring-mqtt has the ability to send still image snapsh
 
 | Mode | Description |
 | --- | --- |
-| none | No snapshot support |
+| disabled | Snapshot images will be disabled |
 | motion | Snapshots are refreshed only on detected motion events |
 | interval | Snapshots are refreshed on scheduled interval only |
 | all | Snapshots are refreshed on both scheduled and motion events, scheduled snapshots are paused during active motions events |
