@@ -37,7 +37,7 @@ Note that the only absolutely required parameter for initial start is **RINGTOKE
 | MQTTUSER | Username for MQTT broker | blank - Use anonymous connection |
 | MQTTPASSWORD | Password for MQTT broker | blank - Use anonymous connection |
 | ENABLECAMERAS | Enable camera support, otherwise only alarm devices will be discovered | false |
-| ENABLESNAPSHOTS | Enable snapshot images from camera, see [Snapshot Options](#snapshot-options) for details | 'none' |
+| SNAPSHOTMODE | Enable still snapshot image updates from camera, see [Snapshot Options](#snapshot-options) for details | 'disabled' |
 | ENABLEMODES | Enable support for Location Modes for sites without a Ring Alarm Panel | false |
 | ENABLEPANIC | Enable panic buttons on Alarm Control Panel device | false |
 | ENABLEVOLUME | Enable volume control on Keypads and Base Station, see [Volume Control](#volume-control) for important information about this feature | false |
@@ -79,7 +79,7 @@ This will install all required dependencies.  Edit config.js to configure your R
 | mqtt_user | Username for MQTT broker | blank |
 | mqtt_pass | Password for MQTT broker | blank |
 | enable_cameras | Enable camera support, otherwise only alarm devices will be discovered | false |
-| enable_snapshots | Enable snapshot images from camera, see [Snapshot Options](#snapshot-options) for details | 'none' |
+| snapshot_mode | Enable still snapshot image updates from camera, see [Snapshot Options](#snapshot-options) for details | 'disabled' |
 | enable_modes | Enable support for Location Modes for sites without a Ring Alarm Panel | false |
 | enable_panic | Enable panic buttons on Alarm Control Panel device | false |
 | enable_volume | Enable volume control on Keypad and Base Station.  See [Volume Control](#volume-control) for important information about this feature | false |

@@ -332,7 +332,7 @@ async function initConfig(configFile) {
             "mqtt_pass": process.env.MQTTPASSWORD,
             "ring_token": process.env.RINGTOKEN,
             "enable_cameras": process.env.ENABLECAMERAS,
-            "enable_snapshots": process.env.ENABLESNAPSHOTS,
+            "snapshot_mode": process.env.SNAPSHOTMODE,
             "enable_modes" : process.env.ENABLEMODES,
             "enable_panic" : process.env.ENABLEPANIC,
             "enable_volume" : process.env.ENABLEVOLUME,
@@ -355,15 +355,10 @@ async function initConfig(configFile) {
     CONFIG.ring_topic = CONFIG.ring_topic ? CONFIG.ring_topic : 'ring'
     CONFIG.hass_topic = CONFIG.hass_topic ? CONFIG.hass_topic : 'homeassistant/status'
     if (!CONFIG.enable_cameras) { CONFIG.enable_cameras = false }
-    if (!CONFIG.enable_snapshots) { CONFIG.enable_snapshots = false }
+    if (!CONFIG.snapshot_mode) { CONFIG.snapshot_mode = "disabled" }
     if (!CONFIG.enable_modes) { CONFIG.enable_modes = false }
     if (!CONFIG.enable_panic) { CONFIG.enable_panic = false }
     if (!CONFIG.enable_volume) { CONFIG.enable_volume = false }
-    if (!CONFIG.enable_snapshots) {
-        CONFIG.enable_snapshots = false 
-    } else if (CONFIG.enable_snapshots === true) {
-        CONFIG.enable_snapshots = 'motion'
-    }
 }
 
 // Save updated refresh token to config or state file

@@ -16,11 +16,11 @@ class Camera {
         this.snapshotAutoInterval = false
 
         // If snapshot capture is enabled, set approprate values
-        if (this.config.enable_snapshots === "motion" || this.config.enable_snapshots === "interval" || this.config.enable_snapshots === "all" ) {
+        if (this.config.snapshot_mode === "motion" || this.config.snapshot_mode === "interval" || this.config.snapshot_mode === "all" ) {
             this.snapshot = { imageData: null, timestamp: null }
-            this.snapshotMotion = (this.config.enable_snapshots === "motion" || this.config.enable_snapshots === "all") ? true : false
+            this.snapshotMotion = (this.config.snapshot_mode === "motion" || this.config.snapshot_mode === "all") ? true : false
 
-            if (this.config.enable_snapshots === "interval" || this.config.enable_snapshots === "all") {
+            if (this.config.snapshot_mode === "interval" || this.config.snapshot_mode === "all") {
                 if (this.camera.operatingOnBattery) {
                     this.snapshotAutoInterval = true
                     if (this.camera.data.settings.hasOwnProperty('lite_24x7') && this.camera.data.settings.lite_24x7.enabled) {

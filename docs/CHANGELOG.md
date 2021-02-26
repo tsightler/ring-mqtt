@@ -1,3 +1,6 @@
+## v4.3.2
+ - Change enable_snapshots config option to snapshot_mode (fix for addon)
+
 ## v4.3.1
  - Add support for scheduled snapshot updates (see docs for details)
 
