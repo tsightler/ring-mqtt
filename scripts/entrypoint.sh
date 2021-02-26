@@ -45,5 +45,11 @@ else
         echo "-------------------------------------------------------"
     fi
     echo "Running ring-mqtt..."
-    ISDOCKER=true exec /app/ring-mqtt/ring-mqtt.js
+    if [ "${BRANCH}" = "latest" ]; then
+        ISDOCKER=true exec /app/ring-mqtt-latest/ring-mqtt.js
+    elif [ "${BRANCH}" = "dev" ]; then
+        ISDOCKER=true exec /app/ring-mqtt-dev/ring-mqtt.js
+    else
+        ISDOCKER=true exec /app/ring-mqtt/ring-mqtt.js
+    fi
 fi
