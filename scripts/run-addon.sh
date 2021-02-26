@@ -1,10 +1,10 @@
 #!/usr/bin/env bashio
 if [ "${BRANCH}" = "latest" ]; then
-    cd /app/ring-mqtt-latest/ring-mqtt.js
+    cd /app/ring-mqtt-latest
 elif [ "${BRANCH}" = "dev" ]; then
-    cd /app/ring-mqtt-dev/ring-mqtt.js
+    cd /app/ring-mqtt-dev
 else
-    cd /app/ring-mqtt/ring-mqtt.js
+    cd /app/ring-mqtt
 fi
 echo ring-mqtt.js version $(cat package.json | grep version | cut -f4 -d'"')
 echo Node version $(node -v)
