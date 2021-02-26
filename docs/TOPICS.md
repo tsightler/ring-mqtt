@@ -131,14 +131,16 @@ ring/<location_id>/alarm/<device_id>/info/state      <-- Device info sensor
 
 Cameras (available topics vary based by device capabilities):
 ```
-ring/<location_id>/camera/<device_id>/ding/state     <-- ON = Doorbell Ding Detected
-ring/<location_id>/camera/<device_id>/motion/state   <-- ON = Motion Detected
-ring/<location_id>/camera/<device_id>/light/state    <-- Get ON/OFF Light State
-ring/<location_id>/camera/<device_id>/light/command  <-- Set ON/OFF Light State
-ring/<location_id>/camera/<device_id>/siren/state    <-- Get ON/OFF Siren State
-ring/<location_id>/camera/<device_id>/siren/command  <-- Set ON/OFF Siren State
-ring/<location_id>/camera/<device_id>/info/state     <-- Device info sensor
-ring/<location_id>/camera/<device_id>/snapshot       <-- Binary snapshot images on motion events
+ring/<location_id>/camera/<device_id>/ding/state          <-- ON = Doorbell Ding Detected
+ring/<location_id>/camera/<device_id>/motion/state        <-- ON = Motion Detected
+ring/<location_id>/camera/<device_id>/light/state         <-- Get ON/OFF Light State
+ring/<location_id>/camera/<device_id>/light/command       <-- Set ON/OFF Light State
+ring/<location_id>/camera/<device_id>/siren/state         <-- Get ON/OFF Siren State
+ring/<location_id>/camera/<device_id>/siren/command       <-- Set ON/OFF Siren State
+ring/<location_id>/camera/<device_id>/info/state          <-- Device info sensor
+ring/<location_id>/camera/<device_id>/snapshot/image      <-- Binary snapshot images on motion events
+ring/<location_id>/camera/<device_id>/snapshot/attributes <-- JSON attributes for image (timestamp)
+ring/<location_id>/camera/<device_id>/snapshot/interval   <-- Command topic to override default refresh interval
 ```
 
 Ring Smart Lighting (available topics vary by device capabilities)

@@ -359,6 +359,11 @@ async function initConfig(configFile) {
     if (!CONFIG.enable_modes) { CONFIG.enable_modes = false }
     if (!CONFIG.enable_panic) { CONFIG.enable_panic = false }
     if (!CONFIG.enable_volume) { CONFIG.enable_volume = false }
+    if (!CONFIG.enable_snapshots) {
+        CONFIG.enable_snapshots = false 
+    } else if (CONFIG.enable_snapshots === true) {
+        CONFIG.enable_snapshots = 'motion'
+    }
 }
 
 // Save updated refresh token to config or state file
