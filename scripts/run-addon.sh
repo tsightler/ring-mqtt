@@ -1,5 +1,11 @@
 #!/usr/bin/env bashio
-cd /app/ring-mqtt
+if [ "${BRANCH}" = "latest" ]; then
+    cd /app/ring-mqtt-latest/ring-mqtt.js
+elif [ "${BRANCH}" = "dev" ]; then
+    cd /app/ring-mqtt-dev/ring-mqtt.js
+else
+    cd /app/ring-mqtt/ring-mqtt.js
+fi
 echo ring-mqtt.js version $(cat package.json | grep version | cut -f4 -d'"')
 echo Node version $(node -v)
 echo NPM version $(npm -v)
@@ -65,4 +71,10 @@ else
 fi
 echo "-------------------------------------------------------"
 echo Running ring-mqtt...
-DEBUG=ring-mqtt HASSADDON=true exec /app/ring-mqtt/ring-mqtt.js
+if [ "${BRANCH}" = "latest" ]; then
+    DEBUG=ring-mqtt HASSADDON=true exec /app/ring-mqtt-latest/ring-mqtt.js
+elif [ "${BRANCH}" = "dev" ]; then
+    DEBUG=ring-mqtt HASSADDON=true exec /app/ring-mqtt-dev/ring-mqtt.js
+else
+    DEBUG=ring-mqtt HASSADDON=true exec /app/ring-mqtt/ring-mqtt.js
+fi
