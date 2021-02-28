@@ -73,7 +73,7 @@ class SecurityPanel extends AlarmDevice {
 
         this.discoveryData.push({
             message: {
-                name: this.device.location.name+' Enable Bypass',
+                name: this.device.location.name+' Arming Bypass Mode',
                 unique_id: this.deviceId+'_bypass',
                 availability_topic: this.availabilityTopic,
                 payload_available: 'online',
