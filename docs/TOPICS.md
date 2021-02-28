@@ -20,6 +20,9 @@ Alarm Control Panel (virtual device):
 ring/<location_id>/alarm/<device_id>/alarm/state     <-- Alarm arming state (pending = entry delay)
                                                          disarmed/armed_home/armed_away/pending/triggered
 ring/<location_id>/alarm/<device_id>/alarm/state     <-- Set alarm mode: disarm/arm_home/arm_away
+ring/<location_id>/alarm/<device_id>/bypass/state    <-- Get arming bypass mode state
+ring/<location_id>/alarm/<device_id>/bypass/command  <-- Set arming bypass mode (When 'on' arming will
+                                                         automatically bypass any faulted contact sensors)
 ring/<location_id>/alarm/<device_id>/siren/state     <-- Get ON/OFF Siren State
 ring/<location_id>/alarm/<device_id>/siren/command   <-- Set ON/OFF Siren State
 ring/<location_id>/alarm/<device_id>/police/state    <-- Get ON/OFF Police Panic State
