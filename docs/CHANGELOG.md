@@ -1,3 +1,6 @@
+## v4.4.0
+ - Add support for sensor bypass during arming
+
 ## v4.3.2
  - Change enable_snapshots config option to snapshot_mode (fix for addon)
 

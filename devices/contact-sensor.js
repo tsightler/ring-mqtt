@@ -3,20 +3,17 @@ const utils = require( '../lib/utils' )
 const AlarmDevice = require('./alarm-device')
 
 class ContactSensor extends AlarmDevice {
-    async publish(locationConnected) {
-        // Only publish if location websocket is connected
-        if (!locationConnected) { return }
+    constructor(deviceInfo) {
+        super(deviceInfo)
 
-        this.component = 'binary_sensor'
+         // Set Home Assistant component type and device class (appropriate icon in UI)
         switch (this.device.deviceType) {
             case 'sensor.zone':
-                // Home Assistant component type and device class (set appropriate icon)
                 this.className = 'safety'
                 this.sensorType = 'zone'
                 this.deviceData.mdl = 'Retrofit Zone'
                 break;
             case 'sensor.tilt':
-                // Home Assistant component type and device class (set appropriate icon)
                 this.className = 'garage_door'
                 this.sensorType = 'tilt'
                 this.deviceData.mdl = 'Tilt Sensor'
@@ -26,13 +23,11 @@ class ContactSensor extends AlarmDevice {
                 this.sensorType = 'contact'
                 this.deviceData.mdl = 'Contact Sensor'
         }
+        this.component = 'binary_sensor'
 
         // Build required MQTT topics
         this.stateTopic = this.deviceTopic+'/'+this.sensorType+'/state'
         this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
-
-        // Publish device data
-        this.publishDevice()
     }
 
     initDiscoveryData() {

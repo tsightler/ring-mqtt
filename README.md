@@ -125,6 +125,11 @@ Using 2FA authentication opens up the possibility that, if the environment runin
 
 Because of this added risk, it's a good idea to create a second account dedicated to use with ring-mqtt.  This allows actions performed by this script to be easily audited since they will show up in activity logs with their own name instead of that of the primary account.  Also, you can control what devices the script has access to and easily disable access if nafarious activity is detected.
 
+### Arming Bypass
+By default, attempts to arm the alarm when any contact sensors are in faulted state will fail with an audible message from the base station that sensors require bypass. Arming will retry 5 times evern 10 seconds giving time for doors/windows to be closed, however, if sensors still require bypass after this time, arming will fail.
+
+Starting with version 4.4.0, ring-mqtt exposes an Arming Bypass Mode switch which can by toggled to change this arming behavior.  When this switch is "on", arming commands will automatically bypass any faulted contact sensors.  While this option always default to "off", if you prefer the default state to always be "on" you can create an automation to toggle it to "on" state any time it's detect as off.
+
 ### Limiting Locations
 By default, this script will discover and monitor enabled devices across all locations, even shared locations for which you have permissions.  To limit monitored locations you can create a separate account and assign only the desired resources to it, or you can pass location_ids using the appropriate config option.  To get the location id from the ring website simply login to [Ring.com](https://ring.com/users/sign_in) and look at the address bar in the browser. It will look similar to ```https://app.ring.com/location/{location_id}``` with the last path element being the location id.
 
@@ -160,6 +165,7 @@ MQTT topics are built consistently during each startup.  The easiest way to dete
   - Alarm Devices
     - Alarm Control Panel
       - Arm/Disarm actions
+      - Switch to enable automatic bypass of faulted contact sensors when arming
       - Alarm states: 
         - Pending (entry delay)
         - Triggered

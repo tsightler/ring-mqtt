@@ -3,9 +3,8 @@ const utils = require( '../lib/utils' )
 const AlarmDevice = require('./alarm-device')
 
 class Beam extends AlarmDevice {
-    async publish(locationConnected) { 
-        // Only initialize if location websocket is connected
-        if (!locationConnected) { return }
+    constructor(deviceInfo) {
+        super(deviceInfo)
 
         // Setup device topics based on capabilities.
         switch (this.device.data.deviceType) {
@@ -39,11 +38,8 @@ class Beam extends AlarmDevice {
                 this.configTopic_motion = 'homeassistant/binary_sensor/'+this.locationId+'/'+this.deviceId+'/config'
                 break;
         }
-
-        // Publish device data
-        this.publishDevice()
     }
-
+        
     initDiscoveryData() {
         // Build the MQTT discovery messages for beam components
         if (this.stateTopic_motion) {

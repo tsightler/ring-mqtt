@@ -94,28 +94,34 @@ class AlarmDevice {
 
     // Publish device state data and subscribe to
     // device data events and command topics as needed
-    async publishDevice() {
-        // Publish discovery message
-        if (!this.discoveryData.length) { await this.initDiscoveryData() }
-        await this.publishDiscoveryData()
+    async publish(locationConnected) {
+        // If device has custom publish function call that, otherwise
+        // use common publish function
+        if (typeof this.publishCustom === 'function') {
+            this.publishCustom()
+        } else if (locationConnected) {
+            // Publish discovery message
+            if (!this.discoveryData.length) { await this.initDiscoveryData() }
+            await this.publishDiscoveryData()
 
-        if (this.subscribed) {
-            this.publishData()
-        } else {
-            // Subscribe to data updates for device
-            this.device.onData.subscribe(() => { this.publishData() })
+            if (this.subscribed) {
+                this.publishData()
+            } else {
+                // Subscribe to data updates for device
+                this.device.onData.subscribe(() => { this.publishData() })
 
-            // Subscribe to any device command topics
-            const properties = Object.getOwnPropertyNames(this)
-            const commandTopics = properties.filter(p => p.match(/^commandTopic.*/g))
-            commandTopics.forEach(commandTopic => {
-                this.mqttClient.subscribe(this[commandTopic])
-            })
+                // Subscribe to any device command topics
+                const properties = Object.getOwnPropertyNames(this)
+                const commandTopics = properties.filter(p => p.match(/^commandTopic.*/g))
+                commandTopics.forEach(commandTopic => {
+                    this.mqttClient.subscribe(this[commandTopic])
+                })
 
-            // Mark device as subscribed
-            this.subscribed = true
+                // Mark device as subscribed
+                this.subscribed = true
+            }
+            this.online()
         }
-        this.online()
     }
 
     // Publish device info

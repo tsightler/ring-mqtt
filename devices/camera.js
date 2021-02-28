@@ -76,7 +76,7 @@ class Camera {
 
     }
 
-    // Publishing camera capabilities and state and subscribe to events
+    // Publish camera capabilities and state and subscribe to events
     async publish() {
         const debugMsg = (this.availabilityState == 'init') ? 'Publishing new ' : 'Republishing existing '
         debug(debugMsg+'device id: '+this.deviceId)

@@ -7,7 +7,7 @@
     "mqtt_pass": "",
     "ring_token": "",
     "enable_cameras": false,
-    "enable_snapshots": "none",
+    "snapshot_mode": "none",
     "enable_modes": false,
     "enable_panic": false,
     "enable_volume": false,
