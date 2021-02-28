@@ -3,9 +3,8 @@ const utils = require( '../lib/utils' )
 const AlarmDevice = require('./alarm-device')
 
 class MultiLevelSwitch extends AlarmDevice {
-    async publish(locationConnected) {
-        // Only publish if location websocket is connected
-        if (!locationConnected) { return }
+    constructor(deviceInfo) {
+        super(deviceInfo)
 
         // Home Assistant component type
         this.component = 'light'
@@ -19,11 +18,8 @@ class MultiLevelSwitch extends AlarmDevice {
         this.stateTopic_brightness = this.deviceTopic+'/light/brightness_state'
         this.commandTopic_brightness = this.deviceTopic+'/light/brightness_command'
         this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
-
-        // Publish device data
-        this.publishDevice()
     }
-
+        
     initDiscoveryData() {
         // Build the MQTT discovery message
         this.discoveryData.push({

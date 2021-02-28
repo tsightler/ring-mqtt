@@ -3,9 +3,8 @@ const utils = require( '../lib/utils' )
 const AlarmDevice = require('./alarm-device')
 
 class MotionSensor extends AlarmDevice {
-    async publish(locationConnected) {
-        // Only publish if location websocket is connected
-        if (!locationConnected) { return }
+    constructor(deviceInfo) {
+        super(deviceInfo)
 
         // Home Assistant component type and device class (set appropriate icon)
         this.component = 'binary_sensor'
@@ -17,11 +16,8 @@ class MotionSensor extends AlarmDevice {
         // Build required MQTT topics
         this.stateTopic = this.deviceTopic+'/motion/state'
         this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
-
-        // Publish device data
-        this.publishDevice()
     }
-
+        
     initDiscoveryData() {
         // Build the MQTT discovery message
         this.discoveryData.push({

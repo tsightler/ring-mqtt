@@ -3,7 +3,9 @@ const utils = require( '../lib/utils' )
 const AlarmDevice = require('./alarm-device')
 
 class ModesPanel extends AlarmDevice {
-    async publish() {
+    constructor(deviceInfo) {
+        super(deviceInfo)
+
         // Home Assistant component type
         this.component = 'alarm_control_panel'
 
@@ -16,9 +18,10 @@ class ModesPanel extends AlarmDevice {
         this.commandTopic = this.deviceTopic+'/mode/command'
         this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
 
-        // Save current mode if known
-        this.currentMode =  this.currentMode ? this.currentMode : 'unknown'
-
+        this.currentMode = 'unknown'
+    }
+ 
+    async publishCustom() {
         // Publish discovery message
         if (!this.discoveryData.length) { await this.initDiscoveryData() }
         await this.publishDiscoveryData()

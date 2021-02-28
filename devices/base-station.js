@@ -3,9 +3,8 @@ const utils = require( '../lib/utils' )
 const AlarmDevice = require('./alarm-device')
 
 class BaseStation extends AlarmDevice {
-    async publish(locationConnected) {
-        // Only publish if location websocket is connected
-        if (!locationConnected) { return }
+    constructor(deviceInfo) {
+        super(deviceInfo)
 
         // Device data for Home Assistant device registry
         this.deviceData.mdl = 'Alarm Base Station'
@@ -13,29 +12,16 @@ class BaseStation extends AlarmDevice {
 
         // If this is the very first publish for this device (device is not yet subscribed)
         // check if account has access set volume and add volume control if so
-        if (!this.subscribed && this.config.enable_volume) {
-            const origVolume = (this.device.data.volume && !isNaN(this.device.data.volume) ? this.device.data.volume : 0)
-            const testVolume = (origVolume === 1) ? .99 : origVolume+.01
-            this.device.setVolume(testVolume)
-            await utils.sleep(1)
-            if (this.device.data.volume === testVolume) {
-                debug('Account has access to set volume on base station, enabling volume control')
-                this.device.setVolume(origVolume)
-                // Build required MQTT topics
-                this.stateTopic_audio = this.deviceTopic+'/audio/state'
-                this.commandTopic_audio = this.deviceTopic+'/audio/command'
-                this.stateTopic_audio_volume = this.deviceTopic+'/audio/volume_state'
-                this.commandTopic_audio_volume = this.deviceTopic+'/audio/volume_command'
-                this.configTopic_audio = 'homeassistant/light/'+this.locationId+'/'+this.deviceId+'_audio/config'
-            } else {
-                debug('Account does not have access to set volume on base station, disabling volume control')
-            }
+        if (this.config.enable_volume && this.hasVolumeAccess()) {
+            // Build required MQTT topics
+            this.stateTopic_audio = this.deviceTopic+'/audio/state'
+            this.commandTopic_audio = this.deviceTopic+'/audio/command'
+            this.stateTopic_audio_volume = this.deviceTopic+'/audio/volume_state'
+            this.commandTopic_audio_volume = this.deviceTopic+'/audio/volume_command'
+            this.configTopic_audio = 'homeassistant/light/'+this.locationId+'/'+this.deviceId+'_audio/config'
         }
-
-        // Publish device data
-        this.publishDevice()
     }
-
+    
     initDiscoveryData() {
         if (this.stateTopic_audio) {
             // Build the MQTT discovery messages
@@ -83,6 +69,22 @@ class BaseStation extends AlarmDevice {
             this.setVolumeLevel(message)
         } else {
             debug('Somehow received unknown command topic '+topic+' for keypad Id: '+this.deviceId)
+        }
+    }
+
+    // Function to determine of account has access to change base station volume
+    async hasVolumeAccess() {
+        const origVolume = (this.device.data.volume && !isNaN(this.device.data.volume) ? this.device.data.volume : 0)
+        const testVolume = (origVolume === 1) ? .99 : origVolume+.01
+        this.device.setVolume(testVolume)
+        await utils.sleep(1)
+        if (this.device.data.volume === testVolume) {
+            debug('Account has access to set volume on base station, enabling volume control')
+            this.device.setVolume(origVolume)
+            return true
+        } else {
+            debug('Account does not have access to set volume on base station, disabling volume control')
+            return false
         }
     }
 

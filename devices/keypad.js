@@ -3,9 +3,8 @@ const utils = require( '../lib/utils' )
 const AlarmDevice = require('./alarm-device')
 
 class Keypad extends AlarmDevice {
-    async publish(locationConnected) {
-        // Only publish if location websocket is connected
-        if (!locationConnected) { return }
+    constructor(deviceInfo) {
+        super(deviceInfo)
 
         // Device data for Home Assistant device registry
         this.deviceData.mdl = 'Security Keypad'
@@ -18,11 +17,8 @@ class Keypad extends AlarmDevice {
             this.commandTopic_audio_volume = this.deviceTopic+'/audio/volume_command'
             this.configTopic_audio = 'homeassistant/light/'+this.locationId+'/'+this.deviceId+'_audio/config'
         }
-
-        // Publish device data
-        this.publishDevice()
     }
-
+        
     initDiscoveryData() {
         // Build the MQTT discovery messages if volume control is enabled
         if (this.stateTopic_audio) {

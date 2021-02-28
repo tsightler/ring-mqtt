@@ -3,9 +3,8 @@ const utils = require( '../lib/utils' )
 const AlarmDevice = require('./alarm-device')
 
 class SmokeCoListener extends AlarmDevice {
-    async publish(locationConnected) {
-        // Only publish if location websocket is connected
-        if (!locationConnected) { return }
+    constructor(deviceInfo) {
+        super(deviceInfo)
 
         // Home Assistant component type and device class (set appropriate icon)
         this.className_smoke = 'smoke'
@@ -20,9 +19,6 @@ class SmokeCoListener extends AlarmDevice {
         this.stateTopic_co = this.deviceTopic+'/co/state'
         this.configTopic_smoke = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'_smoke/config'
         this.configTopic_co = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'_gas/config'
-
-        // Publish device data
-        this.publishDevice()
     }
 
     initDiscoveryData() {

@@ -3,9 +3,8 @@ const utils = require( '../lib/utils' )
 const AlarmDevice = require('./alarm-device')
 
 class CoAlarm extends AlarmDevice {
-    async publish(locationConnected) {
-        // Only publish if location websocket is connected
-        if (!locationConnected) { return }
+    constructor(deviceInfo) {
+        super(deviceInfo)
 
         // Home Assistant component type and device class (set appropriate icon)
         this.component = 'binary_sensor'
@@ -18,11 +17,8 @@ class CoAlarm extends AlarmDevice {
         // Build required MQTT topics
         this.stateTopic = this.deviceTopic+'/co/state'
         this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
- 
-        // Publish device data
-        this.publishDevice()
     }
-
+        
     initDiscoveryData() {
         // Build the MQTT discovery message
         this.discoveryData.push({

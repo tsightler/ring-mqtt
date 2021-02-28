@@ -3,9 +3,8 @@ const utils = require( '../lib/utils' )
 const AlarmDevice = require('./alarm-device')
 
 class FloodFreezeSensor extends AlarmDevice {
-    async publish(locationConnected) {
-        // Only publish if location websocket is connected
-        if (!locationConnected) { return }
+    constructor(deviceInfo) {
+        super(deviceInfo)
 
         // Set Home Assistant component type and device class (appropriate icon in UI)
         this.className_flood = 'moisture'
@@ -20,11 +19,8 @@ class FloodFreezeSensor extends AlarmDevice {
         this.stateTopic_freeze = this.deviceTopic+'/freeze/state'
         this.configTopic_flood = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'_flood/config'
         this.configTopic_freeze = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'_freeze/config'
-
-        // Publish device data
-        this.publishDevice()
     }
-
+        
     initDiscoveryData() {
         // Build the MQTT discovery messages
         this.discoveryData.push({

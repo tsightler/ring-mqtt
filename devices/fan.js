@@ -3,9 +3,8 @@ const utils = require( '../lib/utils' )
 const AlarmDevice = require('./alarm-device')
 
 class Fan extends AlarmDevice {
-    async publish(locationConnected) {
-        // Only publish if location websocket is connected
-        if (!locationConnected) { return }
+    constructor(deviceInfo) {
+        super(deviceInfo)
 
         // Home Assistant component type
         this.component = 'fan'
@@ -21,11 +20,8 @@ class Fan extends AlarmDevice {
         this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
         this.prevFanState = undefined
         this.targetFanLevel = undefined
-
-        // Publish device data
-        this.publishDevice()
     }
-
+    
     initDiscoveryData() {
         // Build the MQTT discovery message
         this.discoveryData.push({

@@ -3,9 +3,8 @@ const utils = require( '../lib/utils' )
 const AlarmDevice = require('./alarm-device')
 
 class Switch extends AlarmDevice {
-    async publish(locationConnected) {
-        // Only publish if location websocket is connected
-        if (!locationConnected) { return }
+    constructor(deviceInfo) {
+        super(deviceInfo)
 
         // Home Assistant component type
         this.component = (this.device.data.categoryId === 2) ? 'light' : 'switch'
@@ -16,10 +15,7 @@ class Switch extends AlarmDevice {
         // Build required MQTT topics for device
         this.stateTopic = this.deviceTopic+'/switch/state'
         this.commandTopic = this.deviceTopic+'/switch/command'
-        this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
-
-        // Publish device data
-        this.publishDevice()
+        this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'  
     }
 
     initDiscoveryData() {

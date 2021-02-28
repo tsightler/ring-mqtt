@@ -3,9 +3,8 @@ const utils = require( '../lib/utils' )
 const AlarmDevice = require('./alarm-device')
 
 class SmokeAlarm extends AlarmDevice {
-    async publish(locationConnected) {
-        // Only publish if location websocket is connected
-        if (!locationConnected) { return }
+    constructor(deviceInfo) {
+        super(deviceInfo)
 
         // Home Assistant component type and device class (set appropriate icon)
         this.component = 'binary_sensor'
@@ -16,12 +15,9 @@ class SmokeAlarm extends AlarmDevice {
 
         // Build required MQTT topics
         this.stateTopic = this.deviceTopic+'/smoke/state'
-        this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
-        
-        // Publish device data
-        this.publishDevice()
+        this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'        
     }
-
+        
     initDiscoveryData() {
         // Build the MQTT discovery message
         this.discoveryData.push({

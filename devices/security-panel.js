@@ -41,14 +41,6 @@ class SecurityPanel extends AlarmDevice {
         }
     }
 
-    async publish(locationConnected) {
-        // Only publish if location websocket is connected
-        if (!locationConnected) { return }
-
-        // Publish device data
-        this.publishDevice()
-    }
-
     initDiscoveryData() {
         // Build the MQTT discovery messages
         this.discoveryData.push({
