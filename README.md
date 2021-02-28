@@ -160,6 +160,7 @@ MQTT topics are built consistently during each startup.  The easiest way to dete
   - Alarm Devices
     - Alarm Control Panel
       - Arm/Disarm actions
+      - Switch to enable automatic bypass of faulted contact sensors when arming
       - Alarm states: 
         - Pending (entry delay)
         - Triggered

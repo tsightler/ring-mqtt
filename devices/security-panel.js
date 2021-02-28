@@ -2,11 +2,11 @@ const debug = require('debug')('ring-mqtt')
 const utils = require( '../lib/utils' )
 const AlarmDevice = require('./alarm-device')
 const alarmStates = require('ring-client-api').allAlarmStates
+const RingDeviceType = require('ring-client-api').RingDeviceType
 
 class SecurityPanel extends AlarmDevice {
-    async publish(locationConnected) {
-        // Only publish if location websocket is connected
-        if (!locationConnected) { return }
+    constructor(deviceInfo) {
+        super(deviceInfo)
 
         // Home Assistant component type
         this.component = 'alarm_control_panel'
@@ -19,9 +19,15 @@ class SecurityPanel extends AlarmDevice {
         this.stateTopic = this.deviceTopic+'/alarm/state'
         this.commandTopic = this.deviceTopic+'/alarm/command'
         this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
+        
         this.stateTopic_siren = this.deviceTopic+'/siren/state'
         this.commandTopic_siren = this.deviceTopic+'/siren/command'
         this.configTopic_siren = 'homeassistant/switch/'+this.locationId+'/'+this.deviceId+'_siren/config'
+
+        this.stateTopic_bypass = this.deviceTopic+'/bypass/state'
+        this.commandTopic_bypass = this.deviceTopic+'/bypass/command'
+        this.configTopic_bypass = 'homeassistant/switch/'+this.locationId+'/'+this.deviceId+'_bypass/config'
+        this.bypassEnabled = false
 
         if (this.config.enable_panic) {
             // Build required MQTT topics for device
@@ -33,7 +39,12 @@ class SecurityPanel extends AlarmDevice {
             this.commandTopic_fire = this.deviceTopic+'/fire/command'
             this.configTopic_fire = 'homeassistant/switch/'+this.locationId+'/'+this.deviceId+'_fire/config'
         }
-        
+    }
+
+    async publish(locationConnected) {
+        // Only publish if location websocket is connected
+        if (!locationConnected) { return }
+
         // Publish device data
         this.publishDevice()
     }
@@ -66,6 +77,20 @@ class SecurityPanel extends AlarmDevice {
                 device: this.deviceData
             },
             configTopic: this.configTopic_siren
+        })
+
+        this.discoveryData.push({
+            message: {
+                name: this.device.location.name+' Enable Bypass',
+                unique_id: this.deviceId+'_bypass',
+                availability_topic: this.availabilityTopic,
+                payload_available: 'online',
+                payload_not_available: 'offline',
+                state_topic: this.stateTopic_bypass,
+                command_topic: this.commandTopic_bypass,
+                device: this.deviceData
+            },
+            configTopic: this.configTopic_bypass
         })
 
         if (this.config.enable_panic) {
@@ -129,6 +154,10 @@ class SecurityPanel extends AlarmDevice {
         const sirenState = (this.device.data.siren && this.device.data.siren.state === 'on') ? 'ON' : 'OFF'
         this.publishMqtt(this.stateTopic_siren, sirenState, true)
 
+        // Publish bypass state
+        const bypassState = this.bypassEnabled ? 'ON' : 'OFF'
+        this.publishMqtt(this.stateTopic_bypass, bypassState, true)
+
         if (this.config.enable_panic) {
             let policeState = 'OFF'
             let fireState = 'OFF'
@@ -160,6 +189,8 @@ class SecurityPanel extends AlarmDevice {
             this.setAlarmMode(message)
         } else if (topic == this.commandTopic_siren) {
             this.setSirenMode(message)
+        } else if (topic == this.commandTopic_bypass) {
+            this.setBypassMode(message)
         } else if (topic == this.commandTopic_police) {
             this.setPoliceMode(message)
         } else if (topic == this.commandTopic_fire) {
@@ -171,29 +202,46 @@ class SecurityPanel extends AlarmDevice {
 
     // Set Alarm Mode on received MQTT command message
     async setAlarmMode(message) {
-        debug('Received set alarm mode '+message+' for location '+this.device.location.name+' ('+this.location+')')
+        debug('Received set alarm mode '+message+' for location '+this.device.location.name+' ('+this.locationId+')')
 
         // Try to set alarm mode and retry after delay if mode set fails
         // Initial attempt with no delay
-        var delay = 0
-        var retries = 12
-        var setAlarmSuccess = false
+        let retries = 5
+        let setAlarmSuccess = false
         while (retries-- > 0 && !(setAlarmSuccess)) {
-            setAlarmSuccess = await this.trySetAlarmMode(message, delay)
+            let bypassDeviceIds = []
+
+            // If arming bypass arming mode is enabled, get device ids requiring bypass
+            if (message.toLowerCase() !== 'disarm' && this.bypassEnabled) {
+                const bypassDevices = (await this.device.location.getDevices()).filter((device) => {
+                    return (
+                        device.deviceType === RingDeviceType.ContactSensor &&
+                        device.data.faulted
+                    )
+                })
+
+                if (bypassDevices.length > 0) {
+                    bypassDeviceIds = bypassDevices.map((bypassDevice) => bypassDevice.id)
+                    const bypassDeviceNames = bypassDevices.map((bypassDevice) => bypassDevice.name)
+                    debug('Arming bypass mode is enabled, bypassing sensors: ' + bypassDeviceNames.join(', '))
+                }
+            }
+
+            setAlarmSuccess = await this.trySetAlarmMode(message, bypassDeviceIds)
+
             // On failure delay 10 seconds for next set attempt
-            delay = 10
+            if (!setAlarmSuccess) { await utils.sleep(10) }
         }
         // Check the return status and print some debugging for failed states
         if (setAlarmSuccess == false ) {
             debug('Alarm could not enter proper arming mode after all retries...Giving up!')
         } else if (setAlarmSuccess == 'unknown') {
-            debug('Ignoring unknown command.')
+            debug('Unknown alarm arming mode requested.')
         }
     }
 
-    async trySetAlarmMode(message, delay) {
-        await utils.sleep(delay)
-        var alarmTargetMode
+    async trySetAlarmMode(message, bypassDeviceIds) {
+        let alarmTargetMode
         debug('Set alarm mode: '+message)
         switch(message.toLowerCase()) {
             case 'disarm':
@@ -201,11 +249,11 @@ class SecurityPanel extends AlarmDevice {
                 alarmTargetMode = 'none'
                 break
             case 'arm_home':
-                this.device.location.armHome().catch(err => { debug(err) })
+                this.device.location.armHome(bypassDeviceIds).catch(err => { debug(err) })
                 alarmTargetMode = 'some'
                 break
             case 'arm_away':
-                this.device.location.armAway().catch(err => { debug(err) })
+                this.device.location.armAway(bypassDeviceIds).catch(err => { debug(err) })
                 alarmTargetMode = 'all'
                 break
             default:
@@ -222,6 +270,23 @@ class SecurityPanel extends AlarmDevice {
             debug('Alarm for location '+this.device.location.name+' failed to enter requested arm/disarm mode!')
             return false
         }
+    }
+
+    async setBypassMode(message) {
+        switch(message.toLowerCase()) {
+            case 'on':
+                debug('Enabling arming bypass mode for '+this.device.location.name)
+                this.bypassEnabled = true
+                break;
+            case 'off': {
+                debug('Disabling arming bypass mode for '+this.device.location.name)
+                this.bypassEnabled = false
+                break;
+            }
+            default:
+                debug('Received invalid command for arming bypass mode!')
+        }
+        this.publishData()
     }
 
     async setSirenMode(message) {
