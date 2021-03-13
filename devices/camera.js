@@ -264,8 +264,8 @@ class Camera {
     async publishDingState(ding) {
         // Is it an active ding (i.e. from a subscribed event)?
         if (ding) {
-            debug('Ding of type '+ding.kind+' received at '+ding.now+' from camera '+this.deviceId)
             debug(ding)
+            debug('Ding of type '+ding.kind+' received at '+ding.now+' from camera '+this.deviceId)
 
             // Is it a motion or doorbell ding?
             const dingType = ding.kind
