@@ -264,6 +264,9 @@ class Camera {
     async publishDingState(ding) {
         // Is it an active ding (i.e. from a subscribed event)?
         if (ding) {
+            debug('Ding of type '+ding.kind+' received at '+ding.now+' from camera '+this.deviceId)
+            debug(ding)
+
             // Is it a motion or doorbell ding?
             const dingType = ding.kind
             const stateTopic = this.cameraTopic+'/'+dingType+'/state'
@@ -273,7 +276,6 @@ class Camera {
             this[dingType].ding_duration = ding.expires_in
             // Calculate new expire time for ding (ding.now + ding.expires_in)
             this[dingType].last_ding_expires = this[dingType].last_ding+ding.expires_in
-            debug('Ding of type '+dingType+' received at '+ding.now+' from camera '+this.deviceId)
 
             // Publish MQTT active sensor state
             // Will republish to MQTT for new dings even if ding is already active
