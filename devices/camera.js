@@ -264,43 +264,44 @@ class Camera {
     async publishDingState(ding) {
         // Is it an active ding (i.e. from a subscribed event)?
         if (ding) {
-            debug(ding)
-            debug('Ding of type '+ding.kind+' received at '+ding.now+' from camera '+this.deviceId)
-
+            // Is it a motion or doorbell ding (for others we do nothing)?
+            if (ding.kind !== 'ding' && ding.kind !== 'motion') { return }
+            debug('Ding of kind '+ding.kind+' received at '+ding.now+' from camera '+this.deviceId)
+ 
             // Is it a motion or doorbell ding?
-            const dingType = ding.kind
-            const stateTopic = this.cameraTopic+'/'+dingType+'/state'
+            const stateTopic = this.cameraTopic+'/'+ding.kind+'/state'
 
             // Update time for most recent ding and expire time of ding (Ring seems to be 180 seconds for all dings)
-            this[dingType].last_ding = Math.floor(ding.now)
-            this[dingType].ding_duration = ding.expires_in
+            this[ding.kind].last_ding = Math.floor(ding.now)
+            this[ding.kind].ding_duration = ding.expires_in
             // Calculate new expire time for ding (ding.now + ding.expires_in)
-            this[dingType].last_ding_expires = this[dingType].last_ding+ding.expires_in
+            this[ding.kind].last_ding_expires = this[ding.kind].last_ding+ding.expires_in
 
             // Publish MQTT active sensor state
             // Will republish to MQTT for new dings even if ding is already active
             this.publishMqtt(stateTopic, 'ON', true)
 
             // If it's a motion ding and motion snapshots are enabled, grab and publish the latest snapshot
-            if (dingType === 'motion' && this.snapshotMotion) {
-                this.publishSnapshot(true)
+            if (ding.kind === 'motion' && this.snapshotMotion) {
+                this.snapshot.imageData = await this.camera.getLatestSnapshot()
+                this.publishSnapshot(false)
             }
 
             // If ding was not already active, set active ding state property and begin loop
             // to check for ding expiration
-            if (!this[dingType].active_ding) {
-                this[dingType].active_ding = true
+            if (!this[ding.kind].active_ding) {
+                this[ding.kind].active_ding = true
                 // Loop until current time is > last_ding expires time.  Sleeps until
                 // estimated exire time, but may loop if new dings increase last_ding_expires
-                while (Math.floor(Date.now()/1000) < this[dingType].last_ding_expires) {
-                    const sleeptime = (this[dingType].last_ding_expires - Math.floor(Date.now()/1000)) + 1
-                    debug('Ding of type '+dingType+' from camera '+this.deviceId+' expires in '+sleeptime)
+                while (Math.floor(Date.now()/1000) < this[ding.kind].last_ding_expires) {
+                    const sleeptime = (this[ding.kind].last_ding_expires - Math.floor(Date.now()/1000)) + 1
+                    debug('Ding of kind '+ding.kind+' from camera '+this.deviceId+' expires in '+sleeptime)
                     await utils.sleep(sleeptime)
-                    debug('Ding of type '+dingType+' from camera '+this.deviceId+' exired')
+                    debug('Ding of kind '+ding.kind+' from camera '+this.deviceId+' exired')
                 }
                 // All dings have expired, set state back to false/off
-                debug('All dings of type '+dingType+' from camera '+this.deviceId+' have expired')
-                this[dingType].active_ding = false
+                debug('All dings of kind '+ding.kind+' from camera '+this.deviceId+' have expired')
+                this[ding.kind].active_ding = false
                 this.publishMqtt(stateTopic, 'OFF', true)
             }
         } else {
@@ -367,8 +368,8 @@ class Camera {
                 this.snapshot.imageData = newSnapshot
                 this.snapshot.timestamp = Math.round(Date.now()/1000)
             } catch(e) {
-                debug(e)
-                debug('Could not retrieve updated snapshot, using previous cached snapshot.')
+                debug(e.message)
+                debug('Could not retrieve updated snapshot for camera '+this.deviceId+', using previous cached snapshot.')
             }
         }
 
