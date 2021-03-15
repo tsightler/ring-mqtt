@@ -283,8 +283,9 @@ class Camera {
 
             // If it's a motion ding and motion snapshots are enabled, grab and publish the latest snapshot
             if (ding.kind === 'motion' && this.snapshotMotion) {
-                this.snapshot.imageData = await this.camera.getLatestSnapshot()
-                this.publishSnapshot(false)
+                //this.snapshot.imageData = await this.camera.getLatestSnapshot()
+                //this.publishSnapshot(false)
+                this.publishMotionSnapshot()
             }
 
             // If ding was not already active, set active ding state property and begin loop
@@ -386,6 +387,14 @@ class Camera {
             this.publishSnapshot(true)
         }
         this.scheduleSnapshotRefresh()
+    }
+
+    async publishMotionSnapshot() {
+        for ( var i = 0; i < 36 ; i++ ) {
+            this.snapshot.imageData = await this.camera.getLatestSnapshot()
+            this.publishSnapshot(false)
+            await utils.sleep(5)
+        }
     }
 
     // Interval loop to check communications with cameras/Ring API since, unlike alarm,
