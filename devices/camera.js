@@ -1,5 +1,9 @@
 const debug = require('debug')('ring-mqtt')
 const utils = require( '../lib/utils' )
+const path = require('path')
+const pathToFfmpeg = require('ffmpeg-for-homebridge');
+const child_process = require('child_process');
+const fs = require('fs');
 
 class Camera {
     constructor(deviceInfo) {
@@ -283,9 +287,16 @@ class Camera {
 
             // If it's a motion ding and motion snapshots are enabled, grab and publish the latest snapshot
             if (ding.kind === 'motion' && this.snapshotMotion) {
-                //this.snapshot.imageData = await this.camera.getLatestSnapshot()
-                //this.publishSnapshot(false)
-                this.publishMotionSnapshot()
+                if (this.camera.operatingOnBattery) {
+                    // Battery cameras can't take snapshots while recording so try to grab a frame from the live stream instead
+                    this.publishMotionSnapshot()
+                } else {
+                    // Refresh and get the latest snapshot
+                    //this.snapshot.imageData = await this.camera.getLatestSnapshot()
+                    //this.snapshot.timestamp = Math.round(Date.now()/1000)
+                    //this.publishSnapshot(false)
+                    this.publishMotionSnapshot()
+                }
             }
 
             // If ding was not already active, set active ding state property and begin loop
@@ -390,11 +401,19 @@ class Camera {
     }
 
     async publishMotionSnapshot() {
-        for ( var i = 0; i < 36 ; i++ ) {
-            this.snapshot.imageData = await this.camera.getLatestSnapshot()
-            this.publishSnapshot(false)
-            await utils.sleep(5)
-        }
+        const mp4Path = path.join('.', 'motion.mp4')
+        const jpgPath = path.join('.', 'motion.jpg')
+        await camera.recordToFile(mp4Path, 1)
+        child_process.spawn(pathToFfmpeg, ['-y', '-i', mp4Path, jpgPath])
+        fs.unlinkSync(mp4Path)
+        fs.readFile( jpgPath, function (err, newSnapshot) {
+            if (err) {
+              throw err; 
+            }
+            this.snapshot.imageData = newSnapshot
+            this.snapshot.timestamp = Math.round(Date.now()/1000)
+        });
+        publishSnapshot(false)
     }
 
     // Interval loop to check communications with cameras/Ring API since, unlike alarm,
