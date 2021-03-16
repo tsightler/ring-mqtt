@@ -403,7 +403,7 @@ class Camera {
     async publishMotionSnapshot() {
         const mp4Path = path.join('.', this.deviceId+'_motion.mp4')
         const jpgPath = path.join('.', this.deviceId+'motion.jpg')
-        await camera.recordToFile(mp4Path, 1)
+        await this.camera.recordToFile(mp4Path, 1)
         child_process.spawn(pathToFfmpeg, ['-y', '-i', mp4Path, jpgPath])
         fs.unlinkSync(mp4Path)
         fs.readFile(jpgPath, function (err, newSnapshot) {
