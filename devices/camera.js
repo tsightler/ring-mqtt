@@ -403,17 +403,21 @@ class Camera {
     async publishMotionSnapshot() {
         const mp4Path = path.join('.', this.deviceId+'_motion.mp4')
         const jpgPath = path.join('.', this.deviceId+'_motion.jpg')
-        await this.camera.recordToFile(mp4Path, 1)
-        child_process.spawn(pathToFfmpeg, ['-y', '-i', mp4Path, jpgPath])
-        fs.unlinkSync(mp4Path)
-        fs.readFile(jpgPath, function (err, newSnapshot) {
-            if (err) {
-              throw err; 
-            }
-            this.snapshot.imageData = newSnapshot
-            this.snapshot.timestamp = Math.round(Date.now()/1000)
-        });
-        this.publishSnapshot(false)
+        try {
+            await this.camera.recordToFile(mp4Path, 1)
+            child_process.spawn(pathToFfmpeg, ['-y', '-i', mp4Path, jpgPath])
+            fs.unlinkSync(mp4Path)
+            fs.readFile(jpgPath, function (err, newSnapshot) {
+                if (err) {
+                    throw err; 
+                }
+                this.snapshot.imageData = newSnapshot
+                this.snapshot.timestamp = Math.round(Date.now()/1000)
+            });
+            this.publishSnapshot(false)
+        } catch(e) {
+            debug(message.e)
+        }
     }
 
     // Interval loop to check communications with cameras/Ring API since, unlike alarm,
