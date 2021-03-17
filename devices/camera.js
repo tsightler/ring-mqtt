@@ -401,10 +401,12 @@ class Camera {
     }
 
     async publishMotionSnapshot() {
-        const mp4Path = path.join('.', this.deviceId+'_motion.mp4')
-        const jpgPath = path.join('.', this.deviceId+'_motion.jpg')
+        const mp4Path = path.join(__dirname, this.deviceId+'_motion.mp4')
+        const jpgPath = path.join(__dirname, this.deviceId+'_motion.jpg')
         try {
+            debug('Record 1 second of video to file')
             await this.camera.recordToFile(mp4Path, 1)
+            /*
             child_process.spawn(pathToFfmpeg, ['-y', '-i', mp4Path, jpgPath])
             fs.unlinkSync(mp4Path)
             fs.readFile(jpgPath, function (err, newSnapshot) {
@@ -415,6 +417,7 @@ class Camera {
                 this.snapshot.timestamp = Math.round(Date.now()/1000)
             });
             this.publishSnapshot(false)
+            */
         } catch(e) {
             debug(message.e)
         }
