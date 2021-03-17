@@ -406,7 +406,7 @@ class Camera {
         try {
             debug('Record 1 second of video to file')
             await utils.sleep(2)
-            await this.camera.recordToFile(mp4Path, 1)
+            await this.camera.recordToFile(path.join(__dirname, this.deviceId+'_motion.mp4'), 1)
             /*
             child_process.spawn(pathToFfmpeg, ['-y', '-i', mp4Path, jpgPath])
             fs.unlinkSync(mp4Path)
