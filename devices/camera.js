@@ -403,9 +403,9 @@ class Camera {
     async publishMotionSnapshot() {
         const mp4Path = path.join(__dirname, this.deviceId+'_motion.mp4')
         const jpgPath = path.join(__dirname, this.deviceId+'_motion.jpg')
+        debug('Record 2 seconds of video to file')
         try {
-            debug('Record 2 seconds of video to file')
-            await this.camera.recordToFile(mp4Path, 2)
+            this.camera.recordToFile(mp4Path, 5)
             /*
             const ffmpeg = child_process.spawn(pathToFfmpeg, ['-y', '-i', mp4Path, jpgPath])
 
