@@ -406,6 +406,7 @@ class Camera {
         try {
             debug('Record 1 second of video to file')
             await this.camera.recordToFile(mp4Path, 1)
+            /*
             const ffmpeg = child_process.spawn(pathToFfmpeg, ['-y', '-i', mp4Path, jpgPath])
 
             ffmpeg.stdout.on('data', (data) => {
@@ -419,6 +420,7 @@ class Camera {
             ffmpeg.on('close', (code) => {
                 console.log(`Ffmpeg process exited with code ${code}`);
             })
+            */
         } catch(e) {
             debug(message.e)
         }
