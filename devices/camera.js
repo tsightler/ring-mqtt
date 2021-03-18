@@ -415,8 +415,8 @@ class Camera {
                 ],
             })
 
-            sipSession.onCallEnded.subscribe(() => {
-                child_process.spawn(pathToFfmpeg, ['-y', '-i', avcPath, jpgPath])
+            sipSession.onCallEnded.subscribe(async () => {
+                await child_process.spawn(pathToFfmpeg, ['-y', '-i', avcPath, jpgPath])
                 await utils.sleep(1)
                 try {
                     if (fs.existsSync(jpgPath)) {
