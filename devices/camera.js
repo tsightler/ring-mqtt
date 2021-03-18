@@ -2,7 +2,7 @@ const debug = require('debug')('ring-mqtt')
 const utils = require( '../lib/utils' )
 const path = require('path')
 const pathToFfmpeg = require('ffmpeg-for-homebridge');
-const child_process = require('child_process');
+const child_process = require('child_process')
 const fs = require('fs');
 
 class Camera {
@@ -406,21 +406,36 @@ class Camera {
         try {
             debug('Record 1 second of video to file')
             await this.camera.recordToFile(mp4Path, 1)
-            let proc = child_process.spawn(pathToFfmpeg, ['-y', '-i', mp4Path, jpgPath])
-            proc.on('close', function() {
-                fs.unlinkSync(mp4Path)
-                fs.readFile(jpgPath, function (err, newSnapshot) {
-                    if (err) {
-                        throw err; 
-                    }
-                    this.snapshot.imageData = newSnapshot
-                    this.snapshot.timestamp = Math.round(Date.now()/1000)
-                })
-                this.publishSnapshot(false)
+            const ffmpeg = child_process.spawn(pathToFfmpeg, ['-y', '-i', mp4Path, jpgPath])
+
+            ffmpeg.stdout.on('data', (data) => {
+                console.log(`stdout: ${data}`);
+            });
+
+            ffmpeg.stdout.on('data', (data) => {
+                console.log(`stderr: ${data}`);
+            });
+
+            ffmpeg.on('close', (code) => {
+                console.log(`Ffmpeg process exited with code ${code}`);
             })
         } catch(e) {
             debug(message.e)
         }
+        //this.publishSnapshot(false)
+        const ls = child_process.spawn('ls', ['-lh', __dirname]);
+
+        ls.stdout.on('data', (data) => {
+        console.log(`stdout: ${data}`);
+        });
+
+        ls.stderr.on('data', (data) => {
+        console.error(`stderr: ${data}`);
+        });
+
+        ls.on('close', (code) => {
+        console.log(`child process exited with code ${code}`);
+        });
     }
 
     // Interval loop to check communications with cameras/Ring API since, unlike alarm,
