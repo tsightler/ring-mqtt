@@ -420,9 +420,9 @@ class Camera {
                 })
 
                 sipSession.onCallEnded.subscribe(async () => {
+                    this.snapshot.updating = false
                     debug('Converting captured frame to jpeg image...')
-                    child_process.spawn(pathToFfmpeg, ['-y', '-i', avcPath, jpgPath])
-                    await utils.sleep(1)
+                    await child_process.spawn(pathToFfmpeg, ['-y', '-i', avcPath, jpgPath])
                     try {
                         debug('Did the image get created?')
                         if (fs.existsSync(jpgPath)) {
@@ -440,8 +440,6 @@ class Camera {
             } catch(e) {
                 debug(e.message)
             }
-            debug('Exiting publishMotionSnapshot()')
-            this.snapshot.updating = false
         }
     }
 
