@@ -420,12 +420,16 @@ class Camera {
                 })
 
                 sipSession.onCallEnded.subscribe(async () => {
-                    await child_process.spawn(pathToFfmpeg, ['-y', '-i', avcPath, jpgPath])
+                    debug('Converting captured frame to jpeg image...')
+                    child_process.spawn(pathToFfmpeg, ['-y', '-i', avcPath, jpgPath])
                     await utils.sleep(1)
                     try {
+                        debug('Did the image get created?')
                         if (fs.existsSync(jpgPath)) {
+                            debug('Update the image and remove the temp files')
                             this.snapshot.imageData = fs.readFileSync(jpgPath)
                             this.snapshot.timestamp = Math.round(Date.now()/1000)
+                            this.publishSnapshot(false)
                             fs.unlink(jpgPath)
                             fs.unlink(avcPath)                        
                         }
@@ -436,7 +440,7 @@ class Camera {
             } catch(e) {
                 debug(e.message)
             }
-            this.publishSnapshot(false)
+            debug('Exiting publishMotionSnapshot()')
             this.snapshot.updating = false
         }
     }
