@@ -401,38 +401,44 @@ class Camera {
     }
 
     async publishMotionSnapshot() {
-        const avcPath = path.join(__dirname, this.deviceId+'_motion.avc')
-        const jpgPath = path.join(__dirname, this.deviceId+'_motion.jpg')
-        debug('Record 2 seconds of video to file')
-        try {
-            const sipSession = await this.camera.streamVideo({
-                output: [
-                    '-s',
-                    '640x360',
-                    '-frames:v',
-                    '1',
-                    avcPath,
-                ],
-            })
+        if (!this.snapshot.updating) {
+            this.snapshot.updating = true
+            const avcPath = path.join(__dirname, this.deviceId+'_motion.avc')
+            const jpgPath = path.join(__dirname, this.deviceId+'_motion.jpg')
+            debug('Grabing snapshot image from live stream...')
+            try {
+                const sipSession = await this.camera.streamVideo({
+                    output: [
+                        '-s',
+                        '640x360',
+                        '-frames:v',
+                        '1',
+                        '-f',
+                        'image2',
+                        avcPath,
+                    ],
+                })
 
-            sipSession.onCallEnded.subscribe(async () => {
-                await child_process.spawn(pathToFfmpeg, ['-y', '-i', avcPath, jpgPath])
-                await utils.sleep(1)
-                try {
-                    if (fs.existsSync(jpgPath)) {
-                        this.snapshot.imageData = fs.readFileSync(jpgPath)
-                        this.snapshot.timestamp = Math.round(Date.now()/1000)
-                        fs.unlink(jpgPath)
-                        fs.unlink(avcPath)                        
+                sipSession.onCallEnded.subscribe(async () => {
+                    await child_process.spawn(pathToFfmpeg, ['-y', '-i', avcPath, jpgPath])
+                    await utils.sleep(1)
+                    try {
+                        if (fs.existsSync(jpgPath)) {
+                            this.snapshot.imageData = fs.readFileSync(jpgPath)
+                            this.snapshot.timestamp = Math.round(Date.now()/1000)
+                            fs.unlink(jpgPath)
+                            fs.unlink(avcPath)                        
+                        }
+                    } catch(err) {
+                        debug(err.message)
                     }
-                } catch(err) {
-                    debug(err.message)
-                }
-            })            
-        } catch(e) {
-            debug(e.message)
+                })            
+            } catch(e) {
+                debug(e.message)
+            }
+            this.publishSnapshot(false)
+            this.snapshot.updating = false
         }
-        this.publishSnapshot(false)
     }
 
     // Interval loop to check communications with cameras/Ring API since, unlike alarm,
