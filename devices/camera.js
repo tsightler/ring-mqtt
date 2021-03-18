@@ -413,9 +413,9 @@ class Camera {
                     if (err) {
                         throw err; 
                     }
+                    this.snapshot.imageData = newSnapshot
+                    this.snapshot.timestamp = Math.round(Date.now()/1000)
                 })
-                this.snapshot.imageData = newSnapshot
-                this.snapshot.timestamp = Math.round(Date.now()/1000)
                 this.publishSnapshot(false)
             })
         } catch(e) {
