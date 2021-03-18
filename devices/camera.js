@@ -404,8 +404,8 @@ class Camera {
         const mp4Path = path.join(__dirname, this.deviceId+'_motion.mp4')
         const jpgPath = path.join(__dirname, this.deviceId+'_motion.jpg')
         try {
-            debug('Record 1 second of video to file')
-            await this.camera.recordToFile(mp4Path, 1)
+            debug('Record 2 seconds of video to file')
+            await this.camera.recordToFile(mp4Path, 2)
             /*
             const ffmpeg = child_process.spawn(pathToFfmpeg, ['-y', '-i', mp4Path, jpgPath])
 
@@ -425,7 +425,7 @@ class Camera {
             debug(message.e)
         }
         //this.publishSnapshot(false)
-        const ls = child_process.spawn('ls', ['-lh', __dirname]);
+        const ls = child_process.spawn('ls', ['-lh', mp4Path]);
 
         ls.stdout.on('data', (data) => {
         console.log(`stdout: ${data}`);
