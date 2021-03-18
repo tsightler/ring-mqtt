@@ -405,19 +405,19 @@ class Camera {
         const jpgPath = path.join(__dirname, this.deviceId+'_motion.jpg')
         try {
             debug('Record 1 second of video to file')
-            await this.camera.recordToFile(path.join('.', 'motion.mp4'), 1)
-            /*
-            child_process.spawn(pathToFfmpeg, ['-y', '-i', mp4Path, jpgPath])
-            fs.unlinkSync(mp4Path)
-            fs.readFile(jpgPath, function (err, newSnapshot) {
-                if (err) {
-                    throw err; 
-                }
+            await this.camera.recordToFile(mp4Path, 1)
+            let proc = child_process.spawn(pathToFfmpeg, ['-y', '-i', mp4Path, jpgPath])
+            proc.on('close', function() {
+                fs.unlinkSync(mp4Path)
+                fs.readFile(jpgPath, function (err, newSnapshot) {
+                    if (err) {
+                        throw err; 
+                    }
+                })
                 this.snapshot.imageData = newSnapshot
                 this.snapshot.timestamp = Math.round(Date.now()/1000)
-            });
-            this.publishSnapshot(false)
-            */
+                this.publishSnapshot(false)
+            })
         } catch(e) {
             debug(message.e)
         }
