@@ -405,7 +405,7 @@ class Camera {
         const jpgPath = path.join(__dirname, this.deviceId+'_motion.jpg')
         debug('Record 2 seconds of video to file')
         try {
-            const sipSession = await camera.streamVideo({
+            const sipSession = await this.camera.streamVideo({
                 output: [
                     '-s',
                     '640x360',
