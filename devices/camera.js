@@ -430,8 +430,8 @@ class Camera {
                             this.snapshot.imageData = fs.readFileSync(jpgPath)
                             this.snapshot.timestamp = Math.round(Date.now()/1000)
                             this.publishSnapshot(false)
-                            fs.unlink(jpgPath)
-                            fs.unlink(avcPath)                        
+                            fs.unlinkSync(jpgPath)
+                            fs.unlinkSync(avcPath)                        
                         }
                     } catch(err) {
                         debug(err.message)
