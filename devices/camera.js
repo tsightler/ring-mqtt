@@ -401,43 +401,38 @@ class Camera {
     }
 
     async publishMotionSnapshot() {
-        const mp4Path = path.join(__dirname, this.deviceId+'_motion.mp4')
+        const avcPath = path.join(__dirname, this.deviceId+'_motion.avc')
         const jpgPath = path.join(__dirname, this.deviceId+'_motion.jpg')
         debug('Record 2 seconds of video to file')
         try {
-            this.camera.recordToFile(mp4Path, 5)
-            /*
-            const ffmpeg = child_process.spawn(pathToFfmpeg, ['-y', '-i', mp4Path, jpgPath])
-
-            ffmpeg.stdout.on('data', (data) => {
-                console.log(`stdout: ${data}`);
-            });
-
-            ffmpeg.stdout.on('data', (data) => {
-                console.log(`stderr: ${data}`);
-            });
-
-            ffmpeg.on('close', (code) => {
-                console.log(`Ffmpeg process exited with code ${code}`);
+            const sipSession = await camera.streamVideo({
+                output: [
+                    '-s',
+                    '640x360',
+                    '-frames:v',
+                    '1',
+                    avcPath,
+                ],
             })
-            */
+
+            sipSession.onCallEnded.subscribe(() => {
+                child_process.spawn(pathToFfmpeg, ['-y', '-i', avcPath, jpgPath])
+                await utils.sleep(1)
+                try {
+                    if (fs.existsSync(jpgPath)) {
+                        this.snapshot.imageData = fs.readFileSync(jpgPath)
+                        this.snapshot.timestamp = Math.round(Date.now()/1000)
+                        fs.unlink(jpgPath)
+                        fs.unlink(avcPath)                        
+                    }
+                } catch(err) {
+                    debug(err.message)
+                }
+            })            
         } catch(e) {
-            debug(message.e)
+            debug(e.message)
         }
-        //this.publishSnapshot(false)
-        const ls = child_process.spawn('ls', ['-lh', mp4Path]);
-
-        ls.stdout.on('data', (data) => {
-        console.log(`stdout: ${data}`);
-        });
-
-        ls.stderr.on('data', (data) => {
-        console.error(`stderr: ${data}`);
-        });
-
-        ls.on('close', (code) => {
-        console.log(`child process exited with code ${code}`);
-        });
+        this.publishSnapshot(false)
     }
 
     // Interval loop to check communications with cameras/Ring API since, unlike alarm,
