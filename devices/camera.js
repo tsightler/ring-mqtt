@@ -287,7 +287,7 @@ class Camera {
 
             // If it's a motion ding and motion snapshots are enabled, grab and publish the latest snapshot
             if (ding.kind === 'motion' && this.snapshotMotion) {
-                if (!this.camera.operatingOnBattery) {
+                if (this.camera.operatingOnBattery) {
                     // Battery cameras can't take snapshots while recording so try to grab a frame from the live stream instead
                     this.publishLiveStreamSnapshot()
                 } else {
