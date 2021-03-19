@@ -9,7 +9,8 @@
     "express": "^4.17.1",
     "is-online": "^9.0.0",
     "mqtt": "^4.2.6",
-    "ring-client-api": "tsightler/ring-client-api"
+    "ring-client-api": "^9.15.4",
+    "await-spawn": "^4.0.1"
   },
   "devDependencies": {
     "eslint": "^7.19.0"
