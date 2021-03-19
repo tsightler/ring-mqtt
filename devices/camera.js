@@ -287,15 +287,14 @@ class Camera {
 
             // If it's a motion ding and motion snapshots are enabled, grab and publish the latest snapshot
             if (ding.kind === 'motion' && this.snapshotMotion) {
-                if (this.camera.operatingOnBattery) {
+                if (!this.camera.operatingOnBattery) {
                     // Battery cameras can't take snapshots while recording so try to grab a frame from the live stream instead
-                    this.publishMotionSnapshot()
+                    this.publishLiveStreamSnapshot()
                 } else {
                     // Refresh and get the latest snapshot
-                    //this.snapshot.imageData = await this.camera.getLatestSnapshot()
-                    //this.snapshot.timestamp = Math.round(Date.now()/1000)
-                    //this.publishSnapshot(false)
-                    this.publishMotionSnapshot()
+                    this.snapshot.imageData = await this.camera.getLatestSnapshot()
+                    this.snapshot.timestamp = Math.round(Date.now()/1000)
+                    this.publishSnapshot(false)
                 }
             }
 
@@ -400,7 +399,7 @@ class Camera {
         this.scheduleSnapshotRefresh()
     }
 
-    async publishMotionSnapshot() {
+    async publishLiveStreamSnapshot() {
         if (!this.snapshot.updating) {
             this.snapshot.updating = true
             const filePrefix = this.deviceId+'_motion_'+Date.now() 
@@ -421,38 +420,38 @@ class Camera {
                 sipSession.onCallEnded.subscribe(() => {
                     this.snapshot.updating = false
                     try {
-                        if (fs.existsSync(aviPath)) {
-                            fs.unlinkSync(aviPath)
-                        }
-                        if (fs.existsSync(aviPath)) {
-                            fs.unlinkSync(aviPath)
-                        }
+                        if (fs.existsSync(aviPath)) { fs.unlinkSync(aviPath) }
+                        if (fs.existsSync(jpgPath)) { fs.unlinkSync(jpgPath) }
                     } catch(err) {
                         debug(err.message)
                     }
                 })
 
-                while (!fs.existsSync(aviPath)) {
-                    console.log('No video file yet...')
+                let i = 0
+                while (!utils.checkFile(aviPath, 100000) && i < 10) {
+                    console.log('Waiting for live stream to start for camera: '+this.deviceId)
                     await utils.sleep(1)
+                    i++
                 }
                 
-                while (fs.statSync(aviPath).size < 100000) {
-                    console.log('Not enough stream data yet...')
-                    await utils.sleep(1)
+                if (i < 10) {
+                    try {
+                        debug('Attempting to grab snapshot from live stream for camera: '+this.deviceId)
+                        await spawn(pathToFfmpeg, ['-i', aviPath, '-s', '640:360', '-vf', "select='eq(pict_type\,I)'", '-vframes', '1', '-q:v', '2', jpgPath])
+                        if (utils.checkFile(jpgPath)) {
+                            debug('Sending updated liver stream snapshot image for camera: '+this.deviceId)
+                            this.snapshot.imageData = fs.readFileSync(jpgPath)
+                            this.snapshot.timestamp = Math.round(Date.now()/1000)
+                            this.publishSnapshot(false)
+                            fs.unlinkSync(jpgPath)
+                        }
+                    } catch (e) {
+                        console.log(e.stderr.toString())
+                    }
+                } else {
+                    debug('Live stream failed to start for camera: '+this.deviceId)
                 }
 
-                try {
-                    await spawn(pathToFfmpeg, ['-i', aviPath, '-s', '640:360', '-vf', "select='eq(pict_type\,I)'", '-vframes', '1', '-q:v', '2', jpgPath])
-                    if (fs.existsSync(jpgPath)) {
-                        debug('Update the image and remove the temp files')
-                        this.snapshot.imageData = fs.readFileSync(jpgPath)
-                        this.snapshot.timestamp = Math.round(Date.now()/1000)
-                        this.publishSnapshot(false)
-                    }
-                } catch (e) {
-                    console.log(e.stderr.toString())
-                }
             } catch(e) {
                 debug(e.message)
             }
