@@ -2,7 +2,7 @@ const debug = require('debug')('ring-mqtt')
 const utils = require( '../lib/utils' )
 const path = require('path')
 const pathToFfmpeg = require('ffmpeg-for-homebridge');
-const child_process = require('child_process')
+const spawn = require('await-spawn')
 const fs = require('fs');
 
 class Camera {
@@ -403,40 +403,56 @@ class Camera {
     async publishMotionSnapshot() {
         if (!this.snapshot.updating) {
             this.snapshot.updating = true
-            const avcPath = path.join(__dirname, this.deviceId+'_motion.avc')
-            const jpgPath = path.join(__dirname, this.deviceId+'_motion.jpg')
-            debug('Grabing snapshot image from live stream...')
+            const filePrefix = this.deviceId+'_motion_'+Date.now() 
+            const aviPath = path.join(__dirname, filePrefix+'.avi')
+            const jpgPath = path.join(__dirname, filePrefix+'.jpg')
+            debug('Trying to grab a snapshot image from the live stream...')
             try {
                 const sipSession = await this.camera.streamVideo({
                     output: [
-                        '-s',
-                        '640x360',
-                        '-frames:v',
-                        '1',
-                        '-f',
-                        'image2',
-                        avcPath,
+                        '-codec',
+                        'copy',
+                        '-t',
+                        '10',
+                        aviPath,
                     ],
                 })
 
-                sipSession.onCallEnded.subscribe(async () => {
+                sipSession.onCallEnded.subscribe(() => {
                     this.snapshot.updating = false
-                    debug('Converting captured frame to jpeg image...')
-                    await child_process.spawn(pathToFfmpeg, ['-y', '-i', avcPath, jpgPath])
                     try {
-                        debug('Did the image get created?')
-                        if (fs.existsSync(jpgPath)) {
-                            debug('Update the image and remove the temp files')
-                            this.snapshot.imageData = fs.readFileSync(jpgPath)
-                            this.snapshot.timestamp = Math.round(Date.now()/1000)
-                            this.publishSnapshot(false)
-                            fs.unlinkSync(jpgPath)
-                            fs.unlinkSync(avcPath)                        
+                        if (fs.existsSync(aviPath)) {
+                            fs.unlinkSync(aviPath)
+                        }
+                        if (fs.existsSync(aviPath)) {
+                            fs.unlinkSync(aviPath)
                         }
                     } catch(err) {
                         debug(err.message)
                     }
-                })            
+                })
+
+                while (!fs.existsSync(aviPath)) {
+                    console.log('No video file yet...')
+                    await utils.sleep(1)
+                }
+                
+                while (fs.statSync(aviPath).size < 100000) {
+                    console.log('Not enough stream data yet...')
+                    await utils.sleep(1)
+                }
+
+                try {
+                    await spawn(pathToFfmpeg, ['-i', aviPath, '-s', '640:360', '-vf', "select='eq(pict_type\,I)'", '-vframes', '1', '-q:v', '2', jpgPath])
+                    if (fs.existsSync(jpgPath)) {
+                        debug('Update the image and remove the temp files')
+                        this.snapshot.imageData = fs.readFileSync(jpgPath)
+                        this.snapshot.timestamp = Math.round(Date.now()/1000)
+                        this.publishSnapshot(false)
+                    }
+                } catch (e) {
+                    console.log(e.stderr.toString())
+                }
             } catch(e) {
                 debug(e.message)
             }
