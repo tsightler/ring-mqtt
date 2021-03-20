@@ -285,10 +285,7 @@ class Camera {
                     // Battery cameras can't take snapshots while recording so try to grab a frame from the live stream instead
                     this.publishLiveStreamSnapshot()
                 } else {
-                    // Refresh and get the latest snapshot
-                    this.snapshot.imageData = await this.camera.getLatestSnapshot()
-                    this.snapshot.timestamp = Math.round(Date.now()/1000)
-                    this.publishSnapshot(false)
+                    this.publishSnapshot(true)
                 }
             }
 
