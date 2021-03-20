@@ -429,7 +429,7 @@ class Camera {
     }
 
     // Attempt to start live stream with retries
-    async tryStartLivestream(filePath, retries) {
+    async tryStartLiveStream(filePath, retries) {
         for (let i = 0; i < retries; i++) {
             const filePrefix = this.deviceId+'_motion_'+Date.now() 
             const aviFile = path.join(filePath, filePrefix+'.avi')
