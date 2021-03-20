@@ -468,7 +468,7 @@ class Camera {
             } catch (e) {
                 console.log(e.stderr.toString())
             } finally {
-                if (utils.checkFile(jpgPath)) {
+                if (utils.checkFile(jpgFile)) {
                     debug('Successfully grabbed a snapshot image from live stream for camera: '+this.deviceId)
                     const newSnapshot = fs.readFileSync(jpgFile)
                     fs.unlinkSync(jpgFile)
