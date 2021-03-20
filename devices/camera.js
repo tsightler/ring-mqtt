@@ -364,10 +364,10 @@ class Camera {
     // Publish snapshot image/metadata
     async publishSnapshot(refresh, isMotion) {
         // If refresh = true, get updated snapshot image before publishing
-        let newSnapshot
         if (refresh) {
+            let newSnapshot
             try {
-                newSnapshot = (isMotion && !this.camera.operatingOnBattery) ? await this.getSnapshotFromStream() : await this.camera.getSnapshot()
+                newSnapshot = (isMotion && this.camera.operatingOnBattery) ? await this.getSnapshotFromStream() : await this.camera.getSnapshot()
             } catch(e) {
                 debug(e.message)
             }
