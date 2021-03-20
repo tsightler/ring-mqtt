@@ -371,13 +371,12 @@ class Camera {
             } catch(e) {
                 debug(e.message)
             }
-        }
-
-        if (newSnapshot) {
-            this.snapshot.imageData = newSnapshot
-            this.snapshot.timestamp = Math.round(Date.now()/1000)
-        } else {
-            debug('Could not retrieve updated snapshot for camera '+this.deviceId+', using previous cached snapshot.')
+            if (newSnapshot) {
+                this.snapshot.imageData = newSnapshot
+                this.snapshot.timestamp = Math.round(Date.now()/1000)
+            } else {
+                debug('Could not retrieve updated snapshot for camera '+this.deviceId+', using previously cached snapshot.')
+            }
         }
 
         debug(this.cameraTopic+'/snapshot/image', '<binary_image_data>')
