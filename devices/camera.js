@@ -429,10 +429,10 @@ class Camera {
     }
 
     // Attempt to start live stream with retries
-    async tryStreamStart(path, retries) {
+    async tryStartLivestream(filePath, retries) {
         for (let i = 0; i < retries; i++) {
             const filePrefix = this.deviceId+'_motion_'+Date.now() 
-            const aviFile = path.join(path, filePrefix+'.avi')
+            const aviFile = path.join(filePath, filePrefix+'.avi')
             const sipSession = await this.startSipSession(10, aviFile)
             if (sipSession) {
                 const isStreaming = await this.checkStream(aviFile)
@@ -454,9 +454,9 @@ class Camera {
             return 
         }
 
-        this.snapshot.updating = true        
-        debug('Attempting to connect to live stream for camera: '+this.deviceId)
-        const aviFile = await this.tryStreamStart('/tmp', 2)
+        this.snapshot.updating = true
+        debug('Battery device detected, will try to get motion snapshot from live stream for camera: '+this.deviceId)
+        const aviFile = await this.tryStartLiveStream('/tmp', 2)
         
         if (aviFile) {
             try {
