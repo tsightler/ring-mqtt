@@ -4,7 +4,6 @@ const path = require('path')
 const pathToFfmpeg = require('ffmpeg-for-homebridge');
 const spawn = require('await-spawn')
 const fs = require('fs');
-const { SSL_OP_SSLEAY_080_CLIENT_DH_BUG } = require('constants');
 
 class Camera {
     constructor(deviceInfo) {
