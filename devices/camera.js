@@ -367,7 +367,7 @@ class Camera {
         let newSnapshot
         if (refresh) {
             try {
-                newSnapshot = (isMotion && !this.camera.operatingOnBattery) ? await this.getLivestreamSnapshot() : await this.camera.getSnapshot()
+                newSnapshot = (isMotion && !this.camera.operatingOnBattery) ? await this.getLiveStreamSnapshot() : await this.camera.getSnapshot()
             } catch(e) {
                 debug(e.message)
             }
