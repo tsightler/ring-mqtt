@@ -69,7 +69,7 @@ class Camera {
             }
         }
 
-        // Properties to store state published to MQTT
+        // Properties to store published MQTT state
         // Used to keep from sending state updates on every poll (20 seconds)
         if (this.camera.hasLight) {
             this.publishedLightState = 'unknown'
@@ -264,28 +264,27 @@ class Camera {
         if (ding) {
             // Is it a motion or doorbell ding (for others we do nothing)?
             if (ding.kind !== 'ding' && ding.kind !== 'motion') { return }
+
             debug('Ding of kind '+ding.kind+' received at '+ding.now+' from camera '+this.deviceId)
- 
-            // Is it a motion or doorbell ding?
             const stateTopic = this.cameraTopic+'/'+ding.kind+'/state'
 
-            // Update time for most recent ding and expire time of ding (Ring seems to be 180 seconds for all dings)
+            // Update last_ding and ding duration (Ring seems to be 180 seconds for all dings)
             this[ding.kind].last_ding = Math.floor(ding.now)
             this[ding.kind].ding_duration = ding.expires_in
-            // Calculate new expire time for ding (ding.now + ding.expires_in)
+
+            // Update expire time for ding (ding.now + ding.expires_in)
             this[ding.kind].last_ding_expires = this[ding.kind].last_ding+ding.expires_in
 
             // Publish MQTT active sensor state
             // Will republish to MQTT for new dings even if ding is already active
             this.publishMqtt(stateTopic, 'ON', true)
 
-            // If it's a motion ding and motion snapshots are enabled, grab and publish the latest snapshot
+            // If motion ding and snapshots on motion are enabled, publish a new snapshot
             if (ding.kind === 'motion' && this.snapshotMotion) {
                 this.publishSnapshot(true, true)
             }
 
-            // If ding was not already active, set active ding state property and begin loop
-            // to check for ding expiration
+            // If new ding, set active ding state property and begin expiration loop
             if (!this[ding.kind].active_ding) {
                 this[ding.kind].active_ding = true
                 // Loop until current time is > last_ding expires time.  Sleeps until
@@ -296,7 +295,7 @@ class Camera {
                     await utils.sleep(sleeptime)
                     debug('Ding of kind '+ding.kind+' from camera '+this.deviceId+' exired')
                 }
-                // All dings have expired, set state back to false/off
+                // All dings have expired, set ding state back to false/off and publish
                 debug('All dings of kind '+ding.kind+' from camera '+this.deviceId+' have expired')
                 this[ding.kind].active_ding = false
                 this.publishMqtt(stateTopic, 'OFF', true)
@@ -386,8 +385,8 @@ class Camera {
     // Refresh snapshot on scheduled interval
     async scheduleSnapshotRefresh() {
         await utils.sleep(this.snapshotInterval)
-        // During active motion events stop interval snapshots
-        if (this.snapshotMotion && !this.motion.active_ding) { 
+        // During active motion events or device offline state, stop interval snapshots
+        if (this.snapshotMotion && !this.motion.active_ding && this.availabilityState === 'online') { 
             this.publishSnapshot(true)
         }
         this.scheduleSnapshotRefresh()
@@ -493,7 +492,12 @@ class Camera {
         this.publishDeviceHealth()
     }
 
-    // Simple check for heartbeat based on polled status since cameras
+    // Simple heartbeat function. Polling events call cause publishPollState() to be
+    // called every 20 seconds and heartbeat is reset to 3 each time.  If polling events
+    // stop this monitor function will eventually cause heartbeat to drop to 0 and set
+    // device offline (typically around 60 seconds).  When the API resumes sending polled
+    // event data the publishPollState() function resets hearbeat and places the device 
+    // back in online state
     async monitorCameraConnection() {
         if (this.heartbeat < 1 && this.availabilityState !== 'offline') {
             this.offline()
