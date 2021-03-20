@@ -4,6 +4,7 @@ const path = require('path')
 const pathToFfmpeg = require('ffmpeg-for-homebridge');
 const spawn = require('await-spawn')
 const fs = require('fs');
+const { SSL_OP_SSLEAY_080_CLIENT_DH_BUG } = require('constants');
 
 class Camera {
     constructor(deviceInfo) {
@@ -281,12 +282,7 @@ class Camera {
 
             // If it's a motion ding and motion snapshots are enabled, grab and publish the latest snapshot
             if (ding.kind === 'motion' && this.snapshotMotion) {
-                if (this.camera.operatingOnBattery) {
-                    // Battery cameras can't take snapshots while recording so try to grab a frame from the live stream instead
-                    this.publishLiveStreamSnapshot()
-                } else {
-                    this.publishSnapshot(true)
-                }
+                this.publishSnapshot(true, true)
             }
 
             // If ding was not already active, set active ding state property and begin loop
@@ -366,17 +362,22 @@ class Camera {
     }
 
     // Publish snapshot image/metadata
-    async publishSnapshot(refresh) {
+    async publishSnapshot(refresh, isMotion) {
         // If refresh = true, get updated snapshot image before publishing
+        let newSnapshot
         if (refresh) {
             try {
-                const newSnapshot = await this.camera.getSnapshot()
-                this.snapshot.imageData = newSnapshot
-                this.snapshot.timestamp = Math.round(Date.now()/1000)
+                newSnapshot = (isMotion && !this.camera.operatingOnBattery) ? await this.getLivestreamSnapshot() : await this.camera.getSnapshot()
             } catch(e) {
                 debug(e.message)
-                debug('Could not retrieve updated snapshot for camera '+this.deviceId+', using previous cached snapshot.')
             }
+        }
+
+        if (newSnapshot) {
+            this.snapshot.imageData = newSnapshot
+            this.snapshot.timestamp = Math.round(Date.now()/1000)
+        } else {
+            debug('Could not retrieve updated snapshot for camera '+this.deviceId+', using previous cached snapshot.')
         }
 
         debug(this.cameraTopic+'/snapshot/image', '<binary_image_data>')
@@ -394,62 +395,87 @@ class Camera {
         this.scheduleSnapshotRefresh()
     }
 
-    async publishLiveStreamSnapshot() {
-        if (!this.snapshot.updating) {
-            this.snapshot.updating = true
-            const filePrefix = this.deviceId+'_motion_'+Date.now() 
-            const aviPath = path.join(__dirname, filePrefix+'.avi')
-            const jpgPath = path.join(__dirname, filePrefix+'.jpg')
-            debug('Trying to grab a snapshot image from the live stream...')
-            try {
-                const sipSession = await this.camera.streamVideo({
-                    output: [
-                        '-codec',
-                        'copy',
-                        '-t',
-                        '10',
-                        aviPath,
-                    ],
-                })
+    async startSipSession(duration, file) {
+        try {
+            debug('Connecting to SIP video stream for camera: '+this.deviceId)
+            const sipSession = await this.camera.streamVideo({
+                output: ['-codec', 'copy', '-t', duration, file, ],
+            })
 
-                sipSession.onCallEnded.subscribe(() => {
-                    this.snapshot.updating = false
-                    try {
-                        if (fs.existsSync(aviPath)) { fs.unlinkSync(aviPath) }
-                        if (fs.existsSync(jpgPath)) { fs.unlinkSync(jpgPath) }
-                    } catch(err) {
-                        debug(err.message)
-                    }
-                })
-
-                let i = 0
-                while (!utils.checkFile(aviPath, 100000) && i < 10) {
-                    console.log('Waiting for live stream to start for camera: '+this.deviceId)
-                    await utils.sleep(1)
-                    i++
+            sipSession.onCallEnded.subscribe(() => {
+                try {
+                    if (fs.existsSync(file)) { fs.unlinkSync(file) }
+                } catch(err) {
+                    debug(err.message)
                 }
-                
-                if (i < 10) {
-                    try {
-                        debug('Attempting to grab snapshot from live stream for camera: '+this.deviceId)
-                        await spawn(pathToFfmpeg, ['-i', aviPath, '-s', '640:360', '-vf', "select='eq(pict_type\,I)'", '-vframes', '1', '-q:v', '2', jpgPath])
-                        if (utils.checkFile(jpgPath)) {
-                            debug('Sending updated liver stream snapshot image for camera: '+this.deviceId)
-                            this.snapshot.imageData = fs.readFileSync(jpgPath)
-                            this.snapshot.timestamp = Math.round(Date.now()/1000)
-                            this.publishSnapshot(false)
-                            fs.unlinkSync(jpgPath)
-                        }
-                    } catch (e) {
-                        console.log(e.stderr.toString())
-                    }
-                } else {
-                    debug('Live stream failed to start for camera: '+this.deviceId)
-                }
+            })
 
-            } catch(e) {
-                debug(e.message)
+            return sipSession
+
+        } catch(e) {
+            debug(e.message)
+            return false
+        }
+    }
+
+    // Check if stream starts within 5 seconds
+    async checkStream(file) {
+        for (let i = 0; i < 5; i++) {
+            if (utils.checkFile(file, 50000)) {
+                return true
             }
+            await utils.sleep(1)
+        }
+        return false
+    }
+
+    // Attempt to start live stream with retries
+    async tryStreamStart(path, retries) {
+        for (let i = 0; i < retries; i++) {
+            const filePrefix = this.deviceId+'_motion_'+Date.now() 
+            const aviFile = path.join(path, filePrefix+'.avi')
+            const sipSession = await this.startSipSession(10, aviFile)
+            if (sipSession) {
+                const isStreaming = await this.checkStream(aviFile)
+                if (isStreaming) {
+                    debug ('Established live stream for camera: '+this.deviceId)
+                    return aviFile
+                } else {
+                    debug ('Live stream for camera '+this.deviceId+' failed to start, retrying...')
+                }
+            }
+        }
+        debug ('Live stream for camera '+this.deviceId+' failed to start after all retries, aborting!')
+        return false
+    }
+
+    async getLiveStreamSnapshot() {
+        if (this.snapshot.updating) {
+            debug ('Snapshot update from live steam already in progress for camera: '+this.deviceId)
+            return 
+        }
+
+        this.snapshot.updating = true        
+        debug('Attempting to connect to live stream for camera: '+this.deviceId)
+        const aviFile = await this.tryStreamStart('/tmp', 2)
+        
+        if (aviFile) {
+            try {
+                debug('Grabbing snapshot from live stream for camera: '+this.deviceId)
+                // Attempts to grab snapshot from key frame
+                await spawn(pathToFfmpeg, ['-i', aviPath, '-s', '640:360', '-vf', "select='eq(pict_type\,I)'", '-vframes', '1', '-q:v', '2', jpgPath])
+                if (utils.checkFile(jpgPath)) {
+                    debug('Successfully grabbed snapshot image from live stream for camera: '+this.deviceId)
+                    const newSnapshot = fs.readFileSync(jpgPath)
+                    fs.unlinkSync(jpgPath)
+                    return newSnapshot
+                }
+            } catch (e) {
+                console.log(e.stderr.toString())
+            }
+        } else {
+            debug('Failed to get snapshot from live stream for camera: '+this.deviceId)
+            return false
         }
     }
 
