@@ -12,6 +12,7 @@ class Camera {
         this.mqttClient = deviceInfo.mqttClient
         this.subscribed = false
         this.availabilityState = 'init'
+        this.heartbeat = 3
         this.locationId = this.camera.data.location_id
         this.deviceId = this.camera.data.device_id
         this.config = deviceInfo.CONFIG
@@ -148,6 +149,8 @@ class Camera {
 
         // Publish device state and, if new device, subscribe for state updates
         if (!this.subscribed) {
+            this.subscribed = true
+
             // Subscribe to Ding events (all cameras have at least motion events)
             this.camera.onNewDing.subscribe(ding => {
                 this.publishDingState(ding)
@@ -155,18 +158,15 @@ class Camera {
             // Since this is initial publish of device publish current ding state as well
             this.publishDingState()
 
-            // If camera has light/siren subscribe to those events as well (only polls, default 20 seconds)
-            if (this.camera.hasLight || this.camera.hasSiren) {
-                this.camera.onData.subscribe(() => {
-                    this.publishPolledState()
-                    
-                    // Update snapshot frequency in case it's changed
-                    if (this.snapshotAutoInterval && this.camera.data.settings.hasOwnProperty('lite_24x7')) {
-                        this.snapshotInterval = this.camera.data.settings.lite_24x7.frequency_secs
-                    }
-                })
-            }
-            this.subscribed = true
+            // Subscribe to poll events, default every 20 seconds
+            this.camera.onData.subscribe(() => {
+                this.publishPolledState()
+                
+                // Update snapshot frequency in case it's changed
+                if (this.snapshotAutoInterval && this.camera.data.settings.hasOwnProperty('lite_24x7')) {
+                    this.snapshotInterval = this.camera.data.settings.lite_24x7.frequency_secs
+                }
+            })
 
             // Publish snapshot if enabled
             if (this.snapshotMotion || this.snapshotInterval) {
@@ -177,14 +177,8 @@ class Camera {
                 }
             }
 
-            // Publish info state for device
-            this.publishInfoState()
-
             // Start monitor of availability state for camera
             this.monitorCameraConnection()
-
-            // Set camera online (sends availability status via MQTT)
-            this.online()
         } else {
             // Pulish all data states and availability state for camera
             this.publishDingState()
@@ -343,6 +337,10 @@ class Camera {
                 this.publishedSirenState = sirenStatus
             }
         }
+
+        // Reset heartbeat counter on every polled state and set device online if not already
+        this.heartbeat = 3
+        if (this.availabilityState !== 'online') { this.online() }
     }
 
     // Publish device data to info topic
@@ -458,61 +456,28 @@ class Camera {
         }
     }
 
-    // Interval loop to check communications with cameras/Ring API since, unlike alarm,
-    // there's no websocket to monitor.
-    // Also monitor subscriptions to ding/motion events and attempt resubscribe if false
-    // and call function to update info data on every 5th cycle
-    monitorCameraConnection() {
-        const _this = this
-        let intervalCount = 1
-        let cameraState
-        setInterval(async function() {
-            const camera = _this.camera
+    // Publish heath state every 5 minutes
+    async publishDeviceHealth() {
+        if (this.availabilityState === 'online') {
+            const deviceHealth = await this.camera.getHealth()
+            publishInfoState(deviceHealth)
+            await utils.sleep(300)
+            this.publishDeviceHealth
+        } else {
+            await utils.sleep(60)
+        }
+        this.publishDeviceHealth()
+    }
 
-            // Query camera heath, if health data doesn't return in 5 seconds assume camera is offline
-            const deviceHealth = await Promise.race([camera.getHealth(), utils.sleep(60)]).then(function(result) {
-                return result;
-            });
-
-            // Every 5th loop (~5 minutes) publish device info sensor data
-            if (deviceHealth) {
-                cameraState = 'online'
-                if (intervalCount % 5 === 0) {
-                    _this.publishInfoState(deviceHealth)
-                }
-                intervalCount++
-            } else {
-                cameraState = 'offline'
-            }
-
-            // Publish camera availability state if different from prior state
-            if (_this.availabilityState !== cameraState) {
-                if (cameraState == 'offline') {
-                    _this.offline()
-                } else {
-                    // If camera switching to online republish discovery and state before going online
-                    _this.publish()
-                    await utils.sleep(2)
-                    _this.online()
-                }
-            }
-
-            // Check for subscription to ding and motion events and attempt to resubscribe
-            if (!camera.data.subscribed === true) {
-                debug('Camera Id '+camera.data.device_id+' lost subscription to ding events, attempting to resubscribe...')
-                camera.subscribeToDingEvents().catch(e => { 
-                    debug('Failed to resubscribe camera Id ' +camera.data.device_id+' to ding events. Will retry in 60 seconds.') 
-                    debug(e)
-                })
-            }
-            if (!camera.data.subscribed_motions === true) {
-                debug('Camera Id '+camera.data.device_id+' lost subscription to motion events, attempting to resubscribe...')
-                camera.subscribeToMotionEvents().catch(e => {
-                    debug('Failed to resubscribe camera Id '+camera.data.device_id+' to motion events.  Will retry in 60 seconds.')
-                    debug(e)
-                })
-            }
-        }, 60000)
+    // Simple check for heartbeat based on polled status since cameras
+    async monitorCameraConnection() {
+        if (this.heartbeat < 1 && this.availabilityState !== 'offline') {
+            this.offline()
+        } else {
+            this.heartbeat--
+        }
+        await utils.sleep(20)
+        this.monitorCameraConnection()
     }
 
     // Process messages from MQTT command topic
