@@ -396,7 +396,7 @@ class Camera {
 
     async startSipSession(duration, file) {
         try {
-            debug('Connecting to SIP video stream for camera: '+this.deviceId)
+            debug('Establishing connection to video stream for camera: '+this.deviceId)
             const sipSession = await this.camera.streamVideo({
                 output: ['-codec', 'copy', '-t', duration, file, ],
             })
@@ -455,22 +455,25 @@ class Camera {
         }
 
         this.snapshot.updating = true
-        debug('Battery device detected, will try to get motion snapshot from live stream for camera: '+this.deviceId)
+        debug('Battery device detected, will attempt to grab motion snapshot from live stream for camera: '+this.deviceId)
         const aviFile = await this.tryStartLiveStream('/tmp', 2)
         
         if (aviFile) {
+            debug('Grabbing snapshot from live stream for camera: '+this.deviceId)
+            const filePrefix = this.deviceId+'_motion_'+Date.now() 
+            const jpgFile = path.join('/tmp', filePrefix+'.jpg')
             try {
-                debug('Grabbing snapshot from live stream for camera: '+this.deviceId)
                 // Attempts to grab snapshot from key frame
-                await spawn(pathToFfmpeg, ['-i', aviPath, '-s', '640:360', '-vf', "select='eq(pict_type\,I)'", '-vframes', '1', '-q:v', '2', jpgPath])
-                if (utils.checkFile(jpgPath)) {
-                    debug('Successfully grabbed snapshot image from live stream for camera: '+this.deviceId)
-                    const newSnapshot = fs.readFileSync(jpgPath)
-                    fs.unlinkSync(jpgPath)
-                    return newSnapshot
-                }
+                await spawn(pathToFfmpeg, ['-i', aviFile, '-s', '640:360', '-vf', "select='eq(pict_type\,I)'", '-vframes', '1', '-q:v', '2', jpgFile])
             } catch (e) {
                 console.log(e.stderr.toString())
+            } finally {
+                if (utils.checkFile(jpgPath)) {
+                    debug('Successfully grabbed a snapshot image from live stream for camera: '+this.deviceId)
+                    const newSnapshot = fs.readFileSync(jpgFile)
+                    fs.unlinkSync(jpgFile)
+                    return newSnapshot
+                }
             }
         } else {
             debug('Failed to get snapshot from live stream for camera: '+this.deviceId)
