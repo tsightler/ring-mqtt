@@ -417,8 +417,8 @@ class Camera {
     async getUncachedSnapshot() {
         await this.camera.requestSnapshotUpdate()
         utils.sleep(1)
-        const newSnapshot = this.camera.restClient.request<Buffer>({
-            url: clientApi(`snapshots/image/${this.id}`),
+        const newSnapshot = await this.camera.restClient.request({
+            url: clientApi(`snapshots/image/${this.camera.id}`),
             responseType: 'buffer',
         })
         return newSnapshot
