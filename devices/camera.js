@@ -377,7 +377,7 @@ class Camera {
                 this.snapshot.imageData = newSnapshot
                 this.snapshot.timestamp = Math.round(Date.now()/1000)
             } else {
-                debug('Could not retrieve updated snapshot for camera '+this.deviceId+', using previously cached snapshot.')
+                debug('Could not retrieve updated snapshot for camera '+this.deviceId+', using previously cached snapshot')
             }
         }
 
@@ -392,18 +392,18 @@ class Camera {
         if (this.motion.active_ding) {
             if (this.camera.operatingOnBattery) {
                 // Battery powered cameras can't take snapshots while recording, try to get image from video stream instead
-                debug('Motion event detected on battery powered device, will attempt to grab snapshot from live stream for camera: '+this.deviceId)
+                debug('Motion event detected on battery powered camera '+this.deviceId+', attempting to grab snapshot from live stream')
                 return await this.getSnapshotFromStream()
             } else {
                 // Line powered cameras can take a snapshot, but ring-client-api will return a cached snapshot
                 // if a previous snapshot was taken within 10 seconds of motion event sometimes leading to
                 // stale images.  Attempt to force an uncached snapshot.
-                debug('Motion event detected for line powered device, forcing a non-cached snapshot update for camera: '+this.deviceId)
+                debug('Motion event detected for line powered camera '+this.deviceId+', forcing a non-cached snapshot update')
                 return await this.getUncachedSnapshot()
             }
         } else {
             if (this.camera.snapshotsAreBlocked) {
-                debug('Snapshots are unavailable for camera '+this.deviceId+'.  Motion capture is disabled manually or via modes settings.')
+                debug('Snapshots are unavailable for camera '+this.deviceId+', check if motion capture is disabled manually or via modes settings')
                 return false
             } else {
                 return await this.camera.getSnapshot()
@@ -490,15 +490,15 @@ class Camera {
 
     async getSnapshotFromStream() {
         if (this.snapshot.updating) {
-            debug ('Snapshot update from live steam already in progress for camera: '+this.deviceId)
-            return 
+            debug ('Snapshot update from live steam already in progress for camera '+this.deviceId)
+            return
         }
 
         this.snapshot.updating = true
         const aviFile = await this.tryInitStream('/tmp', 2)
         
         if (aviFile) {
-            debug('Grabbing snapshot from live stream for camera: '+this.deviceId)
+            debug('Grabbing snapshot from live stream for camera '+this.deviceId)
             const filePrefix = this.deviceId+'_motion_'+Date.now() 
             const jpgFile = path.join('/tmp', filePrefix+'.jpg')
             try {
@@ -508,7 +508,7 @@ class Camera {
                 console.log(e.stderr.toString())
             } finally {
                 if (utils.checkFile(jpgFile)) {
-                    debug('Successfully grabbed a snapshot image from live stream for camera: '+this.deviceId)
+                    debug('Successfully grabbed a snapshot image from live stream for camera '+this.deviceId)
                     const newSnapshot = fs.readFileSync(jpgFile)
                     fs.unlinkSync(jpgFile)
                     this.snapshot.updating = false
@@ -516,7 +516,7 @@ class Camera {
                 }
             }
         } else {
-            debug('Failed to get snapshot from live stream for camera: '+this.deviceId)
+            debug('Failed to get snapshot from live stream for camera '+this.deviceId)
             this.snapshot.updating = false
             return false
         }
@@ -566,13 +566,13 @@ class Camera {
                 this.setSnapshotInterval(message)
                 break;
             default:
-                debug('Somehow received message to unknown state topic for camera Id: '+this.deviceId)
+                debug('Somehow received message to unknown state topic for camera '+this.deviceId)
         }
     }
 
     // Set switch target state on received MQTT command message
     setLightState(message) {
-        debug('Received set light state '+message+' for camera Id: '+this.deviceId)
+        debug('Received set light state '+message+' for camera '+this.deviceId)
         debug('Location Id: '+ this.locationId)
         switch (message) {
             case 'ON':
@@ -582,14 +582,14 @@ class Camera {
                 this.camera.setLight(false)
                 break;
             default:
-                debug('Received unknown command for light on camera ID '+this.deviceId)
+                debug('Received unknown command for light on camera '+this.deviceId)
         }
     }
 
     // Set switch target state on received MQTT command message
     setSirenState(message) {
-        debug('Received set siren state '+message+' for camera Id: '+this.deviceId)
-        debug('Location Id: '+ this.locationId)
+        debug('Received set siren state '+message+' for camera '+this.deviceId)
+        debug('Location '+ this.locationId)
         switch (message) {
             case 'ON':
                 this.camera.setSiren(true)
@@ -598,13 +598,13 @@ class Camera {
                 this.camera.setSiren(false)
                 break;
             default:
-                debug('Received unkonw command for light on camera ID '+this.deviceId)
+                debug('Received unkonw command for light on camera '+this.deviceId)
         }
     }
 
     // Set refresh interval for snapshots
     setSnapshotInterval(message) {
-        debug('Received set snapshot refresh interval '+message+' for camera Id: '+this.deviceId)
+        debug('Received set snapshot refresh interval '+message+' for camera '+this.deviceId)
         debug('Location Id: '+ this.locationId)
         if (isNaN(message)) {
             debug ('Received invalid interval')
