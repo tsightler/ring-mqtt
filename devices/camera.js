@@ -263,11 +263,15 @@ class Camera {
     async publishDingState(ding) {
         // Is it an active ding (i.e. from a subscribed event)?
         if (ding) {
-            // Is it a motion or doorbell ding (for others we do nothing)?
+            // Is it a motion or doorbell ding? (for others we do nothing)
             if (ding.kind !== 'ding' && ding.kind !== 'motion') { return }
 
-            debug('Ding of kind '+ding.kind+' received at '+ding.now+' from camera '+this.deviceId)
+            debug('Ding of type '+ding.kind+' received at '+ding.now+' for camera '+this.deviceId)
             const stateTopic = this.cameraTopic+'/'+ding.kind+'/state'
+
+            // Is this a new Ding or refresh of active ding?
+            const newDing = (!this[ding.kind].active_ding) ? true : false
+            this[ding.kind].active_ding = true
 
             // Update last_ding and ding duration (Ring seems to be 180 seconds for all dings)
             this[ding.kind].last_ding = Math.floor(ding.now)
@@ -285,19 +289,18 @@ class Camera {
                 this.publishSnapshot(true)
             }
 
-            // If new ding, set active ding state property and begin expiration loop
-            if (!this[ding.kind].active_ding) {
-                this[ding.kind].active_ding = true
+            // If new ding, begin expiration loop (only needed for first ding)
+            if (newDing) {
                 // Loop until current time is > last_ding expires time.  Sleeps until
                 // estimated exire time, but may loop if new dings increase last_ding_expires
                 while (Math.floor(Date.now()/1000) < this[ding.kind].last_ding_expires) {
                     const sleeptime = (this[ding.kind].last_ding_expires - Math.floor(Date.now()/1000)) + 1
-                    debug('Ding of kind '+ding.kind+' from camera '+this.deviceId+' expires in '+sleeptime)
+                    debug('Ding of type '+ding.kind+' for camera '+this.deviceId+' expires in '+sleeptime)
                     await utils.sleep(sleeptime)
-                    debug('Ding of kind '+ding.kind+' from camera '+this.deviceId+' exired')
+                    debug('Ding of type '+ding.kind+' for camera '+this.deviceId+' exired')
                 }
                 // All dings have expired, set ding state back to false/off and publish
-                debug('All dings of kind '+ding.kind+' from camera '+this.deviceId+' have expired')
+                debug('All dings of type '+ding.kind+' for camera '+this.deviceId+' have expired')
                 this[ding.kind].active_ding = false
                 this.publishMqtt(stateTopic, 'OFF', true)
             }
@@ -383,21 +386,28 @@ class Camera {
         this.publishMqtt(this.cameraTopic+'/snapshot/attributes', JSON.stringify({ timestamp: this.snapshot.timestamp }))
     }
 
-    // Snapshot caching by ring-client-api as well as the inability of battery powered
-    // devices to take snapshots while recording/streaming make getting a current snapshot 
-    // on motion events difficult. This function attempts to get a snapshot via various
-    // methods with the goal of returning something, rather than nothing!  
+    // This function uses various methods to get a snapshot to work around limitations
+    // of Ring API, ring-client-api snapshot caching, battery cameras, etc.
     async getRefreshedSnapshot() {
         if (this.motion.active_ding) {
             if (this.camera.operatingOnBattery) {
+                // Battery powered cameras can't take snapshots while recording, try to get image from video stream instead
                 debug('Motion event detected on battery powered device, will attempt to grab snapshot from live stream for camera: '+this.deviceId)
                 return await this.getSnapshotFromStream()
             } else {
+                // Line powered cameras can take a snapshot, but ring-client-api will return a cached snapshot
+                // if a previous snapshot was taken within 10 seconds of motion event sometimes leading to
+                // stale images.  Attempt to force an uncached snapshot.
                 debug('Motion event detected for line powered device, forcing a non-cached snapshot update for camera: '+this.deviceId)
                 return await this.getUncachedSnapshot()
             }
         } else {
-            return await this.camera.getSnapshot()
+            if (this.camera.snapshotsAreBlocked) {
+                debug('Snapshots are unavailable for camera '+this.deviceId+'.  Motion capture is disabled manually or via modes settings.')
+                return false
+            } else {
+                return await this.camera.getSnapshot()
+            }
         }
     }
 
