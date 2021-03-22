@@ -1,5 +1,6 @@
 const debug = require('debug')('ring-mqtt')
 const utils = require( '../lib/utils' )
+const clientApi = require('../node_modules/ring-client-api/lib/api/rest-client').clientApi
 const path = require('path')
 const pathToFfmpeg = require('ffmpeg-for-homebridge');
 const spawn = require('await-spawn')
@@ -281,7 +282,7 @@ class Camera {
 
             // If motion ding and snapshots on motion are enabled, publish a new snapshot
             if (ding.kind === 'motion' && this.snapshotMotion) {
-                this.publishSnapshot(true, true)
+                this.publishSnapshot(true)
             }
 
             // If new ding, set active ding state property and begin expiration loop
@@ -360,12 +361,12 @@ class Camera {
     }
 
     // Publish snapshot image/metadata
-    async publishSnapshot(refresh, isMotion) {
+    async publishSnapshot(refresh) {
+        let newSnapshot
         // If refresh = true, get updated snapshot image before publishing
         if (refresh) {
-            let newSnapshot
             try {
-                newSnapshot = (isMotion && this.camera.operatingOnBattery) ? await this.getSnapshotFromStream() : await this.camera.getSnapshot()
+                newSnapshot = await this.getRefreshedSnapshot()
             } catch(e) {
                 debug(e.message)
             }
@@ -380,6 +381,37 @@ class Camera {
         debug(this.cameraTopic+'/snapshot/image', '<binary_image_data>')
         this.publishMqtt(this.cameraTopic+'/snapshot/image', this.snapshot.imageData)
         this.publishMqtt(this.cameraTopic+'/snapshot/attributes', JSON.stringify({ timestamp: this.snapshot.timestamp }))
+    }
+
+    // Snapshot caching by ring-client-api as well as the inability of battery powered
+    // devices to take snapshots while recording/streaming make getting a current snapshot 
+    // on motion events difficult. This function attempts to get a snapshot via various
+    // methods with the goal of returning something, rather than nothing!  
+    async getRefreshedSnapshot() {
+        if (this.motion.active_ding) {
+            if (this.camera.operatingOnBattery) {
+                debug('Motion event detected on battery powered device, will attempt to grab snapshot from live stream for camera: '+this.deviceId)
+                return await this.getSnapshotFromStream()
+            } else {
+                debug('Motion event detected for line powered device, forcing a non-cached snapshot update for camera: '+this.deviceId)
+                return await this.getUncachedSnapshot()
+            }
+        } else {
+            return await this.getSnapshot()
+        }
+    }
+
+    // Since getSnasphot() will return a cached image if snapshots are requested within
+    // last 10 seconds and, for motion events, we really want the current snapshot,
+    // force a snapshot update.
+    async getUncachedSnapshot() {
+        await this.camera.requestSnapshotUpdate()
+        utils.sleep(1)
+        newSnapshot = this.camera.restClient.request<Buffer>({
+            url: clientApi(`snapshots/image/${this.id}`),
+            responseType: 'buffer',
+        })
+        return newSnapshot
     }
 
     // Refresh snapshot on scheduled interval
@@ -453,7 +485,6 @@ class Camera {
         }
 
         this.snapshot.updating = true
-        debug('Battery device detected, will attempt to grab motion snapshot from live stream for camera: '+this.deviceId)
         const aviFile = await this.tryInitStream('/tmp', 2)
         
         if (aviFile) {
@@ -470,11 +501,13 @@ class Camera {
                     debug('Successfully grabbed a snapshot image from live stream for camera: '+this.deviceId)
                     const newSnapshot = fs.readFileSync(jpgFile)
                     fs.unlinkSync(jpgFile)
+                    this.snapshot.updating = false
                     return newSnapshot
                 }
             }
         } else {
             debug('Failed to get snapshot from live stream for camera: '+this.deviceId)
+            this.snapshot.updating = false
             return false
         }
     }
