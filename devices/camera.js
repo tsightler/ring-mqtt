@@ -397,7 +397,7 @@ class Camera {
                 return await this.getUncachedSnapshot()
             }
         } else {
-            return await this.getSnapshot()
+            return await this.camera.getSnapshot()
         }
     }
 
