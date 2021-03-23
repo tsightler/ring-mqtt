@@ -57,7 +57,8 @@ class Camera {
             active_ding: false,
             ding_duration: 180,
             last_ding: 0,
-            last_ding_expires: 0
+            last_ding_expires: 0,
+            last_ding_type: ''
         }
 
         // If doorbell create properties to store doorbell ding state
@@ -156,6 +157,7 @@ class Camera {
             this.camera.onNewDing.subscribe(ding => {
                 this.publishDingState(ding)
             })
+
             // Since this is initial publish of device publish current ding state as well
             this.publishDingState()
 
@@ -183,6 +185,7 @@ class Camera {
         } else {
             // Pulish all data states and availability state for camera
             this.publishDingState()
+
             if (this.camera.hasLight || this.camera.hasSiren) {
                 if (this.camera.hasLight) { this.publishedLightState = 'republish' }
                 if (this.camera.hasSiren) { this.publishedSirenState = 'republish' }
@@ -273,11 +276,9 @@ class Camera {
             const newDing = (!this[ding.kind].active_ding) ? true : false
             this[ding.kind].active_ding = true
 
-            // Update last_ding and ding duration (Ring seems to be 180 seconds for all dings)
+            // Update last_ding, duration and expire time
             this[ding.kind].last_ding = Math.floor(ding.now)
             this[ding.kind].ding_duration = ding.expires_in
-
-            // Update expire time for ding (ding.now + ding.expires_in)
             this[ding.kind].last_ding_expires = this[ding.kind].last_ding+ding.expires_in
 
             // Publish MQTT active sensor state
@@ -287,6 +288,7 @@ class Camera {
             // If motion ding and snapshots on motion are enabled, publish a new snapshot
             if (ding.kind === 'motion' && this.snapshotMotion) {
                 this.publishSnapshot(true)
+                this[ding.kind].last_ding_type = (ding.detection_type === 'human') ? 'person' : 'motion'
             }
 
             // If new ding, begin expiration loop (only needed for first ding)
@@ -339,12 +341,8 @@ class Camera {
     }
 
     // Publish device data to info topic
-    async publishInfoState(deviceHealth) {
-        if (!deviceHealth) { 
-            deviceHealth = await Promise.race([this.camera.getHealth(), utils.sleep(5)]).then(function(result) {
-                return result;
-            })
-        }
+    async publishInfoState() {
+        deviceHealth = await this.camera.getHealth()
         
         if (deviceHealth) {
             const attributes = {}
@@ -359,6 +357,11 @@ class Camera {
                 attributes.wirelessNetwork = deviceHealth.wifi_name
                 attributes.wirelessSignal = deviceHealth.latest_signal_strength
             }
+
+            attributes.last_motion_ding = this.motion.last_ding
+            attributes.last_motion_type = this.motion.last_ding_type
+            if (this.camera.isDoorbot) { attributes.last_doorbell_ding = this.ding.last_ding }
+            
             this.publishMqtt(this.cameraTopic+'/info/state', JSON.stringify(attributes), true)
         }
     }
@@ -525,8 +528,7 @@ class Camera {
     // Publish heath state every 5 minutes
     async publishDeviceHealth() {
         if (this.availabilityState === 'online') {
-            const deviceHealth = await this.camera.getHealth()
-            publishInfoState(deviceHealth)
+            publishInfoState()
             await utils.sleep(300)
         } else {
             await utils.sleep(60)
