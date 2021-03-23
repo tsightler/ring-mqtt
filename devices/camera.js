@@ -342,7 +342,7 @@ class Camera {
 
     // Publish device data to info topic
     async publishInfoState() {
-        deviceHealth = await this.camera.getHealth()
+        const deviceHealth = await this.camera.getHealth()
         
         if (deviceHealth) {
             const attributes = {}
