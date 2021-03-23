@@ -58,7 +58,7 @@ class Camera {
             ding_duration: 180,
             last_ding: 0,
             last_ding_expires: 0,
-            last_ding_type: ''
+            is_person: false
         }
 
         // If doorbell create properties to store doorbell ding state
@@ -288,7 +288,7 @@ class Camera {
             // If motion ding and snapshots on motion are enabled, publish a new snapshot
             if (ding.kind === 'motion' && this.snapshotMotion) {
                 this.publishSnapshot(true)
-                this[ding.kind].last_ding_type = (ding.detection_type === 'human') ? 'person' : 'motion'
+                this[ding.kind].is_person = (ding.detection_type === 'human') ? true : false
             }
 
             // If new ding, begin expiration loop (only needed for first ding)
@@ -360,7 +360,7 @@ class Camera {
 
             if (this.camera.isDoorbot) { attributes.lastDing = this.ding.last_ding }
             attributes.lastMotion = this.motion.last_ding
-            attributes.motionType = this.motion.last_ding_type
+            attributes.isPerson = this.motion.is_person
             
             this.publishMqtt(this.cameraTopic+'/info/state', JSON.stringify(attributes), true)
         }
