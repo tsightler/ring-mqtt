@@ -358,9 +358,9 @@ class Camera {
                 attributes.wirelessSignal = deviceHealth.latest_signal_strength
             }
 
-            attributes.last_motion_ding = this.motion.last_ding
-            attributes.last_motion_type = this.motion.last_ding_type
-            if (this.camera.isDoorbot) { attributes.last_doorbell_ding = this.ding.last_ding }
+            if (this.camera.isDoorbot) { attributes.lastDing = this.ding.last_ding }
+            attributes.lastMotion = this.motion.last_ding
+            attributes.motionType = this.motion.last_ding_type
             
             this.publishMqtt(this.cameraTopic+'/info/state', JSON.stringify(attributes), true)
         }
