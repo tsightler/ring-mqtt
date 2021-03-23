@@ -281,15 +281,16 @@ class Camera {
             this[ding.kind].ding_duration = ding.expires_in
             this[ding.kind].last_ding_expires = this[ding.kind].last_ding+ding.expires_in
 
-            // Publish MQTT active sensor state
-            // Will republish to MQTT for new dings even if ding is already active
-            this.publishMqtt(stateTopic, 'ON', true)
-
             // If motion ding and snapshots on motion are enabled, publish a new snapshot
             if (ding.kind === 'motion' && this.snapshotMotion) {
                 this.publishSnapshot(true)
                 this[ding.kind].is_person = (ding.detection_type === 'human') ? true : false
             }
+
+            // Publish MQTT active sensor state
+            // Will republish to MQTT for new dings even if ding is already active
+            this.publishInfoState()
+            this.publishMqtt(stateTopic, 'ON', true)
 
             // If new ding, begin expiration loop (only needed for first ding)
             if (newDing) {
