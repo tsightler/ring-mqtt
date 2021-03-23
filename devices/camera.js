@@ -528,19 +528,17 @@ class Camera {
             const deviceHealth = await this.camera.getHealth()
             publishInfoState(deviceHealth)
             await utils.sleep(300)
-            this.publishDeviceHealth
         } else {
             await utils.sleep(60)
         }
         this.publishDeviceHealth()
     }
 
-    // Simple heartbeat function. Polling events call cause publishPollState() to be
-    // called every 20 seconds and heartbeat is reset to 3 each time.  If polling events
-    // stop this monitor function will eventually cause heartbeat to drop to 0 and set
-    // device offline (typically around 60 seconds).  When the API resumes sending polled
-    // event data the publishPollState() function resets hearbeat and places the device 
-    // back in online state
+    // Polling events call publishPollState() every 20 seconds and heartbeat
+    // value is set to 3 each time.  This simple function decrements heartbeat
+    // counter every 20 seconds.  If heartbeat reachches 0 then device is set
+    // to offline status.  When polling resumes publishPollState() will reset
+    // heartbeat counter and set device back online.
     async monitorCameraConnection() {
         if (this.heartbeat < 1 && this.availabilityState !== 'offline') {
             this.offline()
