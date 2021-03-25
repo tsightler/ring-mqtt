@@ -443,7 +443,7 @@ class Camera {
         try {
             debug('Establishing connection to video stream for camera: '+this.deviceId)
             const sipSession = await this.camera.streamVideo({
-                output: ['-codec', 'copy', '-t', duration, filename, ],
+                output: ['-codec', 'copy', '-flush_packets', '1', '-t', duration, filename, ],
             })
 
             sipSession.onCallEnded.subscribe(() => {
@@ -453,9 +453,7 @@ class Camera {
                     debug(err.message)
                 }
             })
-
             return sipSession
-
         } catch(e) {
             debug(e.message)
             return false
@@ -464,11 +462,11 @@ class Camera {
 
     // Check if stream to file has started within 5 seconds
     async isStreaming(filename) {
-        for (let i = 0; i < 5; i++) {
-            if (utils.checkFile(filename, 50000)) {
+        for (let i = 0; i < 67; i++) {
+            if (utils.checkFile(filename, 100000)) {
                 return true
             }
-            await utils.sleep(1)
+            await utils.msleep(100)
         }
         return false
     }
@@ -484,7 +482,9 @@ class Camera {
                     debug ('Established live stream for camera: '+this.deviceId)
                     return aviFile
                 } else {
-                    debug ('Live stream for camera '+this.deviceId+' failed to start, retrying...')
+                    if (i < (retries - 1)) {
+                        debug ('Live stream for camera '+this.deviceId+' failed to start, retrying...')
+                    }
                 }
             }
         }
@@ -499,7 +499,7 @@ class Camera {
         }
 
         this.snapshot.updating = true
-        const aviFile = await this.tryInitStream('/tmp', 2)
+        const aviFile = await this.tryInitStream('/tmp', 3)
         
         if (aviFile) {
             debug('Grabbing snapshot from live stream for camera '+this.deviceId)
