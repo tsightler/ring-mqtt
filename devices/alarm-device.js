@@ -109,6 +109,7 @@ class AlarmDevice {
             } else {
                 // Subscribe to data updates for device
                 this.device.onData.subscribe(() => { this.publishData() })
+                this.schedulePublishAttributes()
 
                 // Subscribe to any device command topics
                 const properties = Object.getOwnPropertyNames(this)
@@ -126,40 +127,45 @@ class AlarmDevice {
 
     // Publish device info
     async publishAttributes() {
-        if (this.availabilityState === 'online') {
-            let alarmState
+        let alarmState
 
-            if (this.device.deviceType === 'security-panel') {
-                alarmState = this.device.data.alarmInfo ? this.device.data.alarmInfo.state : 'all-clear'
-            }
-
-            // Get full set of device data and publish to info topic
-            const attributes = {
-                ... this.device.data.acStatus ? { acStatus: this.device.data.acStatus } : {},
-                ... alarmState ? { alarmState: alarmState } : {},
-                ... this.device.data.hasOwnProperty('batteryLevel')
-                    ? { batteryLevel: this.device.data.batteryLevel === 99 ? 100 : this.device.data.batteryLevel }
-                    : {},
-                ... this.device.data.batteryStatus && this.device.data.batteryStatus !== 'none'
-                    ? { batteryStatus: this.device.data.batteryStatus }
-                    : {},
-                ... this.device.data.hasOwnProperty('brightness') ? {brightness: this.device.data.brightness } : {},
-                ... this.device.data.chirps && this.device.deviceType == 'security-keypad' ? {chirps: this.device.data.chirps } : {},
-                ... this.device.data.commStatus ? { commStatus: this.device.data.commStatus } : {},
-                ... this.device.data.firmwareUpdate ? { firmwareStatus: this.device.data.firmwareUpdate.state } : {},
-                ... this.device.data.lastCommTime ? { lastCommTime: new Date(this.device.data.lastCommTime).toISOString() } : {},
-                ... this.device.data.lastUpdate ? { lastUpdate: new Date(this.device.data.lastUpdate).toISOString() } : {},
-                ... this.device.data.linkQuality ? { linkQuality: this.device.data.linkQuality } : {},
-                ... this.device.data.powerSave ? {powerSave: this.device.data.powerSave } : {},
-                ... this.device.data.serialNumber ? { serialNumber: this.device.data.serialNumber } : {},
-                ... this.device.data.tamperStatus ? { tamperStatus: this.device.data.tamperStatus } : {},
-                ... this.device.data.hasOwnProperty('volume') ? {volume: this.device.data.volume } : {},
-            }
-            this.publishMqtt(this.stateTopic_info, JSON.stringify(attributes), true)
+        if (this.device.deviceType === 'security-panel') {
+            alarmState = this.device.data.alarmInfo ? this.device.data.alarmInfo.state : 'all-clear'
         }
 
+        // Get full set of device data and publish to info topic
+        const attributes = {
+            ... this.device.data.acStatus ? { acStatus: this.device.data.acStatus } : {},
+            ... alarmState ? { alarmState: alarmState } : {},
+            ... this.device.data.hasOwnProperty('batteryLevel')
+                ? { batteryLevel: this.device.data.batteryLevel === 99 ? 100 : this.device.data.batteryLevel }
+                : {},
+            ... this.device.data.batteryStatus && this.device.data.batteryStatus !== 'none'
+                ? { batteryStatus: this.device.data.batteryStatus }
+                : {},
+            ... this.device.data.hasOwnProperty('brightness') ? {brightness: this.device.data.brightness } : {},
+            ... this.device.data.chirps && this.device.deviceType == 'security-keypad' ? {chirps: this.device.data.chirps } : {},
+            ... this.device.data.commStatus ? { commStatus: this.device.data.commStatus } : {},
+            ... this.device.data.firmwareUpdate ? { firmwareStatus: this.device.data.firmwareUpdate.state } : {},
+            ... this.device.data.lastCommTime ? { lastCommTime: new Date(this.device.data.lastCommTime).toISOString() } : {},
+            ... this.device.data.lastUpdate ? { lastUpdate: new Date(this.device.data.lastUpdate).toISOString() } : {},
+            ... this.device.data.linkQuality ? { linkQuality: this.device.data.linkQuality } : {},
+            ... this.device.data.powerSave ? {powerSave: this.device.data.powerSave } : {},
+            ... this.device.data.serialNumber ? { serialNumber: this.device.data.serialNumber } : {},
+            ... this.device.data.tamperStatus ? { tamperStatus: this.device.data.tamperStatus } : {},
+            ... this.device.data.hasOwnProperty('volume') ? {volume: this.device.data.volume } : {},
+        }
+        this.publishMqtt(this.stateTopic_info, JSON.stringify(attributes), true)
+    }
+
+    // Refresh device info attributes on a sechedule
+    async schedulePublishAttributes() {
         await utils.sleep(300)
-        this.publishAttributes()
+        // Only publish when site is online
+        if (this.availabilityState === 'online') { 
+            this.publishAttributes()
+        }
+        this.schedulePublishAttributes()
     }
 
     // Set state topic online

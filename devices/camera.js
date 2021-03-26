@@ -528,14 +528,14 @@ class Camera {
         return newSnapshot
     }
 
-    // Publish heath state every 5 minutes
+    // Publish heath state every 5 minutes when online
     async publishDeviceHealth() {
+        let delay = 60 // Default delay when offline
         if (this.availabilityState === 'online') {
             publishInfoState()
-            await utils.sleep(300)
-        } else {
-            await utils.sleep(60)
+            delay = 300 // Every 5 minues when online
         }
+        await utils.sleep(delay)
         this.publishDeviceHealth()
     }
 
