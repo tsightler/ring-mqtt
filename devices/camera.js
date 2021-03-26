@@ -440,8 +440,8 @@ class Camera {
 
     // Start a live stream to file with the defined duration
     async startStream(duration, filename) {
+        debug('Establishing connection to video stream for camera '+this.deviceId)
         try {
-            debug('Establishing connection to video stream for camera '+this.deviceId)
             const sipSession = await this.camera.streamVideo({
                 output: ['-codec', 'copy', '-flush_packets', '1', '-t', duration, filename, ],
             })
@@ -452,7 +452,7 @@ class Camera {
                 } catch(err) {
                     debug(err.message)
                 }
-            })
+            }) 
             return sipSession
         } catch(e) {
             debug(e.message)
@@ -460,7 +460,7 @@ class Camera {
         }
     }
 
-    // Check if stream to file has started within defined duration
+    // Check if stream to file has started within defined duration in seconds
     async isStreaming(filename, seconds) {
         for (let i = 0; i < seconds*10; i++) {
             if (utils.checkFile(filename, 100000)) { return true }
