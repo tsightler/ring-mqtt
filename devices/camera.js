@@ -300,7 +300,7 @@ class Camera {
                     const sleeptime = (this[ding.kind].last_ding_expires - Math.floor(Date.now()/1000)) + 1
                     debug('Ding of type '+ding.kind+' for camera '+this.deviceId+' expires in '+sleeptime)
                     await utils.sleep(sleeptime)
-                    debug('Ding of type '+ding.kind+' for camera '+this.deviceId+' exired')
+                    debug('Ding of type '+ding.kind+' for camera '+this.deviceId+' expired')
                 }
                 // All dings have expired, set ding state back to false/off and publish
                 debug('All dings of type '+ding.kind+' for camera '+this.deviceId+' have expired')
@@ -394,7 +394,7 @@ class Camera {
     // of Ring API, ring-client-api snapshot caching, battery cameras, etc.
     async getRefreshedSnapshot() {
         if (this.motion.active_ding) {
-            if (this.camera.operatingOnBattery) {
+            if (!this.camera.operatingOnBattery) {
                 // Battery powered cameras can't take snapshots while recording, try to get image from video stream instead
                 debug('Motion event detected on battery powered camera '+this.deviceId+', attempting to grab snapshot from live stream')
                 return await this.getSnapshotFromStream()
@@ -441,7 +441,7 @@ class Camera {
     // Start a live stream to file with the defined duration
     async startStream(duration, filename) {
         try {
-            debug('Establishing connection to video stream for camera: '+this.deviceId)
+            debug('Establishing connection to video stream for camera '+this.deviceId)
             const sipSession = await this.camera.streamVideo({
                 output: ['-codec', 'copy', '-flush_packets', '1', '-t', duration, filename, ],
             })
@@ -460,12 +460,10 @@ class Camera {
         }
     }
 
-    // Check if stream to file has started within 5 seconds
-    async isStreaming(filename) {
-        for (let i = 0; i < 67; i++) {
-            if (utils.checkFile(filename, 100000)) {
-                return true
-            }
+    // Check if stream to file has started within defined duration
+    async isStreaming(filename, seconds) {
+        for (let i = 0; i < seconds*10; i++) {
+            if (utils.checkFile(filename, 100000)) { return true }
             await utils.msleep(100)
         }
         return false
@@ -478,52 +476,57 @@ class Camera {
             const aviFile = path.join(filePath, filePrefix+'.avi')
             const streamSession = await this.startStream(10, aviFile)
             if (streamSession) {
-                if (await this.isStreaming(aviFile)) {
-                    debug ('Established live stream for camera: '+this.deviceId)
+                if (await this.isStreaming(aviFile, 7)) {
+                    debug ('Established live stream for camera '+this.deviceId)
                     return aviFile
                 } else {
-                    if (i < (retries - 1)) {
-                        debug ('Live stream for camera '+this.deviceId+' failed to start, retrying...')
-                    }
+                    // SIP session established but never got a valid stream
+                    debug ('Live stream established but no stream received for camera '+this.deviceId)
                 }
+            } else {
+                debug ('Failed to establish live stream for camera '+this.deviceId)
+                // SIP session failed hard, wait a few seconds before trying again
+                await utils.sleep(3)
             }
+            if (i < retries-1) { debug('Retrying live stream for camera '+this.deviceId) } 
         }
-        debug ('Live stream for camera '+this.deviceId+' failed to start after all retries, aborting!')
+        debug ('Failed to establish live stream for camera '+this.deviceId+' after all retries, aborting!')
         return false
     }
 
     async getSnapshotFromStream() {
         if (this.snapshot.updating) {
-            debug ('Snapshot update from live steam already in progress for camera '+this.deviceId)
+            debug ('Snapshot update from live stream already in progress for camera '+this.deviceId)
             return
         }
-
         this.snapshot.updating = true
+        let newSnapshot = false
         const aviFile = await this.tryInitStream('/tmp', 3)
         
         if (aviFile) {
             debug('Grabbing snapshot from live stream for camera '+this.deviceId)
             const filePrefix = this.deviceId+'_motion_'+Date.now() 
-            const jpgFile = path.join('/tmp', filePrefix+'.jpg')
+            jpgFile = path.join('/tmp', filePrefix+'.jpg')
             try {
-                // Attempts to grab snapshot from key frame
+                // Attempt to grab snapshot image from key frame in stream
                 await spawn(pathToFfmpeg, ['-i', aviFile, '-s', '640:360', '-vf', "select='eq(pict_type\,I)'", '-vframes', '1', '-q:v', '2', jpgFile])
             } catch (e) {
                 console.log(e.stderr.toString())
             } finally {
                 if (utils.checkFile(jpgFile)) {
-                    debug('Successfully grabbed a snapshot image from live stream for camera '+this.deviceId)
-                    const newSnapshot = fs.readFileSync(jpgFile)
+                    newSnapshot = fs.readFileSync(jpgFile)
                     fs.unlinkSync(jpgFile)
-                    this.snapshot.updating = false
-                    return newSnapshot
                 }
             }
+        }
+
+        if (newSnapshot) {
+            debug('Successfully grabbed a snapshot from live stream for camera '+this.deviceId)
         } else {
             debug('Failed to get snapshot from live stream for camera '+this.deviceId)
-            this.snapshot.updating = false
-            return false
         }
+        this.snapshot.updating = false
+        return newSnapshot
     }
 
     // Publish heath state every 5 minutes
