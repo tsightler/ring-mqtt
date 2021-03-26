@@ -23,7 +23,7 @@ class Camera {
 
         // If snapshot capture is enabled, set approprate values
         if (this.config.snapshot_mode === "motion" || this.config.snapshot_mode === "interval" || this.config.snapshot_mode === "all" ) {
-            this.snapshot = { imageData: null, timestamp: null }
+            this.snapshot = { imageData: null, timestamp: null, updating: false }
             this.snapshotMotion = (this.config.snapshot_mode === "motion" || this.config.snapshot_mode === "all") ? true : false
 
             if (this.config.snapshot_mode === "interval" || this.config.snapshot_mode === "all") {
@@ -506,17 +506,16 @@ class Camera {
         if (aviFile) {
             debug('Grabbing snapshot from live stream for camera '+this.deviceId)
             const filePrefix = this.deviceId+'_motion_'+Date.now() 
-            jpgFile = path.join('/tmp', filePrefix+'.jpg')
+            const jpgFile = path.join('/tmp', filePrefix+'.jpg')
             try {
                 // Attempt to grab snapshot image from key frame in stream
                 await spawn(pathToFfmpeg, ['-i', aviFile, '-s', '640:360', '-vf', "select='eq(pict_type\,I)'", '-vframes', '1', '-q:v', '2', jpgFile])
-            } catch (e) {
-                console.log(e.stderr.toString())
-            } finally {
                 if (utils.checkFile(jpgFile)) {
                     newSnapshot = fs.readFileSync(jpgFile)
                     fs.unlinkSync(jpgFile)
                 }
+            } catch (e) {
+                console.log(e.stderr.toString())
             }
         }
 
