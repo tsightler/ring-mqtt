@@ -356,7 +356,7 @@ class Camera {
             attributes.lastDingTime = this[dingKind].last_ding_time
         }
         this.publishMqtt(dingTopic+'/state', dingState, true)
-        this.publishMqtt(dingTopic+'/attributes', attributes, true)
+        this.publishMqtt(dingTopic+'/attributes', JSON.stringify(attributes), true)
     }
 
     // Publish camera state for polled attributes (light/siren state, etc)
