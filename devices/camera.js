@@ -293,7 +293,7 @@ class Camera {
         if (ding) {
             // Is it a motion or doorbell ding? (for others we do nothing)
             if (ding.kind !== 'ding' && ding.kind !== 'motion') { return }
-            debug('Camera '+this.deviceId+' received '+this[ding.kind].name+' ding at '+ding.now+', expires in '+ding.expires_in+' seconds')
+            debug('Camera '+this.deviceId+' received '+this[ding.kind].name+' ding at '+Math.floor(ding.now)+', expires in '+ding.expires_in+' seconds')
 
             // Is this a new Ding or refresh of active ding?
             const newDing = (!this[ding.kind].active_ding) ? true : false
@@ -301,7 +301,7 @@ class Camera {
 
             // Update last_ding, duration and expire time
             this[ding.kind].last_ding = Math.floor(ding.now)
-            this[ding.kind].last_ding_time = new Date(Math.floor(ding.now)*1000).toISOString()
+            this[ding.kind].last_ding_time = new Date(Math.floor(ding.now)).toISOString()
             this[ding.kind].ding_duration = ding.expires_in
             this[ding.kind].last_ding_expires = this[ding.kind].last_ding+ding.expires_in
 
