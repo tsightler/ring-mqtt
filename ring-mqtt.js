@@ -44,8 +44,8 @@ process.on('uncaughtException', processExit.bind(1))
 
 // Set unreachable status on exit
 async function processExit(exitCode) {
-    ringDevices.forEach(ringDevice => {
-        if (ringDevice.availabilityState === 'online') { await ringDevice.offline() }
+    await ringDevices.forEach(ringDevice => {
+        if (ringDevice.availabilityState === 'online') { ringDevice.offline() }
     })
     if (exitCode || exitCode === 0) debug('Exit code: '+exitCode)
     await utils.sleep(1)
