@@ -54,23 +54,23 @@ class Camera {
       
         // Create properties to store ding states
         this.motion = {
+            name: 'motion',
             active_ding: false,
             ding_duration: 180,
             last_ding: 0,
             last_ding_expires: 0,
             last_ding_time: 'none',
-            is_person: false,
-            desc: 'Motion'
+            is_person: false
         }
 
         if (this.camera.isDoorbot) {
             this.ding = {
+                name: 'doorbell',
                 active_ding: false,
                 ding_duration: 180,
                 last_ding: 0,
                 last_ding_expires: 0,
-                last_ding_time: 'none',
-                desc: 'Doorbell'
+                last_ding_time: 'none'
             }
         }
 
@@ -293,7 +293,7 @@ class Camera {
         if (ding) {
             // Is it a motion or doorbell ding? (for others we do nothing)
             if (ding.kind !== 'ding' && ding.kind !== 'motion') { return }
-            debug(this[ding.kind].name+' ding for camera '+this.deviceId+' received at '+ding.now+' expires in '+ding.expires_in+' seconds')
+            debug('Camera '+this.deviceId+' received '+this[ding.kind].name+' ding at '+ding.now+', expires in '+ding.expires_in+' seconds')
 
             // Is this a new Ding or refresh of active ding?
             const newDing = (!this[ding.kind].active_ding) ? true : false
@@ -324,7 +324,7 @@ class Camera {
                     await utils.sleep(sleeptime)
                 }
                 // All dings have expired, set ding state back to false/off and publish
-                debug('All '+this[ding.kind].name.toLowerCase()+' dings for camera '+this.deviceId+' have expired')
+                debug('All '+this[ding.kind].name+' dings for camera '+this.deviceId+' have expired')
                 this[ding.kind].active_ding = false
                 this.publishDingState(ding.kind)
             }
