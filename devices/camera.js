@@ -301,7 +301,7 @@ class Camera {
 
             // Update last_ding, duration and expire time
             this[ding.kind].last_ding = Math.floor(ding.now)
-            this[ding.kind].last_ding_time = new Date(Math.floor(ding.now)).toISOString()
+            this[ding.kind].last_ding_time = new Date(ding.now).toISOString()
             this[ding.kind].ding_duration = ding.expires_in
             this[ding.kind].last_ding_expires = this[ding.kind].last_ding+ding.expires_in
 
