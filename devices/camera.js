@@ -53,7 +53,7 @@ class Camera {
         this.availabilityTopic = this.cameraTopic+'/status'
       
         // Create properties to store motion ding state and get most recent event
-        const lastMotionEvent = (await this.camera.getEvents({ limit: 1, kind: 'motion'})).events[0]
+        const lastMotionEvent = (await camera.getEvents({ limit: 1, kind: 'motion'})).events[0]
         const lastMotionDate = (lastMotionEvent && lastMotionEvent.hasOwnProperty('created_at')) ? new Date(lastMotionEvent.created_at) : false
         let isPerson
         if (lastMotionEvent && lastMotionEvent.hasOwnProperty('cv_properties')) {
@@ -70,7 +70,7 @@ class Camera {
 
         // If doorbell create properties to store doorbell ding state and get most recent event
         if (this.camera.isDoorbot) {
-            const lastDingEvent = (await this.camera.getEvents({ limit: 1, kind: 'ding'})).events[0]
+            const lastDingEvent = (await camera.getEvents({ limit: 1, kind: 'ding'})).events[0]
             const lastDingDate = (lastDingEvent && lastDingEvent.hasOwnProperty('created_at')) ? new Date(lastDingEvent.created_at) : false
             this.ding = {
                 active_ding: false,
