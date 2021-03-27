@@ -165,12 +165,9 @@ class Camera {
             const lastMotionDate = (lastMotionEvent && lastMotionEvent.hasOwnProperty('created_at')) ? new Date(lastMotionEvent.created_at) : false
             this.motion.last_ding = lastMotionDate ? lastMotionDate/1000 : 0
             this.motion.last_ding_time = lastMotionDate ? lastMotionDate.toISOString() : 'none'
-            this.motion.is_person = (() => {
-                if (lastMotionEvent && lastMotionEvent.hasOwnProperty('cv_properties')) {
-                    return lastMotionEvent.cv_properties.detection_type === 'human' ? true : false
-                }
-                return false
-            })
+            if (lastMotionEvent && lastMotionEvent.hasOwnProperty('cv_properties')) {
+                this.motion.is_person = (lastMotionEvent.cv_properties.detection_type === 'human') ? true : false
+            }
 
             // Update motion properties with most recent historical event data
             if (this.camera.isDoorbot) {
