@@ -59,7 +59,8 @@ class Camera {
             last_ding: 0,
             last_ding_expires: 0,
             last_ding_time: 'none',
-            is_person: false
+            is_person: false,
+            desc: 'Motion'
         }
 
         if (this.camera.isDoorbot) {
@@ -68,7 +69,8 @@ class Camera {
                 ding_duration: 180,
                 last_ding: 0,
                 last_ding_expires: 0,
-                last_ding_time: 'none'
+                last_ding_time: 'none',
+                desc: 'Doorbell'
             }
         }
 
@@ -291,9 +293,7 @@ class Camera {
         if (ding) {
             // Is it a motion or doorbell ding? (for others we do nothing)
             if (ding.kind !== 'ding' && ding.kind !== 'motion') { return }
-
-            debug('Ding of type '+ding.kind+' received at '+ding.now+' for camera '+this.deviceId)
-            const stateTopic = this.cameraTopic+'/'+ding.kind+'/state'
+            debug(this[ding.kind].name+' ding for camera '+this.deviceId+' received at '+ding.now+' expires in '+ding.expires_in+' seconds')
 
             // Is this a new Ding or refresh of active ding?
             const newDing = (!this[ding.kind].active_ding) ? true : false
@@ -315,18 +315,16 @@ class Camera {
             // Will republish to MQTT for new dings even if ding is already active
             this.publishDingState(ding.kind)
 
-            // If new ding, begin expiration loop (only needed for first ding)
+            // If new ding, begin expiration loop (only needed for first ding as others just extend time)
             if (newDing) {
                 // Loop until current time is > last_ding expires time.  Sleeps until
-                // estimated exire time, but may loop if new dings increase last_ding_expires
+                // estimated expire time, but may loop if new dings increase last_ding_expires
                 while (Math.floor(Date.now()/1000) < this[ding.kind].last_ding_expires) {
                     const sleeptime = (this[ding.kind].last_ding_expires - Math.floor(Date.now()/1000)) + 1
-                    debug('Ding of type '+ding.kind+' for camera '+this.deviceId+' expires in '+sleeptime)
                     await utils.sleep(sleeptime)
-                    debug('Ding of type '+ding.kind+' for camera '+this.deviceId+' expired')
                 }
                 // All dings have expired, set ding state back to false/off and publish
-                debug('All dings of type '+ding.kind+' for camera '+this.deviceId+' have expired')
+                debug('All '+this[ding.kind].name.toLowerCase()+' dings for camera '+this.deviceId+' have expired')
                 this[ding.kind].active_ding = false
                 this.publishDingState(ding.kind)
             }
@@ -434,7 +432,7 @@ class Camera {
         }
 
         if (this.motion.active_ding) {
-            if (!this.camera.operatingOnBattery) {
+            if (this.camera.operatingOnBattery) {
                 // Battery powered cameras can't take snapshots while recording, try to get image from video stream instead
                 debug('Motion event detected on battery powered camera '+this.deviceId+', attempting to grab snapshot from live stream')
                 return await this.getSnapshotFromStream()
