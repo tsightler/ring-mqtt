@@ -345,8 +345,6 @@ class Camera {
         const dingTopic = this.cameraTopic+'/'+dingKind
         const dingState = this[dingKind].active_ding ? 'ON' : 'OFF'
         const attributes = {}
-        console.log(dingKind)
-        console.log(this[dingKind])
         if (dingKind === 'motion') {
             attributes.lastMotion = this[dingKind].last_ding
             attributes.lastMotionTime = this[dingKind].last_ding_time
@@ -551,7 +549,7 @@ class Camera {
                     fs.unlinkSync(jpgFile)
                 }
             } catch (e) {
-                console.log(e.stderr.toString())
+                debug(e.stderr.toString())
             }
         }
 
