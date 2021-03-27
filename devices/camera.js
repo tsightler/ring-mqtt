@@ -52,7 +52,7 @@ class Camera {
         this.cameraTopic = deviceInfo.CONFIG.ring_topic+'/'+this.locationId+'/camera/'+this.deviceId
         this.availabilityTopic = this.cameraTopic+'/status'
       
-        // Create properties to store motion ding state
+        // Create properties to store ding states
         this.motion = {
             active_ding: false,
             ding_duration: 180,
@@ -73,7 +73,7 @@ class Camera {
         }
 
         // Properties to store published MQTT state
-        // Used to keep from sending state updates on every poll (20 seconds)
+        // Used to keep from sending state updates on every 20 second poll
         if (this.camera.hasLight) {
             this.publishedLightState = 'unknown'
         }
@@ -181,8 +181,6 @@ class Camera {
             this.camera.onNewDing.subscribe(ding => {
                 this.processDing(ding)
             })
-
-            // Since this is initial publish of device publish current ding state as well
             this.processDing()
 
             // Subscribe to poll events, default every 20 seconds
