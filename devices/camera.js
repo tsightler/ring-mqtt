@@ -86,7 +86,7 @@ class Camera {
 
     // Publish camera capabilities and state and subscribe to events
     async publish() {
-        const debugMsg = (this.availabilityState == 'init') ? 'Publishing new ' : 'Republishing existing '
+        const debugMsg = (this.availabilityState === 'init') ? 'Publishing new ' : 'Republishing existing '
         debug(debugMsg+'device id: '+this.deviceId)
 
         // Publish motion sensor feature for camera
@@ -95,7 +95,7 @@ class Camera {
             component: 'binary_sensor',
             className: 'motion',
             suffix: 'Motion',
-            attributes: false,
+            attributes: true,
             command: false
         })
 
@@ -106,7 +106,7 @@ class Camera {
                 component: 'binary_sensor',
                 className: 'occupancy',
                 suffix: 'Ding',
-                attributes: false,
+                attributes: true,
                 command: false
             })
         }
@@ -148,7 +148,7 @@ class Camera {
                 type: 'snapshot',
                 component: 'camera',
                 suffix: 'Snapshot',
-                attributes: false,
+                attributes: true,
                 command: 'interval'
             })
         }
