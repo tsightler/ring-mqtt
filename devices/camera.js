@@ -51,23 +51,33 @@ class Camera {
         // Set device location and top level MQTT topics
         this.cameraTopic = deviceInfo.CONFIG.ring_topic+'/'+this.locationId+'/camera/'+this.deviceId
         this.availabilityTopic = this.cameraTopic+'/status'
-
-        // Create properties to store motion ding state
+      
+        // Create properties to store motion ding state and get most recent event
+        const lastMotionEvent = (await this.camera.getEvents({ limit: 1, kind: 'motion'})).events[0]
+        const lastMotionDate = (lastMotionEvent && lastMotionEvent.hasOwnProperty('created_at')) ? new Date(lastMotionEvent.created_at) : false
+        let isPerson
+        if (lastMotionEvent && lastMotionEvent.hasOwnProperty('cv_properties')) {
+            isPerson = lastMotionEvent.cv_properties.detection_type === 'human' ? true : false
+        }
         this.motion = {
             active_ding: false,
             ding_duration: 180,
-            last_ding: 0,
+            last_ding: lastMotionDate ? lastMotionDate/1000 : 0,
             last_ding_expires: 0,
-            is_person: false
+            last_ding_time: lastMotionDate ? lastMotionDate.toISOString() : 'none',
+            is_person: isPerson
         }
 
-        // If doorbell create properties to store doorbell ding state
+        // If doorbell create properties to store doorbell ding state and get most recent event
         if (this.camera.isDoorbot) {
+            const lastDingEvent = (await this.camera.getEvents({ limit: 1, kind: 'ding'})).events[0]
+            const lastDingDate = (lastDingEvent && lastDingEvent.hasOwnProperty('created_at')) ? new Date(lastDingEvent.created_at) : false
             this.ding = {
                 active_ding: false,
                 ding_duration: 180,
-                last_ding: 0,
-                last_ding_expires: 0
+                last_ding: lastDingDate ? lastDingDate/1000 : 0,
+                last_ding_expires: 0,
+                last_ding_time: lastDingDate ? lastDingDate.toISOString() : 'none'
             }
         }
 
@@ -94,6 +104,7 @@ class Camera {
             component: 'binary_sensor',
             className: 'motion',
             suffix: 'Motion',
+            attributes: false,
             command: false
         })
 
@@ -104,6 +115,7 @@ class Camera {
                 component: 'binary_sensor',
                 className: 'occupancy',
                 suffix: 'Ding',
+                attributes: false,
                 command: false
             })
         }
@@ -114,6 +126,7 @@ class Camera {
                 type: 'light',
                 component: 'light',
                 suffix: 'Light',
+                attributes: false,
                 command: 'command'
             })
         }
@@ -124,6 +137,7 @@ class Camera {
                 type: 'siren',
                 component: 'switch',
                 suffix: 'Siren',
+                attributes: false,
                 command: 'command'
             })
         }
@@ -133,6 +147,7 @@ class Camera {
             type: 'info',
             component: 'sensor',
             suffix: 'Info',
+            attributes: false,
             command: false
         })
 
@@ -142,6 +157,7 @@ class Camera {
                 type: 'snapshot',
                 component: 'camera',
                 suffix: 'Snapshot',
+                attributes: false,
                 command: 'interval'
             })
         }
@@ -155,11 +171,11 @@ class Camera {
 
             // Subscribe to Ding events (all cameras have at least motion events)
             this.camera.onNewDing.subscribe(ding => {
-                this.publishDingState(ding)
+                this.processDing(ding)
             })
 
             // Since this is initial publish of device publish current ding state as well
-            this.publishDingState()
+            this.processDing()
 
             // Subscribe to poll events, default every 20 seconds
             this.camera.onData.subscribe(() => {
@@ -184,7 +200,7 @@ class Camera {
             this.monitorCameraConnection()
         } else {
             // Pulish all data states and availability state for camera
-            this.publishDingState()
+            this.processDing()
 
             if (this.camera.hasLight || this.camera.hasSiren) {
                 if (this.camera.hasLight) { this.publishedLightState = 'republish' }
@@ -223,11 +239,11 @@ class Camera {
 
         if (capability.type === 'snapshot') {
             message.topic = componentTopic+'/image'
-            message.json_attributes_topic = componentTopic+'/attributes'
         } else {
             message.state_topic = componentTopic+'/state'
         }
 
+        if (capability.attributes) { message.json_attributes_topic = componentTopic+'/attributes' }
         if (capability.className) { message.device_class = capability.className }
 
         if (capability.command) {
@@ -263,7 +279,7 @@ class Camera {
     }
 
     // Process a ding event from camera or publish existing ding state
-    async publishDingState(ding) {
+    async processDing(ding) {
         // Is it an active ding (i.e. from a subscribed event)?
         if (ding) {
             // Is it a motion or doorbell ding? (for others we do nothing)
@@ -289,8 +305,7 @@ class Camera {
 
             // Publish MQTT active sensor state
             // Will republish to MQTT for new dings even if ding is already active
-            this.publishInfoState()
-            this.publishMqtt(stateTopic, 'ON', true)
+            this.publishDingState(ding.kind)
 
             // If new ding, begin expiration loop (only needed for first ding)
             if (newDing) {
@@ -305,15 +320,32 @@ class Camera {
                 // All dings have expired, set ding state back to false/off and publish
                 debug('All dings of type '+ding.kind+' for camera '+this.deviceId+' have expired')
                 this[ding.kind].active_ding = false
-                this.publishMqtt(stateTopic, 'OFF', true)
+                this.publishDingState(ding.kind)
             }
         } else {
             // Not an active ding so just publish existing ding state
-            this.publishMqtt(this.cameraTopic+'/motion/state', (this.motion.active_ding ? 'ON' : 'OFF'), true)
+            this.publishDingState('motion')
             if (this.camera.isDoorbot) {
-                this.publishMqtt(this.cameraTopic+'/ding/state', (this.ding.active_ding ? 'ON' : 'OFF'), true)
+                this.publishDingState('ding')
             }
         }
+    }
+
+    // Publish ding state and attributes
+    publishDingState(dingKind) {
+        const dingTopic = this.cameraTopic+'/'+dingKind
+        const dingState = this[dingKind].active_ding ? 'ON' : 'OFF'
+        const attributes = {}
+        if (dingKind === 'motion') {
+            attributes.lastMotion = this[dingKind].last_ding
+            attributes.lastMotionTime = this[dingKind].last_ding_time
+            attributes.personDetected = this[dingKind].is_person
+        } else {
+            attributes.lastDing = this[dingKind].last_ding
+            attributes.lastDingTime = this[dingKind].last_ding_time
+        }
+        this.publishMqtt(dingTopic+'/state', dingState, true)
+        this.publishMqtt(dingTopic+'/attributes', attributes, true)
     }
 
     // Publish camera state for polled attributes (light/siren state, etc)
@@ -357,12 +389,7 @@ class Camera {
             } else {
                 attributes.wirelessNetwork = deviceHealth.wifi_name
                 attributes.wirelessSignal = deviceHealth.latest_signal_strength
-            }
-
-            if (this.camera.isDoorbot) { attributes.lastDing = this.ding.last_ding }
-            attributes.lastMotion = this.motion.last_ding
-            attributes.isPerson = this.motion.is_person
-            
+            }            
             this.publishMqtt(this.cameraTopic+'/info/state', JSON.stringify(attributes), true)
         }
     }
@@ -393,34 +420,32 @@ class Camera {
     // This function uses various methods to get a snapshot to work around limitations
     // of Ring API, ring-client-api snapshot caching, battery cameras, etc.
     async getRefreshedSnapshot() {
+        if (this.camera.snapshotsAreBlocked) {
+            debug('Snapshots are unavailable for camera '+this.deviceId+', check if motion capture is disabled manually or via modes settings')
+            return false
+        }
+
         if (this.motion.active_ding) {
             if (this.camera.operatingOnBattery) {
                 // Battery powered cameras can't take snapshots while recording, try to get image from video stream instead
                 debug('Motion event detected on battery powered camera '+this.deviceId+', attempting to grab snapshot from live stream')
                 return await this.getSnapshotFromStream()
             } else {
-                // Line powered cameras can take a snapshot, but ring-client-api will return a cached snapshot
-                // if a previous snapshot was taken within 10 seconds of motion event sometimes leading to
-                // stale images.  Attempt to force an uncached snapshot.
+                // Line powered cameras can take a snapshot while recording, but ring-client-api will return a cached
+                // snapshot if a previous snapshot was taken within 10 seconds. If a motion event occurs suring this time
+                // a stale image is returned.  Instead, call our local function to force an uncached snapshot.
                 debug('Motion event detected for line powered camera '+this.deviceId+', forcing a non-cached snapshot update')
                 return await this.getUncachedSnapshot()
             }
         } else {
-            if (this.camera.snapshotsAreBlocked) {
-                debug('Snapshots are unavailable for camera '+this.deviceId+', check if motion capture is disabled manually or via modes settings')
-                return false
-            } else {
-                return await this.camera.getSnapshot()
-            }
+            return await this.camera.getSnapshot()
         }
     }
 
-    // Since getSnasphot() will return a cached image if snapshots are requested within
-    // last 10 seconds and, for motion events, we really want the current snapshot,
-    // force a snapshot update.
+    // Bypass ring-client-api cached snapshot behavior by calling refresh snapshot API directly
     async getUncachedSnapshot() {
         await this.camera.requestSnapshotUpdate()
-        utils.sleep(1)
+        await utils.sleep(1)
         const newSnapshot = await this.camera.restClient.request({
             url: clientApi(`snapshots/image/${this.camera.id}`),
             responseType: 'buffer',
@@ -539,11 +564,10 @@ class Camera {
         this.publishDeviceHealth()
     }
 
-    // Polling events call publishPollState() every 20 seconds and heartbeat
-    // value is set to 3 each time.  This simple function decrements heartbeat
-    // counter every 20 seconds.  If heartbeat reachches 0 then device is set
-    // to offline status.  When polling resumes publishPollState() will reset
-    // heartbeat counter and set device back online.
+    // Simple heartbeat function decrements the heartbeat counter every 20 seconds.
+    // Normallt the 20 second polling events reset the heartbeat counter.  If counter
+    // reaches 0 it indicates that polling has stopped so device is set offline.
+    // When polling resumes and heartbeat counter is reset above zero, device is set online.
     async monitorCameraConnection() {
         if (this.heartbeat < 1 && this.availabilityState !== 'offline') {
             this.offline()
