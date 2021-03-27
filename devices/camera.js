@@ -52,32 +52,23 @@ class Camera {
         this.cameraTopic = deviceInfo.CONFIG.ring_topic+'/'+this.locationId+'/camera/'+this.deviceId
         this.availabilityTopic = this.cameraTopic+'/status'
       
-        // Create properties to store motion ding state and get most recent event
-        const lastMotionEvent = (await deviceInfo.device.getEvents({ limit: 1, kind: 'motion'})).events[0]
-        const lastMotionDate = (lastMotionEvent && lastMotionEvent.hasOwnProperty('created_at')) ? new Date(lastMotionEvent.created_at) : false
-        let isPerson
-        if (lastMotionEvent && lastMotionEvent.hasOwnProperty('cv_properties')) {
-            isPerson = lastMotionEvent.cv_properties.detection_type === 'human' ? true : false
-        }
+        // Create properties to store motion ding state
         this.motion = {
             active_ding: false,
             ding_duration: 180,
-            last_ding: lastMotionDate ? lastMotionDate/1000 : 0,
+            last_ding: 0,
             last_ding_expires: 0,
-            last_ding_time: lastMotionDate ? lastMotionDate.toISOString() : 'none',
-            is_person: isPerson
+            last_ding_time: 'none',
+            is_person: false
         }
 
-        // If doorbell create properties to store doorbell ding state and get most recent event
         if (this.camera.isDoorbot) {
-            const lastDingEvent = (await deviceInfo.device.getEvents({ limit: 1, kind: 'ding'})).events[0]
-            const lastDingDate = (lastDingEvent && lastDingEvent.hasOwnProperty('created_at')) ? new Date(lastDingEvent.created_at) : false
             this.ding = {
                 active_ding: false,
                 ding_duration: 180,
-                last_ding: lastDingDate ? lastDingDate/1000 : 0,
+                last_ding: 0,
                 last_ding_expires: 0,
-                last_ding_time: lastDingDate ? lastDingDate.toISOString() : 'none'
+                last_ding_time: 'none'
             }
         }
 
@@ -168,6 +159,26 @@ class Camera {
         // Publish device state and, if new device, subscribe for state updates
         if (!this.subscribed) {
             this.subscribed = true
+
+            // Update properties with most recent historical event data
+            const lastMotionEvent = (await camera.getEvents({ limit: 1, kind: 'motion'})).events[0]
+            const lastMotionDate = (lastMotionEvent && lastMotionEvent.hasOwnProperty('created_at')) ? new Date(lastMotionEvent.created_at) : false
+            this.motion.last_ding = lastMotionDate ? lastMotionDate/1000 : 0
+            this.motion.last_ding_time = lastMotionDate ? lastMotionDate.toISOString() : 'none'
+            this.motion.is_person = (() => {
+                if (lastMotionEvent && lastMotionEvent.hasOwnProperty('cv_properties')) {
+                    return lastMotionEvent.cv_properties.detection_type === 'human' ? true : false
+                }
+                return false
+            })
+
+            // If doorbell create properties to store doorbell ding state and get most recent event
+            if (this.camera.isDoorbot) {
+                const lastDingEvent = (await camera.getEvents({ limit: 1, kind: 'ding'})).events[0]
+                const lastDingDate = (lastDingEvent && lastDingEvent.hasOwnProperty('created_at')) ? new Date(lastDingEvent.created_at) : false
+                this.ding.last_ding = lastDingDate ? lastDingDate/1000 : 0,
+                this.ding.last_ding_time = lastDingDate ? lastDingDate.toISOString() : 'none'
+            }
 
             // Subscribe to Ding events (all cameras have at least motion events)
             this.camera.onNewDing.subscribe(ding => {
