@@ -570,7 +570,7 @@ class Camera {
     // Publish heath state every 5 minutes when online
     async schedulePublishInfo() {
         await utils.sleep(this.availabilityState === 'offline' ? 60 : 300)
-        if (this.availabilityState === 'online') { publishInfoState() }
+        if (this.availabilityState === 'online') { this.publishInfoState() }
         this.schedulePublishInfo()
     }
 
