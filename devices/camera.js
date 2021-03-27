@@ -434,18 +434,19 @@ class Camera {
         }
 
         if (this.motion.active_ding) {
-            if (this.camera.operatingOnBattery) {
+            if (!this.camera.operatingOnBattery) {
                 // Battery powered cameras can't take snapshots while recording, try to get image from video stream instead
                 debug('Motion event detected on battery powered camera '+this.deviceId+', attempting to grab snapshot from live stream')
                 return await this.getSnapshotFromStream()
             } else {
                 // Line powered cameras can take a snapshot while recording, but ring-client-api will return a cached
-                // snapshot if a previous snapshot was taken within 10 seconds. If a motion event occurs suring this time
-                // a stale image is returned.  Instead, call our local function to force an uncached snapshot.
+                // snapshot if a previous snapshot was taken within 10 seconds. If a motion event occurs during this time
+                // a stale image is returned so we call our local function to force an uncached snapshot.
                 debug('Motion event detected for line powered camera '+this.deviceId+', forcing a non-cached snapshot update')
                 return await this.getUncachedSnapshot()
             }
         } else {
+            // If not an active ding it's a scheduled refresh, just call getSnapshot()
             return await this.camera.getSnapshot()
         }
     }
