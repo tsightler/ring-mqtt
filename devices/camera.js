@@ -306,9 +306,9 @@ class Camera {
             this[ding.kind].last_ding_expires = this[ding.kind].last_ding+ding.expires_in
 
             // If motion ding and snapshots on motion are enabled, publish a new snapshot
-            if (ding.kind === 'motion' && this.snapshotMotion) {
-                this.publishSnapshot(true)
+            if (ding.kind === 'motion') {
                 this[ding.kind].is_person = (ding.detection_type === 'human') ? true : false
+                if (this.snapshotMotion) this.publishSnapshot(true)
             }
 
             // Publish MQTT active sensor state
