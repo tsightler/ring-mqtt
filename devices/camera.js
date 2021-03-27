@@ -161,7 +161,7 @@ class Camera {
             this.subscribed = true
 
             // Update properties with most recent historical event data
-            const lastMotionEvent = (await camera.getEvents({ limit: 1, kind: 'motion'})).events[0]
+            const lastMotionEvent = (await this.camera.getEvents({ limit: 1, kind: 'motion'})).events[0]
             const lastMotionDate = (lastMotionEvent && lastMotionEvent.hasOwnProperty('created_at')) ? new Date(lastMotionEvent.created_at) : false
             this.motion.last_ding = lastMotionDate ? lastMotionDate/1000 : 0
             this.motion.last_ding_time = lastMotionDate ? lastMotionDate.toISOString() : 'none'
@@ -174,7 +174,7 @@ class Camera {
 
             // If doorbell create properties to store doorbell ding state and get most recent event
             if (this.camera.isDoorbot) {
-                const lastDingEvent = (await camera.getEvents({ limit: 1, kind: 'ding'})).events[0]
+                const lastDingEvent = (await this.camera.getEvents({ limit: 1, kind: 'ding'})).events[0]
                 const lastDingDate = (lastDingEvent && lastDingEvent.hasOwnProperty('created_at')) ? new Date(lastDingEvent.created_at) : false
                 this.ding.last_ding = lastDingDate ? lastDingDate/1000 : 0,
                 this.ding.last_ding_time = lastDingDate ? lastDingDate.toISOString() : 'none'
