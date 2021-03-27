@@ -543,7 +543,7 @@ class Camera {
             const jpgFile = path.join('/tmp', filePrefix+'.jpg')
             try {
                 // Attempt to grab snapshot image from key frame in stream
-                await spawn(pathToFfmpeg, ['-i', aviFile, '-s', '640:360', 'r', "1", '-vframes', '1', '-q:v', '2', jpgFile])
+                await spawn(pathToFfmpeg, ['-i', aviFile, '-s', '640:360', '-r', "1", '-vframes', '1', '-q:v', '2', jpgFile])
                 if (utils.checkFile(jpgFile)) {
                     newSnapshot = fs.readFileSync(jpgFile)
                     fs.unlinkSync(jpgFile)
