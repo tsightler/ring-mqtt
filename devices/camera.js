@@ -160,7 +160,7 @@ class Camera {
         if (!this.subscribed) {
             this.subscribed = true
 
-            // Update properties with most recent historical event data
+            // Update motion properties with most recent historical event data
             const lastMotionEvent = (await this.camera.getEvents({ limit: 1, kind: 'motion'})).events[0]
             const lastMotionDate = (lastMotionEvent && lastMotionEvent.hasOwnProperty('created_at')) ? new Date(lastMotionEvent.created_at) : false
             this.motion.last_ding = lastMotionDate ? lastMotionDate/1000 : 0
@@ -172,7 +172,7 @@ class Camera {
                 return false
             })
 
-            // If doorbell create properties to store doorbell ding state and get most recent event
+            // Update motion properties with most recent historical event data
             if (this.camera.isDoorbot) {
                 const lastDingEvent = (await this.camera.getEvents({ limit: 1, kind: 'ding'})).events[0]
                 const lastDingDate = (lastDingEvent && lastDingEvent.hasOwnProperty('created_at')) ? new Date(lastDingEvent.created_at) : false
@@ -208,6 +208,7 @@ class Camera {
             }
 
             // Start monitor of availability state for camera
+            this.schedulePublishInfo()
             this.monitorCameraConnection()
         } else {
             // Pulish all data states and availability state for camera
@@ -231,7 +232,7 @@ class Camera {
 
     // Publish state messages via MQTT with optional debug
     publishMqtt(topic, message, enableDebug) {
-        if (enableDebug) { debug(topic, message) }
+        if (enableDebug) debug(topic, message)
         this.mqttClient.publish(topic, message, { qos: 1 })
     }
 
@@ -363,6 +364,10 @@ class Camera {
     // Writes state to custom property to keep from publishing state except
     // when values change from previous polling interval
     publishPolledState() {
+        // Reset heartbeat counter on every polled state and set device online if not already
+        this.heartbeat = 3
+        if (this.availabilityState !== 'online') { this.online() }        
+
         if (this.camera.hasLight) {
             const stateTopic = this.cameraTopic+'/light/state'
             if (this.camera.data.led_status !== this.publishedLightState) {
@@ -378,10 +383,6 @@ class Camera {
                 this.publishedSirenState = sirenStatus
             }
         }
-
-        // Reset heartbeat counter on every polled state and set device online if not already
-        this.heartbeat = 3
-        if (this.availabilityState !== 'online') { this.online() }
     }
 
     // Publish device data to info topic
@@ -565,14 +566,10 @@ class Camera {
     }
 
     // Publish heath state every 5 minutes when online
-    async publishDeviceHealth() {
-        let delay = 60 // Default delay when offline
-        if (this.availabilityState === 'online') {
-            publishInfoState()
-            delay = 300 // Every 5 minues when online
-        }
-        await utils.sleep(delay)
-        this.publishDeviceHealth()
+    async schedulePublishInfo() {
+        await utils.sleep(this.availabilityState === 'offline' ? 60 : 300)
+        if (this.availabilityState === 'online') { publishInfoState() }
+        this.schedulePublishInfo()
     }
 
     // Simple heartbeat function decrements the heartbeat counter every 20 seconds.
