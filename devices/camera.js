@@ -166,7 +166,7 @@ class Camera {
             const lastMotionEvent = (await this.camera.getEvents({ limit: 1, kind: 'motion'})).events[0]
             const lastMotionDate = (lastMotionEvent && lastMotionEvent.hasOwnProperty('created_at')) ? new Date(lastMotionEvent.created_at) : false
             this.motion.last_ding = lastMotionDate ? lastMotionDate/1000 : 0
-            this.motion.last_ding_time = lastMotionDate ? utils.getISOTime(lastMotionDate) : 'none'
+            this.motion.last_ding_time = lastMotionDate ? utils.getISOTime(lastMotionDate) : ''
             if (lastMotionEvent && lastMotionEvent.hasOwnProperty('cv_properties')) {
                 this.motion.is_person = (lastMotionEvent.cv_properties.detection_type === 'human') ? true : false
             }
@@ -175,8 +175,8 @@ class Camera {
             if (this.camera.isDoorbot) {
                 const lastDingEvent = (await this.camera.getEvents({ limit: 1, kind: 'ding'})).events[0]
                 const lastDingDate = (lastDingEvent && lastDingEvent.hasOwnProperty('created_at')) ? new Date(lastDingEvent.created_at) : false
-                this.ding.last_ding = lastDingDate ? lastDingDate/1000 : 0,
-                this.ding.last_ding_time = lastDingDate ? lastDingDate.toISOString() : 'none'
+                this.ding.last_ding = lastDingDate ? utils.getISOTime(lastDingDate) : 0
+                this.ding.last_ding_time = lastDingDate ? utils.getISOTime(lastDingDate) : ''
             }
 
             // Subscribe to Ding events (all cameras have at least motion events)

@@ -48,7 +48,7 @@ async function processExit(exitCode) {
             if (ringDevice.availabilityState === 'online') { await ringDevice.offline()} 
         })
     if (exitCode || exitCode === 0) debug('Exit code: '+exitCode)
-    await utils.sleep(1)
+    await utils.sleep(3)
     process.exit()
 }
 
