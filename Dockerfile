@@ -1,11 +1,7 @@
-FROM hassioaddons/base:edge
+FROM tsightler/addon-base
 ENV LANG C.UTF-8
 COPY . /app/ring-mqtt
-RUN sed -i 's/3.12/3.13/g' /etc/apk/repositories && \
-    apk update && \
-    apk upgrade musl && \
-    apk upgrade --available && \
-    apk add --no-cache nodejs@edge npm@edge git && \
+RUN apk add --no-cache nodejs npm git && \
     mv /app/ring-mqtt /app/ring-mqtt-docker && \
     ln -s /app/ring-mqtt-docker /app/ring-mqtt && \
     chmod +x /app/ring-mqtt/scripts/*.sh && \
