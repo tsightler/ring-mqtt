@@ -1,4 +1,4 @@
-FROM hassioaddons/base
+FROM hassioaddons/base:edge
 ENV LANG C.UTF-8
 COPY . /app/ring-mqtt
 RUN apk add --no-cache nodejs npm git && \

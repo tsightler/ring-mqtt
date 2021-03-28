@@ -116,14 +116,14 @@ class ModesPanel extends AlarmDevice {
     async trySetMode(message, delay) {
         await utils.sleep(delay)
         let targetMode
-        switch(message) {
-            case 'DISARM':
+        switch(message.toLowerCase()) {
+            case 'disarm':
                 targetMode = 'disarmed'
                 break
-            case 'ARM_HOME':
+            case 'arm_home':
                 targetMode = 'home'
                 break
-            case 'ARM_AWAY':
+            case 'arm_away':
                 targetMode = 'away'
                 break
             default:

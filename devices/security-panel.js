@@ -207,8 +207,8 @@ class SecurityPanel extends AlarmDevice {
             if (message.toLowerCase() !== 'disarm' && this.bypassEnabled) {
                 const bypassDevices = (await this.device.location.getDevices()).filter((device) => {
                     return (
-                        device.deviceType === RingDeviceType.ContactSensor &&
-                        device.data.faulted
+                        (device.deviceType === RingDeviceType.ContactSensor && device.data.faulted) ||
+                        (device.deviceType === RingDeviceType.RetrofitZone && device.data.faulted)
                     )
                 })
 
