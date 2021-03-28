@@ -1,4 +1,4 @@
-FROM tsightler/addon-base
+FROM hassioaddons/base
 ENV LANG C.UTF-8
 COPY . /app/ring-mqtt
 RUN apk add --no-cache nodejs npm git && \
