@@ -1,3 +1,12 @@
+## v4.5.0
+ - Snapshot on motion reliability improvements for line powered cameras
+ - Snapshot on motion attempts to grab image from livestream for battery powered cameras.  This is slower, less reliable and sometimes produces lower quality images vs snapshots, but as battery cameras don't allow snapshots wile streaming, it's the only option for getting a snapshot of a motion event
+ - Person detect attribute for camera motion events (needs testing, only works if person detection is enable on accout and show up as person detect events in history)
+ - Date/Time uses standard format accross all attributes
+ - Retrofit zones are now included as bypass eligible sensors when bypass arming is enabled
+ - Docker image updated to Node v14 to hopefully address reconnect issues
+ - Fix various crash bugs in camera support
+
 ## v4.4.0
  - Add support for sensor bypass during arming
 
