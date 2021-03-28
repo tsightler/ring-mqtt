@@ -389,7 +389,7 @@ class Camera {
                 attributes.batteryLevel = deviceHealth.battery_percentage
             }
             attributes.firmwareStatus = deviceHealth.firmware
-            attributes.lastUpdate = deviceHealth.updated_at
+            attributes.lastUpdate = deviceHealth.updated_at.slice(0,-6)+"Z"
             if (deviceHealth.network_connection && deviceHealth.network_connection === 'ethernet') {
                 attributes.wiredNetwork = this.camera.data.alerts.connection
             } else {
