@@ -166,7 +166,7 @@ class Camera {
             const lastMotionEvent = (await this.camera.getEvents({ limit: 1, kind: 'motion'})).events[0]
             const lastMotionDate = (lastMotionEvent && lastMotionEvent.hasOwnProperty('created_at')) ? new Date(lastMotionEvent.created_at) : false
             this.motion.last_ding = lastMotionDate ? lastMotionDate/1000 : 0
-            this.motion.last_ding_time = lastMotionDate ? lastMotionDate.toISOString() : 'none'
+            this.motion.last_ding_time = lastMotionDate ? utils.getISOTime(lastMotionDate) : 'none'
             if (lastMotionEvent && lastMotionEvent.hasOwnProperty('cv_properties')) {
                 this.motion.is_person = (lastMotionEvent.cv_properties.detection_type === 'human') ? true : false
             }
@@ -301,7 +301,7 @@ class Camera {
 
             // Update last_ding, duration and expire time
             this[ding.kind].last_ding = Math.floor(ding.now)
-            this[ding.kind].last_ding_time = new Date(ding.now*1000).toISOString()
+            this[ding.kind].last_ding_time = utils.getISOTime(ding.now*1000)
             this[ding.kind].ding_duration = ding.expires_in
             this[ding.kind].last_ding_expires = this[ding.kind].last_ding+ding.expires_in
 
