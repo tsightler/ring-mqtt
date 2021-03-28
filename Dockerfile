@@ -1,7 +1,7 @@
 FROM hassioaddons/base:edge
 ENV LANG C.UTF-8
 COPY . /app/ring-mqtt
-RUN sed -i 's/3.12/3.13/g' /etc/ && \
+RUN sed -i 's/3.12/3.13/g' /etc/apk/repositories && \
     apk update && \
     apk upgrade --available && \
     apk add --no-cache nodejs@edge npm@edge git && \
