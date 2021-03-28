@@ -6,6 +6,7 @@
  - Retrofit zones are now included as bypass eligible sensors when bypass arming is enabled
  - Docker image updated to Node v14 to hopefully address reconnect issues
  - Fix various crash bugs in camera support
+ - Drop support for i386 architecture for docker image
 
 ## v4.4.0
  - Add support for sensor bypass during arming
