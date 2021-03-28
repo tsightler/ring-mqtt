@@ -1,7 +1,10 @@
 FROM hassioaddons/base:edge
 ENV LANG C.UTF-8
 COPY . /app/ring-mqtt
-RUN apk add --no-cache libgcc@edge libstdc++@edge nodejs@edge npm@edge git && \
+RUN sed -i 's/3.12/3.13/g' /etc/ && \
+    apk update && \
+    apk upgrade --available && \
+    apk add --no-cache nodejs@edge npm@edge git && \
     mv /app/ring-mqtt /app/ring-mqtt-docker && \
     ln -s /app/ring-mqtt-docker /app/ring-mqtt && \
     chmod +x /app/ring-mqtt/scripts/*.sh && \
