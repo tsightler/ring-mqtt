@@ -1,3 +1,6 @@
+## v4.5.1
+ - When attempting to grab snapshot from livestream for battery cameras, set stream duration equal to video recording length setting to (hopefully) avoid truncating video recording
+
 ## v4.5.0
  - Snapshot on motion reliability improvements for line powered cameras
  - Snapshot on motion attempts to grab image from livestream for battery powered cameras.  This is slower, less reliable and sometimes produces lower quality images vs snapshots, but as battery cameras don't allow snapshots wile streaming, it's the only option for getting a snapshot of a motion event

@@ -471,7 +471,7 @@ class Camera {
     }
 
     // Start a live stream to file with the defined duration
-    async startStream(duration, filename) {
+    async startStream(filename, duration) {
         debug('Establishing connection to video stream for camera '+this.deviceId)
         try {
             const sipSession = await this.camera.streamVideo({
@@ -506,7 +506,7 @@ class Camera {
         for (let i = 0; i < retries; i++) {
             const filePrefix = this.deviceId+'_motion_'+Date.now() 
             const aviFile = path.join(filePath, filePrefix+'.avi')
-            const streamSession = await this.startStream(10, aviFile)
+            const streamSession = await this.startStream(aviFile, this.camera.data.settings.video_settings.clip_length_max)
             if (streamSession) {
                 if (await this.isStreaming(aviFile, 7)) {
                     debug ('Established live stream for camera '+this.deviceId)
