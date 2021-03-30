@@ -182,10 +182,10 @@ class Camera {
             })
 
             // Publish snapshot if enabled
-            if (this.snapshotMotion || this.snapshotInterval) {
+            if (this.snapshotMotion || this.snapshotInterval > 0) {
                 this.publishSnapshot(true)
                 // If interval based snapshots are enabled, start snapshot refresh loop
-                if (this.snapshotInterval) {
+                if (this.snapshotInterval > 0) {
                     this.scheduleSnapshotRefresh()
                 }
             }
@@ -492,7 +492,8 @@ class Camera {
         for (let i = 0; i < retries; i++) {
             const filePrefix = this.deviceId+'_motion_'+Date.now() 
             const aviFile = path.join(filePath, filePrefix+'.avi')
-            const streamSession = await this.startStream(aviFile, this.camera.data.settings.video_settings.clip_length_max)
+            const duration = this.camera.data.settings.video_settings.hasOwnProperty('clip_length_max') ? this.camera.data.settings.video_settings.clip_length_max : 60
+            const streamSession = await this.startStream(aviFile, duration)
             if (streamSession) {
                 if (await this.isStreaming(aviFile, 7)) {
                     debug ('Established live stream for camera '+this.deviceId)

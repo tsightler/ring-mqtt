@@ -1,3 +1,6 @@
+## v4.5.2
+ - Second attempt to fix truncation of video length (tries to read property if available, otherwise keeps stream alive for 60 seconds)
+
 ## v4.5.1
  - When attempting to grab snapshot from livestream for battery cameras, set stream duration equal to video recording length setting to (hopefully) avoid truncating video recording
 
