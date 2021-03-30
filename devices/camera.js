@@ -20,6 +20,8 @@ class Camera {
         this.snapshotMotion = false
         this.snapshotInterval = false
         this.snapshotAutoInterval = false
+        this.publishedLightState = this.camera.hasLight ? 'init' : 'none'
+        this.publishedSirenState = this.camera.hasSiren ? 'init' : 'none'
 
         // If snapshot capture is enabled, set approprate values
         if (this.config.snapshot_mode === "motion" || this.config.snapshot_mode === "interval" || this.config.snapshot_mode === "all" ) {
@@ -27,8 +29,8 @@ class Camera {
             this.snapshotMotion = (this.config.snapshot_mode === "motion" || this.config.snapshot_mode === "all") ? true : false
 
             if (this.config.snapshot_mode === "interval" || this.config.snapshot_mode === "all") {
+                this.snapshotAutoInterval = true
                 if (this.camera.operatingOnBattery) {
-                    this.snapshotAutoInterval = true
                     if (this.camera.data.settings.hasOwnProperty('lite_24x7') && this.camera.data.settings.lite_24x7.enabled) {
                         this.snapshotInterval = this.camera.data.settings.lite_24x7.frequency_secs
                     } else {
@@ -73,17 +75,6 @@ class Camera {
                 last_ding_time: 'none'
             }
         }
-
-        // Properties to store published MQTT state
-        // Used to keep from sending state updates on every 20 second poll
-        if (this.camera.hasLight) {
-            this.publishedLightState = 'unknown'
-        }
-
-        if (this.camera.hasSiren) {
-            this.publishedSirenState = 'unknown'
-        }
-
     }
 
     // Publish camera capabilities and state and subscribe to events
@@ -183,16 +174,11 @@ class Camera {
             this.camera.onNewDing.subscribe(ding => {
                 this.processDing(ding)
             })
-            this.processDing()
+            this.publishDingStates()
 
             // Subscribe to poll events, default every 20 seconds
             this.camera.onData.subscribe(() => {
                 this.publishPolledState()
-                
-                // Update snapshot frequency in case it's changed
-                if (this.snapshotAutoInterval && this.camera.data.settings.hasOwnProperty('lite_24x7')) {
-                    this.snapshotInterval = this.camera.data.settings.lite_24x7.frequency_secs
-                }
             })
 
             // Publish snapshot if enabled
@@ -208,14 +194,13 @@ class Camera {
             this.schedulePublishInfo()
             this.monitorCameraConnection()
         } else {
-            // Pulish all data states and availability state for camera
-            this.processDing()
+            // Set states to force republish
+            this.publishedLightState = this.camera.hasLight ? 'republish' : 'none'
+            this.publishedSirenState = this.camera.hasSiren ? 'republish' : 'none'
 
-            if (this.camera.hasLight || this.camera.hasSiren) {
-                if (this.camera.hasLight) { this.publishedLightState = 'republish' }
-                if (this.camera.hasSiren) { this.publishedSirenState = 'republish' }
-                this.publishPolledState()
-            }
+            // Republish all camera state data
+            this.publishDingStates()
+            this.publishPolledState()
 
             // Publish snapshot image if any snapshot option is enabled
             if (this.snapshotMotion || this.snapshotInterval) {
@@ -287,54 +272,50 @@ class Camera {
         this.mqttClient.publish(configTopic, JSON.stringify(message), { qos: 1 })
     }
 
-    // Process a ding event from camera or publish existing ding state
+    // Process a ding event
     async processDing(ding) {
-        // Is it an active ding (i.e. from a subscribed event)?
-        if (ding) {
-            // Is it a motion or doorbell ding? (for others we do nothing)
-            if (ding.kind !== 'ding' && ding.kind !== 'motion') { return }
-            debug('Camera '+this.deviceId+' received '+this[ding.kind].name+' ding at '+Math.floor(ding.now)+', expires in '+ding.expires_in+' seconds')
+        // Is it a motion or doorbell ding? (for others we do nothing)
+        if (ding.kind !== 'ding' && ding.kind !== 'motion') { return }
+        debug('Camera '+this.deviceId+' received '+this[ding.kind].name+' ding at '+Math.floor(ding.now)+', expires in '+ding.expires_in+' seconds')
 
-            // Is this a new Ding or refresh of active ding?
-            const newDing = (!this[ding.kind].active_ding) ? true : false
-            this[ding.kind].active_ding = true
+        // Is this a new Ding or refresh of active ding?
+        const newDing = (!this[ding.kind].active_ding) ? true : false
+        this[ding.kind].active_ding = true
 
-            // Update last_ding, duration and expire time
-            this[ding.kind].last_ding = Math.floor(ding.now)
-            this[ding.kind].last_ding_time = utils.getISOTime(ding.now*1000)
-            this[ding.kind].ding_duration = ding.expires_in
-            this[ding.kind].last_ding_expires = this[ding.kind].last_ding+ding.expires_in
+        // Update last_ding, duration and expire time
+        this[ding.kind].last_ding = Math.floor(ding.now)
+        this[ding.kind].last_ding_time = utils.getISOTime(ding.now*1000)
+        this[ding.kind].ding_duration = ding.expires_in
+        this[ding.kind].last_ding_expires = this[ding.kind].last_ding+ding.expires_in
 
-            // If motion ding and snapshots on motion are enabled, publish a new snapshot
-            if (ding.kind === 'motion') {
-                this[ding.kind].is_person = (ding.detection_type === 'human') ? true : false
-                if (this.snapshotMotion) this.publishSnapshot(true)
-            }
-
-            // Publish MQTT active sensor state
-            // Will republish to MQTT for new dings even if ding is already active
-            this.publishDingState(ding.kind)
-
-            // If new ding, begin expiration loop (only needed for first ding as others just extend time)
-            if (newDing) {
-                // Loop until current time is > last_ding expires time.  Sleeps until
-                // estimated expire time, but may loop if new dings increase last_ding_expires
-                while (Math.floor(Date.now()/1000) < this[ding.kind].last_ding_expires) {
-                    const sleeptime = (this[ding.kind].last_ding_expires - Math.floor(Date.now()/1000)) + 1
-                    await utils.sleep(sleeptime)
-                }
-                // All dings have expired, set ding state back to false/off and publish
-                debug('All '+this[ding.kind].name+' dings for camera '+this.deviceId+' have expired')
-                this[ding.kind].active_ding = false
-                this.publishDingState(ding.kind)
-            }
-        } else {
-            // Not an active ding so just publish existing ding state
-            this.publishDingState('motion')
-            if (this.camera.isDoorbot) {
-                this.publishDingState('ding')
-            }
+        // If motion ding and snapshots on motion are enabled, publish a new snapshot
+        if (ding.kind === 'motion') {
+            this[ding.kind].is_person = (ding.detection_type === 'human') ? true : false
+            if (this.snapshotMotion) this.publishSnapshot(true)
         }
+
+        // Publish MQTT active sensor state
+        // Will republish to MQTT for new dings even if ding is already active
+        this.publishDingState(ding.kind)
+
+        // If new ding, begin expiration loop (only needed for first ding as others just extend time)
+        if (newDing) {
+            // Loop until current time is > last_ding expires time.  Sleeps until
+            // estimated expire time, but may loop if new dings increase last_ding_expires
+            while (Math.floor(Date.now()/1000) < this[ding.kind].last_ding_expires) {
+                const sleeptime = (this[ding.kind].last_ding_expires - Math.floor(Date.now()/1000)) + 1
+                await utils.sleep(sleeptime)
+            }
+            // All dings have expired, set ding state back to false/off and publish
+            debug('All '+this[ding.kind].name+' dings for camera '+this.deviceId+' have expired')
+            this[ding.kind].active_ding = false
+            this.publishDingState(ding.kind)
+        }
+    }
+
+    publishDingStates() {
+        this.publishDingState('motion')
+        if (this.camera.isDoorbot) { this.publishDingState('ding') }
     }
 
     // Publish ding state and attributes
@@ -376,6 +357,11 @@ class Camera {
                 this.publishMqtt(stateTopic, sirenStatus, true)
                 this.publishedSirenState = sirenStatus
             }
+        }
+
+        // Update snapshot frequency in case it's changed
+        if (this.snapshotAutoInterval && this.camera.data.settings.hasOwnProperty('lite_24x7')) {
+            this.snapshotInterval = this.camera.data.settings.lite_24x7.frequency_secs
         }
     }
 
@@ -475,7 +461,7 @@ class Camera {
         debug('Establishing connection to video stream for camera '+this.deviceId)
         try {
             const sipSession = await this.camera.streamVideo({
-                output: ['-codec', 'copy', '-flush_packets', '1', '-t', duration.toString(), filename, ],
+                output: ['-codec', 'copy', '-flush_packets', '1', '-t', duration, filename],
             })
 
             sipSession.onCallEnded.subscribe(() => {
