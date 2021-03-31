@@ -499,7 +499,7 @@ class Camera {
     // Creates a fifo which will receive the piped output from ffmpeg and assemble
     // and emit full jpeg images from the mjpeg stream
     async prepareStreamFifo() {
-        mkfifo(this.streamFifo, 0600);
+        mkfifo(this.streamFifo, '0600');
         fs.open(this.streamFifo, fs.constants.O_RDONLY | fs.constants.O_NONBLOCK, (err, fd) => {
             const p2j = new P2J();
             p2j.on('jpeg', (jpeg) => { 
