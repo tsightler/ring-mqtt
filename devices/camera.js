@@ -287,7 +287,7 @@ class Camera {
         // If motion ding and snapshots on motion are enabled, publish a new snapshot
         if (ding.kind === 'motion') {
             this[ding.kind].is_person = (ding.detection_type === 'human') ? true : false
-            //if (this.snapshotMotion) { this.startLiveStream() }
+            if (this.snapshotMotion) { this.startLiveStream() }
         }
 
         // Publish MQTT active sensor state
@@ -443,9 +443,10 @@ class Camera {
             return
         }
         this.snapshot.updating = true
+        /*
         const ffmpegSocket = path.join('/tmp', this.deviceId+'_stream.sock')
         const pipe2jpeg = new P2J()
-        pipe2jpeg.on('jpeg', (jpegFrame) => { 
+        pipe2jpeg.on('jpeg', (jpegFrame) => {
             this.snapshot.imageData = jpegFrame
             this.snapshot.timestamp = Math.round(Date.now()/1000)
             this.publishSnapshot()
@@ -459,7 +460,7 @@ class Camera {
         })
 
         ffmpegServer.listen(ffmpegSocket)
-
+        */
         const duration = this.camera.data.settings.video_settings.hasOwnProperty('clip_length_max') ? this.camera.data.settings.video_settings.clip_length_max : 60
         debug('Establishing connection to video stream for camera '+this.deviceId)
         try {
@@ -480,13 +481,13 @@ class Camera {
                     '2',
                     '-t',
                     duration,
-                    'unix:'+ffmpegSocket
+                    ffmpegSocket
                   ],
             })
 
             sipSession.onCallEnded.subscribe(() => {
-                this.snapshot.updating = false
                 ffmpegServer.close()
+                this.snapshot.updating = false
             }) 
         } catch(e) {
             debug(e.message)
