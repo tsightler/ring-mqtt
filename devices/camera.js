@@ -448,7 +448,9 @@ class Camera {
         const pipe2jpeg = new P2J()
 
         let ffmpegServer = net.createServer(function(ffmpegStream) {
+
             ffmpegStream.pipe(pipe2jpeg)
+
             ffmpegStream.on('end', function() {
                 ffmpegServer.close()
             })
@@ -456,7 +458,6 @@ class Camera {
 
         ffmpegServer.listen(ffmpegSocket)
         
-        const duration = this.camera.data.settings.video_settings.hasOwnProperty('clip_length_max') ? this.camera.data.settings.video_settings.clip_length_max : 60
         debug('Establishing connection to video stream for camera '+this.deviceId)
         try {
             const sipSession = await this.camera.streamVideo({
