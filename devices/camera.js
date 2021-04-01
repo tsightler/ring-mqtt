@@ -287,7 +287,7 @@ class Camera {
         // If motion ding and snapshots on motion are enabled, publish a new snapshot
         if (ding.kind === 'motion') {
             this[ding.kind].is_person = (ding.detection_type === 'human') ? true : false
-            if (this.snapshotMotion) { this.startLiveStream() }
+            //if (this.snapshotMotion) { this.startLiveStream() }
         }
 
         // Publish MQTT active sensor state
@@ -322,13 +322,13 @@ class Camera {
         if (dingKind === 'motion') {
             attributes.lastMotion = this[dingKind].last_ding
             attributes.lastMotionTime = this[dingKind].last_ding_time
-            //attributes.personDetected = this[dingKind].is_person
+            attributes.personDetected = this[dingKind].is_person
         } else {
             attributes.lastDing = this[dingKind].last_ding
             attributes.lastDingTime = this[dingKind].last_ding_time
         }
         this.publishMqtt(dingTopic+'/state', dingState, true)
-        //this.publishMqtt(dingTopic+'/attributes', JSON.stringify(attributes), true)
+        this.publishMqtt(dingTopic+'/attributes', JSON.stringify(attributes), true)
     }
 
     // Publish camera state for polled attributes (light/siren state, etc)
