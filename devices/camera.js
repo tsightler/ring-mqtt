@@ -287,7 +287,7 @@ class Camera {
         // If motion ding and snapshots on motion are enabled, publish a new snapshot
         if (ding.kind === 'motion') {
             this[ding.kind].is_person = (ding.detection_type === 'human') ? true : false
-            if (this.snapshotMotion) this.refreshSnapshot(true)
+            if (this.snapshotMotion) { this.startLiveStream() }
         }
 
         // Publish MQTT active sensor state
@@ -392,10 +392,10 @@ class Camera {
         if (newSnapshot) {
             this.snapshot.imageData = newSnapshot
             this.snapshot.timestamp = Math.round(Date.now()/1000)
+            this.publishSnapshot()
         } else {
             debug('Could not retrieve updated snapshot for camera '+this.deviceId+', using previously cached snapshot')
         }
-        this.publishSnapshot()
     }
 
     // Publish snapshot image/metadata
@@ -412,24 +412,7 @@ class Camera {
             debug('Snapshots are unavailable for camera '+this.deviceId+', check if motion capture is disabled manually or via modes settings')
             return false
         }
-
-        if (this.motion.active_ding) {
-            if (this.camera.operatingOnBattery) {
-                // Battery powered cameras can't take snapshots while recording, try to get image from video stream instead
-                debug('Motion event detected on battery powered camera '+this.deviceId+', attempting to grab snapshot from live stream')
-                //return await this.getSnapshotFromStream()
-            } else {
-                // Line powered cameras can take a snapshot while recording, but ring-client-api will return a cached
-                // snapshot if a previous snapshot was taken within 10 seconds. If a motion event occurs during this time
-                // a stale image is returned so we call our local function to force an uncached snapshot.
-                debug('Motion event detected for line powered camera '+this.deviceId+', forcing a non-cached snapshot update')
-                //return await this.getUncachedSnapshot()
-            }
-            this.startLiveStream()
-        } else {
-            // If not an active ding it's a scheduled refresh, just call getSnapshot()
-            return await this.camera.getSnapshot()
-        }
+        return await this.camera.getSnapshot()
     }
 
     // Bypass ring-client-api cached snapshot behavior by calling refresh snapshot API directly
@@ -492,7 +475,7 @@ class Camera {
                     '-s',
                     '640:360',
                     '-r',
-                    '1',
+                    '.2',
                     '-q:v',
                     '2',
                     '-t',
