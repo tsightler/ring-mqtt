@@ -19,7 +19,6 @@ class Camera {
         this.snapshotMotion = false
         this.snapshotInterval = false
         this.snapshotAutoInterval = false
-        this.ffmpegSocket = path.join('/tmp', this.deviceId+'_stream.sock')
         this.publishedLightState = this.camera.hasLight ? 'init' : 'none'
         this.publishedSirenState = this.camera.hasSiren ? 'init' : 'none'
 
@@ -183,7 +182,7 @@ class Camera {
 
             // Publish snapshot if enabled
             if (this.snapshotMotion || this.snapshotInterval > 0) {
-                this.publishSnapshot(true)
+                this.refreshSnapshot()
                 if (this.snapshotMotion) { this.prepareStreamSocket() }
                 if (this.snapshotInterval > 0) { this.scheduleSnapshotRefresh() }
             }
@@ -289,7 +288,7 @@ class Camera {
         // If motion ding and snapshots on motion are enabled, publish a new snapshot
         if (ding.kind === 'motion') {
             this[ding.kind].is_person = (ding.detection_type === 'human') ? true : false
-            if (this.snapshotMotion) this.publishSnapshot(true)
+            if (this.snapshotMotion) this.refreshSnapshot(true)
         }
 
         // Publish MQTT active sensor state
@@ -384,24 +383,24 @@ class Camera {
         }
     }
 
-    // Publish snapshot image/metadata
-    async publishSnapshot(refresh) {
+    async refreshSnapshot() {
         let newSnapshot
-        // If refresh = true, get updated snapshot image before publishing
-        if (refresh) {
-            try {
-                newSnapshot = await this.getRefreshedSnapshot()
-            } catch(e) {
-                debug(e.message)
-            }
-            if (newSnapshot) {
-                this.snapshot.imageData = newSnapshot
-                this.snapshot.timestamp = Math.round(Date.now()/1000)
-            } else {
-                debug('Could not retrieve updated snapshot for camera '+this.deviceId+', using previously cached snapshot')
-            }
+        try {
+            newSnapshot = await this.getRefreshedSnapshot()
+        } catch(e) {
+            debug(e.message)
         }
+        if (newSnapshot) {
+            this.snapshot.imageData = newSnapshot
+            this.snapshot.timestamp = Math.round(Date.now()/1000)
+        } else {
+            debug('Could not retrieve updated snapshot for camera '+this.deviceId+', using previously cached snapshot')
+        }
+        this.publishSnapshot()
+    }
 
+    // Publish snapshot image/metadata
+    async publishSnapshot() {
         debug(this.cameraTopic+'/snapshot/image', '<binary_image_data>')
         this.publishMqtt(this.cameraTopic+'/snapshot/image', this.snapshot.imageData)
         this.publishMqtt(this.cameraTopic+'/snapshot/attributes', JSON.stringify({ timestamp: this.snapshot.timestamp }))
@@ -450,7 +449,7 @@ class Camera {
         await utils.sleep(this.snapshotInterval)
         // During active motion events or device offline state, stop interval snapshots
         if (this.snapshotMotion && !this.motion.active_ding && this.availabilityState === 'online') { 
-            this.publishSnapshot(true)
+            this.refreshSnapshot()
         }
         this.scheduleSnapshotRefresh()
     }
@@ -458,10 +457,27 @@ class Camera {
     // Start a live stream and send mjpeg stream to pipe
     async startLiveStream() {
         if (this.snapshot.updating) {
-            debug ('Snapshot update from live stream already in progress for camera '+this.deviceId)
+            debug ('Live stream is already in progress for camera '+this.deviceId)
             return
         }
         this.snapshot.updating = true
+        const ffmpegSocket = path.join('/tmp', this.deviceId+'_stream.sock')
+        const pipe2jpeg = new P2J()
+        pipe2jpeg.on('jpeg', (jpegFrame) => { 
+            this.snapshot.imageData = jpegFrame
+            this.snapshot.timestamp = Math.round(Date.now()/1000)
+            this.publishSnapshot()
+        })
+
+        let ffmpegServer = net.createServer(function(ffmpegStream) {
+            ffmpegStream.pipe(pipe2jpeg)
+            ffmpegStream.on('end', function() {
+                ffmpegServer.close()
+            })
+        })
+
+        ffmpegServer.listen(ffmpegSocket)
+
         const duration = this.camera.data.settings.video_settings.hasOwnProperty('clip_length_max') ? this.camera.data.settings.video_settings.clip_length_max : 60
         debug('Establishing connection to video stream for camera '+this.deviceId)
         try {
@@ -482,39 +498,18 @@ class Camera {
                     '2',
                     '-t',
                     duration,
-                    this.ffmpegSocket
+                    'unix:'+ffmpegSocket
                   ],
             })
 
             sipSession.onCallEnded.subscribe(() => {
                 this.snapshot.updating = false
+                ffmpegServer.close()
             }) 
         } catch(e) {
             debug(e.message)
+            this.snapshot.updating = false
         }
-    }
-
-    // Creates a socket which will receive the piped output from ffmpeg and assemble
-    // and emit full jpeg images from the mjpeg stream
-    async prepareStreamSocket() {
-        const pipe2jpeg = new P2J()
-
-        let ffmpegServer = net.createServer(function(ffmpegStream) {
-            ffmpegStream.on('data', function(chunk) {
-                chunk.pipe(pipe2jpeg)                
-            })
-            ffmpegStream.on('end', function() {
-                ffmpegStream.close()
-            })
-        })
-
-        ffmpegServer.listen(this.ffmpegSocket)
-
-        pipe2jpeg.on('jpeg', (jpegFrame) => { 
-            this.snapshot.imageData = jpegFrame
-            this.snapshot.timestamp = Math.round(Date.now()/1000)
-            this.publishSnapshot()
-        })
     }
 
     // Publish heath state every 5 minutes when online
