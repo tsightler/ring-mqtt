@@ -443,14 +443,9 @@ class Camera {
             return
         }
         this.snapshot.updating = true
-        /*
+        const duration = this.camera.data.settings.video_settings.hasOwnProperty('clip_length_max') ? this.camera.data.settings.video_settings.clip_length_max : 60
         const ffmpegSocket = path.join('/tmp', this.deviceId+'_stream.sock')
         const pipe2jpeg = new P2J()
-        pipe2jpeg.on('jpeg', (jpegFrame) => {
-            this.snapshot.imageData = jpegFrame
-            this.snapshot.timestamp = Math.round(Date.now()/1000)
-            this.publishSnapshot()
-        })
 
         let ffmpegServer = net.createServer(function(ffmpegStream) {
             ffmpegStream.pipe(pipe2jpeg)
@@ -460,7 +455,7 @@ class Camera {
         })
 
         ffmpegServer.listen(ffmpegSocket)
-        */
+        
         const duration = this.camera.data.settings.video_settings.hasOwnProperty('clip_length_max') ? this.camera.data.settings.video_settings.clip_length_max : 60
         debug('Establishing connection to video stream for camera '+this.deviceId)
         try {
@@ -481,7 +476,7 @@ class Camera {
                     '2',
                     '-t',
                     duration,
-                    ffmpegSocket
+                    'unix:'+ffmpegSocket
                   ],
             })
 
@@ -492,6 +487,12 @@ class Camera {
             debug(e.message)
             this.snapshot.updating = false
         }
+
+        pipe2jpeg.on('jpeg', (jpegFrame) => {
+            this.snapshot.imageData = jpegFrame
+            this.snapshot.timestamp = Math.round(Date.now()/1000)
+            this.publishSnapshot()
+        })
     }
 
     // Publish heath state every 5 minutes when online
