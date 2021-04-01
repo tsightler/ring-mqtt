@@ -322,13 +322,13 @@ class Camera {
         if (dingKind === 'motion') {
             attributes.lastMotion = this[dingKind].last_ding
             attributes.lastMotionTime = this[dingKind].last_ding_time
-            attributes.personDetected = this[dingKind].is_person
+            //attributes.personDetected = this[dingKind].is_person
         } else {
             attributes.lastDing = this[dingKind].last_ding
             attributes.lastDingTime = this[dingKind].last_ding_time
         }
         this.publishMqtt(dingTopic+'/state', dingState, true)
-        this.publishMqtt(dingTopic+'/attributes', JSON.stringify(attributes), true)
+        //this.publishMqtt(dingTopic+'/attributes', JSON.stringify(attributes), true)
     }
 
     // Publish camera state for polled attributes (light/siren state, etc)
