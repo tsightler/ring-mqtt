@@ -478,7 +478,7 @@ class Camera {
                     '-t',
                     duration,
                     'unix:'+ffmpegSocket
-                  ],
+                  ]
             })
 
             sipSession.onCallEnded.subscribe(() => {
