@@ -4,7 +4,6 @@ const clientApi = require('../node_modules/ring-client-api/lib/api/rest-client')
 const path = require('path')
 const P2J = require('pipe2jpeg')
 const net = require('net');
-const fs = require('fs');
 
 class Camera {
     constructor(deviceInfo) {
@@ -20,7 +19,7 @@ class Camera {
         this.snapshotMotion = false
         this.snapshotInterval = false
         this.snapshotAutoInterval = false
-        this.streamSocket = path.join('/tmp', this.deviceId+'_stream.sock')
+        this.ffmpegSocket = path.join('/tmp', this.deviceId+'_stream.sock')
         this.publishedLightState = this.camera.hasLight ? 'init' : 'none'
         this.publishedSirenState = this.camera.hasSiren ? 'init' : 'none'
 
@@ -483,7 +482,7 @@ class Camera {
                     '2',
                     '-t',
                     duration,
-                    this.streamFifo
+                    this.ffmpegSocket
                   ],
             })
 
@@ -495,12 +494,12 @@ class Camera {
         }
     }
 
-    // Creates a fifo which will receive the piped output from ffmpeg and assemble
+    // Creates a socket which will receive the piped output from ffmpeg and assemble
     // and emit full jpeg images from the mjpeg stream
     async prepareStreamSocket() {
         const pipe2jpeg = new P2J()
 
-        let ffmpegSocket = net.createServer(function(ffmpegStream) {
+        let ffmpegServer = net.createServer(function(ffmpegStream) {
             ffmpegStream.on('data', function(chunk) {
                 chunk.pipe(pipe2jpeg)                
             })
@@ -509,10 +508,10 @@ class Camera {
             })
         })
 
-        ffmpegSocket.listen(this.streamSocket)
+        ffmpegServer.listen(this.ffmpegSocket)
 
-        pipe2jpeg.on('jpeg', (jpeg) => { 
-            this.snapshot.imageData = jpeg
+        pipe2jpeg.on('jpeg', (jpegFrame) => { 
+            this.snapshot.imageData = jpegFrame
             this.snapshot.timestamp = Math.round(Date.now()/1000)
             this.publishSnapshot()
         })
