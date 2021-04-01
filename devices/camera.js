@@ -485,7 +485,7 @@ class Camera {
                 this.snapshot.updating = false
             }) 
         } catch(e) {
-            debug(e.message)
+            debug(e)
             this.snapshot.updating = false
         }
 
