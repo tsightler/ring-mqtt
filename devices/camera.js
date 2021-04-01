@@ -486,7 +486,6 @@ class Camera {
             })
 
             sipSession.onCallEnded.subscribe(() => {
-                ffmpegServer.close()
                 this.snapshot.updating = false
             }) 
         } catch(e) {
