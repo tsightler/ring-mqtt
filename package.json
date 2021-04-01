@@ -10,7 +10,7 @@
     "is-online": "^9.0.0",
     "mqtt": "^4.2.6",
     "ring-client-api": "^9.15.5",
-    "await-spawn": "^4.0.1"
+    "pipe2jpeg": "^0.3.1"
   },
   "devDependencies": {
     "eslint": "^7.19.0"

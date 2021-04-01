@@ -2,7 +2,6 @@ const debug = require('debug')('ring-mqtt')
 const utils = require( '../lib/utils' )
 const clientApi = require('../node_modules/ring-client-api/lib/api/rest-client').clientApi
 const path = require('path')
-const mkfifo = require('mkfifo').mkfifoSync;
 const P2J = require('pipe2jpeg')
 const net = require('net');
 const fs = require('fs');
@@ -21,7 +20,7 @@ class Camera {
         this.snapshotMotion = false
         this.snapshotInterval = false
         this.snapshotAutoInterval = false
-        this.streamFifo = path.join('/tmp', this.deviceId+'_stream.mjepg')
+        this.streamSocket = path.join('/tmp', this.deviceId+'_stream.sock')
         this.publishedLightState = this.camera.hasLight ? 'init' : 'none'
         this.publishedSirenState = this.camera.hasSiren ? 'init' : 'none'
 
@@ -186,7 +185,7 @@ class Camera {
             // Publish snapshot if enabled
             if (this.snapshotMotion || this.snapshotInterval > 0) {
                 this.publishSnapshot(true)
-                if (this.snapshotMotion) { this.prepareStreamFifo() }
+                if (this.snapshotMotion) { this.prepareStreamSocket() }
                 if (this.snapshotInterval > 0) { this.scheduleSnapshotRefresh() }
             }
 
@@ -498,17 +497,24 @@ class Camera {
 
     // Creates a fifo which will receive the piped output from ffmpeg and assemble
     // and emit full jpeg images from the mjpeg stream
-    async prepareStreamFifo() {
-        mkfifo(this.streamFifo, '0600');
-        fs.open(this.streamFifo, fs.constants.O_RDONLY | fs.constants.O_NONBLOCK, (err, fd) => {
-            const p2j = new P2J();
-            p2j.on('jpeg', (jpeg) => { 
-                this.snapshot.imageData = jpeg
-                this.snapshot.timestamp = Math.round(Date.now()/1000)
-                this.publishSnapshot()
+    async prepareStreamSocket() {
+        const pipe2jpeg = new P2J()
+
+        let ffmpegSocket = net.createServer(function(ffmpegStream) {
+            ffmpegStream.on('data', function(chunk) {
+                chunk.pipe(pipe2jpeg)                
             })
-            const streamIn = new net.Socket({ fd });
-            streamIn.pipe(p2j)
+            ffmpegStream.on('end', function() {
+                ffmpegStream.close()
+            })
+        })
+
+        ffmpegSocket.listen(this.streamSocket)
+
+        pipe2jpeg.on('jpeg', (jpeg) => { 
+            this.snapshot.imageData = jpeg
+            this.snapshot.timestamp = Math.round(Date.now()/1000)
+            this.publishSnapshot()
         })
     }
 
