@@ -183,7 +183,6 @@ class Camera {
             // Publish snapshot if enabled
             if (this.snapshotMotion || this.snapshotInterval > 0) {
                 this.refreshSnapshot()
-                if (this.snapshotMotion) { this.prepareStreamSocket() }
                 if (this.snapshotInterval > 0) { this.scheduleSnapshotRefresh() }
             }
 
