@@ -515,17 +515,17 @@ class Camera {
         }
         
         // Check for subscription to ding and motion events and attempt to resubscribe
-        if (!camera.data.subscribed === true) {
+        if (!this.camera.data.subscribed === true) {
             debug('Camera Id '+camera.data.device_id+' lost subscription to ding events, attempting to resubscribe...')
-            camera.subscribeToDingEvents().catch(e => { 
-                debug('Failed to resubscribe camera Id ' +camera.data.device_id+' to ding events. Will retry in 60 seconds.') 
+            this.camera.subscribeToDingEvents().catch(e => { 
+                debug('Failed to resubscribe camera Id ' +this.deviceId+' to ding events. Will retry in 60 seconds.') 
                 debug(e)
             })
         }
-        if (!camera.data.subscribed_motions === true) {
+        if (!this.camera.data.subscribed_motions === true) {
             debug('Camera Id '+camera.data.device_id+' lost subscription to motion events, attempting to resubscribe...')
-            camera.subscribeToMotionEvents().catch(e => {
-                debug('Failed to resubscribe camera Id '+camera.data.device_id+' to motion events.  Will retry in 60 seconds.')
+            this.camera.subscribeToMotionEvents().catch(e => {
+                debug('Failed to resubscribe camera Id '+this.deviceId+' to motion events.  Will retry in 60 seconds.')
                 debug(e)
             })
         }
