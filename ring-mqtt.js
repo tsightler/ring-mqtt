@@ -81,7 +81,7 @@ function getDevice(device, mqttClient) {
         case RingDeviceType.SmokeCoListener:
             return new SmokeCoListener(deviceInfo)
         case RingDeviceType.BeamsMotionSensor:
-        case RingDeviceType.BeamsSwitch:
+        case RingDeviceType.BeamsMultiLevelSwitch:
         case RingDeviceType.BeamsTransformerSwitch:
         case RingDeviceType.BeamsLightGroupSwitch:
             deviceInfo.category = 'lighting'
