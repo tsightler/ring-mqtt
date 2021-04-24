@@ -2,9 +2,8 @@ const debug = require('debug')('ring-mqtt')
 const utils = require( '../lib/utils' )
 const clientApi = require('../node_modules/ring-client-api/lib/api/rest-client').clientApi
 const path = require('path')
-const pathToFfmpeg = require('ffmpeg-for-homebridge');
-const spawn = require('await-spawn')
-const fs = require('fs');
+const P2J = require('pipe2jpeg')
+const net = require('net');
 
 class Camera {
     constructor(deviceInfo) {
@@ -183,11 +182,8 @@ class Camera {
 
             // Publish snapshot if enabled
             if (this.snapshotMotion || this.snapshotInterval > 0) {
-                this.publishSnapshot(true)
-                // If interval based snapshots are enabled, start snapshot refresh loop
-                if (this.snapshotInterval > 0) {
-                    this.scheduleSnapshotRefresh()
-                }
+                this.refreshSnapshot()
+                if (this.snapshotInterval > 0) { this.scheduleSnapshotRefresh() }
             }
 
             // Start monitor of availability state for camera
@@ -291,7 +287,7 @@ class Camera {
         // If motion ding and snapshots on motion are enabled, publish a new snapshot
         if (ding.kind === 'motion') {
             this[ding.kind].is_person = (ding.detection_type === 'human') ? true : false
-            if (this.snapshotMotion) this.publishSnapshot(true)
+            if (this.snapshotMotion) { this.startLiveStream() }
         }
 
         // Publish MQTT active sensor state
@@ -386,24 +382,24 @@ class Camera {
         }
     }
 
-    // Publish snapshot image/metadata
-    async publishSnapshot(refresh) {
+    async refreshSnapshot() {
         let newSnapshot
-        // If refresh = true, get updated snapshot image before publishing
-        if (refresh) {
-            try {
-                newSnapshot = await this.getRefreshedSnapshot()
-            } catch(e) {
-                debug(e.message)
-            }
-            if (newSnapshot) {
-                this.snapshot.imageData = newSnapshot
-                this.snapshot.timestamp = Math.round(Date.now()/1000)
-            } else {
-                debug('Could not retrieve updated snapshot for camera '+this.deviceId+', using previously cached snapshot')
-            }
+        try {
+            newSnapshot = await this.getRefreshedSnapshot()
+        } catch(e) {
+            debug(e.message)
         }
+        if (newSnapshot) {
+            this.snapshot.imageData = newSnapshot
+            this.snapshot.timestamp = Math.round(Date.now()/1000)
+            this.publishSnapshot()
+        } else {
+            debug('Could not retrieve updated snapshot for camera '+this.deviceId+', using previously cached snapshot')
+        }
+    }
 
+    // Publish snapshot image/metadata
+    async publishSnapshot() {
         debug(this.cameraTopic+'/snapshot/image', '<binary_image_data>')
         this.publishMqtt(this.cameraTopic+'/snapshot/image', this.snapshot.imageData)
         this.publishMqtt(this.cameraTopic+'/snapshot/attributes', JSON.stringify({ timestamp: this.snapshot.timestamp }))
@@ -416,23 +412,7 @@ class Camera {
             debug('Snapshots are unavailable for camera '+this.deviceId+', check if motion capture is disabled manually or via modes settings')
             return false
         }
-
-        if (this.motion.active_ding) {
-            if (this.camera.operatingOnBattery) {
-                // Battery powered cameras can't take snapshots while recording, try to get image from video stream instead
-                debug('Motion event detected on battery powered camera '+this.deviceId+', attempting to grab snapshot from live stream')
-                return await this.getSnapshotFromStream()
-            } else {
-                // Line powered cameras can take a snapshot while recording, but ring-client-api will return a cached
-                // snapshot if a previous snapshot was taken within 10 seconds. If a motion event occurs during this time
-                // a stale image is returned so we call our local function to force an uncached snapshot.
-                debug('Motion event detected for line powered camera '+this.deviceId+', forcing a non-cached snapshot update')
-                return await this.getUncachedSnapshot()
-            }
-        } else {
-            // If not an active ding it's a scheduled refresh, just call getSnapshot()
-            return await this.camera.getSnapshot()
-        }
+        return await this.camera.getSnapshot()
     }
 
     // Bypass ring-client-api cached snapshot behavior by calling refresh snapshot API directly
@@ -451,100 +431,69 @@ class Camera {
         await utils.sleep(this.snapshotInterval)
         // During active motion events or device offline state, stop interval snapshots
         if (this.snapshotMotion && !this.motion.active_ding && this.availabilityState === 'online') { 
-            this.publishSnapshot(true)
+            this.refreshSnapshot()
         }
         this.scheduleSnapshotRefresh()
     }
 
-    // Start a live stream to file with the defined duration
-    async startStream(filename, duration) {
-        debug('Establishing connection to video stream for camera '+this.deviceId)
-        try {
-            const sipSession = await this.camera.streamVideo({
-                output: ['-codec', 'copy', '-flush_packets', '1', '-t', duration, filename],
-            })
-
-            sipSession.onCallEnded.subscribe(() => {
-                try {
-                    if (fs.existsSync(filename)) { fs.unlinkSync(filename) }
-                } catch(err) {
-                    debug(err.message)
-                }
-            }) 
-            return sipSession
-        } catch(e) {
-            debug(e.message)
-            return false
-        }
-    }
-
-    // Check if stream to file has started within defined duration in seconds
-    async isStreaming(filename, seconds) {
-        for (let i = 0; i < seconds*10; i++) {
-            if (utils.checkFile(filename, 100000)) { return true }
-            await utils.msleep(100)
-        }
-        return false
-    }
-
-    // Attempt to start live stream with retries
-    async tryInitStream(filePath, retries) {
-        for (let i = 0; i < retries; i++) {
-            const filePrefix = this.deviceId+'_motion_'+Date.now() 
-            const aviFile = path.join(filePath, filePrefix+'.avi')
-            const duration = this.camera.data.settings.video_settings.hasOwnProperty('clip_length_max') ? this.camera.data.settings.video_settings.clip_length_max : 60
-            const streamSession = await this.startStream(aviFile, duration)
-            if (streamSession) {
-                if (await this.isStreaming(aviFile, 7)) {
-                    debug ('Established live stream for camera '+this.deviceId)
-                    return aviFile
-                } else {
-                    // SIP session established but never got a valid stream
-                    debug ('Live stream established but no stream received for camera '+this.deviceId)
-                }
-            } else {
-                debug ('Failed to establish live stream for camera '+this.deviceId)
-                // SIP session failed hard, wait a few seconds before trying again
-                await utils.sleep(3)
-            }
-            if (i < retries-1) { debug('Retrying live stream for camera '+this.deviceId) } 
-        }
-        debug ('Failed to establish live stream for camera '+this.deviceId+' after all retries, aborting!')
-        return false
-    }
-
-    async getSnapshotFromStream() {
+    // Start a live stream and send mjpeg stream to pipe
+    async startLiveStream() {
         if (this.snapshot.updating) {
-            debug ('Snapshot update from live stream already in progress for camera '+this.deviceId)
+            debug ('Live stream is already in progress for camera '+this.deviceId)
             return
         }
         this.snapshot.updating = true
-        let newSnapshot = false
-        const aviFile = await this.tryInitStream('/tmp', 3)
+        const duration = this.camera.data.settings.video_settings.hasOwnProperty('clip_length_max') ? this.camera.data.settings.video_settings.clip_length_max : 60
+        const ffmpegSocket = path.join('/tmp', this.deviceId+'_stream.sock')
+        const pipe2jpeg = new P2J()
+
+        let ffmpegServer = net.createServer(function(ffmpegStream) {
+
+            ffmpegStream.pipe(pipe2jpeg)
+
+            ffmpegStream.on('end', function() {
+                ffmpegServer.close()
+            })
+        })
+
+        ffmpegServer.listen(ffmpegSocket)
         
-        if (aviFile) {
-            debug('Grabbing snapshot from live stream for camera '+this.deviceId)
-            const filePrefix = this.deviceId+'_motion_'+Date.now() 
-            const jpgFile = path.join('/tmp', filePrefix+'.jpg')
-            try {
-                // Attempt to grab snapshot image from key frame in stream
-                await spawn(pathToFfmpeg, ['-i', aviFile, '-s', '640:360', '-r', "1", '-vframes', '1', '-q:v', '2', jpgFile])
-                if (utils.checkFile(jpgFile)) {
-                    newSnapshot = fs.readFileSync(jpgFile)
-                    fs.unlinkSync(jpgFile)
-                }
-            } catch (e) {
-                debug(e.stderr.toString())
-            }
+        debug('Establishing connection to video stream for camera '+this.deviceId)
+        try {
+            const sipSession = await this.camera.streamVideo({
+                output: [
+                    '-y',
+                    '-c:v',
+                    'mjpeg',
+                    '-pix_fmt',
+                    'yuvj422p',
+                    '-f',
+                    'image2pipe',
+                    '-s',
+                    '640:360',
+                    '-r',
+                    '.2',
+                    '-q:v',
+                    '2',
+                    '-t',
+                    duration,
+                    'unix:'+ffmpegSocket
+                  ]
+            })
+
+            sipSession.onCallEnded.subscribe(() => {
+                this.snapshot.updating = false
+            }) 
+        } catch(e) {
+            debug(e)
+            this.snapshot.updating = false
         }
 
-        if (newSnapshot) {
-            debug('Successfully grabbed a snapshot from live stream for camera '+this.deviceId)
-        } else {
-            debug('Failed to get snapshot from live stream for camera '+this.deviceId)
-        }
-        this.snapshot.updating = false
-        return newSnapshot
+        pipe2jpeg.on('jpeg', (jpegFrame) => {
+            this.snapshot.imageData = jpegFrame
+            this.snapshot.timestamp = Math.round(Date.now()/1000)
+            this.publishSnapshot()
+        })
     }
 
     // Publish heath state every 5 minutes when online
@@ -569,6 +518,23 @@ class Camera {
                 this.camera.requestUpdate()
             }
         }
+        
+        // Check for subscription to ding and motion events and attempt to resubscribe
+        if (!this.camera.data.subscribed === true) {
+            debug('Camera Id '+camera.data.device_id+' lost subscription to ding events, attempting to resubscribe...')
+            this.camera.subscribeToDingEvents().catch(e => { 
+                debug('Failed to resubscribe camera Id ' +this.deviceId+' to ding events. Will retry in 60 seconds.') 
+                debug(e)
+            })
+        }
+        if (!this.camera.data.subscribed_motions === true) {
+            debug('Camera Id '+camera.data.device_id+' lost subscription to motion events, attempting to resubscribe...')
+            this.camera.subscribeToMotionEvents().catch(e => {
+                debug('Failed to resubscribe camera Id '+this.deviceId+' to motion events.  Will retry in 60 seconds.')
+                debug(e)
+            })
+        }
+
         await utils.sleep(20)
         this.monitorCameraConnection()
     }
