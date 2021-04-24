@@ -508,10 +508,15 @@ class Camera {
     // reaches 0 it indicates that polling has stopped so device is set offline.
     // When polling resumes and heartbeat counter is reset above zero, device is set online.
     async monitorCameraConnection() {
-        if (this.heartbeat < 1 && this.availabilityState !== 'offline') {
-            this.offline()
-        } else {
+        if (this.heartbeat > 0) {
             this.heartbeat--
+        } else {
+            if (this.availabilityState !== 'offline') { 
+                this.offline()
+            } else {
+                // If camera remains offline more than one cycle, try to tickle it back alive
+                this.camera.requestUpdate()
+            }
         }
         
         // Check for subscription to ding and motion events and attempt to resubscribe
