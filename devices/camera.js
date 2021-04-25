@@ -354,10 +354,10 @@ class Camera {
     // Publish camera state for polled attributes (light/siren state, etc)
     // Writes state to custom property to keep from publishing state except
     // when values change from previous polling interval
-    publishPolledState() {
+    async publishPolledState() {
         // Reset heartbeat counter on every polled state and set device online if not already
         this.heartbeat = 3
-        if (this.availabilityState !== 'online') { this.online() }        
+        if (this.availabilityState !== 'online') { await this.online() }        
 
         if (this.camera.hasLight) {
             const stateTopic = this.cameraTopic+'/light/state'
@@ -687,6 +687,7 @@ class Camera {
         await utils.sleep(1)
         this.availabilityState = 'online'
         this.publishAvailabilityState(enableDebug)
+        await utils.sleep(1)
     }
 
     // Set state topic offline
