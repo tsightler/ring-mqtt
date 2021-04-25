@@ -408,9 +408,8 @@ class Camera {
             debug(e.message)
         }
         if (newSnapshot && newSnapshot === '-----LivestreamStarted-----') {
-            debug('Snapshot will be updated from livestream once stream is established for camera '+this.deviceId)
+            debug('Snapshot will be updated asynchronously via livestream for camera '+this.deviceId)
         } else if (newSnapshot) {
-            debug('Retrieved an updated snapshot for camera '+this.deviceId)
             this.snapshot.imageData = newSnapshot
             this.snapshot.timestamp = Math.round(Date.now()/1000)
             this.publishSnapshot()
@@ -490,14 +489,15 @@ class Camera {
         const p2jPort = await getPort()
 
         let p2jServer = net.createServer(function(p2jStream) {
+
             p2jStream.pipe(p2j)
+
+            p2jStream.on('end', function() {
+                p2jServer.close()
+            })
         })
 
-        p2jServer.listen(p2jPort)
-
-        p2jStream.on('end', function() {
-            p2jServer.close()
-        })
+        p2jServer.listen(p2jPort, 'localhost')
       
         p2j.on('jpeg', (jpegFrame) => {
             if (this.livestream.snapshots > 0) {
