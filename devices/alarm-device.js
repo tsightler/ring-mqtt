@@ -176,7 +176,7 @@ class AlarmDevice {
         await utils.sleep(1)
         this.availabilityState = 'online'
         this.publishMqtt(this.availabilityTopic, this.availabilityState, enableDebug)
-        await utils.sleeo(1)
+        await utils.sleep(1)
     }
 
     // Set state topic offline
