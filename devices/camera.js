@@ -47,11 +47,13 @@ class Camera {
         }
 
         // Initialize livestream parameters
-        this.livestream.duration = this.camera.data.settings.video_settings.hasOwnProperty('clip_length_max') ? this.camera.data.settings.video_settings.clip_length_max + 5 : 65
-        this.livestream.active = false
-        this.livestream.expires = 0
-        this.livestream.snapshots = 0
-        this.livestream.p2jPort = 0
+        this.livestream = {
+            duration: this.camera.data.settings.video_settings.hasOwnProperty('clip_length_max') ? this.camera.data.settings.video_settings.clip_length_max + 5 : 65,
+            active: false,
+            expires: 0,
+            snapshots: 0,
+            p2jPort: 0
+        }
 
         // Sevice data for Home Assistant device registry 
         this.deviceData = { 
