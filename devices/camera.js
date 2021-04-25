@@ -547,6 +547,8 @@ class Camera {
 
             // If stream starts set expire time for stream
             this.livestream.expires = Math.floor(Date.now()/1000) + this.livestream.duration
+            debug('Camera '+this.deviceId+' duration: '+this.livestream.duration)
+            debug('Camera '+this.deviceId+' expires: '+this.livestream.expires)
 
             sipSession.onCallEnded.subscribe(() => {
                 debug('Video stream ended for camera '+this.deviceId)
@@ -555,6 +557,7 @@ class Camera {
 
             while (Math.floor(Date.now()/1000) < this.livestream.expires) {
                 const sleeptime = (this.livestream.expires - Math.floor(Date.now()/1000)) + 1
+                debug('Camera '+this.deviceId+' sleeptime: '+sleeptime)
                 await utils.sleep(sleeptime)
             }
 
