@@ -94,6 +94,7 @@ class Camera {
     // Publish camera capabilities and state and subscribe to events
     async publish() {
         const debugMsg = (this.availabilityState === 'init') ? 'Publishing new ' : 'Republishing existing '
+
         debug(debugMsg+'device id: '+this.deviceId)
 
         // Publish motion sensor feature for camera
@@ -162,11 +163,13 @@ class Camera {
         
         // Give Home Assistant time to configure device before sending first state data
         await utils.sleep(2)
+        this.availabilityState = 'init'
+        await this.online()
 
         // Publish device state and, if new device, subscribe for state updates
         if (!this.subscribed) {
             this.subscribed = true
-
+ 
             // Update motion properties with most recent historical event data
             const lastMotionEvent = (await this.camera.getEvents({ limit: 1, kind: 'motion'})).events[0]
             const lastMotionDate = (lastMotionEvent && lastMotionEvent.hasOwnProperty('created_at')) ? new Date(lastMotionEvent.created_at) : false
