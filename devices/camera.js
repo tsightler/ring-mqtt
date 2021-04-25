@@ -163,7 +163,6 @@ class Camera {
         
         // Give Home Assistant time to configure device before sending first state data
         await utils.sleep(2)
-        this.availabilityState = 'init'
         await this.online()
 
         // Publish device state and, if new device, subscribe for state updates
@@ -686,7 +685,7 @@ class Camera {
 
     // Set state topic online
     async online() {
-        const enableDebug = (this.availabilityState == 'online') ? false : true
+        const enableDebug = (this.availabilityState === 'online') ? false : true
         await utils.sleep(1)
         this.availabilityState = 'online'
         this.publishAvailabilityState(enableDebug)
@@ -695,7 +694,7 @@ class Camera {
 
     // Set state topic offline
     offline() {
-        const enableDebug = (this.availabilityState == 'offline') ? false : true
+        const enableDebug = (this.availabilityState === 'offline') ? false : true
         this.availabilityState = 'offline'
         this.publishAvailabilityState(enableDebug)
     }
