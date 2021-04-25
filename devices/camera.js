@@ -494,9 +494,12 @@ class Camera {
         p2jServer.listen(this.livestream.p2jPort)
 
         p2j.on('jpeg', (jpegFrame) => {
-            this.snapshot.imageData = jpegFrame
-            this.snapshot.timestamp = Math.round(Date.now()/1000)
-            this.publishSnapshot()
+            if (this.livestream.snapshots > 0) {
+                this.snapshot.imageData = jpegFrame
+                this.snapshot.timestamp = Math.round(Date.now()/1000)
+                this.publishSnapshot()
+                this.livestream.snapshots--
+            }
         })
     }
 
@@ -529,7 +532,11 @@ class Camera {
                   ]
             })
 
+            // If stream starts set expire time for stream
+            this.livestream.expires = Math.floor(Date.now()/1000) + this.livestream.duration
+
             sipSession.onCallEnded.subscribe(() => {
+                debug('Video stream ended for camera '+this.deviceId)
                 this.livestream.active = false
             })
 
@@ -538,8 +545,9 @@ class Camera {
                 await utils.sleep(sleeptime)
             }
 
+            debug('Stopping video stream for camera '+this.deviceId)
             sipSession.stop()
-            
+
         } catch(e) {
             debug(e)
             this.livestream.active = false
