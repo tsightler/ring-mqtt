@@ -409,7 +409,7 @@ class Camera {
         }
         if (newSnapshot && newSnapshot === '-----LivestreamStarted-----') {
             debug('Snapshot will be updated from livestream once stream is established for camera '+this.deviceId)
-        } else if (newSnapshot && !newSnapshot === '-----LivestreamStarted-----') {
+        } else if (newSnapshot) {
             debug('Retrieved an updated snapshot for camera '+this.deviceId)
             this.snapshot.imageData = newSnapshot
             this.snapshot.timestamp = Math.round(Date.now()/1000)
