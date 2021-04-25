@@ -48,7 +48,9 @@ class Camera {
 
         // Initialize livestream parameters
         this.livestream = {
-            duration: (this.camera.data.settings.video_settings.hasOwnProperty('clip_length_max') && this.camera.data.settings.video_settings.clip_length_max) ? this.camera.data.settings.video_settings.clip_length_max + 5 : 65,
+            duration: (this.camera.data.settings.video_settings.hasOwnProperty('clip_length_max') && this.camera.data.settings.video_settings.clip_length_max) 
+                      ? this.camera.data.settings.video_settings.clip_length_max
+                      : 60,
             active: false,
             expires: 0,
             snapshots: 0
@@ -408,7 +410,7 @@ class Camera {
             debug(e.message)
         }
         if (newSnapshot && newSnapshot === '-----LivestreamStarted-----') {
-            debug('Snapshot will be updated asynchronously via livestream for camera '+this.deviceId)
+            return
         } else if (newSnapshot) {
             this.snapshot.imageData = newSnapshot
             this.snapshot.timestamp = Math.round(Date.now()/1000)
@@ -436,7 +438,7 @@ class Camera {
         if (this.motion.active_ding) {
             if (!this.camera.operatingOnBattery) {
                 // Battery powered cameras can't take snapshots while recording, try to get image from video stream instead
-                debug('Motion event detected on battery powered camera '+this.deviceId+', attempting to grab snapshot from live stream')
+                debug('Motion event detected on battery powered camera '+this.deviceId+' snapshot will be updated asynchronouly from live stream.')
                 this.getSnapshotFromStream()
                 return '-----LivestreamStarted-----'
             } else {
@@ -547,8 +549,6 @@ class Camera {
 
             // If stream starts set expire time for stream
             this.livestream.expires = Math.floor(Date.now()/1000) + this.livestream.duration
-            debug('Camera '+this.deviceId+' duration: '+this.livestream.duration)
-            debug('Camera '+this.deviceId+' expires: '+this.livestream.expires)
 
             sipSession.onCallEnded.subscribe(() => {
                 debug('Video stream ended for camera '+this.deviceId)
@@ -557,7 +557,6 @@ class Camera {
 
             while (Math.floor(Date.now()/1000) < this.livestream.expires) {
                 const sleeptime = (this.livestream.expires - Math.floor(Date.now()/1000)) + 1
-                debug('Camera '+this.deviceId+' sleeptime: '+sleeptime)
                 await utils.sleep(sleeptime)
             }
 
