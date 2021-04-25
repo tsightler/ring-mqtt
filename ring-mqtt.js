@@ -33,7 +33,7 @@ var CONFIG
 var ringLocations = new Array()
 var ringDevices = new Array()
 var mqttConnected = false
-var republishCount = 2 // Republish config/state this many times after startup or HA start/restart
+var republishCount = 6 // Republish config/state this many times after startup or HA start/restart
 var republishDelay = 30 // Seconds
 
 // Setup Exit Handwlers
