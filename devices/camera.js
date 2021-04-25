@@ -21,11 +21,15 @@ class Camera {
         this.publishedSirenState = this.camera.hasSiren ? 'init' : 'none'
 
         // Configure initial snapshot parameters based on device type and app settings
-        this.snapshot.motion = false
-        this.snapshot.interval = false
-        this.snapshot.autoInterval = false
+        this.snapshot = { 
+            motion: false, 
+            interval: false, 
+            autoInterval: false,
+            imageData: null,
+            timestamp: null,
+            updating: null
+        }
         if (this.config.snapshot_mode === "motion" || this.config.snapshot_mode === "interval" || this.config.snapshot_mode === "all" ) {
-            this.snapshot = { imageData: null, timestamp: null, updating: false }
             this.snapshot.motion = (this.config.snapshot_mode === "motion" || this.config.snapshot_mode === "all") ? true : false
 
             if (this.config.snapshot_mode === "interval" || this.config.snapshot_mode === "all") {
