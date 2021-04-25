@@ -485,7 +485,7 @@ class Camera {
     }
 
     // Start P2J server to emit complete JPEG images from livestream
-    async startP2J(p2jPort) {
+    async startP2J() {
         const p2j = new P2J()
         const p2jPort = await getPort()
 
