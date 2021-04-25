@@ -531,17 +531,19 @@ class Camera {
 
             sipSession.onCallEnded.subscribe(() => {
                 this.livestream.active = false
-            }) 
+            })
+
+            while (Math.floor(Date.now()/1000) < this.livestream.expires) {
+                const sleeptime = (this.livestream.expires - Math.floor(Date.now()/1000)) + 1
+                await utils.sleep(sleeptime)
+            }
+
+            sipSession.stop()
+            
         } catch(e) {
             debug(e)
             this.livestream.active = false
         }
-
-        while (Math.floor(Date.now()/1000) < this.livestream.expires) {
-            const sleeptime = (this.livestream.expires - Math.floor(Date.now()/1000)) + 1
-            await utils.sleep(sleeptime)
-        }
-        sipSession.stop()
     }
 
     // Publish heath state every 5 minutes when online
