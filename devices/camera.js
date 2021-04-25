@@ -51,8 +51,7 @@ class Camera {
             duration: this.camera.data.settings.video_settings.hasOwnProperty('clip_length_max') ? this.camera.data.settings.video_settings.clip_length_max + 5 : 65,
             active: false,
             expires: 0,
-            snapshots: 0,
-            p2jPort: 0
+            snapshots: 0
         }
 
         // Sevice data for Home Assistant device registry 
@@ -206,7 +205,6 @@ class Camera {
             // Start monitor of availability state for camera
             this.schedulePublishInfo()
             this.monitorCameraConnection()
-            this.startP2J()
         } else {
             // Set states to force republish
             this.publishedLightState = this.camera.hasLight ? 'republish' : 'none'
@@ -409,7 +407,10 @@ class Camera {
         } catch(e) {
             debug(e.message)
         }
-        if (newSnapshot) {
+        if (newSnapshot && newSnapshot === '-----LivestreamStarted-----') {
+            debug('Snapshot will be updated from livestream once stream is established for camera '+this.deviceId)
+        } else if (newSnapshot && !newSnapshot === '-----LivestreamStarted-----') {
+            debug('Retrieved an updated snapshot for camera '+this.deviceId)
             this.snapshot.imageData = newSnapshot
             this.snapshot.timestamp = Math.round(Date.now()/1000)
             this.publishSnapshot()
@@ -437,7 +438,8 @@ class Camera {
             if (!this.camera.operatingOnBattery) {
                 // Battery powered cameras can't take snapshots while recording, try to get image from video stream instead
                 debug('Motion event detected on battery powered camera '+this.deviceId+', attempting to grab snapshot from live stream')
-                return await this.getSnapshotFromStream()
+                this.getSnapshotFromStream()
+                return '-----LivestreamStarted-----'
             } else {
                 // Line powered cameras can take a snapshot while recording, but ring-client-api will return a cached
                 // snapshot if a previous snapshot was taken within 10 seconds. If a motion event occurs during this time
@@ -482,17 +484,21 @@ class Camera {
         }
     }
 
-    // Start P2J server to emit complete JPEG images from stream
-    async startP2J() {
-        this.livestream.p2jPort = await getPort()
+    // Start P2J server to emit complete JPEG images from livestream
+    async startP2J(p2jPort) {
         const p2j = new P2J()
+        const p2jPort = await getPort()
 
         let p2jServer = net.createServer(function(p2jStream) {
             p2jStream.pipe(p2j)
         })
 
-        p2jServer.listen(this.livestream.p2jPort)
+        p2jServer.listen(p2jPort)
 
+        p2jStream.on('end', function() {
+            p2jServer.close()
+        })
+      
         p2j.on('jpeg', (jpegFrame) => {
             if (this.livestream.snapshots > 0) {
                 this.snapshot.imageData = jpegFrame
@@ -501,6 +507,8 @@ class Camera {
                 this.livestream.snapshots--
             }
         })
+
+        return p2jPort
     }
 
     // Start a live stream and send mjpeg stream to p2j server
@@ -510,7 +518,12 @@ class Camera {
             return
         }
         this.livestream.active = true
+
+        // Start a P2J pipeline and get listening TCP port
+        const p2jPort = await this.startP2J()
         
+        // Start livestream with MJPEG output directed to P2J server
+        // Emits one MJPEG image every 5 seconds (framerate = .2 FPS) 
         debug('Establishing connection to video stream for camera '+this.deviceId)
         try {
             const sipSession = await this.camera.streamVideo({
@@ -528,7 +541,7 @@ class Camera {
                     '.2',
                     '-q:v',
                     '2',
-                    'tcp://localhost:'+this.livestream.p2jPort
+                    'tcp://localhost:'+p2jPort
                   ]
             })
 
