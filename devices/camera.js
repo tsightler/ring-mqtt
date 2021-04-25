@@ -48,7 +48,7 @@ class Camera {
 
         // Initialize livestream parameters
         this.livestream = {
-            duration: this.camera.data.settings.video_settings.hasOwnProperty('clip_length_max') ? this.camera.data.settings.video_settings.clip_length_max + 5 : 65,
+            duration: (this.camera.data.settings.video_settings.hasOwnProperty('clip_length_max') && this.camera.data.settings.video_settings.clip_length_max) ? this.camera.data.settings.video_settings.clip_length_max + 5 : 65,
             active: false,
             expires: 0,
             snapshots: 0
