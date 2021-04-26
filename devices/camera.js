@@ -537,7 +537,7 @@ class Camera {
         const p2jPort = await this.startP2J()
         
         // Start livestream with MJPEG output directed to P2J server
-        // Emits one MJPEG image every 5 seconds (framerate = .2 FPS) 
+        // Emits one MJPEG image every 1 second (framerate = 1 FPS) 
         debug('Establishing connection to video stream for camera '+this.deviceId)
         try {
             const sipSession = await this.camera.streamVideo({
@@ -552,7 +552,7 @@ class Camera {
                     '-s',
                     '640:360',
                     '-r',
-                    '.2',
+                    '1',
                     '-q:v',
                     '2',
                     'tcp://localhost:'+p2jPort
