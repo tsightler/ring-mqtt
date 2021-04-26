@@ -53,7 +53,7 @@ class Camera {
                       : 60,
             active: false,
             expires: 0,
-            snapshots: 0
+            updateSnapshot: false
         }
 
         // Sevice data for Home Assistant device registry 
@@ -483,8 +483,8 @@ class Camera {
     }
 
     async getSnapshotFromStream() {
-        // Number of snapshots to be published from livestream
-        this.livestream.snapshots = this.livestream.duration
+        // This is trigger P2J to publish one new snapshot from the stream
+        this.livestream.updateSnapshot = true
         if (!this.livestream.active) {
             // Start a livestream if no current stream
             this.startLiveStream()
@@ -511,13 +511,13 @@ class Camera {
         // Listen to pipe on localhost only
         p2jServer.listen(p2jPort, 'localhost')
       
-        // If livestream.snapshots > 0 publish snapshots for each full JPEG emitted
         p2j.on('jpeg', (jpegFrame) => {
-            if (this.livestream.snapshots > 0) {
+            // If updateSnapshot = true then publish the next full JPEG frame as new snapshot
+            if (this.livestream.updateSnapshot) {
                 this.snapshot.imageData = jpegFrame
                 this.snapshot.timestamp = Math.round(Date.now()/1000)
                 this.publishSnapshot()
-                this.livestream.snapshots--
+                this.livestream.updateSnapshot = false
             }
         })
 
@@ -536,8 +536,7 @@ class Camera {
         // Start a P2J pipeline and server and get the listening TCP port
         const p2jPort = await this.startP2J()
         
-        // Start livestream with MJPEG output directed to P2J server
-        // Emits one MJPEG image every 1 second (framerate = 1 FPS) 
+        // Start livestream with MJPEG output directed to P2J server with one frame per second 
         debug('Establishing connection to video stream for camera '+this.deviceId)
         try {
             const sipSession = await this.camera.streamVideo({
