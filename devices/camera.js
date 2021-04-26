@@ -1,7 +1,6 @@
 const debug = require('debug')('ring-mqtt')
 const utils = require( '../lib/utils' )
 const clientApi = require('../node_modules/ring-client-api/lib/api/rest-client').clientApi
-const path = require('path')
 const P2J = require('pipe2jpeg')
 const net = require('net');
 const getPort = require('get-port')
@@ -23,7 +22,8 @@ class Camera {
         // Configure initial snapshot parameters based on device type and app settings
         this.snapshot = { 
             motion: false, 
-            interval: false, 
+            interval: false,
+            live: false,
             autoInterval: false,
             imageData: null,
             timestamp: null,
@@ -331,9 +331,12 @@ class Camera {
         }
     }
 
+    // Publishes all current ding states for this camera
     publishDingStates() {
         this.publishDingState('motion')
-        if (this.camera.isDoorbot) { this.publishDingState('ding') }
+        if (this.camera.isDoorbot) { 
+            this.publishDingState('ding') 
+        }
     }
 
     // Publish ding state and attributes
@@ -359,7 +362,9 @@ class Camera {
     async publishPolledState() {
         // Reset heartbeat counter on every polled state and set device online if not already
         this.heartbeat = 3
-        if (this.availabilityState !== 'online') { await this.online() }        
+        if (this.availabilityState !== 'online') { 
+            await this.online() 
+        }        
 
         if (this.camera.hasLight) {
             const stateTopic = this.cameraTopic+'/light/state'
@@ -411,7 +416,7 @@ class Camera {
         } catch(e) {
             debug(e.message)
         }
-        if (newSnapshot && newSnapshot === '-----LivestreamStarted-----') {
+        if (newSnapshot && newSnapshot === 'SnapFromStream') {
             return
         } else if (newSnapshot) {
             this.snapshot.imageData = newSnapshot
@@ -440,9 +445,9 @@ class Camera {
         if (this.motion.active_ding) {
             if (!this.camera.operatingOnBattery) {
                 // Battery powered cameras can't take snapshots while recording, try to get image from video stream instead
-                debug('Motion event detected on battery powered camera '+this.deviceId+' snapshot will be updated asynchronouly from live stream.')
+                debug('Motion event detected on battery powered camera '+this.deviceId+' snapshot will be updated asynchronouly from live stream')
                 this.getSnapshotFromStream()
-                return '-----LivestreamStarted-----'
+                return 'SnapFromStream'
             } else {
                 // Line powered cameras can take a snapshot while recording, but ring-client-api will return a cached
                 // snapshot if a previous snapshot was taken within 10 seconds. If a motion event occurs during this time
@@ -478,11 +483,13 @@ class Camera {
     }
 
     async getSnapshotFromStream() {
-        // Set number of snapshots to be updated from livestream
-        this.livestream.snapshots = 1
+        // Number of snapshots to be published from livestream
+        this.livestream.snapshots = this.livestream.duration
         if (!this.livestream.active) {
+            // Start a livestream if no current stream
             this.startLiveStream()
         } else {
+            // Extend existing livestream if already active
             this.livestream.expires = Math.floor(Date.now()/1000) + this.livestream.duration
         }
     }
@@ -493,16 +500,18 @@ class Camera {
         const p2jPort = await getPort()
 
         let p2jServer = net.createServer(function(p2jStream) {
-
             p2jStream.pipe(p2j)
 
+            // Close the p2j server on stream end
             p2jStream.on('end', function() {
                 p2jServer.close()
             })
         })
 
+        // Listen to pipe on localhost only
         p2jServer.listen(p2jPort, 'localhost')
       
+        // If livestream.snapshots > 0 publish snapshots for each full JPEG emitted
         p2j.on('jpeg', (jpegFrame) => {
             if (this.livestream.snapshots > 0) {
                 this.snapshot.imageData = jpegFrame
@@ -512,6 +521,7 @@ class Camera {
             }
         })
 
+        // Return TCP port for SIP stream to send stream
         return p2jPort
     }
 
@@ -523,7 +533,7 @@ class Camera {
         }
         this.livestream.active = true
 
-        // Start a P2J pipeline and get listening TCP port
+        // Start a P2J pipeline and server and get the listening TCP port
         const p2jPort = await this.startP2J()
         
         // Start livestream with MJPEG output directed to P2J server
@@ -549,7 +559,7 @@ class Camera {
                   ]
             })
 
-            // If stream starts set expire time for stream
+            // If stream starts, set expire time
             this.livestream.expires = Math.floor(Date.now()/1000) + this.livestream.duration
 
             sipSession.onCallEnded.subscribe(() => {
@@ -557,11 +567,14 @@ class Camera {
                 this.livestream.active = false
             })
 
+            // Don't stop SIP session until current tyime > expire time
+            // Expire time may be extedned by new motion events
             while (Math.floor(Date.now()/1000) < this.livestream.expires) {
                 const sleeptime = (this.livestream.expires - Math.floor(Date.now()/1000)) + 1
                 await utils.sleep(sleeptime)
             }
 
+            // Stream time has expired, stop the current SIP session
             debug('Stopping video stream for camera '+this.deviceId)
             sipSession.stop()
 
@@ -681,13 +694,14 @@ class Camera {
     // Publish availability state
     publishAvailabilityState(enableDebug) {
         this.publishMqtt(this.availabilityTopic, this.availabilityState, enableDebug)
+
     }
 
     // Set state topic online
     async online() {
         const enableDebug = (this.availabilityState === 'online') ? false : true
-        await utils.sleep(1)
         this.availabilityState = 'online'
+        await utils.sleep(1)
         this.publishAvailabilityState(enableDebug)
         await utils.sleep(1)
     }
