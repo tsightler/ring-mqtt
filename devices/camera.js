@@ -443,7 +443,7 @@ class Camera {
         }
 
         if (this.motion.active_ding) {
-            if (this.camera.operatingOnBattery) {
+            if (!this.camera.operatingOnBattery) {
                 // Battery powered cameras can't take snapshots while recording, try to get image from video stream instead
                 debug('Motion event detected on battery powered camera '+this.deviceId+' snapshot will be updated asynchronouly from live stream')
                 this.getSnapshotFromStream()
