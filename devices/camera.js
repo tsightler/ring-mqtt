@@ -23,7 +23,6 @@ class Camera {
         this.snapshot = { 
             motion: false, 
             interval: false,
-            live: false,
             autoInterval: false,
             imageData: null,
             timestamp: null,
@@ -417,6 +416,7 @@ class Camera {
             debug(e.message)
         }
         if (newSnapshot && newSnapshot === 'SnapFromStream') {
+            // Livestream snapshots publish asyncronously from the stream so just return
             return
         } else if (newSnapshot) {
             this.snapshot.imageData = newSnapshot
@@ -443,7 +443,7 @@ class Camera {
         }
 
         if (this.motion.active_ding) {
-            if (!this.camera.operatingOnBattery) {
+            if (this.camera.operatingOnBattery) {
                 // Battery powered cameras can't take snapshots while recording, try to get image from video stream instead
                 debug('Motion event detected on battery powered camera '+this.deviceId+' snapshot will be updated asynchronouly from live stream')
                 this.getSnapshotFromStream()
