@@ -536,7 +536,7 @@ class Camera {
         // Start a P2J pipeline and server and get the listening TCP port
         const p2jPort = await this.startP2J()
         
-        // Start livestream with MJPEG output directed to P2J server with one frame per second 
+        // Start livestream with MJPEG output directed to P2J server with one frame every 2 seconds 
         debug('Establishing connection to video stream for camera '+this.deviceId)
         try {
             const sipSession = await this.camera.streamVideo({
@@ -551,7 +551,7 @@ class Camera {
                     '-s',
                     '640:360',
                     '-r',
-                    '1',
+                    '.5',
                     '-q:v',
                     '2',
                     'tcp://localhost:'+p2jPort
@@ -574,7 +574,6 @@ class Camera {
             }
 
             // Stream time has expired, stop the current SIP session
-            debug('Stopping video stream for camera '+this.deviceId)
             sipSession.stop()
 
         } catch(e) {
