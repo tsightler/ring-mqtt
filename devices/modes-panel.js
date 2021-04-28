@@ -25,7 +25,6 @@ class ModesPanel extends AlarmDevice {
         // Publish discovery message
         if (!this.discoveryData.length) { await this.initDiscoveryData() }
         await this.publishDiscoveryData()
-        await this.online()
 
         // This is a polled device so don't use common publish/subscribe function
         if (this.subscribed) {
@@ -44,6 +43,7 @@ class ModesPanel extends AlarmDevice {
             // Mark device as subscribed
             this.subscribed = true
         }
+        this.online()
     }
 
     initDiscoveryData() {
