@@ -1,17 +1,16 @@
 {
   "name": "ring-mqtt",
-  "version": "4.5.4",
+  "version": "4.5.3",
   "description": "Ring to MQTT Bridge",
   "main": "ring-mqtt.js",
   "dependencies": {
     "body-parser": "^1.19.0",
     "debug": "^4.3.1",
     "express": "^4.17.1",
-    "get-port": "^5.1.1",
     "is-online": "^9.0.0",
     "mqtt": "^4.2.6",
-    "pipe2jpeg": "^0.3.1",
-    "ring-client-api": "^9.17.0"
+    "ring-client-api": "^9.17.0",
+    "await-spawn": "^4.0.1"
   },
   "devDependencies": {
     "eslint": "^7.19.0"
