@@ -5,7 +5,6 @@ const P2J = require('pipe2jpeg')
 const net = require('net');
 const getPort = require('get-port')
 
-
 class Camera {
     constructor(deviceInfo) {
         // Set default properties for camera device object model 
