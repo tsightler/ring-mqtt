@@ -416,7 +416,7 @@ class Camera {
             debug(e.message)
         }
         if (newSnapshot && newSnapshot === 'SnapFromStream') {
-            // Livestream snapshots publish asyncronously from the stream so just return
+            // Livestream snapshots publish automatically from the stream so just return
             return
         } else if (newSnapshot) {
             this.snapshot.imageData = newSnapshot
@@ -445,13 +445,13 @@ class Camera {
         if (this.motion.active_ding) {
             if (this.camera.operatingOnBattery) {
                 // Battery powered cameras can't take snapshots while recording, try to get image from video stream instead
-                debug('Motion event detected on battery powered camera '+this.deviceId+' snapshot will be updated asynchronouly from live stream')
+                debug('Motion event detected on battery powered camera '+this.deviceId+' snapshot will be updated from live stream')
                 this.getSnapshotFromStream()
                 return 'SnapFromStream'
             } else {
                 // Line powered cameras can take a snapshot while recording, but ring-client-api will return a cached
                 // snapshot if a previous snapshot was taken within 10 seconds. If a motion event occurs during this time
-                // a stale image is returned so we call our local function to force an uncached snapshot.
+                // a stale image would be returned so, instead, we call our local function to force an uncached snapshot.
                 debug('Motion event detected for line powered camera '+this.deviceId+', forcing a non-cached snapshot update')
                 return await this.getUncachedSnapshot()
             }
@@ -483,13 +483,13 @@ class Camera {
     }
 
     async getSnapshotFromStream() {
-        // This is trigger P2J to publish one new snapshot from the stream
+        // This will trigger P2J to publish one new snapshot from the live stream
         this.livestream.updateSnapshot = true
+
+        // If there's no active live stream, start it, otherwise, extend live stream timeout
         if (!this.livestream.active) {
-            // Start a livestream if no current stream
             this.startLiveStream()
         } else {
-            // Extend existing livestream if already active
             this.livestream.expires = Math.floor(Date.now()/1000) + this.livestream.duration
         }
     }
@@ -527,10 +527,6 @@ class Camera {
 
     // Start a live stream and send mjpeg stream to p2j server
     async startLiveStream() {
-        if (this.livestream.active) {
-            debug ('Live stream is already in progress for camera '+this.deviceId)
-            return
-        }
         this.livestream.active = true
 
         // Start a P2J pipeline and server and get the listening TCP port
@@ -558,7 +554,7 @@ class Camera {
                   ]
             })
 
-            // If stream starts, set expire time
+            // If stream starts, set expire time, may be extended by new events
             this.livestream.expires = Math.floor(Date.now()/1000) + this.livestream.duration
 
             sipSession.onCallEnded.subscribe(() => {
