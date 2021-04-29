@@ -103,6 +103,7 @@ class AlarmDevice {
             // Publish discovery message
             if (!this.discoveryData.length) { await this.initDiscoveryData() }
             await this.publishDiscoveryData()
+            await this.online()
 
             if (this.subscribed) {
                 this.publishData()
@@ -121,7 +122,6 @@ class AlarmDevice {
                 // Mark device as subscribed
                 this.subscribed = true
             }
-            this.online()
         }
     }
 
@@ -176,6 +176,7 @@ class AlarmDevice {
         await utils.sleep(1)
         this.availabilityState = 'online'
         this.publishMqtt(this.availabilityTopic, this.availabilityState, enableDebug)
+        await utils.sleep(1)
     }
 
     // Set state topic offline

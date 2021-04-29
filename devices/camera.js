@@ -1,10 +1,9 @@
 const debug = require('debug')('ring-mqtt')
 const utils = require( '../lib/utils' )
 const clientApi = require('../node_modules/ring-client-api/lib/api/rest-client').clientApi
-const path = require('path')
-const pathToFfmpeg = require('ffmpeg-for-homebridge');
-const spawn = require('await-spawn')
-const fs = require('fs');
+const P2J = require('pipe2jpeg')
+const net = require('net');
+const getPort = require('get-port')
 
 class Camera {
     constructor(deviceInfo) {
@@ -17,29 +16,43 @@ class Camera {
         this.locationId = this.camera.data.location_id
         this.deviceId = this.camera.data.device_id
         this.config = deviceInfo.CONFIG
-        this.snapshotMotion = false
-        this.snapshotInterval = false
-        this.snapshotAutoInterval = false
         this.publishedLightState = this.camera.hasLight ? 'init' : 'none'
         this.publishedSirenState = this.camera.hasSiren ? 'init' : 'none'
 
-        // If snapshot capture is enabled, set approprate values
+        // Configure initial snapshot parameters based on device type and app settings
+        this.snapshot = { 
+            motion: false, 
+            interval: false,
+            autoInterval: false,
+            imageData: null,
+            timestamp: null,
+            updating: null
+        }
         if (this.config.snapshot_mode === "motion" || this.config.snapshot_mode === "interval" || this.config.snapshot_mode === "all" ) {
-            this.snapshot = { imageData: null, timestamp: null, updating: false }
-            this.snapshotMotion = (this.config.snapshot_mode === "motion" || this.config.snapshot_mode === "all") ? true : false
+            this.snapshot.motion = (this.config.snapshot_mode === "motion" || this.config.snapshot_mode === "all") ? true : false
 
             if (this.config.snapshot_mode === "interval" || this.config.snapshot_mode === "all") {
-                this.snapshotAutoInterval = true
+                this.snapshot.autoInterval = true
                 if (this.camera.operatingOnBattery) {
                     if (this.camera.data.settings.hasOwnProperty('lite_24x7') && this.camera.data.settings.lite_24x7.enabled) {
-                        this.snapshotInterval = this.camera.data.settings.lite_24x7.frequency_secs
+                        this.snapshot.interval = this.camera.data.settings.lite_24x7.frequency_secs
                     } else {
-                        this.snapshotInterval = 600
+                        this.snapshot.interval = 600
                     }
                 } else {
-                    this.snapshotInterval = 30
+                    this.snapshot.interval = 30
                 }
             }
+        }
+
+        // Initialize livestream parameters
+        this.livestream = {
+            duration: (this.camera.data.settings.video_settings.hasOwnProperty('clip_length_max') && this.camera.data.settings.video_settings.clip_length_max) 
+                      ? this.camera.data.settings.video_settings.clip_length_max
+                      : 60,
+            active: false,
+            expires: 0,
+            updateSnapshot: false
         }
 
         // Sevice data for Home Assistant device registry 
@@ -80,6 +93,7 @@ class Camera {
     // Publish camera capabilities and state and subscribe to events
     async publish() {
         const debugMsg = (this.availabilityState === 'init') ? 'Publishing new ' : 'Republishing existing '
+
         debug(debugMsg+'device id: '+this.deviceId)
 
         // Publish motion sensor feature for camera
@@ -136,7 +150,7 @@ class Camera {
         })
 
         // If snapshots enabled, publish snapshot capability
-        if (this.snapshotMotion || this.snapshotInterval) {
+        if (this.snapshot.motion || this.snapshot.interval) {
             this.publishCapability({
                 type: 'snapshot',
                 component: 'camera',
@@ -148,11 +162,12 @@ class Camera {
         
         // Give Home Assistant time to configure device before sending first state data
         await utils.sleep(2)
+        await this.online()
 
         // Publish device state and, if new device, subscribe for state updates
         if (!this.subscribed) {
             this.subscribed = true
-
+ 
             // Update motion properties with most recent historical event data
             const lastMotionEvent = (await this.camera.getEvents({ limit: 1, kind: 'motion'})).events[0]
             const lastMotionDate = (lastMotionEvent && lastMotionEvent.hasOwnProperty('created_at')) ? new Date(lastMotionEvent.created_at) : false
@@ -182,10 +197,10 @@ class Camera {
             })
 
             // Publish snapshot if enabled
-            if (this.snapshotMotion || this.snapshotInterval > 0) {
-                this.publishSnapshot(true)
+            if (this.snapshot.motion || this.snapshot.interval > 0) {
+                this.refreshSnapshot()
                 // If interval based snapshots are enabled, start snapshot refresh loop
-                if (this.snapshotInterval > 0) {
+                if (this.snapshot.interval > 0) {
                     this.scheduleSnapshotRefresh()
                 }
             }
@@ -203,7 +218,7 @@ class Camera {
             this.publishPolledState()
 
             // Publish snapshot image if any snapshot option is enabled
-            if (this.snapshotMotion || this.snapshotInterval) {
+            if (this.snapshot.motion || this.snapshot.interval) {
                 this.publishSnapshot()
             }     
 
@@ -291,7 +306,9 @@ class Camera {
         // If motion ding and snapshots on motion are enabled, publish a new snapshot
         if (ding.kind === 'motion') {
             this[ding.kind].is_person = (ding.detection_type === 'human') ? true : false
-            if (this.snapshotMotion) this.publishSnapshot(true)
+            if (this.snapshot.motion) {
+                this.refreshSnapshot()
+            }
         }
 
         // Publish MQTT active sensor state
@@ -313,9 +330,12 @@ class Camera {
         }
     }
 
+    // Publishes all current ding states for this camera
     publishDingStates() {
         this.publishDingState('motion')
-        if (this.camera.isDoorbot) { this.publishDingState('ding') }
+        if (this.camera.isDoorbot) { 
+            this.publishDingState('ding') 
+        }
     }
 
     // Publish ding state and attributes
@@ -338,10 +358,12 @@ class Camera {
     // Publish camera state for polled attributes (light/siren state, etc)
     // Writes state to custom property to keep from publishing state except
     // when values change from previous polling interval
-    publishPolledState() {
+    async publishPolledState() {
         // Reset heartbeat counter on every polled state and set device online if not already
         this.heartbeat = 3
-        if (this.availabilityState !== 'online') { this.online() }        
+        if (this.availabilityState !== 'online') { 
+            await this.online() 
+        }        
 
         if (this.camera.hasLight) {
             const stateTopic = this.cameraTopic+'/light/state'
@@ -360,8 +382,8 @@ class Camera {
         }
 
         // Update snapshot frequency in case it's changed
-        if (this.snapshotAutoInterval && this.camera.data.settings.hasOwnProperty('lite_24x7')) {
-            this.snapshotInterval = this.camera.data.settings.lite_24x7.frequency_secs
+        if (this.snapshot.autoInterval && this.camera.data.settings.hasOwnProperty('lite_24x7')) {
+            this.snapshot.interval = this.camera.data.settings.lite_24x7.frequency_secs
         }
     }
 
@@ -386,24 +408,27 @@ class Camera {
         }
     }
 
-    // Publish snapshot image/metadata
-    async publishSnapshot(refresh) {
+    async refreshSnapshot() {
         let newSnapshot
-        // If refresh = true, get updated snapshot image before publishing
-        if (refresh) {
-            try {
-                newSnapshot = await this.getRefreshedSnapshot()
-            } catch(e) {
-                debug(e.message)
-            }
-            if (newSnapshot) {
-                this.snapshot.imageData = newSnapshot
-                this.snapshot.timestamp = Math.round(Date.now()/1000)
-            } else {
-                debug('Could not retrieve updated snapshot for camera '+this.deviceId+', using previously cached snapshot')
-            }
+        try {
+            newSnapshot = await this.getRefreshedSnapshot()
+        } catch(e) {
+            debug(e.message)
         }
+        if (newSnapshot && newSnapshot === 'SnapFromStream') {
+            // Livestream snapshots publish automatically from the stream so just return
+            return
+        } else if (newSnapshot) {
+            this.snapshot.imageData = newSnapshot
+            this.snapshot.timestamp = Math.round(Date.now()/1000)
+            this.publishSnapshot()
+        } else {
+            debug('Could not retrieve updated snapshot for camera '+this.deviceId)
+        }
+    }
 
+    // Publish snapshot image/metadata
+    async publishSnapshot() {
         debug(this.cameraTopic+'/snapshot/image', '<binary_image_data>')
         this.publishMqtt(this.cameraTopic+'/snapshot/image', this.snapshot.imageData)
         this.publishMqtt(this.cameraTopic+'/snapshot/attributes', JSON.stringify({ timestamp: this.snapshot.timestamp }))
@@ -420,12 +445,13 @@ class Camera {
         if (this.motion.active_ding) {
             if (this.camera.operatingOnBattery) {
                 // Battery powered cameras can't take snapshots while recording, try to get image from video stream instead
-                debug('Motion event detected on battery powered camera '+this.deviceId+', attempting to grab snapshot from live stream')
-                return await this.getSnapshotFromStream()
+                debug('Motion event detected on battery powered camera '+this.deviceId+' snapshot will be updated from live stream')
+                this.getSnapshotFromStream()
+                return 'SnapFromStream'
             } else {
                 // Line powered cameras can take a snapshot while recording, but ring-client-api will return a cached
                 // snapshot if a previous snapshot was taken within 10 seconds. If a motion event occurs during this time
-                // a stale image is returned so we call our local function to force an uncached snapshot.
+                // a stale image would be returned so, instead, we call our local function to force an uncached snapshot.
                 debug('Motion event detected for line powered camera '+this.deviceId+', forcing a non-cached snapshot update')
                 return await this.getUncachedSnapshot()
             }
@@ -448,103 +474,108 @@ class Camera {
 
     // Refresh snapshot on scheduled interval
     async scheduleSnapshotRefresh() {
-        await utils.sleep(this.snapshotInterval)
+        await utils.sleep(this.snapshot.interval)
         // During active motion events or device offline state, stop interval snapshots
-        if (this.snapshotMotion && !this.motion.active_ding && this.availabilityState === 'online') { 
-            this.publishSnapshot(true)
+        if (this.snapshot.motion && !this.motion.active_ding && this.availabilityState === 'online') { 
+            this.refreshSnapshot()
         }
         this.scheduleSnapshotRefresh()
     }
 
-    // Start a live stream to file with the defined duration
-    async startStream(filename, duration) {
+    async getSnapshotFromStream() {
+        // This will trigger P2J to publish one new snapshot from the live stream
+        this.livestream.updateSnapshot = true
+
+        // If there's no active live stream, start it, otherwise, extend live stream timeout
+        if (!this.livestream.active) {
+            this.startLiveStream()
+        } else {
+            this.livestream.expires = Math.floor(Date.now()/1000) + this.livestream.duration
+        }
+    }
+
+    // Start P2J server to emit complete JPEG images from livestream
+    async startP2J() {
+        const p2j = new P2J()
+        const p2jPort = await getPort()
+
+        let p2jServer = net.createServer(function(p2jStream) {
+            p2jStream.pipe(p2j)
+
+            // Close the p2j server on stream end
+            p2jStream.on('end', function() {
+                p2jServer.close()
+            })
+        })
+
+        // Listen to pipe on localhost only
+        p2jServer.listen(p2jPort, 'localhost')
+      
+        p2j.on('jpeg', (jpegFrame) => {
+            // If updateSnapshot = true then publish the next full JPEG frame as new snapshot
+            if (this.livestream.updateSnapshot) {
+                this.snapshot.imageData = jpegFrame
+                this.snapshot.timestamp = Math.round(Date.now()/1000)
+                this.publishSnapshot()
+                this.livestream.updateSnapshot = false
+            }
+        })
+
+        // Return TCP port for SIP stream to send stream
+        return p2jPort
+    }
+
+    // Start a live stream and send mjpeg stream to p2j server
+    async startLiveStream() {
+        this.livestream.active = true
+
+        // Start a P2J pipeline and server and get the listening TCP port
+        const p2jPort = await this.startP2J()
+        
+        // Start livestream with MJPEG output directed to P2J server with one frame every 2 seconds 
         debug('Establishing connection to video stream for camera '+this.deviceId)
         try {
             const sipSession = await this.camera.streamVideo({
-                output: ['-codec', 'copy', '-flush_packets', '1', '-t', duration, filename],
+                output: [
+                    '-y',
+                    '-c:v',
+                    'mjpeg',
+                    '-pix_fmt',
+                    'yuvj422p',
+                    '-f',
+                    'image2pipe',
+                    '-s',
+                    '640:360',
+                    '-r',
+                    '.5',
+                    '-q:v',
+                    '2',
+                    'tcp://localhost:'+p2jPort
+                  ]
             })
 
+            // If stream starts, set expire time, may be extended by new events
+            this.livestream.expires = Math.floor(Date.now()/1000) + this.livestream.duration
+
             sipSession.onCallEnded.subscribe(() => {
-                try {
-                    if (fs.existsSync(filename)) { fs.unlinkSync(filename) }
-                } catch(err) {
-                    debug(err.message)
-                }
-            }) 
-            return sipSession
+                debug('Video stream ended for camera '+this.deviceId)
+                this.livestream.active = false
+            })
+
+            // Don't stop SIP session until current tyime > expire time
+            // Expire time may be extedned by new motion events
+            while (Math.floor(Date.now()/1000) < this.livestream.expires) {
+                const sleeptime = (this.livestream.expires - Math.floor(Date.now()/1000)) + 1
+                await utils.sleep(sleeptime)
+            }
+
+            // Stream time has expired, stop the current SIP session
+            sipSession.stop()
+
         } catch(e) {
-            debug(e.message)
-            return false
+            debug(e)
+            this.livestream.active = false
         }
-    }
-
-    // Check if stream to file has started within defined duration in seconds
-    async isStreaming(filename, seconds) {
-        for (let i = 0; i < seconds*10; i++) {
-            if (utils.checkFile(filename, 100000)) { return true }
-            await utils.msleep(100)
-        }
-        return false
-    }
-
-    // Attempt to start live stream with retries
-    async tryInitStream(filePath, retries) {
-        for (let i = 0; i < retries; i++) {
-            const filePrefix = this.deviceId+'_motion_'+Date.now() 
-            const aviFile = path.join(filePath, filePrefix+'.avi')
-            const duration = this.camera.data.settings.video_settings.hasOwnProperty('clip_length_max') ? this.camera.data.settings.video_settings.clip_length_max : 60
-            const streamSession = await this.startStream(aviFile, duration)
-            if (streamSession) {
-                if (await this.isStreaming(aviFile, 7)) {
-                    debug ('Established live stream for camera '+this.deviceId)
-                    return aviFile
-                } else {
-                    // SIP session established but never got a valid stream
-                    debug ('Live stream established but no stream received for camera '+this.deviceId)
-                }
-            } else {
-                debug ('Failed to establish live stream for camera '+this.deviceId)
-                // SIP session failed hard, wait a few seconds before trying again
-                await utils.sleep(3)
-            }
-            if (i < retries-1) { debug('Retrying live stream for camera '+this.deviceId) } 
-        }
-        debug ('Failed to establish live stream for camera '+this.deviceId+' after all retries, aborting!')
-        return false
-    }
-
-    async getSnapshotFromStream() {
-        if (this.snapshot.updating) {
-            debug ('Snapshot update from live stream already in progress for camera '+this.deviceId)
-            return
-        }
-        this.snapshot.updating = true
-        let newSnapshot = false
-        const aviFile = await this.tryInitStream('/tmp', 3)
-        
-        if (aviFile) {
-            debug('Grabbing snapshot from live stream for camera '+this.deviceId)
-            const filePrefix = this.deviceId+'_motion_'+Date.now() 
-            const jpgFile = path.join('/tmp', filePrefix+'.jpg')
-            try {
-                // Attempt to grab snapshot image from key frame in stream
-                await spawn(pathToFfmpeg, ['-i', aviFile, '-s', '640:360', '-r', "1", '-vframes', '1', '-q:v', '2', jpgFile])
-                if (utils.checkFile(jpgFile)) {
-                    newSnapshot = fs.readFileSync(jpgFile)
-                    fs.unlinkSync(jpgFile)
-                }
-            } catch (e) {
-                debug(e.stderr.toString())
-            }
-        }
-
-        if (newSnapshot) {
-            debug('Successfully grabbed a snapshot from live stream for camera '+this.deviceId)
-        } else {
-            debug('Failed to get snapshot from live stream for camera '+this.deviceId)
-        }
-        this.snapshot.updating = false
-        return newSnapshot
     }
 
     // Publish heath state every 5 minutes when online
@@ -569,6 +600,23 @@ class Camera {
                 this.camera.requestUpdate()
             }
         }
+        
+        // Check for subscription to ding and motion events and attempt to resubscribe
+        if (!this.camera.data.subscribed === true) {
+            debug('Camera Id '+camera.data.device_id+' lost subscription to ding events, attempting to resubscribe...')
+            this.camera.subscribeToDingEvents().catch(e => { 
+                debug('Failed to resubscribe camera Id ' +this.deviceId+' to ding events. Will retry in 60 seconds.') 
+                debug(e)
+            })
+        }
+        if (!this.camera.data.subscribed_motions === true) {
+            debug('Camera Id '+camera.data.device_id+' lost subscription to motion events, attempting to resubscribe...')
+            this.camera.subscribeToMotionEvents().catch(e => {
+                debug('Failed to resubscribe camera Id '+this.deviceId+' to motion events.  Will retry in 60 seconds.')
+                debug(e)
+            })
+        }
+
         await utils.sleep(20)
         this.monitorCameraConnection()
     }
@@ -631,28 +679,30 @@ class Camera {
         if (isNaN(message)) {
             debug ('Received invalid interval')
         } else {
-            this.snapshotInterval = (message >= 10) ? Math.round(message) : 10
-            this.snapshotAutoInterval = false
-            debug ('Snapshot refresh interval as been set to '+this.snapshotInterval+' seconds')
+            this.snapshot.interval = (message >= 10) ? Math.round(message) : 10
+            this.snapshot.autoInterval = false
+            debug ('Snapshot refresh interval as been set to '+this.snapshot.interval+' seconds')
         }
     }
 
     // Publish availability state
     publishAvailabilityState(enableDebug) {
         this.publishMqtt(this.availabilityTopic, this.availabilityState, enableDebug)
+
     }
 
     // Set state topic online
     async online() {
-        const enableDebug = (this.availabilityState == 'online') ? false : true
-        await utils.sleep(1)
+        const enableDebug = (this.availabilityState === 'online') ? false : true
         this.availabilityState = 'online'
+        await utils.sleep(1)
         this.publishAvailabilityState(enableDebug)
+        await utils.sleep(1)
     }
 
     // Set state topic offline
     offline() {
-        const enableDebug = (this.availabilityState == 'offline') ? false : true
+        const enableDebug = (this.availabilityState === 'offline') ? false : true
         this.availabilityState = 'offline'
         this.publishAvailabilityState(enableDebug)
     }
