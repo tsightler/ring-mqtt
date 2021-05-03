@@ -1,3 +1,6 @@
+## v4.5.5
+ - Improve stream reliability with new Ring media servers by bumping to ring-client-api 9.18.0
+
 ## v4.5.4
  - New, lightweight and hopefully improved snapshot from live stream implementation for battery cameras
  - Send "online" status prior to sending state data updates
