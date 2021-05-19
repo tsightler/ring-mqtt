@@ -37,18 +37,18 @@ var republishCount = 6 // Republish config/state this many times after startup o
 var republishDelay = 30 // Seconds
 
 // Setup Exit Handwlers
-process.on('exit', processExit.bind(null, 0))
-process.on('SIGINT', processExit.bind(null, 0))
-process.on('SIGTERM', processExit.bind(null, 0))
-process.on('uncaughtException', processExit.bind(null, 1))
+process.on('exit', processExit.bind(0))
+process.on('SIGINT', processExit.bind(0))
+process.on('SIGTERM', processExit.bind(0))
+process.on('uncaughtException', processExit.bind(1))
 
 // Set unreachable status on exit
-async function processExit(options, exitCode) {
-    ringDevices.forEach(ringDevice => {
-        if (ringDevice.availabilityState == 'online') { ringDevice.offline() }
-    })
+async function processExit(exitCode) {
+    ringDevices.forEach(async ringDevice => {
+            if (ringDevice.availabilityState === 'online') { await ringDevice.offline() } 
+        })
+    await utils.sleep(3)
     if (exitCode || exitCode === 0) debug('Exit code: '+exitCode)
-    await utils.sleep(1)
     process.exit()
 }
 
@@ -81,7 +81,7 @@ function getDevice(device, mqttClient) {
         case RingDeviceType.SmokeCoListener:
             return new SmokeCoListener(deviceInfo)
         case RingDeviceType.BeamsMotionSensor:
-        case RingDeviceType.BeamsSwitch:
+        case RingDeviceType.BeamsMultiLevelSwitch:
         case RingDeviceType.BeamsTransformerSwitch:
         case RingDeviceType.BeamsLightGroupSwitch:
             deviceInfo.category = 'lighting'

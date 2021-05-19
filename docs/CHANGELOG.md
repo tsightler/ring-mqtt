@@ -1,3 +1,31 @@
+## v4.5.5
+ - Improve stream reliability with new Ring media servers by bumping to ring-client-api 9.18.0
+ 
+## v4.5.4
+ - New, lightweight and hopefully improved snapshot from live stream implementation for battery cameras
+ - Send "online" status prior to sending state data updates
+ - Bump dependencies
+
+## v4.5.3
+ - Implement reconnect improvements for cameras after lost connections
+ - Bump ring-client-api version
+
+## v4.5.2
+ - Second attempt to fix truncation of video length (tries to read property if available, otherwise keeps stream alive for 60 seconds)
+
+## v4.5.1
+ - When attempting to grab snapshot from livestream for battery cameras, set stream duration equal to video recording length setting to (hopefully) avoid truncating video recording
+
+## v4.5.0
+ - Snapshot on motion reliability improvements for line powered cameras
+ - Snapshot on motion attempts to grab image from livestream for battery powered cameras.  This is slower, less reliable and sometimes produces lower quality images vs snapshots, but as battery cameras don't allow snapshots wile streaming, it's the only option for getting a snapshot of a motion event
+ - Person detect attribute for camera motion events (needs testing, only works if person detection is enable on accout and show up as person detect events in history)
+ - Date/Time uses standard format accross all attributes
+ - Retrofit zones are now included as bypass eligible sensors when bypass arming is enabled
+ - Docker image updated to Node v14 to hopefully address reconnect issues
+ - Fix various crash bugs in camera support
+ - Drop support for i386 architecture for docker image
+
 ## v4.4.0
  - Add support for sensor bypass during arming
 

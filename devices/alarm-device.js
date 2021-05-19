@@ -103,12 +103,14 @@ class AlarmDevice {
             // Publish discovery message
             if (!this.discoveryData.length) { await this.initDiscoveryData() }
             await this.publishDiscoveryData()
+            await this.online()
 
             if (this.subscribed) {
                 this.publishData()
             } else {
                 // Subscribe to data updates for device
                 this.device.onData.subscribe(() => { this.publishData() })
+                this.schedulePublishAttributes()
 
                 // Subscribe to any device command topics
                 const properties = Object.getOwnPropertyNames(this)
@@ -120,12 +122,11 @@ class AlarmDevice {
                 // Mark device as subscribed
                 this.subscribed = true
             }
-            this.online()
         }
     }
 
     // Publish device info
-    publishAttributes() {
+    async publishAttributes() {
         let alarmState
 
         if (this.device.deviceType === 'security-panel') {
@@ -146,8 +147,8 @@ class AlarmDevice {
             ... this.device.data.chirps && this.device.deviceType == 'security-keypad' ? {chirps: this.device.data.chirps } : {},
             ... this.device.data.commStatus ? { commStatus: this.device.data.commStatus } : {},
             ... this.device.data.firmwareUpdate ? { firmwareStatus: this.device.data.firmwareUpdate.state } : {},
-            ... this.device.data.lastCommTime ? { lastCommTime: new Date(this.device.data.lastCommTime).toISOString() } : {},
-            ... this.device.data.lastUpdate ? { lastUpdate: new Date(this.device.data.lastUpdate).toISOString() } : {},
+            ... this.device.data.lastCommTime ? { lastCommTime: utils.getISOTime(this.device.data.lastUpdate) } : {},
+            ... this.device.data.lastUpdate ? { lastUpdate: utils.getISOTime(this.device.data.lastUpdate) } : {},
             ... this.device.data.linkQuality ? { linkQuality: this.device.data.linkQuality } : {},
             ... this.device.data.powerSave ? {powerSave: this.device.data.powerSave } : {},
             ... this.device.data.serialNumber ? { serialNumber: this.device.data.serialNumber } : {},
@@ -155,15 +156,16 @@ class AlarmDevice {
             ... this.device.data.hasOwnProperty('volume') ? {volume: this.device.data.volume } : {},
         }
         this.publishMqtt(this.stateTopic_info, JSON.stringify(attributes), true)
+    }
 
-        // If first publish schedule attributes to be resent every 5 minutes
-        if (!this.attributesScheduled) { 
-            this.attributesScheduled = true
-            const _this = this
-            setInterval(function () {
-                if (_this.availabilityState = 'online') { _this.publishAttributes() }
-            }, 300000)
+    // Refresh device info attributes on a sechedule
+    async schedulePublishAttributes() {
+        await utils.sleep(300)
+        // Only publish when site is online
+        if (this.availabilityState === 'online') { 
+            this.publishAttributes()
         }
+        this.schedulePublishAttributes()
     }
 
     // Set state topic online
@@ -174,6 +176,7 @@ class AlarmDevice {
         await utils.sleep(1)
         this.availabilityState = 'online'
         this.publishMqtt(this.availabilityTopic, this.availabilityState, enableDebug)
+        await utils.sleep(1)
     }
 
     // Set state topic offline
