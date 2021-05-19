@@ -5,6 +5,7 @@ class Camera {
     constructor(deviceInfo) {
         // Set default properties for camera device object model 
         this.camera = deviceInfo.device
+        
         this.mqttClient = deviceInfo.mqttClient
         this.subscribed = false
         this.availabilityState = 'init'
@@ -74,6 +75,9 @@ class Camera {
             this.publishedSirenState = 'unknown'
         }
 
+        //Default start state so that all motion detection status is sent on init
+        this.publishedMotionDetectionStatus = 'unkown'
+
     }
 
     // Publish camera capabilities and state and subscribe to events
@@ -121,6 +125,14 @@ class Camera {
             })
         }
 
+        // Publish info around the motion detection on/off
+        this.publishCapability({
+            type: 'motion_detection',
+            component: 'switch',
+            suffix: 'Motion Detection',
+            command: 'command'
+        })
+
         // Publish info sensor for camera
         this.publishCapability({
             type: 'info',
@@ -162,6 +174,14 @@ class Camera {
                     }
                 })
             }
+
+            if(this.camera.data 
+                && this.camera.data.settings 
+                && typeof this.camera.data.settings.motion_detection_enabled !== 'undefined'
+                && this.camera.data.settings.motion_detection_enabled !== this.publishedMotionDetectionStatus) {
+                this.publishPolledState()
+            }
+
             this.subscribed = true
 
             // Publish snapshot if enabled
@@ -187,6 +207,14 @@ class Camera {
             if (this.camera.hasLight || this.camera.hasSiren) {
                 if (this.camera.hasLight) { this.publishedLightState = 'republish' }
                 if (this.camera.hasSiren) { this.publishedSirenState = 'republish' }
+                this.publishPolledState()
+            }
+
+
+            if(this.camera.data 
+                && this.camera.data.settings 
+                && typeof this.camera.data.settings.motion_detection_enabled !== 'undefined'
+                && this.camera.data.settings.motion_detection_enabled !== this.publishedMotionDetectionStatus) {
                 this.publishPolledState()
             }
 
@@ -327,6 +355,15 @@ class Camera {
             if (sirenStatus !== this.publishedSirenState) {
                 this.publishMqtt(stateTopic, sirenStatus, true)
                 this.publishedSirenState = sirenStatus
+            }
+        }
+
+        if (this.camera.data && this.camera.data.settings && typeof this.camera.data.settings.motion_detection_enabled !== 'undefined') {
+            const stateTopic = this.cameraTopic+'/motion_detection/state'
+            const motionDetectionStatus = this.camera.data.settings.motion_detection_enabled === true ? 'ON' : 'OFF'
+            if (motionDetectionStatus !== this.publishedMotionDetectionStatus) {
+                this.publishMqtt(stateTopic, motionDetectionStatus, true)
+                this.publishedMotionDetectionStatus = motionDetectionStatus
             }
         }
     }
