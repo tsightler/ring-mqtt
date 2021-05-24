@@ -9,6 +9,7 @@ class Camera {
     constructor(deviceInfo) {
         // Set default properties for camera device object model 
         this.camera = deviceInfo.device
+        
         this.mqttClient = deviceInfo.mqttClient
         this.subscribed = false
         this.availabilityState = 'init'
@@ -88,6 +89,19 @@ class Camera {
                 last_ding_time: 'none'
             }
         }
+
+        // Properties to store state published to MQTT
+        // Used to keep from sending state updates on every poll (20 seconds)
+        if (this.camera.hasLight) {
+            this.publishedLightState = 'unknown'
+        }
+
+        if (this.camera.hasSiren) {
+            this.publishedSirenState = 'unknown'
+        }
+
+        //Default start state so that all motion detection status is sent on init
+        this.publishedMotionDetectionStatus = 'unkown'
     }
 
     // Publish camera capabilities and state and subscribe to events
@@ -139,6 +153,14 @@ class Camera {
                 command: 'command'
             })
         }
+
+        // Publish info around the motion detection on/off
+        this.publishCapability({
+            type: 'motion_detection',
+            component: 'switch',
+            suffix: 'Motion Detection',
+            command: 'command'
+        })
 
         // Publish info sensor for camera
         this.publishCapability({
@@ -196,6 +218,30 @@ class Camera {
                 this.publishPolledState()
             })
 
+            // Since this is initial publish of device publish current ding state as well
+            this.publishDingState()
+
+            // If camera has light/siren subscribe to those events as well (only polls, default 20 seconds)
+            if (this.camera.hasLight || this.camera.hasSiren) {
+                this.camera.onData.subscribe(() => {
+                    this.publishPolledState()
+                    
+                    // Update snapshot frequency in case it's changed
+                    if (this.snapshotAutoInterval && this.camera.data.settings.hasOwnProperty('lite_24x7')) {
+                        this.snapshotInterval = this.camera.data.settings.lite_24x7.frequency_secs
+                    }
+                })
+            }
+
+            if(this.camera.data 
+                && this.camera.data.settings 
+                && typeof this.camera.data.settings.motion_detection_enabled !== 'undefined'
+                && this.camera.data.settings.motion_detection_enabled !== this.publishedMotionDetectionStatus) {
+                this.publishPolledState()
+            }
+
+            this.subscribed = true
+
             // Publish snapshot if enabled
             if (this.snapshot.motion || this.snapshot.interval > 0) {
                 this.refreshSnapshot()
@@ -216,6 +262,14 @@ class Camera {
             // Republish all camera state data
             this.publishDingStates()
             this.publishPolledState()
+
+
+            if(this.camera.data 
+                && this.camera.data.settings 
+                && typeof this.camera.data.settings.motion_detection_enabled !== 'undefined'
+                && this.camera.data.settings.motion_detection_enabled !== this.publishedMotionDetectionStatus) {
+                this.publishPolledState()
+            }
 
             // Publish snapshot image if any snapshot option is enabled
             if (this.snapshot.motion || this.snapshot.interval) {
@@ -381,6 +435,15 @@ class Camera {
             }
         }
 
+        if (this.camera.data && this.camera.data.settings && typeof this.camera.data.settings.motion_detection_enabled !== 'undefined') {
+            const stateTopic = this.cameraTopic+'/motion_detection/state'
+            const motionDetectionStatus = this.camera.data.settings.motion_detection_enabled === true ? 'ON' : 'OFF'
+            if (motionDetectionStatus !== this.publishedMotionDetectionStatus) {
+                this.publishMqtt(stateTopic, motionDetectionStatus, true)
+                this.publishedMotionDetectionStatus = motionDetectionStatus
+            }
+        }
+      
         // Update snapshot frequency in case it's changed
         if (this.snapshot.autoInterval && this.camera.data.settings.hasOwnProperty('lite_24x7')) {
             this.snapshot.interval = this.camera.data.settings.lite_24x7.frequency_secs
