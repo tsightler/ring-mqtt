@@ -108,7 +108,7 @@ class Camera {
         const debugMsg = (this.availabilityState === 'init') ? 'Publishing new ' : 'Republishing existing '
         debug(debugMsg+'device id: '+this.deviceId)
 
-        this.publishCapabilities()
+        await this.publishCapabilities()
         
         // Give Home Assistant time to configure device before sending first state data
         await utils.sleep(2)
@@ -306,7 +306,7 @@ class Camera {
         if (capability.command) {
             this.mqttClient.subscribe(capabilityTopic+'/command')
         }
-        
+
         switch (capabilityType) {
             case 'info':
                 // Set the primary state value for info sensors based on power (battery/wired)
