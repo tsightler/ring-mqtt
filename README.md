@@ -2,7 +2,7 @@
 This script leverages the excellent [ring-client-api](https://github.com/dgreif/ring) to provide a bridge between MQTT and suppoted Ring devices such as alarm control panel, lights and cameras ([full list of supported devices and features](#current-features)).  It also provides support for Home Assistant style MQTT auto-discovery which allows for easy Home Assistant integration with minimal configuration (requires Home Assistant MQTT integration to be enabled).  This also includes an optional [Home Assistant Addon](https://github.com/tsightler/ring-mqtt-ha-addon) for users of HassOS/Home Assistant Installer.  It can also be used with any other tool capable of working with MQTT as it provides consistent topic naming based on location/device ID.
 
 ## !!! Important Notices - Please Read !!!
-If you are upgrading from ring-mqtt prior to version 4.0.0, or from Home Assistant versions < 0.113, please read the approciate section in [docs/NOTICES.md](docs/NOTICES.md)
+If you are upgrading from ring-mqtt prior to version 4.0.0, or from Home Assistant versions < 0.113, please read the appropriate section in [docs/NOTICES.md](docs/NOTICES.md)
  
 ## Installation
 Starting with the 4.0.0 release of ring-mqtt, Docker is now the recommended installation method, however, standard, non-Docker installation is still fully supported.  Please skip to the [Standard Install](#standard-install) section for details on this installation method.

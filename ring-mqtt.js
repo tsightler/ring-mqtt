@@ -131,7 +131,8 @@ async function updateRingData(mqttClient, ringClient) {
             debug(colors.green('Found existing location '+location.name+' with id '+location.id))
         } else {
             debug(colors.green('Found new location '+location.name+' with id '+location.id))
-            if (location.hasHubs) { location.needsSubscribe = true }
+            location.isSubscribed = false
+            location.isConnected = false
             ringLocations.push(location)
             foundLocation = location
         }
@@ -178,24 +179,12 @@ async function updateRingData(mqttClient, ringClient) {
     await utils.sleep(5)
 }
 
-// Set all devices for location offline
-async function setLocationOffline(location) {
-    // Wait 30 seconds before setting devices offline in case disconnect is transient
-    // Keeps from creating "unknown" state for sensors if connection error is short lived
-    await utils.sleep(30)
-    if (location.onConnected._value) { return }
-    ringDevices.forEach(device => {
-        if (device.locationId == location.locationId && !device.camera) {
-            device.offline()
-        }
-    })
-}
-
 // Publish devices/cameras for given location
-async function publishDevices(devices, location) {
+async function publishDevices(location) {
     republishCount = (republishCount < 1) ? 1 : republishCount
     while (republishCount > 0 && mqttConnected) {
         try {
+            const devices = await ringDevices.filter(d => d.locationId == location.locationId)
             if (devices && devices.length) {
                 devices.forEach(device => {
                     // Provide location websocket connection state to device
@@ -220,20 +209,34 @@ async function processLocations(mqttClient, ringClient) {
         const devices = await ringDevices.filter(d => d.locationId == location.locationId)
         // If location has devices publish them
         if (devices && devices.length) {
-            if (location.needsSubscribe) {
+            if (location.hasHubs && !location.isSubscribed) {
                 // Location has an alarm or smart bridge so subscribe to websocket connection monitor
-                location.needsSubscribe = false
+                location.isSubscribed = true
                 location.onConnected.subscribe(async connected => {
                     if (connected) {
-                        debug('Websocket for location id '+location.locationId+' is connected')
-                        publishDevices(devices, location)
+                        // Only publish if previous state was actually disconnected
+                        if (!location.isConnected) {
+                            location.isConnected = true
+                            debug('Websocket for location id '+location.locationId+' is connected')
+                            publishDevices(location)
+                        }
                     } else {
-                        debug('Websocket for location id '+location.locationId+' is disconnected')
-                        setLocationOffline(location)
+                        // Wait 30 seconds before setting devices offline in case disconnect is transient
+                        // Keeps from creating "unknown" state for sensors if connection error is short lived
+                        await utils.sleep(30)
+                        if (!location.onConnected._value) {
+                            location.isConnected = false
+                            debug('Websocket for location id '+location.locationId+' is disconnected')
+                            ringDevices.forEach(device => {
+                                if (device.locationId == location.locationId && !device.camera) {
+                                    device.offline()
+                                }
+                            })
+                        }
                     }
                 })
             } else {
-                publishDevices(devices, location)
+                publishDevices(location)
             }
         } else {
             debug('No devices found for location ID '+location.id)
