@@ -29,6 +29,7 @@ class Camera {
             timestamp: null,
             updating: null
         }
+
         if (this.config.snapshot_mode === "motion" || this.config.snapshot_mode === "interval" || this.config.snapshot_mode === "all" ) {
             this.snapshot.motion = (this.config.snapshot_mode === "motion" || this.config.snapshot_mode === "all") ? true : false
 
@@ -64,7 +65,7 @@ class Camera {
             mdl: this.camera.model
         }
 
-        // Set device location and top level MQTT topics
+        // Create top level MQTT topics
         this.cameraTopic = deviceInfo.CONFIG.ring_topic+'/'+this.locationId+'/camera/'+this.deviceId
         this.availabilityTopic = this.cameraTopic+'/status'
       
@@ -146,30 +147,6 @@ class Camera {
                 this.publishPolledState()
             })
 
-            // Since this is initial publish of device publish current ding state as well
-            this.publishDingState()
-
-            // If camera has light/siren subscribe to those events as well (only polls, default 20 seconds)
-            if (this.camera.hasLight || this.camera.hasSiren) {
-                this.camera.onData.subscribe(() => {
-                    this.publishPolledState()
-                    
-                    // Update snapshot frequency in case it's changed
-                    if (this.snapshotAutoInterval && this.camera.data.settings.hasOwnProperty('lite_24x7')) {
-                        this.snapshotInterval = this.camera.data.settings.lite_24x7.frequency_secs
-                    }
-                })
-            }
-
-            if(this.camera.data 
-                && this.camera.data.settings 
-                && typeof this.camera.data.settings.motion_detection_enabled !== 'undefined'
-                && this.camera.data.settings.motion_detection_enabled !== this.publishedMotionDetectionStatus) {
-                this.publishPolledState()
-            }
-
-            this.subscribed = true
-
             // Publish snapshot if enabled
             if (this.snapshot.motion || this.snapshot.interval > 0) {
                 this.refreshSnapshot()
@@ -190,14 +167,6 @@ class Camera {
             // Republish all camera state data
             this.publishDingStates()
             this.publishPolledState()
-
-
-            if(this.camera.data 
-                && this.camera.data.settings 
-                && typeof this.camera.data.settings.motion_detection_enabled !== 'undefined'
-                && this.camera.data.settings.motion_detection_enabled !== this.publishedMotionDetectionStatus) {
-                this.publishPolledState()
-            }
 
             // Publish snapshot image if any snapshot option is enabled
             if (this.snapshot.motion || this.snapshot.interval) {
