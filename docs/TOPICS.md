@@ -19,7 +19,7 @@ Alarm Control Panel (virtual device):
 ```
 ring/<location_id>/alarm/<device_id>/alarm/state     <-- Alarm arming state (pending = entry delay)
                                                          disarmed/armed_home/armed_away/pending/triggered
-ring/<location_id>/alarm/<device_id>/alarm/state     <-- Set alarm mode: disarm/arm_home/arm_away
+ring/<location_id>/alarm/<device_id>/alarm/command   <-- Set alarm mode: disarm/arm_home/arm_away
 ring/<location_id>/alarm/<device_id>/bypass/state    <-- Get arming bypass mode state
 ring/<location_id>/alarm/<device_id>/bypass/command  <-- Set arming bypass mode (When 'on' arming will
                                                          automatically bypass any faulted contact sensors)
