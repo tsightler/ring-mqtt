@@ -1,9 +1,9 @@
-#!/usr/bin/env node
+#!/usr/bin/env node --unhandled-rejections=warn
 
 // Defines
-const RingApi = require('ring-client-api').RingApi
-const RingDeviceType = require('ring-client-api').RingDeviceType
-const RingCamera = require('ring-client-api').RingCamera
+const RingApi = require('@tsightler/ring-client-api').RingApi
+const RingDeviceType = require('@tsightler/ring-client-api').RingDeviceType
+const RingCamera = require('@tsightler/ring-client-api').RingCamera
 const mqttApi = require ('mqtt')
 const isOnline = require ('is-online')
 const debug = require('debug')('ring-mqtt')
@@ -453,6 +453,7 @@ const main = async(generatedToken) => {
                 cameraDingsPollingSeconds: 2
             }
         }
+
         if (CONFIG.enable_modes) { ringAuth.locationModePollingSeconds = 20 }
         if (!(CONFIG.location_ids === undefined || CONFIG.location_ids == 0)) {
             ringAuth.locationIds = CONFIG.location_ids
