@@ -143,14 +143,14 @@ class AlarmDevice {
             ... this.device.data.batteryStatus && this.device.data.batteryStatus !== 'none'
                 ? { batteryStatus: this.device.data.batteryStatus }
                 : {},
-            ... this.device.data.hasOwnProperty('brightness') ? {brightness: this.device.data.brightness } : {},
+            ... this.device.data.hasOwnProperty('brightness') ? { brightness: this.device.data.brightness } : {},
             ... this.device.data.chirps && this.device.deviceType == 'security-keypad' ? {chirps: this.device.data.chirps } : {},
             ... this.device.data.commStatus ? { commStatus: this.device.data.commStatus } : {},
             ... this.device.data.firmwareUpdate ? { firmwareStatus: this.device.data.firmwareUpdate.state } : {},
             ... this.device.data.lastCommTime ? { lastCommTime: utils.getISOTime(this.device.data.lastUpdate) } : {},
             ... this.device.data.lastUpdate ? { lastUpdate: utils.getISOTime(this.device.data.lastUpdate) } : {},
             ... this.device.data.linkQuality ? { linkQuality: this.device.data.linkQuality } : {},
-            ... this.device.data.powerSave ? {powerSave: this.device.data.powerSave } : {},
+            ... this.device.data.powerSave ? { powerSave: this.device.data.powerSave } : {},
             ... this.device.data.serialNumber ? { serialNumber: this.device.data.serialNumber } : {},
             ... this.device.data.tamperStatus ? { tamperStatus: this.device.data.tamperStatus } : {},
             ... this.device.data.hasOwnProperty('volume') ? {volume: this.device.data.volume } : {},

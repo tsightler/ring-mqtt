@@ -14,11 +14,14 @@ if [ -f /data/options.json ]; then
     if [ "${BRANCH}" = "latest" ]; then
         /app/ring-mqtt/scripts/update2latest.sh
         echo "-------------------------------------------------------"
+        exec /app/ring-mqtt-latest/scripts/run-addon.sh
     elif [ "${BRANCH}" = "dev" ]; then
         /app/ring-mqtt/scripts/update2dev.sh
         echo "-------------------------------------------------------"
+        exec /app/ring-mqtt-dev/scripts/run-addon.sh
+    else
+        exec /app/ring-mqtt/scripts/run-addon.sh
     fi
-    exec /app/ring-mqtt/scripts/run-addon.sh
 else
     # No options.json found, assume we are in running in standard Docker
     set +o nounset
@@ -46,10 +49,10 @@ else
     fi
     echo "Running ring-mqtt..."
     if [ "${BRANCH}" = "latest" ]; then
-        ISDOCKER=true exec /app/ring-mqtt-latest/ring-mqtt.js
+        ISDOCKER=true NODE_OPTIONS="--unhandled-rejection=warn" exec /app/ring-mqtt-latest/ring-mqtt.js
     elif [ "${BRANCH}" = "dev" ]; then
-        ISDOCKER=true exec /app/ring-mqtt-dev/ring-mqtt.js
+        ISDOCKER=true NODE_OPTIONS="--unhandled-rejection=warn" exec /app/ring-mqtt-dev/ring-mqtt.js
     else
-        ISDOCKER=true exec /app/ring-mqtt/ring-mqtt.js
+        ISDOCKER=true NODE_OPTIONS="--unhandled-rejection=warn" exec /app/ring-mqtt/ring-mqtt.js
     fi
 fi

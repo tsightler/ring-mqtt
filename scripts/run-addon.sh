@@ -72,9 +72,9 @@ fi
 echo "-------------------------------------------------------"
 echo Running ring-mqtt...
 if [ "${BRANCH}" = "latest" ]; then
-    DEBUG=ring-mqtt HASSADDON=true exec /app/ring-mqtt-latest/ring-mqtt.js
+    DEBUG=ring-mqtt HASSADDON=true NODE_OPTIONS="--unhandled-rejection=warn" exec /app/ring-mqtt-latest/ring-mqtt.js
 elif [ "${BRANCH}" = "dev" ]; then
-    DEBUG=ring-mqtt HASSADDON=true exec /app/ring-mqtt-dev/ring-mqtt.js
+    DEBUG=ring-mqtt HASSADDON=true NODE_OPTIONS="--unhandled-rejection=warn" exec /app/ring-mqtt-dev/ring-mqtt.js
 else
-    DEBUG=ring-mqtt HASSADDON=true exec /app/ring-mqtt/ring-mqtt.js
+    DEBUG=ring-mqtt HASSADDON=true NODE_OPTIONS="--unhandled-rejection=warn" exec /app/ring-mqtt/ring-mqtt.js
 fi

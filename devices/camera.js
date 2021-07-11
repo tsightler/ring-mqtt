@@ -1,6 +1,6 @@
 const debug = require('debug')('ring-mqtt')
 const utils = require( '../lib/utils' )
-const clientApi = require('../node_modules/ring-client-api/lib/api/rest-client').clientApi
+const clientApi = require('../node_modules/@tsightler/ring-client-api/lib/api/rest-client').clientApi
 const P2J = require('pipe2jpeg')
 const net = require('net');
 const getPort = require('get-port')
@@ -9,6 +9,7 @@ class Camera {
     constructor(deviceInfo) {
         // Set default properties for camera device object model 
         this.camera = deviceInfo.device
+        
         this.mqttClient = deviceInfo.mqttClient
         this.subscribed = false
         this.availabilityState = 'init'
@@ -28,6 +29,7 @@ class Camera {
             timestamp: null,
             updating: null
         }
+
         if (this.config.snapshot_mode === "motion" || this.config.snapshot_mode === "interval" || this.config.snapshot_mode === "all" ) {
             this.snapshot.motion = (this.config.snapshot_mode === "motion" || this.config.snapshot_mode === "all") ? true : false
 
@@ -63,7 +65,7 @@ class Camera {
             mdl: this.camera.model
         }
 
-        // Set device location and top level MQTT topics
+        // Create top level MQTT topics
         this.cameraTopic = deviceInfo.CONFIG.ring_topic+'/'+this.locationId+'/camera/'+this.deviceId
         this.availabilityTopic = this.cameraTopic+'/status'
       
@@ -88,77 +90,26 @@ class Camera {
                 last_ding_time: 'none'
             }
         }
+
+        // Properties to store state published to MQTT
+        // Used to keep from sending state updates on every poll (20 seconds)
+        if (this.camera.hasLight) {
+            this.publishedLightState = 'unknown'
+        }
+
+        if (this.camera.hasSiren) {
+            this.publishedSirenState = 'unknown'
+        }
+
+        this.publishedMotionDetectionStatus = 'unkown'
     }
 
     // Publish camera capabilities and state and subscribe to events
     async publish() {
         const debugMsg = (this.availabilityState === 'init') ? 'Publishing new ' : 'Republishing existing '
-
         debug(debugMsg+'device id: '+this.deviceId)
 
-        // Publish motion sensor feature for camera
-        this.publishCapability({
-            type: 'motion',
-            component: 'binary_sensor',
-            className: 'motion',
-            suffix: 'Motion',
-            attributes: true,
-            command: false
-        })
-
-        // If doorbell publish doorbell sensor
-        if (this.camera.isDoorbot) {
-            this.publishCapability({
-                type: 'ding',
-                component: 'binary_sensor',
-                className: 'occupancy',
-                suffix: 'Ding',
-                attributes: true,
-                command: false
-            })
-        }
-
-        // If camera has a light publish light component
-        if (this.camera.hasLight) {
-            this.publishCapability({
-                type: 'light',
-                component: 'light',
-                suffix: 'Light',
-                attributes: false,
-                command: 'command'
-            })
-        }
-
-        // If camera has a siren publish switch component
-        if (this.camera.hasSiren) {
-            this.publishCapability({
-                type: 'siren',
-                component: 'switch',
-                suffix: 'Siren',
-                attributes: false,
-                command: 'command'
-            })
-        }
-
-        // Publish info sensor for camera
-        this.publishCapability({
-            type: 'info',
-            component: 'sensor',
-            suffix: 'Info',
-            attributes: false,
-            command: false
-        })
-
-        // If snapshots enabled, publish snapshot capability
-        if (this.snapshot.motion || this.snapshot.interval) {
-            this.publishCapability({
-                type: 'snapshot',
-                component: 'camera',
-                suffix: 'Snapshot',
-                attributes: true,
-                command: 'interval'
-            })
-        }
+        await this.publishCapabilities()
         
         // Give Home Assistant time to configure device before sending first state data
         await utils.sleep(2)
@@ -227,66 +178,140 @@ class Camera {
         }
     }
 
-    // Publish state messages via MQTT with optional debug
-    publishMqtt(topic, message, enableDebug) {
-        if (enableDebug) debug(topic, message)
-        this.mqttClient.publish(topic, message, { qos: 1 })
+    publishCapabilities() {
+        // Publish motion sensor feature for camera
+        this.publishCapability({
+            component: 'binary_sensor',
+            suffix: 'Motion',
+            className: 'motion',
+            attributes: true,
+            command: false
+        })
+
+        // Publish info around the motion detection on/off
+        this.publishCapability({
+            component: 'switch',
+            suffix: 'Motion Detection',
+            attributes: false,
+            command: true
+        })
+
+        // Publish info sensor for camera
+        this.publishCapability({
+            component: 'sensor',
+            suffix: 'Info',
+            attributes: false,
+            command: false
+        })
+        
+        // If doorbell publish doorbell sensor
+        if (this.camera.isDoorbot) {
+            this.publishCapability({
+                component: 'binary_sensor',
+                suffix: 'Ding',
+                className: 'occupancy',
+                attributes: true,
+                command: false
+            })
+        }
+
+        // If camera has a light publish light component
+        if (this.camera.hasLight) {
+            this.publishCapability({
+                component: 'light',
+                suffix: 'Light',
+                attributes: false,
+                command: true
+            })
+        }
+
+        // If camera has a siren publish switch component
+        if (this.camera.hasSiren) {
+            this.publishCapability({
+                component: 'switch',
+                suffix: 'Siren',
+                attributes: false,
+                command: true
+            })
+        }
+
+        // If snapshots enabled, publish snapshot capability
+        if (this.snapshot.motion || this.snapshot.interval) {
+            this.publishCapability({
+                component: 'camera',
+                suffix: 'Snapshot',
+                attributes: true,
+                command: false
+            })
+
+            this.publishCapability({
+                component: 'number',
+                suffix: 'Snapshot Interval',
+                attributes: false,
+                command: true
+            })
+        }
     }
 
     // Build and publish a Home Assistant MQTT discovery packet for camera capability
     async publishCapability(capability) {
-        const componentTopic = this.cameraTopic+'/'+capability.type
-        const configTopic = 'homeassistant/'+capability.component+'/'+this.locationId+'/'+this.deviceId+'_'+capability.type+'/config'
+        const capabilityType = capability.suffix.toLowerCase().replace(" ","_")
+        const capabilityTopic = this.cameraTopic+'/'+capabilityType
+        const configTopic = 'homeassistant/'+capability.component+'/'+this.locationId+'/'+this.deviceId+'_'+capabilityType+'/config'
 
         const message = {
             name: this.camera.name+' '+capability.suffix,
-            unique_id: this.deviceId+'_'+capability.type,
+            unique_id: this.deviceId+'_'+capabilityType,
             availability_topic: this.availabilityTopic,
             payload_available: 'online',
-            payload_not_available: 'offline'
+            payload_not_available: 'offline',
+            device: this.deviceData,
+            ... capability.attributes ? { json_attributes_topic: capabilityTopic+'/attributes' } : {},
+            ... capability.className ? { device_class: capability.className } : {},
+            ... capability.command ? { command_topic: capabilityTopic+'/command' } : {}
         }
 
-        if (capability.type === 'snapshot') {
-            message.topic = componentTopic+'/image'
-        } else {
-            message.state_topic = componentTopic+'/state'
-        }
-
-        if (capability.attributes) { message.json_attributes_topic = componentTopic+'/attributes' }
-        if (capability.className) { message.device_class = capability.className }
-
+        // Subscribe to command topic if required
         if (capability.command) {
-            if (capability.type !== 'snapshot') {
-                message.command_topic = componentTopic+'/'+capability.command
-            }
-            this.mqttClient.subscribe(componentTopic+'/'+capability.command)
+            this.mqttClient.subscribe(capabilityTopic+'/command')
         }
 
-        // Set the primary state value for info sensors based on power (battery/wired)
-        // and connectivity (Wifi/ethernet)
-        if (capability.type === 'info') {
-            message.json_attributes_topic = componentTopic+'/state'
-            message.icon = 'mdi:information-outline'
-            const deviceHealth = await Promise.race([this.camera.getHealth(), utils.sleep(5)]).then(function(result) { return result; })
-            if (deviceHealth) {
-                if (deviceHealth.network_connection && deviceHealth.network_connection === 'ethernet') {
-                    message.value_template = '{{value_json["wiredNetwork"]}}'
-                } else {
-                    // Device is connected via wifi, track that as primary
-                    message.value_template = '{{value_json["wirelessSignal"]}}'
-                    message.unit_of_measurement = 'RSSI'
+        switch (capabilityType) {
+            case 'info':
+                // Set the primary state value for info sensors based on power (battery/wired)
+                // and connectivity (Wifi/ethernet)
+                message.state_topic = capabilityTopic+'/state'
+                message.json_attributes_topic = capabilityTopic+'/state'
+                message.icon = 'mdi:information-outline'
+                const deviceHealth = await Promise.race([this.camera.getHealth(), utils.sleep(5)]).then(function(result) { return result; })
+                if (deviceHealth) {
+                    if (deviceHealth.network_connection && deviceHealth.network_connection === 'ethernet') {
+                        message.value_template = '{{value_json["wiredNetwork"]}}'
+                    } else {
+                        // Device is connected via wifi, track that as primary
+                        message.value_template = '{{value_json["wirelessSignal"]}}'
+                        message.unit_of_measurement = 'RSSI'
+                    }
                 }
-            }
+                break;
+            case 'snapshot':
+                message.topic = capabilityTopic+'/image'
+                break;
+            default:
+                message.state_topic = capabilityTopic+'/state'
         }
-
-        // Add device data for Home Assistant device registry
-        message.device = this.deviceData
 
         debug('HASS config topic: '+configTopic)
         debug(message)
         this.mqttClient.publish(configTopic, JSON.stringify(message), { qos: 1 })
     }
 
+    // Publish state messages via MQTT with optional debug
+    publishMqtt(topic, message, enableDebug) {
+        if (enableDebug) debug(topic, message)
+        this.mqttClient.publish(topic, message, { qos: 1 })
+    }
+    
     // Process a ding event
     async processDing(ding) {
         // Is it a motion or doorbell ding? (for others we do nothing)
@@ -381,6 +406,15 @@ class Camera {
             }
         }
 
+        if (this.camera.data && this.camera.data.settings && typeof this.camera.data.settings.motion_detection_enabled !== 'undefined') {
+            const stateTopic = this.cameraTopic+'/motion_detection/state'
+            const motionDetectionStatus = this.camera.data.settings.motion_detection_enabled === true ? 'ON' : 'OFF'
+            if (motionDetectionStatus !== this.publishedMotionDetectionStatus) {
+                this.publishMqtt(stateTopic, motionDetectionStatus, true)
+                this.publishedMotionDetectionStatus = motionDetectionStatus
+            }
+        }
+      
         // Update snapshot frequency in case it's changed
         if (this.snapshot.autoInterval && this.camera.data.settings.hasOwnProperty('lite_24x7')) {
             this.snapshot.interval = this.camera.data.settings.lite_24x7.frequency_secs
