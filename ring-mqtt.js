@@ -1,4 +1,4 @@
-#!/usr/bin/env node --unhandled-rejection=warn
+#!/usr/bin/env node
 
 // Defines
 const RingApi = require('@tsightler/ring-client-api').RingApi
