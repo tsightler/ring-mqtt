@@ -388,7 +388,7 @@ class Camera {
         this.heartbeat = 3
         if (this.availabilityState !== 'online') {
             await this.online()
-            this.camera.listenForDeviceUpdates(this.camera)
+            this.camera.location.listenForDeviceUpdates(this.camera)
         }     
 
         if (this.camera.hasLight) {
