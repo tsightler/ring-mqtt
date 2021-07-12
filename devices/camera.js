@@ -390,7 +390,14 @@ class Camera {
             await this.camera.disconnect()
             this.camera.onNewDing.unsubscribe()
             this.camera.onData.unsubscribe()
-            this.subscribed = false
+            await this.online()
+            this.camera.onNewDing.subscribe(ding => {
+                this.processDing(ding)
+            })
+            // Subscribe to poll events, default every 20 seconds
+            this.camera.onData.subscribe(() => {
+                this.publishPolledState()
+            })
             this.publish()
             return
         }     
