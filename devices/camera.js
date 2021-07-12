@@ -388,16 +388,7 @@ class Camera {
         this.heartbeat = 3
         if (this.availabilityState !== 'online') {
             await this.online()
-            this.camera.subscribeToDingEvents().catch(e => { 
-                debug('Failed to resubscribe camera Id ' +this.deviceId+' to ding events. Will retry in 60 seconds.') 
-                debug(e)
-            })
-            if (this.camera.isDoorbot) {
-                this.camera.subscribeToMotionEvents().catch(e => {
-                    debug('Failed to resubscribe camera Id '+this.deviceId+' to motion events.  Will retry in 60 seconds.')
-                    debug(e)
-                })
-            }
+            this.camera.listenForDeviceUpdates(this.camera)
         }     
 
         if (this.camera.hasLight) {
