@@ -386,9 +386,12 @@ class Camera {
     async publishPolledState() {
         // Reset heartbeat counter on every polled state and set device online if not already
         this.heartbeat = 3
-        if (this.availabilityState !== 'online') { 
-            await this.online() 
-        }        
+        if (this.availabilityState !== 'online') {
+            await this.camera.disconnect()
+            this.subscribed = false
+            this.publish()
+            return
+        }     
 
         if (this.camera.hasLight) {
             const stateTopic = this.cameraTopic+'/light/state'
