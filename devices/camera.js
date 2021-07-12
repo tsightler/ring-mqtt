@@ -388,9 +388,8 @@ class Camera {
         this.heartbeat = 3
         if (this.availabilityState !== 'online') {
             await this.camera.disconnect()
-            this.subscribed = false
-            this.publish()
-            return
+            this.camera.onNewDing.subscribe()
+            this.camera.onData.subscribe()
         }     
 
         if (this.camera.hasLight) {
