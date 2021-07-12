@@ -387,19 +387,17 @@ class Camera {
         // Reset heartbeat counter on every polled state and set device online if not already
         this.heartbeat = 3
         if (this.availabilityState !== 'online') {
-            await this.camera.disconnect()
-            this.camera.onNewDingSubscription.unsubscribe()
-            this.camera.onDataSubscription.unsubscribe()
             await this.online()
-            this.camera.onNewDingSubscription = this.camera.onNewDing.subscribe(ding => {
-                this.processDing(ding)
+            this.camera.subscribeToDingEvents().catch(e => { 
+                debug('Failed to resubscribe camera Id ' +this.deviceId+' to ding events. Will retry in 60 seconds.') 
+                debug(e)
             })
-            // Subscribe to poll events, default every 20 seconds
-            this.camera.onDataSubscription = this.camera.onData.subscribe(() => {
-                this.publishPolledState()
-            })
-            this.publish()
-            return
+            if (this.camera.isDoorbot) {
+                this.camera.subscribeToMotionEvents().catch(e => {
+                    debug('Failed to resubscribe camera Id '+this.deviceId+' to motion events.  Will retry in 60 seconds.')
+                    debug(e)
+                })
+            }
         }     
 
         if (this.camera.hasLight) {
