@@ -137,13 +137,13 @@ class Camera {
             }
 
             // Subscribe to Ding events (all cameras have at least motion events)
-            this.camera.onNewDing.subscribe(ding => {
+            this.onNewDingSubscription = this.camera.onNewDing.subscribe(ding => {
                 this.processDing(ding)
             })
             this.publishDingStates()
 
             // Subscribe to poll events, default every 20 seconds
-            this.camera.onData.subscribe(() => {
+            this.onDataSubscription = this.camera.onData.subscribe(() => {
                 this.publishPolledState()
             })
 
@@ -386,9 +386,9 @@ class Camera {
     async publishPolledState() {
         // Reset heartbeat counter on every polled state and set device online if not already
         this.heartbeat = 3
-        if (this.availabilityState !== 'online') { 
-            await this.online() 
-        }        
+        if (this.availabilityState !== 'online') {
+            await this.online()
+        }     
 
         if (this.camera.hasLight) {
             const stateTopic = this.cameraTopic+'/light/state'
@@ -629,9 +629,6 @@ class Camera {
         } else {
             if (this.availabilityState !== 'offline') { 
                 this.offline()
-            } else {
-                // If camera remains offline more than one cycle, try to tickle it back alive
-                this.camera.requestUpdate()
             }
         }
         

@@ -1,6 +1,6 @@
 {
   "name": "ring-mqtt",
-  "version": "4.5.6",
+  "version": "4.5.7",
   "description": "Ring to MQTT Bridge",
   "main": "ring-mqtt.js",
   "dependencies": {
@@ -12,7 +12,7 @@
     "is-online": "^9.0.1",
     "mqtt": "^4.2.8",
     "pipe2jpeg": "^0.3.1",
-    "@tsightler/ring-client-api": "9.18.1-custom.2"
+    "ring-client-api": "tsightler/ring-client-api"
   },
   "devDependencies": {
     "eslint": "^7.19.0"
