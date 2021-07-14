@@ -17,8 +17,9 @@ class Camera {
         this.locationId = this.camera.data.location_id
         this.deviceId = this.camera.data.device_id
         this.config = deviceInfo.CONFIG
-        this.publishedLightState = this.camera.hasLight ? 'init' : 'none'
-        this.publishedSirenState = this.camera.hasSiren ? 'init' : 'none'
+        this.publishedLightState = this.camera.hasLight ? 'publish' : 'none'
+        this.publishedSirenState = this.camera.hasSiren ? 'publish' : 'none'
+        this.publishedMotionDetectionEnabled = 'publish'
 
         // Configure initial snapshot parameters based on device type and app settings
         this.snapshot = { 
@@ -90,12 +91,6 @@ class Camera {
                 last_ding_time: 'none'
             }
         }
-
-        // Properties to store state published to MQTT
-        // Used to keep from sending state updates on every poll (20 seconds)
-        if (this.camera.hasLight) { this.publishedLightState = 'unknown' }
-        if (this.camera.hasSiren) { this.publishedSirenState = 'unknown' }
-        this.publishedMotionDetectionEnabled = 'unknown'
     }
 
     // Publish camera capabilities and state and subscribe to events
@@ -354,17 +349,33 @@ class Camera {
     publishDingState(dingKind) {
         const dingTopic = this.cameraTopic+'/'+dingKind
         const dingState = this[dingKind].active_ding ? 'ON' : 'OFF'
-        const attributes = {}
-        if (dingKind === 'motion') {
-            attributes.lastMotion = this[dingKind].last_ding
-            attributes.lastMotionTime = this[dingKind].last_ding_time
-            attributes.personDetected = this[dingKind].is_person
-        } else {
-            attributes.lastDing = this[dingKind].last_ding
-            attributes.lastDingTime = this[dingKind].last_ding_time
-        }
         this.publishMqtt(dingTopic+'/state', dingState, true)
-        this.publishMqtt(dingTopic+'/attributes', JSON.stringify(attributes), true)
+
+        if (dingKind === 'motion') {
+            this.publishMotionAttributes()
+        } else {
+            this.publishDingAttributes()
+        }
+    }
+
+    publishMotionAttributes() {
+        const attributes = {}
+        attributes.lastMotion = this.motion.last_ding
+        attributes.lastMotionTime = this.motion.last_ding_time
+        attributes.personDetected = this.motion.is_person
+        (this.camera.data.settings.motion_detection_enabled !== this.publishedMotionDetectionEnabled)
+        if (this.camera.data.settings && typeof this.camera.data.settings.motion_detection_enabled !== 'undefined') {
+            attributes.motionDetectionEnabled = this.camera.data.settings.motion_detection_enabled
+            this.publishedMotionDetectionEnabled = this.camera.data.settings.motion_detection_enabled
+        }
+        this.publishMqtt(this.cameraTopic+'/motion/attributes', JSON.stringify(attributes), true)
+    }
+
+    publishDingAttributes() {
+        const attributes = {}
+        attributes.lastDing = this.ding.last_ding
+        attributes.lastDingTime = this.dingKind.last_ding_time
+        this.publishMqtt(this.cameraTopic+'/ding/attributes', JSON.stringify(attributes), true)
     }
 
     // Publish camera state for polled attributes (light/siren state, etc)
@@ -394,11 +405,7 @@ class Camera {
         }
 
         if (this.camera.data && this.camera.data.settings && typeof this.camera.data.settings.motion_detection_enabled !== 'undefined') {
-            const stateTopic = this.cameraTopic+'/motion/attributes'
-            if (this.camera.data.settings.motion_detection_enabled !== this.publishedMotionDetectionEnabled) {
-                this.publishMqtt(stateTopic, JSON.stringify({ motionDetectionEnabled: this.camera.data.settings.motion_detection_enabled }), true)
-                this.publishedMotionDetectionEnabled = this.camera.data.settings.motion_detection_enabled
-            }
+            this.publishMotionAttributes()
         }
       
         // Update snapshot frequency in case it's changed
