@@ -1,6 +1,6 @@
 const debug = require('debug')('ring-mqtt')
 const utils = require( '../lib/utils' )
-const clientApi = require('../node_modules/@tsightler/ring-client-api/lib/api/rest-client').clientApi
+const clientApi = require('../node_modules/ring-client-api/lib/api/rest-client').clientApi
 const P2J = require('pipe2jpeg')
 const net = require('net');
 const getPort = require('get-port')

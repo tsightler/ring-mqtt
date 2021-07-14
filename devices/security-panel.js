@@ -1,8 +1,8 @@
 const debug = require('debug')('ring-mqtt')
 const utils = require( '../lib/utils' )
 const AlarmDevice = require('./alarm-device')
-const alarmStates = require('@tsightler/ring-client-api').allAlarmStates
-const RingDeviceType = require('@tsightler/ring-client-api').RingDeviceType
+const alarmStates = require('ring-client-api').allAlarmStates
+const RingDeviceType = require('ring-client-api').RingDeviceType
 
 class SecurityPanel extends AlarmDevice {
     constructor(deviceInfo) {
