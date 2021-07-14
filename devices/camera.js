@@ -395,7 +395,7 @@ class Camera {
 
         if (this.camera.data && this.camera.data.settings && typeof this.camera.data.settings.motion_detection_enabled !== 'undefined') {
             const stateTopic = this.cameraTopic+'/motion/attributes'
-            if (motionDetectionStatus !== this.publishedMotionDetectionEnabled) {
+            if (this.camera.data.settings.motion_detection_enabled !== this.publishedMotionDetectionEnabled) {
                 this.publishMqtt(stateTopic, JSON.stringify({ motionDetectionEnabled: this.camera.data.settings.motion_detection_enabled }), true)
                 this.publishedMotionDetectionEnabled = this.camera.data.settings.motion_detection_enabled
             }
