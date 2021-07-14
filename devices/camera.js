@@ -375,7 +375,7 @@ class Camera {
     publishDingAttributes() {
         const attributes = {}
         attributes.lastDing = this.ding.last_ding
-        attributes.lastDingTime = this.dingKind.last_ding_time
+        attributes.lastDingTime = this.ding.last_ding_time
         this.publishMqtt(this.cameraTopic+'/ding/attributes', JSON.stringify(attributes), true)
     }
 
