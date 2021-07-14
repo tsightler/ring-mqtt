@@ -363,11 +363,9 @@ class Camera {
         attributes.lastMotion = this.motion.last_ding
         attributes.lastMotionTime = this.motion.last_ding_time
         attributes.personDetected = this.motion.is_person
-        if (this.camera.data.settings.motion_detection_enabled !== this.publishedMotionDetectionEnabled) {
-            if (this.camera.data.settings && typeof this.camera.data.settings.motion_detection_enabled !== 'undefined') {
-                attributes.motionDetectionEnabled = this.camera.data.settings.motion_detection_enabled
-                this.publishedMotionDetectionEnabled = attributes.motionDetectionEnabled
-            }
+        if (this.camera.data.settings && typeof this.camera.data.settings.motion_detection_enabled !== 'undefined') {
+            attributes.motionDetectionEnabled = this.camera.data.settings.motion_detection_enabled
+            this.publishedMotionDetectionEnabled = attributes.motionDetectionEnabled
         }
         this.publishMqtt(this.cameraTopic+'/motion/attributes', JSON.stringify(attributes), true)
     }
@@ -405,7 +403,7 @@ class Camera {
             }
         }
 
-        if (this.camera.data && this.camera.data.settings && typeof this.camera.data.settings.motion_detection_enabled !== 'undefined') {
+        if (this.camera.data.settings.motion_detection_enabled !== this.publishedMotionDetectionEnabled) {
             this.publishMotionAttributes()
         }
       
