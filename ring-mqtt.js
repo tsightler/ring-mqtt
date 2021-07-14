@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
 // Defines
-const RingApi = require('ring-client-api').RingApi
-const RingDeviceType = require('ring-client-api').RingDeviceType
-const RingCamera = require('ring-client-api').RingCamera
+const RingApi = require('@tsightler/ring-client-api').RingApi
+const RingDeviceType = require('@tsightler/ring-client-api').RingDeviceType
+const RingCamera = require('@tsightler/ring-client-api').RingCamera
 const mqttApi = require ('mqtt')
 const isOnline = require ('is-online')
 const debug = require('debug')('ring-mqtt')
