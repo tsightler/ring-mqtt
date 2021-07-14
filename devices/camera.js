@@ -93,15 +93,9 @@ class Camera {
 
         // Properties to store state published to MQTT
         // Used to keep from sending state updates on every poll (20 seconds)
-        if (this.camera.hasLight) {
-            this.publishedLightState = 'unknown'
-        }
-
-        if (this.camera.hasSiren) {
-            this.publishedSirenState = 'unknown'
-        }
-
-        this.publishedMotionDetectionStatus = 'unkown'
+        if (this.camera.hasLight) { this.publishedLightState = 'unknown' }
+        if (this.camera.hasSiren) { this.publishedSirenState = 'unknown' }
+        this.publishedMotionDetectionEnabled = 'unknown'
     }
 
     // Publish camera capabilities and state and subscribe to events
@@ -163,6 +157,7 @@ class Camera {
             // Set states to force republish
             this.publishedLightState = this.camera.hasLight ? 'republish' : 'none'
             this.publishedSirenState = this.camera.hasSiren ? 'republish' : 'none'
+            this.publishedMotionDetectionEnabled = 'republish'
 
             // Republish all camera state data
             this.publishDingStates()
@@ -181,25 +176,17 @@ class Camera {
     publishCapabilities() {
         // Publish motion sensor feature for camera
         this.publishCapability({
+            type: 'motion',
             component: 'binary_sensor',
-            suffix: 'Motion',
             className: 'motion',
             attributes: true,
             command: false
         })
 
-        // Publish info around the motion detection on/off
-        this.publishCapability({
-            component: 'switch',
-            suffix: 'Motion Detection',
-            attributes: false,
-            command: true
-        })
-
         // Publish info sensor for camera
         this.publishCapability({
+            type: 'info',
             component: 'sensor',
-            suffix: 'Info',
             attributes: false,
             command: false
         })
@@ -207,8 +194,8 @@ class Camera {
         // If doorbell publish doorbell sensor
         if (this.camera.isDoorbot) {
             this.publishCapability({
+                type: 'ding',
                 component: 'binary_sensor',
-                suffix: 'Ding',
                 className: 'occupancy',
                 attributes: true,
                 command: false
@@ -218,8 +205,8 @@ class Camera {
         // If camera has a light publish light component
         if (this.camera.hasLight) {
             this.publishCapability({
+                type: 'light',
                 component: 'light',
-                suffix: 'Light',
                 attributes: false,
                 command: true
             })
@@ -228,8 +215,8 @@ class Camera {
         // If camera has a siren publish switch component
         if (this.camera.hasSiren) {
             this.publishCapability({
+                type: 'siren',
                 component: 'switch',
-                suffix: 'Siren',
                 attributes: false,
                 command: true
             })
@@ -238,15 +225,15 @@ class Camera {
         // If snapshots enabled, publish snapshot capability
         if (this.snapshot.motion || this.snapshot.interval) {
             this.publishCapability({
+                type: 'snapshot',
                 component: 'camera',
-                suffix: 'Snapshot',
                 attributes: true,
                 command: false
             })
 
             this.publishCapability({
+                type: 'snapshot_interval',
                 component: 'number',
-                suffix: 'Snapshot Interval',
                 attributes: false,
                 command: true
             })
@@ -255,13 +242,13 @@ class Camera {
 
     // Build and publish a Home Assistant MQTT discovery packet for camera capability
     async publishCapability(capability) {
-        const capabilityType = capability.suffix.toLowerCase().replace(" ","_")
-        const capabilityTopic = this.cameraTopic+'/'+capabilityType
-        const configTopic = 'homeassistant/'+capability.component+'/'+this.locationId+'/'+this.deviceId+'_'+capabilityType+'/config'
+        const suffix = capability.type.replace("_"," ").replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())
+        const capabilityTopic = this.cameraTopic+'/'+capability.type
+        const configTopic = 'homeassistant/'+capability.component+'/'+this.locationId+'/'+this.deviceId+'_'+capability.type+'/config'
 
         const message = {
-            name: this.camera.name+' '+capability.suffix,
-            unique_id: this.deviceId+'_'+capabilityType,
+            name: this.camera.name+' '+suffix,
+            unique_id: this.deviceId+'_'+capability.type,
             availability_topic: this.availabilityTopic,
             payload_available: 'online',
             payload_not_available: 'offline',
@@ -276,7 +263,7 @@ class Camera {
             this.mqttClient.subscribe(capabilityTopic+'/command')
         }
 
-        switch (capabilityType) {
+        switch (capability.type) {
             case 'info':
                 // Set the primary state value for info sensors based on power (battery/wired)
                 // and connectivity (Wifi/ethernet)
@@ -407,11 +394,10 @@ class Camera {
         }
 
         if (this.camera.data && this.camera.data.settings && typeof this.camera.data.settings.motion_detection_enabled !== 'undefined') {
-            const stateTopic = this.cameraTopic+'/motion_detection/state'
-            const motionDetectionStatus = this.camera.data.settings.motion_detection_enabled === true ? 'ON' : 'OFF'
-            if (motionDetectionStatus !== this.publishedMotionDetectionStatus) {
-                this.publishMqtt(stateTopic, motionDetectionStatus, true)
-                this.publishedMotionDetectionStatus = motionDetectionStatus
+            const stateTopic = this.cameraTopic+'/motion/attributes'
+            if (motionDetectionStatus !== this.publishedMotionDetectionEnabled) {
+                this.publishMqtt(stateTopic, JSON.stringify({ motionDetectionEnabled: this.camera.data.settings.motion_detection_enabled }), true)
+                this.publishedMotionDetectionEnabled = this.camera.data.settings.motion_detection_enabled
             }
         }
       

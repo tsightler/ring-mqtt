@@ -279,8 +279,8 @@ async function processMqttMessage(topic, message, mqttClient, ringClient) {
 
 // Initiate the connection to MQTT broker
 function initMqtt() {
-    let mqtt_user = CONFIG.mqtt_user ? CONFIG.mqtt_user : null
-    let mqtt_pass = CONFIG.mqtt_pass ? CONFIG.mqtt_pass : null
+    const mqtt_user = CONFIG.mqtt_user ? CONFIG.mqtt_user : null
+    const mqtt_pass = CONFIG.mqtt_pass ? CONFIG.mqtt_pass : null
     const mqtt = mqttApi.connect({
         host:CONFIG.host,
         port:CONFIG.port,
