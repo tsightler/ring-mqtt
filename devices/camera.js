@@ -363,10 +363,11 @@ class Camera {
         attributes.lastMotion = this.motion.last_ding
         attributes.lastMotionTime = this.motion.last_ding_time
         attributes.personDetected = this.motion.is_person
-        (this.camera.data.settings.motion_detection_enabled !== this.publishedMotionDetectionEnabled)
-        if (this.camera.data.settings && typeof this.camera.data.settings.motion_detection_enabled !== 'undefined') {
-            attributes.motionDetectionEnabled = this.camera.data.settings.motion_detection_enabled
-            this.publishedMotionDetectionEnabled = this.camera.data.settings.motion_detection_enabled
+        if (this.camera.data.settings.motion_detection_enabled !== this.publishedMotionDetectionEnabled) {
+            if (this.camera.data.settings && typeof this.camera.data.settings.motion_detection_enabled !== 'undefined') {
+                attributes.motionDetectionEnabled = this.camera.data.settings.motion_detection_enabled
+                this.publishedMotionDetectionEnabled = attributes.motionDetectionEnabled
+            }
         }
         this.publishMqtt(this.cameraTopic+'/motion/attributes', JSON.stringify(attributes), true)
     }
