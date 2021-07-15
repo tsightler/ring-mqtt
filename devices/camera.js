@@ -461,7 +461,7 @@ class Camera {
     }
 
     async publishSnapshotInterval() {
-        this.publishMqtt(this.cameraTopic+'/snapshot_interval/state', this.snapshot.interval, true)
+        this.publishMqtt(this.cameraTopic+'/snapshot_interval/state', this.snapshot.interval.toString(), true)
     }
 
     // This function uses various methods to get a snapshot to work around limitations
