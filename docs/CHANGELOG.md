@@ -1,3 +1,11 @@
+## v4.5.7
+ - Switch to custom ring-client-api with fix for hang during network/service outages
+ - Add MotionDetectionEnabled attribute to camera motion entity attributes
+ - Add support for snapshot interval setting via Home Assitant number entity
+
+## v4.5.6
+ - Experimental release with custom ring-client-api (not published to addon)
+
 ## v4.5.5
  - Improve stream reliability with new Ring media servers by bumping to ring-client-api 9.18.0
  
