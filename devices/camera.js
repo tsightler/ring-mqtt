@@ -143,6 +143,7 @@ class Camera {
                 if (this.snapshot.interval > 0) {
                     this.scheduleSnapshotRefresh()
                 }
+                this.publishSnapshotInterval()
             }
 
             // Start monitor of availability state for camera
@@ -161,6 +162,7 @@ class Camera {
             // Publish snapshot image if any snapshot option is enabled
             if (this.snapshot.motion || this.snapshot.interval) {
                 this.publishSnapshot()
+                this.publishSnapshotInterval()
             }     
 
             this.publishInfoState()
@@ -237,12 +239,11 @@ class Camera {
 
     // Build and publish a Home Assistant MQTT discovery packet for camera capability
     async publishCapability(capability) {
-        const suffix = capability.type.replace("_"," ").replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())
-        const capabilityTopic = this.cameraTopic+'/'+capability.type
+        let capabilityTopic = this.cameraTopic+'/'+capability.type
         const configTopic = 'homeassistant/'+capability.component+'/'+this.locationId+'/'+this.deviceId+'_'+capability.type+'/config'
 
         const message = {
-            name: this.camera.name+' '+suffix,
+            name: this.camera.name+' '+capability.type.replace("_"," ").replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase()),
             unique_id: this.deviceId+'_'+capability.type,
             availability_topic: this.availabilityTopic,
             payload_available: 'online',
@@ -253,7 +254,6 @@ class Camera {
             ... capability.command ? { command_topic: capabilityTopic+'/command' } : {}
         }
 
-        // Subscribe to command topic if required
         if (capability.command) {
             this.mqttClient.subscribe(capabilityTopic+'/command')
         }
@@ -460,6 +460,10 @@ class Camera {
         this.publishMqtt(this.cameraTopic+'/snapshot/attributes', JSON.stringify({ timestamp: this.snapshot.timestamp }))
     }
 
+    async publishSnapshotInterval() {
+        this.publishMqtt(this.cameraTopic+'/snapshot_interval/state', this.snapshot.interval, true)
+    }
+
     // This function uses various methods to get a snapshot to work around limitations
     // of Ring API, ring-client-api snapshot caching, battery cameras, etc.
     async getRefreshedSnapshot() {
@@ -658,6 +662,9 @@ class Camera {
             case 'snapshot':
                 this.setSnapshotInterval(message)
                 break;
+            case 'snapshot_interval':
+                this.setSnapshotInterval(message)
+                break;
             default:
                 debug('Somehow received message to unknown state topic for camera '+this.deviceId)
         }
@@ -705,13 +712,13 @@ class Camera {
             this.snapshot.interval = (message >= 10) ? Math.round(message) : 10
             this.snapshot.autoInterval = false
             debug ('Snapshot refresh interval as been set to '+this.snapshot.interval+' seconds')
+            this.publishSnapshotInterval()
         }
     }
 
     // Publish availability state
     publishAvailabilityState(enableDebug) {
         this.publishMqtt(this.availabilityTopic, this.availabilityState, enableDebug)
-
     }
 
     // Set state topic online
