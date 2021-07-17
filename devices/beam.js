@@ -150,12 +150,12 @@ class Beam extends AlarmDevice {
             case 'on':
             case 'off': {
                 // TODO: Make this configurable
-                const lightDuration = this.lightDuration > 0 ? Math.min(this.lightDuration, 32767) : undefined
-                const lightOn = command === 'on' ? true : false
+                const setDuration = this.lightDuration > 0 ? Math.min(this.lightDuration, 32767) : undefined
+                const setState = command === 'on' ? true : false
                 if (this.isLightGroup && this.groupId) {
-                    this.device.location.setLightGroup(this.groupId, lightOn, lightDuration)
+                    this.device.location.setLightGroup(this.groupId, setState, setDuration)
                 } else {
-                    const data = lightOn ? { lightMode: 'on', lightDuration } : { lightMode: 'default' }
+                    const data = setState ? { lightMode: 'on', setDuration } : { lightMode: 'default' }
                     this.device.sendCommand('light-mode.set', data)
                 }
                 break;
