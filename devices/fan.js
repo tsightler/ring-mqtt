@@ -40,6 +40,8 @@ class Fan extends AlarmDevice {
                 preset_mode_state_topic: this.stateTopic_preset,
                 preset_mode_command_topic: this.commandTopic_preset,
                 preset_modes: [ "low", "medium", "high" ],
+                speed_range_min: 10,
+                speed_range_max: 100,
                 device: this.deviceData
             },
             configTopic: this.configTopic
@@ -110,8 +112,8 @@ class Fan extends AlarmDevice {
     async setFanPercent(message) {
         if (isNaN(message)) {
             debug('Fan speed percent command received but value is not a number')
-        } else if (!(message >= 1 && message <= 100)) {
-            debug('Fan speed percent command received but out of range (1-100)')
+        } else if (!(message >= 10 && message <= 100)) {
+            debug('Fan speed percent command received but out of range (10-100)')
         } else {
             this.targetFanPercent = message
             debug('Seting fan speed percentage to '+this.targetFanPercent+'% for fan Id: '+this.deviceId)
