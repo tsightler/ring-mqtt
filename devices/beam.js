@@ -12,34 +12,39 @@ class Beam extends AlarmDevice {
                 this.deviceData.mdl = 'Lighting Group'
                 this.isLightGroup = true
                 this.groupId = this.device.data.groupId
-                this.stateTopic_motion = this.deviceTopic+'/motion/state'
-                this.configTopic_motion = 'homeassistant/binary_sensor/'+this.locationId+'/'+this.deviceId+'/config'
-                this.stateTopic_light = this.deviceTopic+'/light/state'
-                this.commandTopic_light = this.deviceTopic+'/light/command'
-                this.configTopic_light = 'homeassistant/light/'+this.locationId+'/'+this.deviceId+'/config'
+                this.initMotionTopics()
+                this.initLightTopics()
                 break;
             case 'switch.transformer.beams':
                 this.deviceData.mdl = 'Lighting Transformer'
-                this.stateTopic_light = this.deviceTopic+'/light/state'
-                this.commandTopic_light = this.deviceTopic+'/light/command'
-                this.configTopic_light = 'homeassistant/light/'+this.locationId+'/'+this.deviceId+'/config'
+                this.initLightTopics()
                 break;
             case 'switch.multilevel.beams':
                 this.deviceData.mdl = 'Lighting Switch/Light'
-                this.stateTopic_motion = this.deviceTopic+'/motion/state'
-                this.configTopic_motion = 'homeassistant/binary_sensor/'+this.locationId+'/'+this.deviceId+'/config'
-                this.stateTopic_light = this.deviceTopic+'/light/state'
-                this.commandTopic_light = this.deviceTopic+'/light/command'
-                this.configTopic_light = 'homeassistant/light/'+this.locationId+'/'+this.deviceId+'/config'
+                this.initMotionTopics()
+                this.initLightTopics()
                 break;
             case 'motion-sensor.beams':
                 this.deviceData.mdl = 'Lighting Motion Sensor'
-                this.stateTopic_motion = this.deviceTopic+'/motion/state'
-                this.configTopic_motion = 'homeassistant/binary_sensor/'+this.locationId+'/'+this.deviceId+'/config'
+                this.initMotionTopics()
                 break;
         }
     }
-        
+    
+    initMotionTopics() {
+        this.stateTopic_motion = this.deviceTopic+'/motion/state'
+        this.configTopic_motion = 'homeassistant/binary_sensor/'+this.locationId+'/'+this.deviceId+'/config'
+    }
+
+    initLightTopics() {
+        this.stateTopic_light = this.deviceTopic+'/light/state'
+        this.commandTopic_light = this.deviceTopic+'/light/command'
+        this.stateTopic_light_duration = this.deviceTopic+'/light/duration_state'
+        this.commandTopic_light_duration = this.deviceTopic+'/light/duration_command'
+        this.lightDuration = 0
+        this.configTopic_light = 'homeassistant/light/'+this.locationId+'/'+this.deviceId+'/config'
+    }
+
     initDiscoveryData() {
         // Build the MQTT discovery messages for beam components
         if (this.stateTopic_motion) {

@@ -10,16 +10,26 @@ class BaseStation extends AlarmDevice {
         this.deviceData.mdl = 'Alarm Base Station'
         this.deviceData.name = this.device.location.name + ' Base Station'
 
-        // If this is the very first publish for this device (device is not yet subscribed)
-        // check if account has access set volume and add volume control if so
-        if (this.hasVolumeAccess()) {
-            // Build required MQTT topics
+        initVolumeTopics()
+    }
+    
+    // Check if account has access to volume control and initialize topics if so
+    async initVolumeTopics() {
+        const origVolume = (this.device.data.volume && !isNaN(this.device.data.volume) ? this.device.data.volume : 0)
+        const testVolume = (origVolume === 1) ? .99 : origVolume+.01
+        this.device.setVolume(testVolume)
+        await utils.sleep(1)
+        if (this.device.data.volume === testVolume) {
+            debug('Account has access to set volume on base station, enabling volume control')
+            this.device.setVolume(origVolume)
             this.stateTopic_volume = this.deviceTopic+'/volume/state'
             this.commandTopic_volume = this.deviceTopic+'/volume/command'
             this.configTopic_volume = 'homeassistant/number/'+this.locationId+'/'+this.deviceId+'_volume/config'
+        } else {
+            debug('Account does not have access to set volume on base station, disabling volume control')
         }
     }
-    
+
     initDiscoveryData() {
         if (this.stateTopic_volume) {
             // Build the MQTT discovery messages
@@ -60,22 +70,6 @@ class BaseStation extends AlarmDevice {
             this.setVolumeLevel(message)
         } else {
             debug('Received unknown command topic '+topic+' for base station: '+this.deviceId)
-        }
-    }
-
-    // Function to determine if account has access to change base station volume
-    async hasVolumeAccess() {
-        const origVolume = (this.device.data.volume && !isNaN(this.device.data.volume) ? this.device.data.volume : 0)
-        const testVolume = (origVolume === 1) ? .99 : origVolume+.01
-        this.device.setVolume(testVolume)
-        await utils.sleep(1)
-        if (this.device.data.volume === testVolume) {
-            debug('Account has access to set volume on base station, enabling volume control')
-            this.device.setVolume(origVolume)
-            return true
-        } else {
-            debug('Account does not have access to set volume on base station, disabling volume control')
-            return false
         }
     }
 
