@@ -15,11 +15,13 @@ class Fan extends AlarmDevice {
         // Build required MQTT topics 
         this.stateTopic_fan = this.deviceTopic+'/fan/state'
         this.commandTopic_fan = this.deviceTopic+'/fan/command'
-        this.stateTopic_speed = this.deviceTopic+'/fan/speed_state'
-        this.commandTopic_speed = this.deviceTopic+'/fan/speed_command'
+        this.stateTopic_percent = this.deviceTopic+'/fan/percent_speed_state'
+        this.commandTopic_percent = this.deviceTopic+'/fan/percent_speed_command'
+        this.stateTopic_preset = this.deviceTopic+'/fan/speed_state'
+        this.commandTopic_preset = this.deviceTopic+'/fan/speed_command'
         this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
         this.prevFanState = undefined
-        this.targetFanLevel = undefined
+        this.targetFanPercent = undefined
     }
     
     initDiscoveryData() {
@@ -33,9 +35,11 @@ class Fan extends AlarmDevice {
                 payload_not_available: 'offline',
                 state_topic: this.stateTopic_fan,
                 command_topic: this.commandTopic_fan,
-                speed_state_topic: this.stateTopic_speed,
-                speed_command_topic: this.commandTopic_speed,
-                speeds: [ "low", "medium", "high" ],
+                percentage_state_topic: this.stateTopic_percent,
+                percentage_command_topic: this.commandTopic_percent,
+                preset_state_topic: this.stateTopic_preset,
+                preset_command_topic: this.commandTopic_preset,
+                preset_modes: [ "low", "medium", "high" ],
                 device: this.deviceData
             },
             configTopic: this.configTopic
@@ -46,26 +50,27 @@ class Fan extends AlarmDevice {
 
     publishData() {
         const fanState = this.device.data.on ? "ON" : "OFF"
-        const fanSpeed = (this.device.data.level && !isNaN(this.device.data.level) ? this.device.data.level : 0)
-        let fanLevel = "unknown"
-        if (0 <= fanSpeed && fanSpeed <= 0.33) {
-            fanLevel = 'low'
-        } else if (0.33 <= fanSpeed && fanSpeed <= 0.67) {
-            fanLevel = 'medium'
-        } else if (0.67 <= fanSpeed && fanSpeed <= 1) {
-            fanLevel = 'high'
+        const fanPercent = (this.device.data.level && !isNaN(this.device.data.level) ? Math.route(this.device.data.level*100) : 0)
+        let fanPreset = "unknown"
+        if (fanPercent > 67) {
+            fanPreset = 'high'
+        } else if (fanPercent > 33) {
+            fanPreset = 'medium'
+        } else if (fanPercent >= 0) {
+            fanPreset = 'low'
         } else {
-            debug('ERROR - Could not determine fan speed.  Raw value: '+fanSpeed)
+            debug('ERROR - Could not determine fan preset value.  Raw percent value: '+fanPercent+'%')
         }
         
         // Publish device state
-        // targetFanLevel is a hack to work around Home Assistant UI behavior
-        if (this.targetFanLevel && this.targetFanLevel != fanLevel) {
-            this.publishMqtt(this.stateTopic_speed, this.targetFanLevel, true)
+        // targetFanPercent is a small hack to work around Home Assistant UI behavior
+        if (this.targetFanPercent && this.targetFanPercent != fanPercent) {
+            this.publishMqtt(this.stateTopic_percent, this.targetFanPercent, true)
         } else {
-            this.publishMqtt(this.stateTopic_speed, fanLevel, true)
+            this.publishMqtt(this.stateTopic_percent, fanPercent, true)
         }
         this.publishMqtt(this.stateTopic_fan, fanState, true)
+        this.publishMqtt(this.stateTopic_preset, fanPreset, true)
 
         // Publish device attributes (batterylevel, tamper status)
         this.publishAttributes()
@@ -75,10 +80,12 @@ class Fan extends AlarmDevice {
     processCommand(message, topic) {
         if (topic == this.commandTopic_fan) {
             this.setFanState(message)
-        } else if (topic == this.commandTopic_speed) {
-            this.setFanLevel(message)
+        } else if (topic == this.commandTopic_percent) {
+            this.setFanPercent(message)
+        } else if (topic == this.commandTopic_preset) {
+            this.setFanPreset(message)
         } else {
-            debug('Somehow received unknown command topic '+topic+' for fan Id: '+this.deviceId)
+            debug('Received unknown command topic '+topic+' for fan: '+this.deviceId)
         }
     }
 
@@ -86,9 +93,7 @@ class Fan extends AlarmDevice {
     setFanState(message) {
         debug('Received set fan state '+message+' for fan Id: '+this.deviceId)
         debug('Location Id: '+ this.locationId)
-
         const command = message.toLowerCase()
-
         switch(command) {
             case 'on':
             case 'off':
@@ -100,29 +105,17 @@ class Fan extends AlarmDevice {
         }
     }
 
-    // Set fan speed state from received MQTT command message
-    async setFanLevel(message) {
-        let level = undefined
-        debug('Received set fan to '+message+' for fan Id: '+this.deviceId)
-        debug('Location Id: '+ this.locationId)
-        switch(message.toLowerCase()) {
-            case 'low':
-                level = 0.33
-                break;
-            case 'medium':
-                level = 0.67
-                break;
-            case 'high':
-                level = 1
-                break;
-            default:
-                debug('Speed command received but out of range (low,medium,high)!')
-        }
-
-        if (level) {
-            debug('Set fan level to: '+level*100+'%')
-            this.device.setInfo({ device: { v1: { level: level } } })
-            this.targetFanLevel = message.toLowerCase()
+    // Set fan speed based on percent
+    async setFanPercent(message) {
+        if (isNaN(message)) {
+            debug('Fan speed percent command received but value is not a number')
+        } else if (!(message >= 1 && message <= 100)) {
+            debug('Fan speed percent command received but out of range (1-100)')
+        } else {
+            this.targetFanPercent = message
+            debug('Seting fan speed percentage to '+this.targetFanPercent+'% for fan Id: '+this.deviceId)
+            debug('Location Id: '+ this.locationId)
+            this.device.setInfo({ device: { v1: { level: this.targetFanPercent / 100 } } })
 
             // Automatically turn on fan when level is sent.
             // Home assistant normally does this but we want the
@@ -130,6 +123,30 @@ class Fan extends AlarmDevice {
             await utils.sleep(1)
             const fanState = this.device.data.on ? "ON" : "OFF"
             if (fanState == 'OFF') { this.setFanState('on') }
+        }
+    }
+
+    // Set fan speed state from received MQTT command message
+    async setFanPreset(message) {
+        let fanPercent
+        switch(message.toLowerCase()) {
+            case 'low':
+                fanPercent = 33
+                break;
+            case 'medium':
+                fanPercent = 67
+                break;
+            case 'high':
+                fanPercent = 100
+                break;
+            default:
+                debug('Received invalid fan preset command '+message.toLowerCase()+' for fan: '+this.deviceId)
+                debug('Location Id: '+ this.locationId)
+        }
+
+        if (fanPercent) {
+            debug('Received set fan preset to '+message+' for fan: '+this.deviceId)
+            this.setFanPercent(fanPercent)
         }
     }
 }
