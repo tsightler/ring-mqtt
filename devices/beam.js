@@ -119,7 +119,7 @@ class Beam extends AlarmDevice {
             this.publishMqtt(this.stateTopic_light, switchState, true)
             if (this.stateTopic_brightness) {
                 const switchLevel = (this.device.data.level && !isNaN(this.device.data.level) ? Math.round(100 * this.device.data.level) : 0)
-                this.publishMqtt(this.stateTopic_brightness, switchLevel, true)
+                this.publishMqtt(this.stateTopic_brightness, switchLevel.toString(), true)
             }
             this.publishMqtt(this.stateTopic_light_duration, this.lightDuration.toString(), true)
         }
