@@ -47,7 +47,7 @@ class BaseStation extends AlarmDevice {
     publishData() {
         if (this.stateTopic_volume) {
             const currentVolume = (this.device.data.volume && !isNaN(this.device.data.volume) ? Math.round(100 * this.device.data.volume) : 0)
-            this.publishMqtt(this.stateTopic_audio_volume, currentVolume.toString(), true)
+            this.publishMqtt(this.stateTopic_volume, currentVolume.toString(), true)
         }
 
         // Publish device attributes (batterylevel, tamper status)
