@@ -39,10 +39,12 @@ class Beam extends AlarmDevice {
     initLightTopics() {
         this.stateTopic_light = this.deviceTopic+'/light/state'
         this.commandTopic_light = this.deviceTopic+'/light/command'
+        this.configTopic_light = 'homeassistant/light/'+this.locationId+'/'+this.deviceId+'/config'
+
+        this.lightDuration = this.config.beams_duration ? Math.min(this.config.beams_duration, 32767) : 0
         this.stateTopic_light_duration = this.deviceTopic+'/light/duration_state'
         this.commandTopic_light_duration = this.deviceTopic+'/light/duration_command'
-        this.lightDuration = 0
-        this.configTopic_light = 'homeassistant/light/'+this.locationId+'/'+this.deviceId+'/config'
+        this.configTopic_light_duration = 'homeassistant/number/'+this.locationId+'/'+this.deviceId+'_duration/config'
     }
 
     initDiscoveryData() {
@@ -82,7 +84,26 @@ class Beam extends AlarmDevice {
             this.discoveryData.push({
                 message: discoveryMessage,
                 configTopic: this.configTopic_light
-            })        
+            })
+
+            discoveryMessage = {
+                message: {
+                    name: this.device.name+' Duration',
+                    unique_id: this.deviceId+'_duration',
+                    availability_topic: this.availabilityTopic,
+                    payload_available: 'online',
+                    payload_not_available: 'offline',
+                    state_topic: this.stateTopic_light_duration,
+                    command_topic: this.commandTopic_light_duration,
+                    min: 0,
+                    max: 32767,
+                    device: this.deviceData
+                }
+            }
+            this.discoveryData.push({
+                message: discoveryMessage,
+                configTopic: this.configTopic_light_duration
+            })
         }
 
         this.initInfoDiscoveryData()
@@ -100,6 +121,7 @@ class Beam extends AlarmDevice {
                 const switchLevel = (this.device.data.level && !isNaN(this.device.data.level) ? Math.round(100 * this.device.data.level) : 0)
                 this.publishMqtt(this.stateTopic_brightness, switchLevel, true)
             }
+            this.publishMqtt(this.stateTopic_light_duration, this.lightDuration.toString(), true)
         }
         if (!this.isLightGroup) {
             this.publishAttributes()
@@ -109,25 +131,27 @@ class Beam extends AlarmDevice {
     // Process messages from MQTT command topic
     processCommand(message, topic) {
         if (topic == this.commandTopic_light) {
-            this.setSwitchState(message)
+            this.setLightState(message)
         } else if (topic == this.commandTopic_brightness) {
-            this.setSwitchLevel(message)
+            this.setLightLevel(message)
+        } else if (topic == this.commandTopic_light_duration) {
+            this.setLightDuration(message)
         } else {
-            debug('Received unknown command topic '+topic+' for switch: '+this.deviceId)
+            debug('Received unknown command topic '+topic+' for beams light: '+this.deviceId)
         }
     }
 
     // Set switch target state on received MQTT command message
-    setSwitchState(message) {
-        debug('Received set switch state '+message+' for switch: '+this.deviceId)
+    setLightState(message) {
+        debug('Received set state '+message+' for beams light: '+this.deviceId)
         debug('Location: '+ this.locationId)
         const command = message.toLowerCase()
         switch(command) {
             case 'on':
             case 'off': {
                 // TODO: Make this configurable
-                const lightDuration = undefined
-                let lightOn = command === 'on' ? true : false
+                const lightDuration = this.lightDuration > 0 ? Math.min(this.lightDuration, 32767) : undefined
+                const lightOn = command === 'on' ? true : false
                 if (this.isLightGroup && this.groupId) {
                     this.device.location.setLightGroup(this.groupId, lightOn, lightDuration)
                 } else {
@@ -137,21 +161,35 @@ class Beam extends AlarmDevice {
                 break;
             }
             default:
-                debug('Received invalid command for switch!')
+                debug('Received invalid command for beams light')
         }
     }
 
     // Set switch target state on received MQTT command message
-    setSwitchLevel(message) {
+    setLightLevel(message) {
         const level = message
-        debug('Received set switch level to '+level+' for switch: '+this.deviceId)
+        debug('Received set brightness level to '+level+' for beams light: '+this.deviceId)
         debug('Location: '+ this.locationId)
-        if (isNaN(message)) {
-             debug('Brightness command received but not a number!')
-        } else if (!(message >= 0 && message <= 100)) {
-            debug('Brightness command receives but out of range (0-100)!')
+        if (isNaN(level)) {
+             debug('Brightness command received but not a number')
+        } else if (!(level >= 0 && level <= 100)) {
+            debug('Brightness command received but out of range (0-100)')
         } else {
             this.device.setInfo({ device: { v1: { level: level / 100 } } })
+        }
+    }
+
+    setLightDuration(message) {
+        const duration = message
+        debug('Received set light duration to '+duration+' seconds for beams light: '+this.deviceId)
+        debug('Location Id: '+ this.locationId)
+        if (isNaN(duration)) {
+                debug('Light duration command received but value is not a number')
+        } else if (!(duration >= 0 && duration <= 32767)) {
+            debug('Light duration command received but out of range (0-32767)')
+        } else {
+            this.lightDuration = duration
+            this.publishMqtt(this.stateTopic_light_duration, this.lightDuration.toString(), true)            
         }
     }
 }
