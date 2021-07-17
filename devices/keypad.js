@@ -29,7 +29,7 @@ class Keypad extends AlarmDevice {
                 max: 100,
                 device: this.deviceData
             },
-            configTopic: this.configTopic_audio
+            configTopic: this.configTopic_volume
         })
         
         // Device has no sensors, only publish info data
