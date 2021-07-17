@@ -10,7 +10,7 @@ class BaseStation extends AlarmDevice {
         this.deviceData.mdl = 'Alarm Base Station'
         this.deviceData.name = this.device.location.name + ' Base Station'
 
-        initVolumeTopics()
+        this.initVolumeTopics()
     }
     
     // Check if account has access to volume control and initialize topics if so
