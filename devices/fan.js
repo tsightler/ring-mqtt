@@ -66,6 +66,7 @@ class Fan extends AlarmDevice {
         // targetFanPercent is a small hack to work around Home Assistant UI behavior
         if (this.targetFanPercent && this.targetFanPercent != fanPercent) {
             this.publishMqtt(this.stateTopic_percent, this.targetFanPercent.toString(), true)
+            this.targetFanPercent = undefined
         } else {
             this.publishMqtt(this.stateTopic_percent, fanPercent.toString(), true)
         }
