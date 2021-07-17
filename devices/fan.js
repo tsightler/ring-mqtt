@@ -37,8 +37,8 @@ class Fan extends AlarmDevice {
                 command_topic: this.commandTopic_fan,
                 percentage_state_topic: this.stateTopic_percent,
                 percentage_command_topic: this.commandTopic_percent,
-                preset_state_topic: this.stateTopic_preset,
-                preset_command_topic: this.commandTopic_preset,
+                preset_mode_state_topic: this.stateTopic_preset,
+                preset_mode_command_topic: this.commandTopic_preset,
                 preset_modes: [ "low", "medium", "high" ],
                 device: this.deviceData
             },
