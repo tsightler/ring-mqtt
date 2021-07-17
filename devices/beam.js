@@ -108,14 +108,14 @@ class Beam extends AlarmDevice {
         } else if (topic == this.commandTopic_brightness) {
             this.setSwitchLevel(message)
         } else {
-            debug('Somehow received unknown command topic '+topic+' for switch Id: '+this.deviceId)
+            debug('Received unknown command topic '+topic+' for switch: '+this.deviceId)
         }
     }
 
     // Set switch target state on received MQTT command message
     setSwitchState(message) {
-        debug('Received set switch state '+message+' for switch Id: '+this.deviceId)
-        debug('Location Id: '+ this.locationId)
+        debug('Received set switch state '+message+' for switch: '+this.deviceId)
+        debug('Location: '+ this.locationId)
         const command = message.toLowerCase()
         switch(command) {
             case 'on':
@@ -139,8 +139,8 @@ class Beam extends AlarmDevice {
     // Set switch target state on received MQTT command message
     setSwitchLevel(message) {
         const level = message
-        debug('Received set switch level to '+level+' for switch Id: '+this.deviceId)
-        debug('Location Id: '+ this.locationId)
+        debug('Received set switch level to '+level+' for switch: '+this.deviceId)
+        debug('Location: '+ this.locationId)
         if (isNaN(message)) {
              debug('Brightness command received but not a number!')
         } else if (!(message >= 0 && message <= 100)) {

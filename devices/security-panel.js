@@ -188,7 +188,7 @@ class SecurityPanel extends AlarmDevice {
         } else if (topic == this.commandTopic_fire) {
             this.setFireMode(message)
         } else {
-            debug('Somehow received unknown command topic '+topic+' for switch Id: '+this.deviceId)
+            debug('Received unknown command topic '+topic+' for switch: '+this.deviceId)
         }
     }
 
