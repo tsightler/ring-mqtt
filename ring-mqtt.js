@@ -28,6 +28,7 @@ const ModesPanel = require('./devices/modes-panel')
 const Keypad = require('./devices/keypad')
 const BaseStation = require('./devices/base-station')
 const RangeExtender = require('./devices/range-extender')
+const Siren = require('./devices/siren')
 
 var CONFIG
 var ringLocations = new Array()
@@ -104,6 +105,8 @@ function getDevice(device, mqttClient) {
                 : new ContactSensor(deviceInfo)
         case 'location.mode':
             return new ModesPanel(deviceInfo)
+        case 'siren.outdoor-strobe':
+            return new Siren(deviceInfo)
     }
     if (/^lock($|\.)/.test(device.deviceType)) {
         return new Lock(deviceInfo)

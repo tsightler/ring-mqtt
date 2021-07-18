@@ -1,22 +1,20 @@
 const AlarmDevice = require('./alarm-device')
 
-class CoAlarm extends AlarmDevice {
+class Siren extends AlarmDevice {
     constructor(deviceInfo) {
         super(deviceInfo)
 
         // Home Assistant component type and device class (set appropriate icon)
         this.component = 'binary_sensor'
-        this.className = 'gas'
 
         // Device data for Home Assistant device registry
-        this.deviceData.mdl = 'CO Alarm'
-        this.deviceData.mf = 'First Alert' // Hardcode for now until refactor for relationship support
+        this.deviceData.mdl = 'Siren'
 
         // Build required MQTT topics
-        this.stateTopic = this.deviceTopic+'/co/state'
+        this.stateTopic = this.deviceTopic+'/siren/state'
         this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
     }
-        
+
     initDiscoveryData() {
         // Build the MQTT discovery message
         this.discoveryData.push({
@@ -27,22 +25,24 @@ class CoAlarm extends AlarmDevice {
                 payload_available: 'online',
                 payload_not_available: 'offline',
                 state_topic: this.stateTopic,
-                device_class: this.className,
                 device: this.deviceData
             },
             configTopic: this.configTopic
         })
 
+        // Device has no sensors, only publish info data
         this.initInfoDiscoveryData()
     }
 
+
+
     publishData() {
-        const coState = this.device.data.alarmStatus === 'active' ? 'ON' : 'OFF'
-        // Publish sensor state
-        this.publishMqtt(this.stateTopic, coState, true)
-        // Publish attributes (batterylevel, tamper status)
+        const sirenState = this.device.data.sirenStatus === 'active' ? 'ON' : 'OFF'
+        // Publish device sensor state
+        this.publishMqtt(this.stateTopic, sirenState, true)
+        // Publish device attributes (batterylevel, tamper status)
         this.publishAttributes()
     }
 }
 
-module.exports = CoAlarm
+module.exports = Siren

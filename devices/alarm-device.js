@@ -143,6 +143,12 @@ class AlarmDevice {
             ... this.device.data.batteryStatus && this.device.data.batteryStatus !== 'none'
                 ? { batteryStatus: this.device.data.batteryStatus }
                 : {},
+            ... (this.device.data.hasOwnProperty('auxBattery') && this.device.data.auxBattery.hasOwnProperty('level'))
+                ? { auxBatteryLevel: this.device.data.auxBattery.level === 99 ? 100 : this.device.data.auxBattery.level }
+                : {},
+            ... (this.device.data.hasOwnProperty('auxBattery') && this.device.data.auxBattery.hasOwnProperty('status'))
+                ? { auxBatteryStatus: this.device.data.auxBattery.status }
+                : {},
             ... this.device.data.hasOwnProperty('brightness') ? { brightness: this.device.data.brightness } : {},
             ... this.device.data.chirps && this.device.deviceType == 'security-keypad' ? {chirps: this.device.data.chirps } : {},
             ... this.device.data.commStatus ? { commStatus: this.device.data.commStatus } : {},
@@ -154,6 +160,7 @@ class AlarmDevice {
             ... this.device.data.serialNumber ? { serialNumber: this.device.data.serialNumber } : {},
             ... this.device.data.tamperStatus ? { tamperStatus: this.device.data.tamperStatus } : {},
             ... this.device.data.hasOwnProperty('volume') ? {volume: this.device.data.volume } : {},
+            ... this.device.data.hasOwnProperty('maxVolume') ? {maxVolume: this.device.data.maxVolume } : {},
         }
         this.publishMqtt(this.stateTopic_info, JSON.stringify(attributes), true)
     }
