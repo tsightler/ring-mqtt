@@ -99,7 +99,7 @@ class Beam extends AlarmDevice {
                     max: 32767,
                     device: this.deviceData
                 },
-                configTopic: this.configTopic_motion
+                configTopic: this.configTopic_light_duration
             })
         }
 
