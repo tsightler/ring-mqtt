@@ -153,6 +153,7 @@ class Beam extends AlarmDevice {
                     this.device.location.setLightGroup(this.groupId, setState, setDuration)
                 } else {
                     const data = setState ? { lightMode: 'on', setDuration } : { lightMode: 'default' }
+                    debug('Lighting set data: '+data)
                     this.device.sendCommand('light-mode.set', data)
                 }
                 break;
@@ -185,7 +186,7 @@ class Beam extends AlarmDevice {
         } else if (!(duration >= 0 && duration <= 32767)) {
             debug('Light duration command received but out of range (0-32767)')
         } else {
-            this.lightDuration = duration
+            this.lightDuration = parseInt(duration)
             this.publishMqtt(this.stateTopic_light_duration, this.lightDuration.toString(), true)            
         }
     }
