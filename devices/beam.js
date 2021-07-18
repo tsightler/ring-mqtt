@@ -86,7 +86,7 @@ class Beam extends AlarmDevice {
                 configTopic: this.configTopic_light
             })
 
-            discoveryMessage = {
+            this.discoveryData.push({
                 message: {
                     name: this.device.name+' Duration',
                     unique_id: this.deviceId+'_duration',
@@ -98,11 +98,8 @@ class Beam extends AlarmDevice {
                     min: 0,
                     max: 32767,
                     device: this.deviceData
-                }
-            }
-            this.discoveryData.push({
-                message: discoveryMessage,
-                configTopic: this.configTopic_light_duration
+                },
+                configTopic: this.configTopic_motion
             })
         }
 
