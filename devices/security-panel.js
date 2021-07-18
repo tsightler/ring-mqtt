@@ -133,6 +133,8 @@ class SecurityPanel extends AlarmDevice {
                     alarmMode = 'armed_home'
                     break;
                 case 'all':
+                    console.log(this.device.data.transitionDelayEndTimestamp)
+                    console.log(Math.floor(Date.now()/1000))
                     alarmMode = 'armed_away'
                     break;
                 default:
