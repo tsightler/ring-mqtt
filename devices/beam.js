@@ -11,33 +11,31 @@ class Beam extends AlarmDevice {
                 this.deviceData.mdl = 'Lighting Group'
                 this.isLightGroup = true
                 this.groupId = this.device.data.groupId
-                this.initMotionTopics()
-                this.initLightTopics()
+                this.initMotion()
+                this.initLight()
                 break;
             case 'switch.transformer.beams':
                 this.deviceData.mdl = 'Lighting Transformer'
-                this.initLightTopics()
+                this.initLight()
                 break;
             case 'switch.multilevel.beams':
                 this.deviceData.mdl = 'Lighting Switch/Light'
-                this.initMotionTopics()
-                this.initLightTopics()
+                this.initMotion()
+                this.initLight()
                 break;
             case 'motion-sensor.beams':
                 this.deviceData.mdl = 'Lighting Motion Sensor'
-                this.initMotionTopics()
+                this.initMotion()
                 break;
         }
-
-        this.lightDuration = 0
     }
     
-    initMotionTopics() {
+    initMotion() {
         this.stateTopic_motion = this.deviceTopic+'/motion/state'
         this.configTopic_motion = 'homeassistant/binary_sensor/'+this.locationId+'/'+this.deviceId+'/config'
     }
 
-    initLightTopics() {
+    initLight() {
         this.stateTopic_light = this.deviceTopic+'/light/state'
         this.commandTopic_light = this.deviceTopic+'/light/command'
         this.configTopic_light = 'homeassistant/light/'+this.locationId+'/'+this.deviceId+'/config'
@@ -46,6 +44,12 @@ class Beam extends AlarmDevice {
         this.stateTopic_light_duration = this.deviceTopic+'/light/duration_state'
         this.commandTopic_light_duration = this.deviceTopic+'/light/duration_command'
         this.configTopic_light_duration = 'homeassistant/number/'+this.locationId+'/'+this.deviceId+'_duration/config'
+
+        if (this.config.hasOwnProperty('beam_duration') && this.config.beam_duration > 0) {
+            this.lightDuration = this.config.beam_duration
+        } else {
+            this.lightDuration = this.device.data.hasOwnProperty('onDuration') ? this.device.data.onDuration : 0
+        }
     }
 
     initDiscoveryData() {
@@ -147,14 +151,12 @@ class Beam extends AlarmDevice {
         switch(command) {
             case 'on':
             case 'off': {
-                // TODO: Make this configurable
                 const duration = this.lightDuration ? Math.min(this.lightDuration, 32767) : undefined
                 const on = command === 'on' ? true : false
                 if (this.isLightGroup && this.groupId) {
                     this.device.location.setLightGroup(this.groupId, on, duration)
                 } else {
                     const data = on ? { lightMode: 'on', duration } : { lightMode: 'default' }
-                    debug('Lighting set data: '+JSON.stringify(data))
                     this.device.sendCommand('light-mode.set', data)
                 }
                 break;

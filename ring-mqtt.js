@@ -343,7 +343,7 @@ async function initConfig(configFile) {
             "snapshot_mode": process.env.SNAPSHOTMODE,
             "enable_modes" : process.env.ENABLEMODES,
             "enable_panic" : process.env.ENABLEPANIC,
-            "enable_volume" : process.env.ENABLEVOLUME,
+            "beams_duration" : process.env.BEAMSDURATION,
             "location_ids" : process.env.RINGLOCATIONIDS
         }
         if (CONFIG.enable_cameras && CONFIG.enable_cameras != 'true') { CONFIG.enable_cameras = false}
@@ -366,7 +366,7 @@ async function initConfig(configFile) {
     if (!CONFIG.snapshot_mode) { CONFIG.snapshot_mode = "disabled" }
     if (!CONFIG.enable_modes) { CONFIG.enable_modes = false }
     if (!CONFIG.enable_panic) { CONFIG.enable_panic = false }
-    if (!CONFIG.enable_volume) { CONFIG.enable_volume = false }
+    if (!CONFIG.beams_duration) { CONFIG.beams_duration = 0 }
 }
 
 // Save updated refresh token to config or state file
