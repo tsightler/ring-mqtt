@@ -53,7 +53,7 @@ class SecurityPanel extends AlarmDevice {
                 state_topic: this.stateTopic,
                 command_topic: this.commandTopic,
                 ... this.config.disarm_code ? { code: this.config.disarm_code.toString() } : {},
-                ... this.config.disarm_code ? { code_disarm_required: true } : {},
+                ... this.config.disarm_code ? { code_arm_required: false, code_disarm_required: true } : {},
                 device: this.deviceData
             },
             configTopic: this.configTopic
