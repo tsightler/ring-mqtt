@@ -368,7 +368,7 @@ async function initConfig(configFile) {
     if (!CONFIG.enable_modes) { CONFIG.enable_modes = false }
     if (!CONFIG.enable_panic) { CONFIG.enable_panic = false }
     if (!CONFIG.beam_duration) { CONFIG.beams_duration = 0 }
-    if (!CONFIG.disarm_code) { CONFIG.disarm_code = '' }
+    if (!CONFIG.disarm_code) { CONFIG.disarm_code = '9876' }
 }
 
 // Save updated refresh token to config or state file
