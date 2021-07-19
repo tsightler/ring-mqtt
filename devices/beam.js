@@ -40,7 +40,6 @@ class Beam extends AlarmDevice {
         this.commandTopic_light = this.deviceTopic+'/light/command'
         this.configTopic_light = 'homeassistant/light/'+this.locationId+'/'+this.deviceId+'/config'
 
-        this.lightDuration = this.config.beams_duration ? Math.min(this.config.beams_duration, 32767) : 0
         this.stateTopic_light_duration = this.deviceTopic+'/light/duration_state'
         this.commandTopic_light_duration = this.deviceTopic+'/light/duration_command'
         this.configTopic_light_duration = 'homeassistant/number/'+this.locationId+'/'+this.deviceId+'_duration/config'

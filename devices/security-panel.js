@@ -52,6 +52,8 @@ class SecurityPanel extends AlarmDevice {
                 payload_not_available: 'offline',
                 state_topic: this.stateTopic,
                 command_topic: this.commandTopic,
+                ... this.config.disarm_code ? { code: this.config.disarm_code.toString() } : {},
+                ... this.config.disarm_code ? { code_disarm_required: true } : {},
                 device: this.deviceData
             },
             configTopic: this.configTopic

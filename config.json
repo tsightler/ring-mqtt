@@ -7,6 +7,7 @@
     "mqtt_pass": "",
     "ring_token": "",
     "beams_duration": 0,
+    "disarm_code": "",
     "enable_cameras": false,
     "enable_modes": false,
     "enable_panic": false,
