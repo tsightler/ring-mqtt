@@ -30,11 +30,8 @@ class Siren extends AlarmDevice {
             configTopic: this.configTopic
         })
 
-        // Device has no sensors, only publish info data
         this.initInfoDiscoveryData()
     }
-
-
 
     publishData() {
         const sirenState = this.device.data.sirenStatus === 'active' ? 'ON' : 'OFF'
