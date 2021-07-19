@@ -28,6 +28,8 @@ class Beam extends AlarmDevice {
                 this.initMotionTopics()
                 break;
         }
+
+        this.lightDuration = 0
     }
     
     initMotionTopics() {
@@ -146,14 +148,14 @@ class Beam extends AlarmDevice {
             case 'on':
             case 'off': {
                 // TODO: Make this configurable
-                const setDuration = this.lightDuration > 0 ? Math.min(this.lightDuration, 32767) : undefined
-                const setState = command === 'on' ? true : false
+                const duration = this.lightDuration ? Math.min(this.lightDuration, 32767) : undefined
+                const on = command === 'on' ? true : false
                 if (this.isLightGroup && this.groupId) {
-                    this.device.location.setLightGroup(this.groupId, setState, setDuration)
+                    this.device.location.setLightGroup(this.groupId, on, duration)
                 } else {
-                    const data = setState ? { lightMode: 'on', setDuration } : { lightMode: 'default' }
+                    const data = on ? { lightMode: 'on', duration } : { lightMode: 'default' }
                     debug('Lighting set data: '+JSON.stringify(data))
-                    this.device.sendCommand('light-mode.set', JSON.stringify(data))
+                    this.device.sendCommand('light-mode.set', data)
                 }
                 break;
             }
