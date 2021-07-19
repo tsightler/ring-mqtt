@@ -17,36 +17,35 @@ For the individual device capabilities the state and command topics are simple t
 
 Alarm Control Panel (virtual device):
 ```
-ring/<location_id>/alarm/<device_id>/alarm/state     <-- Alarm arming state (pending = entry delay)
-                                                         disarmed/armed_home/armed_away/pending/triggered
-ring/<location_id>/alarm/<device_id>/alarm/command   <-- Set alarm mode: disarm/arm_home/arm_away
-ring/<location_id>/alarm/<device_id>/bypass/state    <-- Get arming bypass mode state
-ring/<location_id>/alarm/<device_id>/bypass/command  <-- Set arming bypass mode (When 'on' arming will
+ring/<location_id>/alarm/<device_id>/alarm/state     <-- Alarm arming state
+                                                         ("disarmed", "armed_home", "armed_away", "arming", "pending", "triggered")
+ring/<location_id>/alarm/<device_id>/alarm/command   <-- Set alarm mode ("disarm", "arm_home", "arm_away")
+ring/<location_id>/alarm/<device_id>/bypass/state    <-- Get arming bypass mode
+ring/<location_id>/alarm/<device_id>/bypass/command  <-- Set arming bypass mode (When 'ON' arming will
                                                          automatically bypass any faulted contact sensors)
-ring/<location_id>/alarm/<device_id>/siren/state     <-- Get ON/OFF Siren State
-ring/<location_id>/alarm/<device_id>/siren/command   <-- Set ON/OFF Siren State
-ring/<location_id>/alarm/<device_id>/police/state    <-- Get ON/OFF Police Panic State
-ring/<location_id>/alarm/<device_id>/police/command  <-- Set ON/OFF Police Panic State
-ring/<location_id>/alarm/<device_id>/fire/state      <-- Get ON/OFF Fire Panic State
-ring/<location_id>/alarm/<device_id>/fire/command    <-- Set ON/OFF Fire Panic State
+ring/<location_id>/alarm/<device_id>/siren/state     <-- Get Siren ON/OFF
+ring/<location_id>/alarm/<device_id>/siren/command   <-- Set Siren ON/OFF
+ring/<location_id>/alarm/<device_id>/police/state    <-- Get Polich Panic ON/OFF
+ring/<location_id>/alarm/<device_id>/police/command  <-- Set Police Panic ON/OFF
+ring/<location_id>/alarm/<device_id>/fire/state      <-- Get Fire Panic ON/OFF
+ring/<location_id>/alarm/<device_id>/fire/command    <-- Set Fire Panic ON/OFF
 ring/<location_id>/alarm/<device_id>/info/state      <-- Device info sensor
 ```
 
 Alarm Base Station:
 ```
 ring/<location_id>/alarm/<device_id>/info/state      <-- Device info sensor
-ring/<location_id>/alarm/<device_id>/volume/state    <-- Get Volume State (0-100)
-ring/<location_id>/alarm/<device_id>/volume/command  <-- Set Volume State (0-100)
-                                                         (Requires master account, shared 
-                                                         account does not have permission
-                                                         to control base station volume)
+ring/<location_id>/alarm/<device_id>/volume/state    <-- Get Volume (0-100)
+ring/<location_id>/alarm/<device_id>/volume/command  <-- Set Volume (0-100)
+                                                         Requires master account, shared account does not
+                                                         have permission to control base station volume
 ```
 
 Ring Keypad:
 ```
 ring/<location_id>/alarm/<device_id>/info/state      <-- Device info sensor
-ring/<location_id>/alarm/<device_id>/volume/state    <-- Get Volume State (0-100)
-ring/<location_id>/alarm/<device_id>/volume/command  <-- Set Volume State (0-100)
+ring/<location_id>/alarm/<device_id>/volume/state    <-- Get Volume (0-100)
+ring/<location_id>/alarm/<device_id>/volume/command  <-- Set Volume (0-100)
 ```
 
 CO detector:
@@ -69,11 +68,13 @@ ring/<location_id>/alarm/<device_id>/zone/state      <-- Device info sensor
 
 Fan switch:
 ```
-ring/<location_id>/alarm/<device_id>/fan/state          <-- Get ON/OFF state
-ring/<location_id>/alarm/<device_id>/fan/command        <-- Set ON/OF state
-ring/<location_id>/alarm/<device_id>/fan/speed_state    <-- Get brightness state (0-100)
-ring/<location_id>/alarm/<device_id>/fan/speed_command  <-- Set brightness state (0-100)
-ring/<location_id>/alarm/<device_id>/info/state         <-- Device info sensor
+ring/<location_id>/alarm/<device_id>/fan/state                 <-- Get ON/OFF state
+ring/<location_id>/alarm/<device_id>/fan/command               <-- Set ON/OF state
+ring/<location_id>/alarm/<device_id>/fan/speed_state           <-- Get fan preset speed ("low", "medium", "high")
+ring/<location_id>/alarm/<device_id>/fan/speed_command         <-- Set fan preset speed ("low", "medium", "high")
+ring/<location_id>/alarm/<device_id>/fan/percent_speed_state   <-- Get fan speed in percent (1-100%)
+ring/<location_id>/alarm/<device_id>/fan/percent_speed_command <-- Set fan speed in percent (1-100%)
+ring/<location_id>/alarm/<device_id>/info/state                <-- Device info sensor
 ```
 
 Ring Flood/Freeze Sensor:
@@ -93,9 +94,8 @@ ring/<location_id>/alarm/<device_id>/info/state      <-- Device info sensor
 Modes Control Panel (virtual alarm control panel for setting Ring location modes for
 locations with Ring cameras but not Ring alarm):
 ```
-ring/<location_id>/alarm/<device_id>/mode/state      <-- Location mode state
-                                                        disarmed/armed_home/armed_away
-ring/<location_id>/alarm/<device_id>/mode/state      <-- Set location mode: disarm/arm_home/arm_away
+ring/<location_id>/alarm/<device_id>/mode/state      <-- Get location mode: ("disarmed", "armed_home", "armed_away")
+ring/<location_id>/alarm/<device_id>/mode/state      <-- Set location mode: ("disarm", "arm_home", "arm_away")
 ```
 
 Motion Sensor:
@@ -118,7 +118,7 @@ ring/<location_id>/alarm/<device_id>/smoke/state     <-- ON = Smoke Detected
 ring/<location_id>/alarm/<device_id>/info/state      <-- Device info sensor
 ```
 
-Ring Smoke/CO listener :
+Ring Smoke/CO listener:
 ```
 ring/<location_id>/alarm/<device_id>/smoke/state     <-- ON = Smoke Detected
 ring/<location_id>/alarm/<device_id>/co/state        <-- ON = CO Detected
@@ -132,26 +132,34 @@ ring/<location_id>/alarm/<device_id>/switch/command  <-- Set ON/OF state
 ring/<location_id>/alarm/<device_id>/info/state      <-- Device info sensor
 ```
 
+Ring Outdoor Siren:
+```
+ring/<location_id>/alarm/<device_id>/siren/state     <-- ON = Siren Activated
+ring/<location_id>/alarm/<device_id>/info/state      <-- Device info sensor
+```
+
 Cameras (available topics vary based by device capabilities):
 ```
 ring/<location_id>/camera/<device_id>/ding/state          <-- ON = Doorbell Ding Detected
 ring/<location_id>/camera/<device_id>/motion/state        <-- ON = Motion Detected
-ring/<location_id>/camera/<device_id>/light/state         <-- Get ON/OFF Light State
-ring/<location_id>/camera/<device_id>/light/command       <-- Set ON/OFF Light State
-ring/<location_id>/camera/<device_id>/siren/state         <-- Get ON/OFF Siren State
-ring/<location_id>/camera/<device_id>/siren/command       <-- Set ON/OFF Siren State
+ring/<location_id>/camera/<device_id>/light/state         <-- Get Light ON/OFF
+ring/<location_id>/camera/<device_id>/light/command       <-- Set Light ON/OFF
+ring/<location_id>/camera/<device_id>/siren/state         <-- Get Siren ON/OFF
+ring/<location_id>/camera/<device_id>/siren/command       <-- Set Siren ON/OFF
 ring/<location_id>/camera/<device_id>/info/state          <-- Device info sensor
-ring/<location_id>/camera/<device_id>/snapshot/image      <-- Binary snapshot images on motion events
+ring/<location_id>/camera/<device_id>/snapshot/image      <-- Snapshot images (JPEG binary data)
 ring/<location_id>/camera/<device_id>/snapshot/attributes <-- JSON attributes for image (timestamp)
-ring/<location_id>/camera/<device_id>/snapshot/interval   <-- Command topic to override default refresh interval
+ring/<location_id>/camera/<device_id>/snapshot/interval   <-- Command topic to override default snapshot refresh interval
 ```
 
 Ring Smart Lighting (available topics vary by device capabilities)
 ```
 ring/<location_id>/lighting/<device_id>/motion/state              <-- ON = Motion Detected
-ring/<location_id>/lighting/<device_id>/light/state               <-- Get ON/OFF state
-ring/<location_id>/lighting/<device_id>/light/command             <-- Set ON/OF state
-ring/<location_id>/lighting/<device_id>/light/brightness_state    <-- Get brightness state (0-100)
-ring/<location_id>/lighting/<device_id>/light/brightness_command  <-- Set brightness state (0-100)
+ring/<location_id>/lighting/<device_id>/light/state               <-- Get Light ON/OFF
+ring/<location_id>/lighting/<device_id>/light/command             <-- Set Light ON/OFF
+ring/<location_id>/lighting/<device_id>/light/brightness_state    <-- Get brightness (0-100)
+ring/<location_id>/lighting/<device_id>/light/brightness_command  <-- Set brightness (0-100)
+ring/<location_id>/lighting/<device_id>/light/duration_state      <-- Get light duration (0-32767)
+ring/<location_id>/lighting/<device_id>/light/duration_command    <-- Set light duraiton (0-32757)
 ring/<location_id>/lighting/<device_id>/info/state                <-- Device info sensor
 ```

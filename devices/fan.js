@@ -15,10 +15,10 @@ class Fan extends AlarmDevice {
         // Build required MQTT topics 
         this.stateTopic_fan = this.deviceTopic+'/fan/state'
         this.commandTopic_fan = this.deviceTopic+'/fan/command'
-        this.stateTopic_percent = this.deviceTopic+'/fan/percent_speed_state'
-        this.commandTopic_percent = this.deviceTopic+'/fan/percent_speed_command'
         this.stateTopic_preset = this.deviceTopic+'/fan/speed_state'
         this.commandTopic_preset = this.deviceTopic+'/fan/speed_command'
+        this.stateTopic_percent = this.deviceTopic+'/fan/percent_speed_state'
+        this.commandTopic_percent = this.deviceTopic+'/fan/percent_speed_command'
         this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
         this.prevFanState = undefined
         this.targetFanPercent = undefined
