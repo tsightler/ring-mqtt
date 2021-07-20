@@ -1,16 +1,16 @@
 ## v4.6.0
- - Adapt fan component to new fan schema introduced in Home Assistant 2021.3.  This schema is based on percentage of 100 vs using three preset speeds.  Presets for "low, medium, high" will still work but it's now possible to use the new percent based speed topics which map directly to Ring app and Home Assistant.  This is especially useful for fans which support more than 3 speeds
+ - Adapt fan component to new fan schema introduced in Home Assistant 2021.3.  This schema is based on percentage of 100 vs using three preset speeds.  Presets for "low, medium, high" will still work but it's now possible to use the new percent based speed topics which map directly to Ring app and Home Assistant.  This is especially useful for fans which support more than 3 speeds.
  - Add support to define the default "on" duraton for Ring Smart Lighting via config option beam_duration (or BEAMDURATION envionment variable), please refer to README for more details
  - Add ability to override "on" duration for individual Ring Smart Lights via MQTT topic, also uses number integraiton to present in Home Assistant for easy access via Lovalace UI or automations
  - Add support for "arming" state during exit delay
  - Add support for configuring a disarm code for Home Assistant (See disarm_code option in README)
  - Add support for reporting basic status and attributes of Ring External Siren
  - Docker images now enable debug logging by default (was already true of addon)
- 
- **!!!!! Breaking Changes !!!!!**
- - Fan automations in Home Assistant should continue to work with backwards compatibility, but it's probably best to update to use the new methods (see Fan section of Breaking Changes in [Home Assistant 2021.3 release notes](https://www.home-assistant.io/blog/2021/03/03/release-20213/#breaking-changes))
- - Switched volume controls to use Home Assistant number component instead of the previouls light component.  Any automations for volume changes will need to be updated to use the new comopnent.
  - Removed "enable_volume" config option since the new number based integration will no longer be accidentally triggered by light based automations
+ 
+ **Breaking Changes**
+ - I tried to implement the fan changes in a way that would not break any existing direclt MQTT integrations and fan automations in Home Assistant should continue to work with backwards compatibility.  However, it's probably a good idea to update any automations to use new methods (see Fan section of [Breaking Changes](https://www.home-assistant.io/blog/2021/03/03/release-20213/#breaking-changes) in Home Assistant 2021.3 release notes).
+ - Volume controls now use Home Assistant number component instead of the previouls light component.  Any automations for volume changes will need to be updated to use the new comopnent.
  
 ## v4.5.7
  - Switch to custom ring-client-api with fix for hang during network/service outages
