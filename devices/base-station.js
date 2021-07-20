@@ -25,6 +25,8 @@ class BaseStation extends AlarmDevice {
             this.stateTopic_volume = this.deviceTopic+'/volume/state'
             this.commandTopic_volume = this.deviceTopic+'/volume/command'
             this.configTopic_volume = 'homeassistant/number/'+this.locationId+'/'+this.deviceId+'_volume/config'
+            this.configTopic_audio = 'homeassistant/light/'+this.locationId+'/'+this.deviceId+'_audio/config'
+            this.publishMqtt(this.configTopic_audio, '', false)
         } else {
             debug('Account does not have access to set volume on base station, disabling volume control')
         }
@@ -35,7 +37,7 @@ class BaseStation extends AlarmDevice {
             // Build the MQTT discovery messages
             this.discoveryData.push({
                 message: {
-                    name: this.device.name+' Volume',
+                    name: this.deviceData.name+' Volume',
                     unique_id: this.deviceId+'_volume',
                     availability_topic: this.availabilityTopic,
                     payload_available: 'online',

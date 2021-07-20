@@ -12,6 +12,8 @@ class Keypad extends AlarmDevice {
         this.stateTopic_volume = this.deviceTopic+'/volume/state'
         this.commandTopic_volume = this.deviceTopic+'/volume/command'
         this.configTopic_volume = 'homeassistant/number/'+this.locationId+'/'+this.deviceId+'_volume/config'
+        this.configTopic_audio = 'homeassistant/light/'+this.locationId+'/'+this.deviceId+'_audio/config'
+        this.publishMqtt(this.configTopic_audio, '', false)
     }
         
     initDiscoveryData() {
