@@ -52,6 +52,8 @@ class SecurityPanel extends AlarmDevice {
                 payload_not_available: 'offline',
                 state_topic: this.stateTopic,
                 command_topic: this.commandTopic,
+                ... this.config.disarm_code ? { code: this.config.disarm_code.toString() } : {},
+                ... this.config.disarm_code ? { code_arm_required: false, code_disarm_required: true } : {},
                 device: this.deviceData
             },
             configTopic: this.configTopic
@@ -133,7 +135,13 @@ class SecurityPanel extends AlarmDevice {
                     alarmMode = 'armed_home'
                     break;
                 case 'all':
-                    alarmMode = 'armed_away'
+                    const exitDelayMs = this.device.data.transitionDelayEndTimestamp - Date.now()
+                    if (exitDelayMs > 0) {
+                        alarmMode = 'arming'
+                        this.waitForExitDelay(exitDelayMs)
+                    } else {
+                        alarmMode = 'armed_away'
+                    }
                     break;
                 default:
                     alarmMode = 'unknown'
@@ -175,6 +183,17 @@ class SecurityPanel extends AlarmDevice {
         this.publishAttributes()
     }
     
+    async waitForExitDelay(exitDelayMs) {
+        await utils.msleep(exitDelayMs)
+        if (this.device.data.mode === 'all') {
+            exitDelayMs = this.device.data.transitionDelayEndTimestamp - Date.now()
+            if (exitDelayMs <= 0) {
+                // Publish device sensor state
+                this.publishMqtt(this.stateTopic, 'armed_away', true)
+            }
+        }
+    }
+
     // Process messages from MQTT command topic
     processCommand(message, topic) {
         if (topic == this.commandTopic) {
@@ -188,7 +207,7 @@ class SecurityPanel extends AlarmDevice {
         } else if (topic == this.commandTopic_fire) {
             this.setFireMode(message)
         } else {
-            debug('Somehow received unknown command topic '+topic+' for switch Id: '+this.deviceId)
+            debug('Received unknown command topic '+topic+' for switch: '+this.deviceId)
         }
     }
 

@@ -1,5 +1,4 @@
 const debug = require('debug')('ring-mqtt')
-const utils = require( '../lib/utils' )
 const AlarmDevice = require('./alarm-device')
 
 class Switch extends AlarmDevice {

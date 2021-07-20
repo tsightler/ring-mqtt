@@ -10,3 +10,4 @@ cd /app/ring-mqtt-latest
 echo "Installing node module dependencies, please wait..."
 npm install --no-progress > /dev/null 2>&1
 chmod +x ring-mqtt.js scripts/*.sh
+echo "-------------------------------------------------------"

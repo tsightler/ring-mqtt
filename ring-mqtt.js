@@ -28,6 +28,7 @@ const ModesPanel = require('./devices/modes-panel')
 const Keypad = require('./devices/keypad')
 const BaseStation = require('./devices/base-station')
 const RangeExtender = require('./devices/range-extender')
+const Siren = require('./devices/siren')
 
 var CONFIG
 var ringLocations = new Array()
@@ -104,6 +105,8 @@ function getDevice(device, mqttClient) {
                 : new ContactSensor(deviceInfo)
         case 'location.mode':
             return new ModesPanel(deviceInfo)
+        case 'siren.outdoor-strobe':
+            return new Siren(deviceInfo)
     }
     if (/^lock($|\.)/.test(device.deviceType)) {
         return new Lock(deviceInfo)
@@ -338,10 +341,11 @@ async function initConfig(configFile) {
             "ring_token": process.env.RINGTOKEN,
             "enable_cameras": process.env.ENABLECAMERAS,
             "snapshot_mode": process.env.SNAPSHOTMODE,
-            "enable_modes" : process.env.ENABLEMODES,
-            "enable_panic" : process.env.ENABLEPANIC,
-            "enable_volume" : process.env.ENABLEVOLUME,
-            "location_ids" : process.env.RINGLOCATIONIDS
+            "enable_modes": process.env.ENABLEMODES,
+            "enable_panic": process.env.ENABLEPANIC,
+            "beam_duration": process.env.BEAMDURATION,
+            "disarm_code": process.enf.DISARMCODE,
+            "location_ids": process.env.RINGLOCATIONIDS
         }
         if (CONFIG.enable_cameras && CONFIG.enable_cameras != 'true') { CONFIG.enable_cameras = false}
         if (CONFIG.location_ids) { CONFIG.location_ids = CONFIG.location_ids.split(',') }
@@ -360,10 +364,11 @@ async function initConfig(configFile) {
     CONFIG.ring_topic = CONFIG.ring_topic ? CONFIG.ring_topic : 'ring'
     CONFIG.hass_topic = CONFIG.hass_topic ? CONFIG.hass_topic : 'homeassistant/status'
     if (!CONFIG.enable_cameras) { CONFIG.enable_cameras = false }
-    if (!CONFIG.snapshot_mode) { CONFIG.snapshot_mode = "disabled" }
+    if (!CONFIG.snapshot_mode) { CONFIG.snapshot_mode = 'disabled' }
     if (!CONFIG.enable_modes) { CONFIG.enable_modes = false }
     if (!CONFIG.enable_panic) { CONFIG.enable_panic = false }
-    if (!CONFIG.enable_volume) { CONFIG.enable_volume = false }
+    if (!CONFIG.beam_duration) { CONFIG.beams_duration = 0 }
+    if (!CONFIG.disarm_code) { CONFIG.disarm_code = '' }
 }
 
 // Save updated refresh token to config or state file

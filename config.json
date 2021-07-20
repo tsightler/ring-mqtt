@@ -6,11 +6,12 @@
     "mqtt_user": "",
     "mqtt_pass": "",
     "ring_token": "",
+    "beams_duration": 0,
+    "disarm_code": "",
     "enable_cameras": false,
-    "snapshot_mode": "none",
     "enable_modes": false,
     "enable_panic": false,
-    "enable_volume": false,
+    "snapshot_mode": "none",
     "location_ids": [
         ""
     ]

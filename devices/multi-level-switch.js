@@ -1,5 +1,4 @@
 const debug = require('debug')('ring-mqtt')
-const utils = require( '../lib/utils' )
 const AlarmDevice = require('./alarm-device')
 
 class MultiLevelSwitch extends AlarmDevice {
@@ -59,13 +58,13 @@ class MultiLevelSwitch extends AlarmDevice {
         } else if (topic == this.commandTopic_brightness) {
             this.setSwitchLevel(message)
         } else {
-            debug('Somehow received unknown command topic '+topic+' for switch Id: '+this.deviceId)
+            debug('Received unknown command topic '+topic+' for switch: '+this.deviceId)
         }
     }
 
     // Set switch target state on received MQTT command message
     setSwitchState(message) {
-        debug('Received set switch state '+message+' for switch Id: '+this.deviceId)
+        debug('Received set switch state '+message+' for switch: '+this.deviceId)
         debug('Location Id: '+ this.locationId)
         const command = message.toLowerCase()
         switch(command) {
@@ -83,7 +82,7 @@ class MultiLevelSwitch extends AlarmDevice {
     // Set switch target state on received MQTT command message
     setSwitchLevel(message) {
         const level = message
-        debug('Received set switch level to '+level+' for switch Id: '+this.deviceId)
+        debug('Received set switch level to '+level+' for switch: '+this.deviceId)
         debug('Location Id: '+ this.locationId)
         if (isNaN(message)) {
              debug('Brightness command received but not a number!')

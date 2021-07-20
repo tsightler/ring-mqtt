@@ -1,5 +1,4 @@
 const debug = require('debug')('ring-mqtt')
-const utils = require( '../lib/utils' )
 const AlarmDevice = require('./alarm-device')
 
 class Lock extends AlarmDevice {
@@ -62,8 +61,8 @@ class Lock extends AlarmDevice {
 
     // Set lock target state on received MQTT command message
     setLockState(message) {
-        debug('Received set lock state '+message+' for lock Id: '+this.deviceId)
-        debug('Location Id: '+ this.locationId)
+        debug('Received set lock state '+message+' for lock: '+this.deviceId)
+        debug('Location: '+ this.locationId)
 
         const command = message.toLowerCase()
 
