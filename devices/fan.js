@@ -40,7 +40,7 @@ class Fan extends AlarmDevice {
                 preset_mode_state_topic: this.stateTopic_preset,
                 preset_mode_command_topic: this.commandTopic_preset,
                 preset_modes: [ "low", "medium", "high" ],
-                speed_range_min: 11,
+                speed_range_min: 0,
                 speed_range_max: 100,
                 device: this.deviceData
             },
@@ -115,25 +115,29 @@ class Fan extends AlarmDevice {
             return
         }
 
-        this.targetFanPercent = message
-        if (this.targetFanPercent < 10) {
-            debug('Received fan speed percent value of '+this.targetFanPercent+'% is outside of valid range (10-100%)')
-            this.targetFanPercent = 10 
-        } else if (this.targetFanPercent > 100) {
-            debug('Received fan speed percent value of '+this.targetFanPercent+'% is outside of valid range (10-100%)')
-            this.targetFanPercent = 100
+        let setFanPercent = parseInt(message)
+
+        if ( setFanPercent = 0 ) {
+            debug('Received fan speed of 0%, turning fan off')
+            if (this.device.data.on) { this.setFanState('off') }
+            return
+        } else if ( setFanPercent < 10) {
+            debug('Received fan speed of '+setFanPercent+'% which is < 10%, overriding to 10%')
+            setFanPercent = 10 
+        } else if (setFanPercent > 100) {
+            debug('Received fan speed of '+setFanPercent+'% which is > 100%, overriding to 100%')
+            setFanPercent = 100
         }
+
+        this.targetFanPercent = setFanPercent
 
         debug('Seting fan speed percentage to '+this.targetFanPercent+'% for fan: '+this.deviceId)
         debug('Location Id: '+ this.locationId)
-        this.device.setInfo({ device: { v1: { level: this.targetFanPercent / 100 } } })
 
+        this.device.setInfo({ device: { v1: { level: this.targetFanPercent / 100 } } })
         // Automatically turn on fan when level is sent.
-        // Home assistant normally does this but we want the
-        // same behavior for non-HA users as well.
         await utils.sleep(1)
-        const fanState = this.device.data.on ? "ON" : "OFF"
-        if (fanState == 'OFF') { this.setFanState('on') }
+        if (!this.device.data.on) { this.setFanState('on') }
     }
 
     // Set fan speed state from received MQTT command message
