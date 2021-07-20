@@ -40,7 +40,7 @@ class Fan extends AlarmDevice {
                 preset_mode_state_topic: this.stateTopic_preset,
                 preset_mode_command_topic: this.commandTopic_preset,
                 preset_modes: [ "low", "medium", "high" ],
-                speed_range_min: 0,
+                speed_range_min: 11,
                 speed_range_max: 100,
                 device: this.deviceData
             },
