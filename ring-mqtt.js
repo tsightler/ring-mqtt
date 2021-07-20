@@ -344,7 +344,7 @@ async function initConfig(configFile) {
             "enable_modes": process.env.ENABLEMODES,
             "enable_panic": process.env.ENABLEPANIC,
             "beam_duration": process.env.BEAMDURATION,
-            "disarm_code": process.enf.DISARMCODE,
+            "disarm_code": process.env.DISARMCODE,
             "location_ids": process.env.RINGLOCATIONIDS
         }
         if (CONFIG.enable_cameras && CONFIG.enable_cameras != 'true') { CONFIG.enable_cameras = false}
