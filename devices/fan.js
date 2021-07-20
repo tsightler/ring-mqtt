@@ -94,7 +94,7 @@ class Fan extends AlarmDevice {
 
     // Set fan target state from received MQTT command message
     setFanState(message) {
-        debug('Received set fan state '+message+' for fan Id: '+this.deviceId)
+        debug('Received set fan state '+message+' for fan: '+this.deviceId)
         debug('Location Id: '+ this.locationId)
         const command = message.toLowerCase()
         switch(command) {
@@ -118,7 +118,7 @@ class Fan extends AlarmDevice {
         let setFanPercent = parseInt(message)
 
         if (setFanPercent === 0) {
-            debug('Received fan speed of 0%, turning fan off')
+            debug('Received fan speed of 0%, turning off fan: '+this.deviceId)
             if (this.device.data.on) { this.setFanState('off') }
             return
         } else if (setFanPercent < 10) {
