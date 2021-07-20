@@ -1,3 +1,6 @@
+## v4.6.1
+ - Add code to remove old light based volume controls from Home Assistant
+
 ## v4.6.0
  - Adapt fan component to new fan schema introduced in Home Assistant 2021.3.  This schema is based on percentage of 100 vs using three preset speeds.  Presets for "low, medium, high" will still work but it's now possible to use the new percent based speed topics which map directly to Ring app and Home Assistant.  This is especially useful for fans which support more than 3 speeds.
  - Add support to define the default "on" duraton for Ring Smart Lighting via config option beam_duration (or BEAMDURATION envionment variable), please refer to README for more details
