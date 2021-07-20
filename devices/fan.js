@@ -117,11 +117,11 @@ class Fan extends AlarmDevice {
 
         let setFanPercent = parseInt(message)
 
-        if ( setFanPercent = 0 ) {
+        if (setFanPercent === 0) {
             debug('Received fan speed of 0%, turning fan off')
             if (this.device.data.on) { this.setFanState('off') }
             return
-        } else if ( setFanPercent < 10) {
+        } else if (setFanPercent < 10) {
             debug('Received fan speed of '+setFanPercent+'% which is < 10%, overriding to 10%')
             setFanPercent = 10 
         } else if (setFanPercent > 100) {
