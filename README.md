@@ -1,8 +1,5 @@
 # ring-mqtt
 This script leverages the excellent [ring-client-api](https://github.com/dgreif/ring) to provide a bridge between MQTT and suppoted Ring devices such as alarm control panel, lights and cameras ([full list of supported devices and features](#current-features)).  It also provides support for Home Assistant style MQTT auto-discovery which allows for easy Home Assistant integration with minimal configuration (requires Home Assistant MQTT integration to be enabled).  This also includes an optional [Home Assistant Addon](https://github.com/tsightler/ring-mqtt-ha-addon) for users of HassOS/Home Assistant Installer.  It can also be used with any other tool capable of working with MQTT as it provides consistent topic naming based on location/device ID.
-
-## !!! Important Notices - Please Read !!!
-If you are upgrading from ring-mqtt prior to version 4.0.0, or from Home Assistant versions < 0.113, please read the appropriate section in [docs/NOTICES.md](docs/NOTICES.md)
  
 ## Installation
 Starting with the 4.0.0 release of ring-mqtt, Docker is now the recommended installation method, however, standard, non-Docker installation is still fully supported.  Please skip to the [Standard Install](#standard-install) section for details on this installation method.
@@ -103,7 +100,7 @@ Ring has made two factor authentication (2FA) mandatory thus the script now only
 There are two primary ways to acquire this token:
 
 **Docker Installs**\
-For Docker it is possible to use the bundled ring-client-api auth CLI to acquire a token for initial startup by executing the following:
+For Docker the easiest method to obtain the toke is to use the bundled ring-client-api auth CLI to acquire a token for initial startup by executing the following:
 ```
 docker run -it --rm --entrypoint /app/ring-mqtt/node_modules/ring-client-api/ring-auth-cli.js tsightler/ring-mqtt
 ```
@@ -155,7 +152,7 @@ It is also possible to manually override the snapshot interval, although the min
 Volume Control is supported for Ring Keypads and Base Stations.  Note that Ring shared users do not have access to control the Base Station volume so, if you want to control the Base Station volume using this integration, you must generate the refresh token using the primary Ring account.  During startup the system attempts to detect if the account can control the base station volume and only shows the volume control if it determines the accout has access.  This is a limitation of the Ring API as even the offical Ring App does not offer volume control to shared users.
 
 **!!! Important Note about Volume Control in Home Assistant !!!**\
-Due to the limitaitons of availabe MQTT integration components with Home Assistant, volume controls will appears as a "light" with brightness function.  The brighntess control is used to set the volume level while the turning the switch off immediate sets the volume to zero and turning the switch on sets the volume to 65%, although you can also turn the volume back on by setting the slider volume to any level other than zero.  Overall this works well, you can override icons to make it look reasonable in the Lovelace UI and automations can be used to set device volume based on time-of-day, alarm mode, etc, but this approach can have some unexpected side effects.  For example, if you have an automation that turns off all lights when you leave, this automation will likely also silence the volume on the keypad/base station because Home Assistant thinks it is a "light".  Be aware of these possible behaviors before enabling the volume control feature.
+Volume controls in Home Assistant now use the MQTT number integration so displaying values and changing them via the Lovelace UI or via automations is easy and no longer interacts with light based automations.
 
 ## Using with non-Home Assistant MQTT Tools (ex: Node Red)
 MQTT topics are built consistently during each startup.  The easiest way to determine the device topics is to run the script with debug output.  More details about the topic format for all devices is available in [docs/TOPICS.md](docs/TOPICS.md).
@@ -254,4 +251,4 @@ This option is also useful when using the script with external MQTT tools as it 
 ## Thanks
 Many thanks to @dgrief and his excellent [ring-client-api API](https://github.com/dgreif/ring/) as well as his homebridge plugin, from which I've learned a lot.  Without his work it would have taken far more effort and time, probably more time than I had, to get this working.
 
-Also thanks to [acolytec3](https://community.home-assistant.io/u/acolytec3) on the Home Assistant community forums for his original Ring Alarm MQTT script.  Having an already functioning script with support for MQTT discovery saved me quite a bit of time in developing this script.
+Also thanks to [acolytec3](https://community.home-assistant.io/u/acolytec3) on the Home Assistant community forums for the original Ring Alarm MQTT script.  Having an already functioning script with support for MQTT discovery saved me quite a bit of time in developing this script.

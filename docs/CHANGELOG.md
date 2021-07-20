@@ -7,7 +7,7 @@
  - Add support for reporting basic status and attributes of Ring External Siren
  - Docker images now enable debug logging by default (was already true of addon)
  
- **--Breaking Changes--**
+ **!!!!! Breaking Changes !!!!!**
  - Fan automations in Home Assistant should continue to work with backwards compatibility, but it's probably best to update to use the new methods (see Fan section of Breaking Changes in [Home Assistant 2021.3 release notes](https://www.home-assistant.io/blog/2021/03/03/release-20213/#breaking-changes))
  - Switched volume controls to use Home Assistant number component instead of the previouls light component.  Any automations for volume changes will need to be updated to use the new comopnent.
  - Removed "enable_volume" config option since the new number based integration will no longer be accidentally triggered by light based automations
