@@ -26,7 +26,7 @@ class BaseStation extends AlarmDevice {
             this.commandTopic_volume = this.deviceTopic+'/volume/command'
             this.configTopic_volume = 'homeassistant/number/'+this.locationId+'/'+this.deviceId+'_volume/config'
             this.configTopic_audio = 'homeassistant/light/'+this.locationId+'/'+this.deviceId+'_audio/config'
-            this.publishMqtt(this.configTopic_audio, '', true)
+            this.publishMqtt(this.configTopic_audio, '', false)
         } else {
             debug('Account does not have access to set volume on base station, disabling volume control')
         }
