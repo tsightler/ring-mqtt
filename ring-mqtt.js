@@ -4,6 +4,7 @@
 const RingApi = require('ring-client-api').RingApi
 const RingDeviceType = require('ring-client-api').RingDeviceType
 const RingCamera = require('ring-client-api').RingCamera
+const RingChime = require('ring-client-api').RingChime
 const mqttApi = require ('mqtt')
 const isOnline = require ('is-online')
 const debug = require('debug')('ring-mqtt')
@@ -24,6 +25,7 @@ const MultiLevelSwitch = require('./devices/multi-level-switch')
 const Fan = require('./devices/fan')
 const Beam = require('./devices/beam')
 const Camera = require('./devices/camera')
+const Chime = require('./devices/chime')
 const ModesPanel = require('./devices/modes-panel')
 const Keypad = require('./devices/keypad')
 const BaseStation = require('./devices/base-station')
@@ -63,6 +65,8 @@ function getDevice(device, mqttClient) {
     }
     if (device instanceof RingCamera) {
         return new Camera(deviceInfo)
+    } else if (device instanceof RingChime) {
+        return new Chime(deviceInfo)
     }
     switch (device.deviceType) {
         case RingDeviceType.ContactSensor:

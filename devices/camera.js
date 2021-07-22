@@ -9,14 +9,27 @@ class Camera {
     constructor(deviceInfo) {
         // Set default properties for camera device object model 
         this.camera = deviceInfo.device
-        
         this.mqttClient = deviceInfo.mqttClient
         this.subscribed = false
         this.availabilityState = 'init'
-        this.heartbeat = 3
-        this.locationId = this.camera.data.location_id
         this.deviceId = this.camera.data.device_id
+        this.locationId = this.camera.data.location_id
         this.config = deviceInfo.CONFIG
+
+        // Sevice data for Home Assistant device registry 
+        this.deviceData = { 
+            ids: [ this.deviceId ],
+            name: this.camera.name,
+            mf: 'Ring',
+            mdl: this.camera.model
+        }
+
+        // Create top level MQTT topics
+        this.cameraTopic = this.config.ring_topic+'/'+this.locationId+'/camera/'+this.deviceId
+        this.availabilityTopic = this.cameraTopic+'/status'
+
+        // Camera sepecific properties
+        this.heartbeat = 3
         this.publishedLightState = this.camera.hasLight ? 'publish' : 'none'
         this.publishedSirenState = this.camera.hasSiren ? 'publish' : 'none'
         this.publishedMotionDetectionEnabled = 'publish'
@@ -57,20 +70,8 @@ class Camera {
             expires: 0,
             updateSnapshot: false
         }
-
-        // Sevice data for Home Assistant device registry 
-        this.deviceData = { 
-            ids: [ this.deviceId ],
-            name: this.camera.name,
-            mf: 'Ring',
-            mdl: this.camera.model
-        }
-
-        // Create top level MQTT topics
-        this.cameraTopic = deviceInfo.CONFIG.ring_topic+'/'+this.locationId+'/camera/'+this.deviceId
-        this.availabilityTopic = this.cameraTopic+'/status'
       
-        // Create properties to store ding states
+        // Properties for storing ding states
         this.motion = {
             name: 'motion',
             active_ding: false,
