@@ -1,3 +1,6 @@
+## v4.6.2
+ - Version bump to pull in changes required to fix 404 errors on startup due to Ring API changes
+
 ## v4.6.1
  - Add code to (hopefully) remove old light based volume controls from Home Assistant
 
