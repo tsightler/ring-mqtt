@@ -151,7 +151,7 @@ async function updateRingData(mqttClient, ringClient) {
             cameras = await location.cameras
             chimes = await location.chimes
         }
-        const allDevices = [...devices, ...camera, ...chimes]
+        const allDevices = [...devices, ...cameras, ...chimes]
 
         // Add modes panel, if configured and the location supports it
         if (CONFIG.enable_modes && (await foundLocation.supportsLocationModeSwitching())) {
