@@ -3,9 +3,10 @@ const utils = require('../lib/utils')
 
 class Chime {
     constructor(deviceInfo) {
-        debug(deviceInfo)
         // Set default properties for alarm device object model 
         this.device = deviceInfo.device
+        debug(deviceInfo)
+        debug(device)
         this.mqttClient = deviceInfo.mqttClient
         this.subscribed = false
         this.availabilityState = 'init'
