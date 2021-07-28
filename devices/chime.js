@@ -29,7 +29,6 @@ class Chime {
         // Create info device topics
         this.stateTopic_info = this.deviceTopic+'/info/state'
         this.configTopic_info = 'homeassistant/sensor/'+this.locationId+'/'+this.deviceId+'_info/config'
-        debug(this)
     }
 
     // Publish device state data and subscribe to
@@ -63,9 +62,13 @@ class Chime {
 
     initDiscoveryData() {
         // Chime Volume Level
-        this.topic.volume.state = this.deviceTopic+'/volume/state'
-        this.topic.volume.command = this.deviceTopic+'/volume/command'
-        this.topic.volume.config = 'homeassistant/number/'+this.locationId+'/'+this.deviceId+'_volume/config'
+        this.topic = {
+            volume: {
+                state = this.deviceTopic+'/volume/state',
+                command = this.deviceTopic+'/volume/command',
+                config = 'homeassistant/number/'+this.locationId+'/'+this.deviceId+'_volume/config',
+            }
+        }
         this.discoveryData.push({
             message: {
                 name: this.deviceData.name+' Volume',
@@ -83,9 +86,13 @@ class Chime {
         })
 
         // Snooze state
-        this.topic.snooze.state = this.deviceTopic+'/snooze/state'
-        this.topic.snooze.command = this.deviceTopic+'/snooze/command'
-        this.topic.snooze.config = 'homeassistant/binary_sensor/'+this.locationId+'/'+this.deviceId+'_snooze/config'
+        this.topic = {
+            snooze: {
+                state = this.deviceTopic+'/snooze/state',
+                command = this.deviceTopic+'/snooze/command',
+                config = 'homeassistant/binary_sensor/'+this.locationId+'/'+this.deviceId+'_snooze/config',
+            }
+        }
         this.discoveryData.push({
             message: {
                 name: this.deviceData.name+' Snooze Active',
