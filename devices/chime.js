@@ -5,14 +5,12 @@ class Chime {
     constructor(deviceInfo) {
         // Set default properties for alarm device object model 
         this.device = deviceInfo.device
-        debug(deviceInfo)
-        debug(device)
         this.mqttClient = deviceInfo.mqttClient
         this.subscribed = false
         this.availabilityState = 'init'
         this.discoveryData = new Array()
-        this.deviceId = this.device.id
-        this.locationId = this.device.location_id
+        this.deviceId = this.device.data.device_id
+        this.locationId = this.device.data.location_id
         this.config = deviceInfo.CONFIG
 
         // Set default device data for Home Assistant device registry
