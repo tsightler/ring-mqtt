@@ -23,8 +23,7 @@ class Chime {
         }
         
         // Set device location and top level MQTT topics 
-        this.ringTopic = this.config.ring_topic
-        this.deviceTopic = this.ringTopic+'/'+this.locationId+'/chime/'+this.deviceId
+        this.deviceTopic = this.config.ring_topic+'/'+this.locationId+'/chime/'+this.deviceId
         this.availabilityTopic = this.deviceTopic+'/status'
         
         // Create info device topics
