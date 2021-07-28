@@ -136,9 +136,9 @@ async function updateRingData(mqttClient, ringClient) {
         let foundLocation = ringLocations.find(l => l.locationId == location.locationId)
         // If new location, set custom properties and add to location list
         if (foundLocation) {
-            debug(colors.green('Found existing location '+location.name+' with id '+location.id))
+            debug(colors.green('Existing location: '+location.name+' ('+location.id+')'))
         } else {
-            debug(colors.green('Found new location '+location.name+' with id '+location.id))
+            debug(colors.green('New location: '+location.name+' ('+location.id+')'))
             location.isSubscribed = false
             location.isConnected = false
             ringLocations.push(location)
@@ -182,7 +182,7 @@ async function updateRingData(mqttClient, ringClient) {
         }
         // Output any unsupported devices to debug with warning
         unsupportedDevices.forEach(deviceType => {
-            debug(colors.yellow('  Unsupported device of type: '+deviceType))
+            debug(colors.yellow('  Unsupported device: '+deviceType))
         })
     }
     debug(colors.green('-'.repeat(80)))
