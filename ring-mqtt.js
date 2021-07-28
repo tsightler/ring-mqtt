@@ -168,12 +168,12 @@ async function updateRingData(mqttClient, ringClient) {
             const deviceId = (device instanceof RingCamera) ? device.data.device_id : device.id
             const foundDevice = ringDevices.find(d => d.deviceId == deviceId && d.locationId == location.locationId)
             if (foundDevice) {
-                debug(colors.green('  Existing device of type: '+device.deviceType+', device Id: '+deviceId))
+                debug(colors.green('  Existing device '+foundDevice.deviceData.name+' of type: '+device.deviceType+', Id: '+deviceId))
             } else {
                 const newDevice = getDevice(device, mqttClient)
                 if (newDevice) {
                     ringDevices.push(newDevice)
-                    debug(colors.green('  New device of type: '+device.deviceType+', device Id: '+deviceId))
+                    debug(colors.green('  New device of type: '+newDevice.deviceData.name+', Id: '+deviceId))
                 } else {
                     // Save unsupported device type
                     unsupportedDevices.push(device.deviceType)
