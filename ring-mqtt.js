@@ -129,6 +129,7 @@ async function updateRingData(mqttClient, ringClient) {
     // Loop through each location and update stored locations/devices
     for (const location of locations) {
         let cameras = new Array()
+        let chimes = new Array()
         const unsupportedDevices = new Array()
 
         debug(colors.green('-'.repeat(80)))
@@ -146,8 +147,11 @@ async function updateRingData(mqttClient, ringClient) {
 
         // Get all location devices and, if configured, cameras
         const devices = await foundLocation.getDevices()
-        if (CONFIG.enable_cameras) { cameras = await location.cameras }
-        const allDevices = [...devices, ...cameras]
+        if (CONFIG.enable_cameras) { 
+            cameras = await location.cameras
+            chimes = await location.chimes
+        }
+        const allDevices = [...devices, ...camera, ...chimes]
 
         // Add modes panel, if configured and the location supports it
         if (CONFIG.enable_modes && (await foundLocation.supportsLocationModeSwitching())) {
@@ -164,12 +168,12 @@ async function updateRingData(mqttClient, ringClient) {
             const deviceId = (device instanceof RingCamera) ? device.data.device_id : device.id
             const foundDevice = ringDevices.find(d => d.deviceId == deviceId && d.locationId == location.locationId)
             if (foundDevice) {
-                debug(colors.green('  Existing device of type: '+device.deviceType))
+                debug(colors.green('  Existing device of type: '+device.deviceType+', device Id: '+deviceId))
             } else {
                 const newDevice = getDevice(device, mqttClient)
                 if (newDevice) {
                     ringDevices.push(newDevice)
-                    debug(colors.green('  New device of type: '+device.deviceType))
+                    debug(colors.green('  New device of type: '+device.deviceType+', device Id: '+deviceId))
                 } else {
                     // Save unsupported device type
                     unsupportedDevices.push(device.deviceType)
