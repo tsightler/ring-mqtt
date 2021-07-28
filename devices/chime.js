@@ -3,6 +3,7 @@ const utils = require('../lib/utils')
 
 class Chime {
     constructor(deviceInfo) {
+        debug(deviceInfo)
         // Set default properties for alarm device object model 
         this.device = deviceInfo.device
         this.mqttClient = deviceInfo.mqttClient
@@ -29,6 +30,7 @@ class Chime {
         // Create info device topics
         this.stateTopic_info = this.deviceTopic+'/info/state'
         this.configTopic_info = 'homeassistant/sensor/'+this.locationId+'/'+this.deviceId+'_info/config'
+        debug(this)
     }
 
     // Publish device state data and subscribe to
