@@ -64,9 +64,9 @@ class Chime {
         // Chime Volume Level
         this.topic = {
             volume: {
-                state = this.deviceTopic+'/volume/state',
-                command = this.deviceTopic+'/volume/command',
-                config = 'homeassistant/number/'+this.locationId+'/'+this.deviceId+'_volume/config',
+                state: this.deviceTopic+'/volume/state',
+                command: this.deviceTopic+'/volume/command',
+                config: 'homeassistant/number/'+this.locationId+'/'+this.deviceId+'_volume/config',
             }
         }
         this.discoveryData.push({
@@ -88,9 +88,9 @@ class Chime {
         // Snooze state
         this.topic = {
             snooze: {
-                state = this.deviceTopic+'/snooze/state',
-                command = this.deviceTopic+'/snooze/command',
-                config = 'homeassistant/binary_sensor/'+this.locationId+'/'+this.deviceId+'_snooze/config',
+                state: this.deviceTopic+'/snooze/state',
+                command: this.deviceTopic+'/snooze/command',
+                config: 'homeassistant/binary_sensor/'+this.locationId+'/'+this.deviceId+'_snooze/config',
             }
         }
         this.discoveryData.push({
