@@ -38,7 +38,7 @@ class Camera {
         this.snapshot = { 
             motion: false, 
             interval: false,
-            interval_timeout: null,
+            intervalTimerId: null,
             autoInterval: false,
             imageData: null,
             timestamp: null,
@@ -510,15 +510,13 @@ class Camera {
 
     // Refresh snapshot on scheduled interval
     async scheduleSnapshotRefresh() {
-        await new Promise((resolve) => {
-            this.snapshot.interval_timeout = setTimeout(() => {
+            this.snapshot.intervalTimerId = setInterval(() => {
                 if (this.snapshot.motion && !this.motion.active_ding && this.availabilityState === 'online') {
                     debug("Refresing Snapshot!!!!!!!!")
                     this.refreshSnapshot()
                 }
-                resolve()
             }, this.snapshot.interval * 1000)
-        })
+        debug('Existing snaphot interval was canceled, rescheduling with interval '+this.snapshot.interal+' seconds')
         this.scheduleSnapshotRefresh()
     }
 
@@ -725,7 +723,7 @@ class Camera {
             this.snapshot.autoInterval = false
             debug ('Snapshot refresh interval as been set to '+this.snapshot.interval+' seconds')
             this.publishSnapshotInterval()
-            clearTimeout(this.snapshot.interval_timeout)
+            clearTimeout(this.snapshot.intervalTimerId)
         }
     }
 
