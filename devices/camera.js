@@ -38,6 +38,7 @@ class Camera {
         this.snapshot = { 
             motion: false, 
             interval: false,
+            interval_timeout: null,
             autoInterval: false,
             imageData: null,
             timestamp: null,
@@ -280,6 +281,10 @@ class Camera {
             case 'snapshot':
                 message.topic = capabilityTopic+'/image'
                 break;
+            case 'snapshot_interval':
+                message.state_topic = capabilityTopic+'/state'
+                message.min = 10
+                message.max = 3600
             default:
                 message.state_topic = capabilityTopic+'/state'
         }
@@ -505,11 +510,11 @@ class Camera {
 
     // Refresh snapshot on scheduled interval
     async scheduleSnapshotRefresh() {
-        await utils.sleep(this.snapshot.interval)
-        // During active motion events or device offline state, stop interval snapshots
-        if (this.snapshot.motion && !this.motion.active_ding && this.availabilityState === 'online') { 
-            this.refreshSnapshot()
-        }
+        this.snapshot.interval_timeout = setTimeout(() => {
+            if (this.snapshot.motion && !this.motion.active_ding && this.availabilityState === 'online') { 
+                this.refreshSnapshot()
+            }
+        }, this.snapshot.interval)
         this.scheduleSnapshotRefresh()
     }
 
@@ -708,12 +713,15 @@ class Camera {
         debug('Received set snapshot refresh interval '+message+' for camera '+this.deviceId)
         debug('Location Id: '+ this.locationId)
         if (isNaN(message)) {
-            debug ('Received invalid interval')
+            debug ('Snapshot interval value received but not a number')
+        } else if (!(message >= 10 && message <= 3600)) {
+            debug('Snapshot interval value received but out of range (10-3600)')
         } else {
-            this.snapshot.interval = (message >= 10) ? Math.round(message) : 10
+            this.snapshot.interval = Math.round(message)
             this.snapshot.autoInterval = false
             debug ('Snapshot refresh interval as been set to '+this.snapshot.interval+' seconds')
             this.publishSnapshotInterval()
+            clearTimeout(this.snapshot.interval_timeout)
         }
     }
 
