@@ -66,7 +66,7 @@ class Chime {
             volume: {
                 state: this.deviceTopic+'/volume/state',
                 command: this.deviceTopic+'/volume/command',
-                config: 'homeassistant/number/'+this.locationId+'/'+this.deviceId+'_volume/config',
+                config: 'homeassistant/number/'+this.locationId+'/'+this.deviceId+'_volume/config'
             }
         }
         this.discoveryData.push({
@@ -89,8 +89,8 @@ class Chime {
         this.topic = {
             snooze: {
                 state: this.deviceTopic+'/snooze/state',
-                command: this.deviceTopic+'/snooze/command',
-                config: 'homeassistant/binary_sensor/'+this.locationId+'/'+this.deviceId+'_snooze/config',
+                // command: this.deviceTopic+'/snooze/command',
+                config: 'homeassistant/binary_sensor/'+this.locationId+'/'+this.deviceId+'_snooze/config'
             }
         }
         this.discoveryData.push({
@@ -101,7 +101,6 @@ class Chime {
                 payload_available: 'online',
                 payload_not_available: 'offline',
                 state_topic: this.topic.snooze.state,
-                device_class: this.topic.snoooze.command,
                 device: this.deviceData
             },
             configTopic: this.topic.snooze.config
