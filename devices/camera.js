@@ -516,8 +516,8 @@ class Camera {
                     debug("Refresing Snapshot!!!!!!!!")
                     this.refreshSnapshot()
                 }
+                resolve()
             }, this.snapshot.interval * 1000)
-            resolve()
         })
         this.scheduleSnapshotRefresh()
     }
