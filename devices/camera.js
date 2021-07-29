@@ -510,14 +510,13 @@ class Camera {
 
     // Refresh snapshot on scheduled interval
     async scheduleSnapshotRefresh() {
-        await new Promise((res) => {
+        await new Promise((r) => {
             this.snapshot.interval_timeout = setTimeout(() => {
-                debug("Refresing Snapshot!!!!!!!")
-                if (this.snapshot.motion && !this.motion.active_ding && this.availabilityState === 'online') { 
+                if (this.snapshot.motion && !this.motion.active_ding && this.availabilityState === 'online') {
+                    debug("Refresing Snapshot!!!!!!!!")
                     this.refreshSnapshot()
                 }
-                res()
-            }, this.snapshot.interval)
+            }, this.snapshot.interval * 1000)
         })
         this.scheduleSnapshotRefresh()
     }
