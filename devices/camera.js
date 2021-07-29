@@ -513,7 +513,6 @@ class Camera {
     async scheduleSnapshotRefresh() {
             this.snapshot.intervalTimerId = setInterval(() => {
                 if (this.snapshot.motion && !this.motion.active_ding && this.availabilityState === 'online') {
-                    debug("Refresing Snapshot!!!!!!!!")
                     this.refreshSnapshot()
                 }
             }, this.snapshot.interval * 1000)
@@ -723,7 +722,6 @@ class Camera {
             debug ('Snapshot refresh interval as been set to '+this.snapshot.interval+' seconds')
             this.publishSnapshotInterval()
             clearTimeout(this.snapshot.intervalTimerId)
-            debug('Existing snaphot interval was canceled, rescheduling with interval '+this.snapshot.interal+' seconds')
             this.scheduleSnapshotRefresh()
         }
     }
