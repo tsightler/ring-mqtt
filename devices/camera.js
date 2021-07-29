@@ -517,8 +517,6 @@ class Camera {
                     this.refreshSnapshot()
                 }
             }, this.snapshot.interval * 1000)
-        // debug('Existing snaphot interval was canceled, rescheduling with interval '+this.snapshot.interal+' seconds')
-        console.log(this.snapshot.intervalTimerId)
     }
 
     async getSnapshotFromStream() {
@@ -725,6 +723,8 @@ class Camera {
             debug ('Snapshot refresh interval as been set to '+this.snapshot.interval+' seconds')
             this.publishSnapshotInterval()
             clearTimeout(this.snapshot.intervalTimerId)
+            debug('Existing snaphot interval was canceled, rescheduling with interval '+this.snapshot.interal+' seconds')
+            this.scheduleSnapshotRefresh()
         }
     }
 
