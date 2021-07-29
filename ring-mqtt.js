@@ -66,8 +66,7 @@ function getDevice(device, mqttClient) {
     if (device instanceof RingCamera) {
         return new Camera(deviceInfo)
     } else if (device instanceof RingChime) {
-        //return new Chime(deviceInfo)
-        return null
+        return new Chime(deviceInfo)
     }
     switch (device.deviceType) {
         case RingDeviceType.ContactSensor:
