@@ -285,6 +285,7 @@ class Camera {
                 message.state_topic = capabilityTopic+'/state'
                 message.min = 10
                 message.max = 3600
+                message.icon = 'hass:timer'
             default:
                 message.state_topic = capabilityTopic+'/state'
         }
@@ -516,8 +517,8 @@ class Camera {
                     this.refreshSnapshot()
                 }
             }, this.snapshot.interval * 1000)
-        debug('Existing snaphot interval was canceled, rescheduling with interval '+this.snapshot.interal+' seconds')
-        this.scheduleSnapshotRefresh()
+        // debug('Existing snaphot interval was canceled, rescheduling with interval '+this.snapshot.interal+' seconds')
+        console.log(this.snapshot.intervalTimerId)
     }
 
     async getSnapshotFromStream() {
