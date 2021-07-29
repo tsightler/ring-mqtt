@@ -1,6 +1,6 @@
 {
   "name": "ring-mqtt",
-  "version": "4.6.3-dev",
+  "version": "4.6.3",
   "description": "Ring to MQTT Bridge",
   "main": "ring-mqtt.js",
   "dependencies": {
