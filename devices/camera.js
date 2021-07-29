@@ -286,6 +286,7 @@ class Camera {
                 message.min = 10
                 message.max = 3600
                 message.icon = 'hass:timer'
+                break;
             default:
                 message.state_topic = capabilityTopic+'/state'
         }
