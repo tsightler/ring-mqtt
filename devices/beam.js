@@ -101,6 +101,7 @@ class Beam extends AlarmDevice {
                     command_topic: this.commandTopic_light_duration,
                     min: 0,
                     max: 32767,
+                    icon: 'hass:timer',
                     device: this.deviceData
                 },
                 configTopic: this.configTopic_light_duration

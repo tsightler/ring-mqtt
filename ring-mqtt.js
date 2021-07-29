@@ -4,6 +4,7 @@
 const RingApi = require('ring-client-api').RingApi
 const RingDeviceType = require('ring-client-api').RingDeviceType
 const RingCamera = require('ring-client-api').RingCamera
+const RingChime = require('ring-client-api').RingChime
 const mqttApi = require ('mqtt')
 const isOnline = require ('is-online')
 const debug = require('debug')('ring-mqtt')
@@ -24,6 +25,7 @@ const MultiLevelSwitch = require('./devices/multi-level-switch')
 const Fan = require('./devices/fan')
 const Beam = require('./devices/beam')
 const Camera = require('./devices/camera')
+const Chime = require('./devices/chime')
 const ModesPanel = require('./devices/modes-panel')
 const Keypad = require('./devices/keypad')
 const BaseStation = require('./devices/base-station')
@@ -63,6 +65,9 @@ function getDevice(device, mqttClient) {
     }
     if (device instanceof RingCamera) {
         return new Camera(deviceInfo)
+    } else if (device instanceof RingChime) {
+        //return new Chime(deviceInfo)
+        return null
     }
     switch (device.deviceType) {
         case RingDeviceType.ContactSensor:
@@ -125,15 +130,16 @@ async function updateRingData(mqttClient, ringClient) {
     // Loop through each location and update stored locations/devices
     for (const location of locations) {
         let cameras = new Array()
+        let chimes = new Array()
         const unsupportedDevices = new Array()
 
         debug(colors.green('-'.repeat(80)))
         let foundLocation = ringLocations.find(l => l.locationId == location.locationId)
         // If new location, set custom properties and add to location list
         if (foundLocation) {
-            debug(colors.green('Found existing location '+location.name+' with id '+location.id))
+            debug(colors.green('Existing location: '+location.name+' ('+location.id+')'))
         } else {
-            debug(colors.green('Found new location '+location.name+' with id '+location.id))
+            debug(colors.green('New location: '+location.name+' ('+location.id+')'))
             location.isSubscribed = false
             location.isConnected = false
             ringLocations.push(location)
@@ -142,8 +148,11 @@ async function updateRingData(mqttClient, ringClient) {
 
         // Get all location devices and, if configured, cameras
         const devices = await foundLocation.getDevices()
-        if (CONFIG.enable_cameras) { cameras = await location.cameras }
-        const allDevices = [...devices, ...cameras]
+        if (CONFIG.enable_cameras) { 
+            cameras = await location.cameras
+            chimes = await location.chimes
+        }
+        const allDevices = [...devices, ...cameras, ...chimes]
 
         // Add modes panel, if configured and the location supports it
         if (CONFIG.enable_modes && (await foundLocation.supportsLocationModeSwitching())) {
@@ -157,15 +166,15 @@ async function updateRingData(mqttClient, ringClient) {
 
         // Update Ring devices for location
         for (const device of allDevices) {
-            const deviceId = (device instanceof RingCamera) ? device.data.device_id : device.id
+            const deviceId = (device instanceof RingCamera || device instanceof RingChime) ? device.data.device_id : device.id
             const foundDevice = ringDevices.find(d => d.deviceId == deviceId && d.locationId == location.locationId)
             if (foundDevice) {
-                debug(colors.green('  Existing device of type: '+device.deviceType))
+                debug(colors.green('  Existing device: '+foundDevice.deviceData.name+' ('+device.deviceType+', '+deviceId+')'))
             } else {
                 const newDevice = getDevice(device, mqttClient)
                 if (newDevice) {
                     ringDevices.push(newDevice)
-                    debug(colors.green('  New device of type: '+device.deviceType))
+                    debug(colors.green('  New device: '+newDevice.deviceData.name+' ('+device.deviceType+', '+deviceId+')'))
                 } else {
                     // Save unsupported device type
                     unsupportedDevices.push(device.deviceType)
@@ -174,7 +183,7 @@ async function updateRingData(mqttClient, ringClient) {
         }
         // Output any unsupported devices to debug with warning
         unsupportedDevices.forEach(deviceType => {
-            debug(colors.yellow('  Unsupported device of type: '+deviceType))
+            debug(colors.yellow('  Unsupported device: '+deviceType))
         })
     }
     debug(colors.green('-'.repeat(80)))

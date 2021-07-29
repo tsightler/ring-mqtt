@@ -8,10 +8,10 @@ class AlarmDevice {
         this.mqttClient = deviceInfo.mqttClient
         this.subscribed = false
         this.availabilityState = 'init'
-        this.discoveryData = new Array()
         this.deviceId = this.device.id
         this.locationId = this.device.location.locationId
         this.config = deviceInfo.CONFIG
+        this.discoveryData = new Array()
 
         // Set default device data for Home Assistant device registry
         // Values may be overridden by individual devices

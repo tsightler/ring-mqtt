@@ -29,6 +29,7 @@ class Keypad extends AlarmDevice {
                 command_topic: this.commandTopic_volume,
                 min: 0,
                 max: 100,
+                icon: 'hass:volume-high',
                 device: this.deviceData
             },
             configTopic: this.configTopic_volume
