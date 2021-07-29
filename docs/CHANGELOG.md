@@ -2,6 +2,7 @@
  - Changes to snapshot interval now immediately cancel current interval and start new interval with the updated duration
  - Fix for Home Assistant with snapshot interval values > 100 seconds (valid values are now 10-3600 seconds)
  - Improved default icons for Home Assistant entities for snapshot interval, beam duration and volume level
+ - Additional discovered devices debugging during startup including device name and id
 
 ## v4.6.2
  - Version bump to pull in changes required to fix 404 errors on startup due to Ring API changes
