@@ -1,6 +1,7 @@
 const debug = require('debug')('ring-mqtt')
 const utils = require('../lib/utils')
 const RingDevice = require('./base-ring-device')
+const attributeStateConfig = require('../lib/attribute-state-config')
 
 // Base class for devices that communicate with hubs via websocket (alarm/smart lighting)
 class RingSocketDevice extends RingDevice {
@@ -32,6 +33,13 @@ class RingSocketDevice extends RingDevice {
         // Create info device topics
         this.stateTopic_info = this.deviceTopic+'/info/state'
         this.configTopic_info = 'homeassistant/sensor/'+this.locationId+'/'+this.deviceId+'_info/config'
+        this.attributeStateConfigWithTopics = attributeStateConfig.map(attribute => {
+            return {
+                stateTopic: `${this.deviceTopic}/${attribute.topic}/state`,
+                configTopic: `homeassistant/${attribute.component}/${this.location}/${this.deviceId}_${attribute.topic}/config`,
+                ...attribute
+            }
+        })
     }
 
     // Return batterylevel or convert battery status to estimated level
@@ -73,6 +81,22 @@ class RingSocketDevice extends RingDevice {
             },
             configTopic: this.configTopic_info
         })
+
+        for (const {key, title, properties, configTopic, stateTopic} of this.attributeStateConfigWithTopics) {
+            this.discoveryData.push({
+                message: {
+                    name: `${this.device.name} ${title}`,
+                    unique_id: `${this.deviceId}_${key}`,
+                    availability_topic: this.availabilityTopic,
+                    payload_available: 'online',
+                    payload_not_available: 'offline',
+                    state_topic: stateTopic,
+                    ... properties || {},
+                    device: this.deviceData,
+                },
+                configTopic: configTopic
+            })
+        }
     }
 
     // Publish all discovery data for device
@@ -159,6 +183,12 @@ class RingSocketDevice extends RingDevice {
             ... this.device.data.hasOwnProperty('maxVolume') ? {maxVolume: this.device.data.maxVolume } : {},
         }
         this.publishMqtt(this.stateTopic_info, JSON.stringify(attributes), true)
+
+        for(const {key, stateTopic} of this.attributeStateConfigWithTopics) {
+            if(attributes.hasOwnProperty(key)) {
+                this.publishMqtt(stateTopic, attributes[key].toString(), true);
+            }
+        }
     }
 
     // Refresh device info attributes on a sechedule
