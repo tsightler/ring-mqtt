@@ -126,7 +126,7 @@ class Chime {
 
         if (isDataEvent) {
             volumeState = (this.entity.volume.state !== volumeState ) ? volumeState : false
-            snoozestate = (this.entity.snooze.state !== snoozeState ) ? snoozeState : false
+            snoozeState = (this.entity.snooze.state !== snoozeState ) ? snoozeState : false
         }
 
         // Publish sensor state
