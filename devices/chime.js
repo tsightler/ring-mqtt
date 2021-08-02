@@ -81,7 +81,7 @@ class Chime {
                 max: 11,
                 device: this.deviceData
             },
-            configTopic: this.topic.volume.config
+            configTopic: this.entity.volume.configTopic
         })
 
         // Snooze state
