@@ -12,7 +12,10 @@ class Chime {
         this.deviceId = this.device.data.device_id
         this.locationId = this.device.data.location_id
         this.config = deviceInfo.CONFIG
-        this.entity = {}
+        this.entity = {
+            volume: { state: this.device.data.settings.volume },
+            snooze: { state: Boolean(this.device.data.do_not_disturb.seconds_left) ? 'ON' : 'OFF' }
+        }
 
         // Set default device data for Home Assistant device registry
         // Values may be overridden by individual devices
@@ -45,7 +48,7 @@ class Chime {
                 this.publishData()
             } else {
                 // Subscribe to data updates for device
-                this.device.onData.subscribe(() => { this.publishData() })
+                this.device.onData.subscribe(() => { this.publishData(true) })
                 // this.schedulePublishAttributes()
 
                 // Subscribe to any device command topics
@@ -117,12 +120,25 @@ class Chime {
         await utils.sleep(2)
     }
 
-    publishData() {
-        const volumeState = this.device.data.settings.volume
-        const snoozeState = Boolean(this.device.data.do_not_disturb.seconds_left) ? 'ON' : 'OFF'
+    publishData(isDataEvent) {
+        let volumeState = this.device.data.settings.volume
+        let snoozeState = Boolean(this.device.data.do_not_disturb.seconds_left) ? 'ON' : 'OFF'
+
+        if (isDataEvent) {
+            volumeState = (this.entity.volume.state !== volumeState ) ? volumeState : false
+            snoozestate = (this.entity.snooze.state !== snoozeState ) ? snoozeState : false
+        }
+
         // Publish sensor state
-        this.publishMqtt(this.entity.volume.stateTopic, volumeState.toString(), true)
-        this.publishMqtt(this.entity.snooze.stateTopic, snoozeState, true)
+        if (volumeState) {
+            this.entity.volume.state = volumeState
+            this.publishMqtt(this.entity.volume.stateTopic, volumeState.toString(), true)
+        }
+
+        if (snoozeState) { 
+            this.entity.snooze.state = snoozeState
+            this.publishMqtt(this.entity.snooze.stateTopic, snoozeState, true)
+        }
     }
 
     // Publish state messages with debug
