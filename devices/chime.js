@@ -12,6 +12,7 @@ class Chime {
         this.deviceId = this.device.data.device_id
         this.locationId = this.device.data.location_id
         this.config = deviceInfo.CONFIG
+        this.entity = {}
 
         // Set default device data for Home Assistant device registry
         // Values may be overridden by individual devices
@@ -62,10 +63,10 @@ class Chime {
 
     initDiscoveryData() {
         // Chime Volume Level
-        this.topic.volume = {
-                state: this.deviceTopic+'/volume/state',
-                command: this.deviceTopic+'/volume/command',
-                config: 'homeassistant/number/'+this.locationId+'/'+this.deviceId+'_volume/config'
+        this.entity.volume = {
+                stateTopic: this.deviceTopic+'/volume/state',
+                commandTopic: this.deviceTopic+'/volume/command',
+                configTopic: 'homeassistant/number/'+this.locationId+'/'+this.deviceId+'_volume/config'
         }
         this.discoveryData.push({
             message: {
@@ -74,8 +75,8 @@ class Chime {
                 availability_topic: this.availabilityTopic,
                 payload_available: 'online',
                 payload_not_available: 'offline',
-                state_topic: this.topic.volume.state,
-                command_topic: this.topic.volume.command,
+                state_topic: this.entity.volume.stateTopic,
+                command_topic: this.entity.volume.commandTopic,
                 min: 0,
                 max: 11,
                 device: this.deviceData
@@ -84,10 +85,10 @@ class Chime {
         })
 
         // Snooze state
-        this.topic.snooze = {
-                state: this.deviceTopic+'/snooze/state',
-                // command: this.deviceTopic+'/snooze/command',
-                config: 'homeassistant/binary_sensor/'+this.locationId+'/'+this.deviceId+'_snooze/config'
+        this.entity.snooze = {
+                stateTopic: this.deviceTopic+'/snooze/state',
+                commandTopic: this.deviceTopic+'/snooze/command',
+                configTopic: 'homeassistant/binary_sensor/'+this.locationId+'/'+this.deviceId+'_snooze/config'
         }
         this.discoveryData.push({
             message: {
@@ -96,10 +97,10 @@ class Chime {
                 availability_topic: this.availabilityTopic,
                 payload_available: 'online',
                 payload_not_available: 'offline',
-                state_topic: this.topic.snooze.state,
+                state_topic: this.entity.snooze.stateTopic,
                 device: this.deviceData
             },
-            configTopic: this.topic.snooze.config
+            configTopic: this.entity.snooze.configTopic
         })
     }
 
@@ -117,14 +118,11 @@ class Chime {
     }
 
     publishData() {
-        debug(this.topic)
-        debug(this.device)
-        debug(this)
         const volumeState = this.device.data.settings.volume
         const snoozeState = Boolean(this.device.data.do_not_disturb.seconds_left) ? 'ON' : 'OFF'
         // Publish sensor state
-        this.publishMqtt(this.topic.volume.state, volumeState, true)
-        this.publishMqtt(this.topic.snooze.state, snoozeState, true)
+        this.publishMqtt(this.entity.volume.stateTopic, volumeState, true)
+        this.publishMqtt(this.entity.snooze.stateTopic, snoozeState, true)
     }
 
     // Publish state messages with debug
