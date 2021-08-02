@@ -62,12 +62,10 @@ class Chime {
 
     initDiscoveryData() {
         // Chime Volume Level
-        this.topic = {
-            volume: {
+        this.topic.volume = {
                 state: this.deviceTopic+'/volume/state',
                 command: this.deviceTopic+'/volume/command',
                 config: 'homeassistant/number/'+this.locationId+'/'+this.deviceId+'_volume/config'
-            }
         }
         this.discoveryData.push({
             message: {
@@ -86,12 +84,10 @@ class Chime {
         })
 
         // Snooze state
-        this.topic = {
-            snooze: {
+        this.topic.snooze = {
                 state: this.deviceTopic+'/snooze/state',
                 // command: this.deviceTopic+'/snooze/command',
                 config: 'homeassistant/binary_sensor/'+this.locationId+'/'+this.deviceId+'_snooze/config'
-            }
         }
         this.discoveryData.push({
             message: {
