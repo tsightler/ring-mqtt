@@ -117,6 +117,8 @@ class Chime {
     }
 
     publishData() {
+        debug(this.topic)
+        debug(this.device)
         const volumeState = this.device.data.settings.volume
         const snoozeState = Boolean(this.device.data.do_not_disturb.seconds_left) ? 'ON' : 'OFF'
         // Publish sensor state
