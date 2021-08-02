@@ -124,6 +124,7 @@ class Chime {
         const volumeState = this.device.data.settings.volume
         const snoozeState = Boolean(this.device.data.do_not_disturb.seconds_left) ? 'ON' : 'OFF'
         // Publish sensor state
+        debug(this.topic)
         this.publishMqtt(this.topic.volume.state, volumeState, true)
         this.publishMqtt(this.topic.snooze.state, snoozeState, true)
     }
