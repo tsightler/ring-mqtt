@@ -245,7 +245,7 @@ class Camera {
         const configTopic = 'homeassistant/'+capability.component+'/'+this.locationId+'/'+this.deviceId+'_'+capability.type+'/config'
 
         const message = {
-            name: this.camera.name+' '+capability.type.replace("_"," ").replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase()),
+            name: this.camera.name+' '+capability.type.replace(/_/g," ").replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase()),
             unique_id: this.deviceId+'_'+capability.type,
             availability_topic: this.availabilityTopic,
             payload_available: 'online',
