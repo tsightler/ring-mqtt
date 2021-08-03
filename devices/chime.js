@@ -1,5 +1,6 @@
 const debug = require('debug')('ring-mqtt')
 const utils = require('../lib/utils')
+const clientApi = require('../node_modules/ring-client-api/lib/api/rest-client').clientApi
 
 class Chime {
     constructor(deviceInfo) {
@@ -121,7 +122,11 @@ class Chime {
     }
 
     publishData(isDataEvent) {
-        debug(this.device)
+        const chimeHealth = await this.camera.restClient.request({
+            url: clientApi(`doorbots/${this.device.id}/health`),
+            responseType: 'json',
+        })
+        debug(chimeHealth)
         let volumeState = this.device.data.settings.volume
         let snoozeState = Boolean(this.device.data.do_not_disturb.seconds_left) ? 'ON' : 'OFF'
 
