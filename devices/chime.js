@@ -122,9 +122,9 @@ class Chime {
     }
 
     async publishData(isDataEvent) {
-        debug(clientApi)
+        debug(clientApi())
         const chimeHealth = await this.device.restClient.request({
-            url: clientApi(`health`),
+            url: clientApi(`chimes/${this.camera.id}/health`),
             responseType: 'json',
         })
         debug(chimeHealth)
