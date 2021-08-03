@@ -122,8 +122,9 @@ class Chime {
     }
 
     async publishData(isDataEvent) {
+        debug(clientApi)
         const chimeHealth = await this.device.restClient.request({
-            url: clientApi(`doorbots/${this.device.id}/health`),
+            url: clientApi(`health`),
             responseType: 'json',
         })
         debug(chimeHealth)
