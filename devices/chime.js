@@ -23,7 +23,7 @@ class Chime {
             ids: [ this.deviceId ],
             name: this.device.name,
             mf: 'Ring',
-            mdl: this.device.deviceType
+            mdl: this.device.deviceType.replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())
         }
         
         // Set device location and top level MQTT topics 
