@@ -121,6 +121,7 @@ class Chime {
     }
 
     publishData(isDataEvent) {
+        debug(this.device)
         let volumeState = this.device.data.settings.volume
         let snoozeState = Boolean(this.device.data.do_not_disturb.seconds_left) ? 'ON' : 'OFF'
 
