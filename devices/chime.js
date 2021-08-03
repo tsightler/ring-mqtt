@@ -122,7 +122,7 @@ class Chime {
     }
 
     async publishData(isDataEvent) {
-        const chimeHealth = await this.camera.restClient.request({
+        const chimeHealth = await this.device.restClient.request({
             url: clientApi(`doorbots/${this.device.id}/health`),
             responseType: 'json',
         })
