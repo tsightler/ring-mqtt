@@ -101,9 +101,6 @@ class Camera {
         debug(debugMsg+'device id: '+this.deviceId)
 
         await this.publishCapabilities()
-        
-        // Give Home Assistant time to configure device before sending first state data
-        await utils.sleep(2)
         await this.online()
 
         // Publish device state and, if new device, subscribe for state updates
@@ -442,6 +439,13 @@ class Camera {
         }
     }
 
+    // Publish heath state every 5 minutes when online
+    async schedulePublishInfo() {
+        await utils.sleep(this.availabilityState === 'offline' ? 60 : 300)
+        if (this.availabilityState === 'online') { this.publishInfoState() }
+        this.schedulePublishInfo()
+    }
+
     async refreshSnapshot() {
         let newSnapshot
         try {
@@ -613,13 +617,6 @@ class Camera {
             debug(e)
             this.livestream.active = false
         }
-    }
-
-    // Publish heath state every 5 minutes when online
-    async schedulePublishInfo() {
-        await utils.sleep(this.availabilityState === 'offline' ? 60 : 300)
-        if (this.availabilityState === 'online') { this.publishInfoState() }
-        this.schedulePublishInfo()
     }
 
     // Simple heartbeat function decrements the heartbeat counter every 20 seconds.

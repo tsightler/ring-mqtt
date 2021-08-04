@@ -13,10 +13,7 @@ class Chime {
         this.deviceId = this.device.data.device_id
         this.locationId = this.device.data.location_id
         this.config = deviceInfo.CONFIG
-        this.entity = {
-            volume: { state: this.device.data.settings.volume },
-            snooze: { state: Boolean(this.device.data.do_not_disturb.seconds_left) ? 'ON' : 'OFF' }
-        }
+        this.heartbeat = 3
 
         // Set default device data for Home Assistant device registry
         // Values may be overridden by individual devices
@@ -30,48 +27,75 @@ class Chime {
         // Set device location and top level MQTT topics 
         this.deviceTopic = this.config.ring_topic+'/'+this.locationId+'/chime/'+this.deviceId
         this.availabilityTopic = this.deviceTopic+'/status'
-        
-        // Create info device topics
-        this.stateTopic_info = this.deviceTopic+'/info/state'
-        this.configTopic_info = 'homeassistant/sensor/'+this.locationId+'/'+this.deviceId+'_info/config'
+
+        this.entity = {
+            volume: {
+                type: 'number',
+                suffix: 'volume',
+                state: this.device.data.settings.volume,
+                stateTopic: this.deviceTopic+'/volume/state',
+                commandTopic: this.deviceTopic+'/volume/command',
+                configTopic: 'homeassistant/number/'+this.locationId+'/'+this.deviceId+'_volume/config'
+            },
+            snooze: {
+                type: 'switch',
+                suffix: 'snooze',
+                state: Boolean(this.device.data.do_not_disturb.seconds_left) ? 'ON' : 'OFF',
+                stateTopic: this.deviceTopic+'/snooze/state',
+                commandTopic: this.deviceTopic+'/snooze/command',
+                configTopic: 'homeassistant/switch/'+this.locationId+'/'+this.deviceId+'_snooze/config'
+            },
+            info: {
+                type: 'sensor',
+                suffix: 'info',
+                stateTopic: this.deviceTopic+'/info/state',
+                configTopic = 'homeassistant/sensor/'+this.locationId+'/'+this.deviceId+'_info/config'
+            }
+        }
+        this.initDiscoveryData()
     }
 
     // Publish device state data and subscribe to
     // device data events and command topics as needed
-    async publish(locationConnected) {
-        if (locationConnected) {
-            // Publish discovery message
-            if (!this.discoveryData.length) { await this.initDiscoveryData() }
-            await this.publishDiscoveryData()
-            await this.online()
+    async publish() {
+        const debugMsg = (this.availabilityState === 'init') ? 'Publishing new ' : 'Republishing existing '
+        debug(debugMsg+'device id: '+this.deviceId)
 
-            if (this.subscribed) {
-                this.publishData()
-            } else {
-                // Subscribe to data updates for device
-                this.device.onData.subscribe(() => { this.publishData(true) })
-                // this.schedulePublishAttributes()
+        // Publish discovery message
+        if (!this.discoveryData.length) { await this.initDiscoveryData() }
+        await this.publishDiscoveryData()
+        await utils.sleep(2)
+        await this.online()
 
-                // Subscribe to any device command topics
-                const properties = Object.getOwnPropertyNames(this)
-                const commandTopics = properties.filter(p => p.match(/^commandTopic.*/g))
-                commandTopics.forEach(commandTopic => {
-                    this.mqttClient.subscribe(this[commandTopic])
-                })
+        if (this.subscribed) {
+            this.publishData()
+        } else {
+            // Subscribe to data updates for device
+            this.device.onData.subscribe(() => { this.publishData(true) })
+            // this.schedulePublishAttributes()
 
-                // Mark device as subscribed
-                this.subscribed = true
-            }
+            // Subscribe to any device command topics
+            const properties = Object.getOwnPropertyNames(this)
+            const commandTopics = properties.filter(p => p.match(/^commandTopic.*/g))
+            commandTopics.forEach(commandTopic => {
+                this.mqttClient.subscribe(this[commandTopic])
+            })
+
+            // Mark device as subscribed
+            this.subscribed = true
         }
     }
 
     initDiscoveryData() {
+        Object.keys(entity).forEach(e => {
+            console.log(`key=${e} value=${obj[e]}`)
+            switch (e.type) {
+                case 'switch':
+                case 'sensor':
+                case 'number':
+            }
+        })
         // Chime Volume Level
-        this.entity.volume = {
-                stateTopic: this.deviceTopic+'/volume/state',
-                commandTopic: this.deviceTopic+'/volume/command',
-                configTopic: 'homeassistant/number/'+this.locationId+'/'+this.deviceId+'_volume/config'
-        }
         this.discoveryData.push({
             message: {
                 name: this.deviceData.name+' Volume',
@@ -96,7 +120,7 @@ class Chime {
         }
         this.discoveryData.push({
             message: {
-                name: this.deviceData.name+' Snooze Active',
+                name: this.deviceData.name+' Snooze Activated',
                 unique_id: this.deviceId+'_snooze',
                 availability_topic: this.availabilityTopic,
                 payload_available: 'online',
@@ -148,30 +172,56 @@ class Chime {
         }
     }
 
+    // Publish device data to info topic
+    async publishInfoState() {
+        const deviceHealth = 
+            await this.device.restClient.request({
+                url: clientApi(`chimes/${this.device.id}/health`),
+                responseType: 'json'
+            }).catch()
+        
+        if (deviceHealth) {
+            const attributes = {}
+            attributes.wirelessNetwork = deviceHealth.wifi_name
+            attributes.wirelessSignal = deviceHealth.latest_signal_strength
+            attributes.firmwareStatus = deviceHealth.firmware
+            attributes.lastUpdate = deviceHealth.updated_at.slice(0,-6)+"Z"
+            this.publishMqtt(this.deviceTopic+'/info/state', JSON.stringify(attributes), true)
+        }
+    }
+
+    // Publish heath state every 5 minutes when online
+    async schedulePublishInfo() {
+        await utils.sleep(this.availabilityState === 'offline' ? 60 : 300)
+        if (this.availabilityState === 'online') { this.publishInfoState() }
+        this.schedulePublishInfo()
+    }
+
     // Publish state messages with debug
     publishMqtt(topic, message, isDebug) {
         if (isDebug) { debug(topic, message) }
         this.mqttClient.publish(topic, message, { qos: 1 })
     }
 
+    // Publish availability state
+    publishAvailabilityState(enableDebug) {
+        this.publishMqtt(this.availabilityTopic, this.availabilityState, enableDebug)
+    }
+
     // Set state topic online
     async online() {
-        // Debug output only if state changed from prior published state
-        // Prevents spamming debug log with availability events during republish
         const enableDebug = (this.availabilityState == 'online') ? false : true
         await utils.sleep(1)
         this.availabilityState = 'online'
-        this.publishMqtt(this.availabilityTopic, this.availabilityState, enableDebug)
+        this.publishAvailabilityState(enableDebug)
         await utils.sleep(1)
     }
 
     // Set state topic offline
     offline() {
-        // Debug log output only if state changed from prior published state
-        // Prevents spamming debug log with online/offline events during republish
         const enableDebug = (this.availabilityState == 'offline') ? false : true
         this.availabilityState = 'offline'
-        this.publishMqtt(this.availabilityTopic, this.availabilityState, enableDebug)
+        this.publishAvailabilityState(enableDebug)
     }
 }
 
