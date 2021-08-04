@@ -49,7 +49,7 @@ class Chime {
                 type: 'sensor',
                 suffix: 'info',
                 stateTopic: this.deviceTopic+'/info/state',
-                configTopic = 'homeassistant/sensor/'+this.locationId+'/'+this.deviceId+'_info/config'
+                configTopic: 'homeassistant/sensor/'+this.locationId+'/'+this.deviceId+'_info/config'
             }
         }
         this.initDiscoveryData()
