@@ -88,7 +88,7 @@ class Chime {
 
     initDiscoveryData() {
         Object.keys(this.entity).forEach(e => {
-            console.log(`key=${e} value=${this.entity[e]}`)
+            console.log(`key=${e} value=${JSON.stringify(this.entity[e])}`)
             switch (e.type) {
                 case 'switch':
                 case 'sensor':
