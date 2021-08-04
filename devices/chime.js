@@ -87,7 +87,7 @@ class Chime {
     }
 
     initDiscoveryData() {
-        Object.keys(entity).forEach(e => {
+        Object.keys(this.entity).forEach(e => {
             console.log(`key=${e} value=${obj[e]}`)
             switch (e.type) {
                 case 'switch':
