@@ -100,7 +100,7 @@ class Chime extends BaseDevice {
                 url: clientApi(`chimes/${this.device.id}/health`),
                 responseType: 'json'
             }).catch()
-        
+        console.log(deviceHealth)
         if (deviceHealth) {
             const attributes = {}
             attributes.wirelessNetwork = deviceHealth.wifi_name
