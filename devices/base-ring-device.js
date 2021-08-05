@@ -4,13 +4,14 @@ const utils = require('../lib/utils')
 class RingDevice {
 
     async publishDiscovery() {
-        Object.keys(this.entities).forEach(entity => {
-            const entityTopic = `${this.deviceTopic}/${entity}`
-            const entityId = this.entities[entity].hasOwnProperty('id') ? this.entities[entity].id : `${this.deviceId}_${entity}`
-            const deviceName = this.entities[entity].hasOwnProperty('suffix')
-                ?  `${this.deviceData.name} ${this.entities[entity].suffix}`
+        Object.keys(this.entities).forEach(entityKey => {
+            const entity = this.entities[entityName]
+            const entityTopic = `${this.deviceTopic}/${entityName}`
+            const entityId = entity.hasOwnProperty('id') ? entity.id : `${this.deviceId}_${entityName}`
+            const deviceName = entity.hasOwnProperty('suffix')
+                ?  `${this.deviceData.name} ${entity.suffix}`
                 : Object.keys(this.entities).length > 1
-                    ? `${this.deviceData.name} ${entity.replace(/_/g," ").replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())}`
+                    ? `${this.deviceData.name} ${entityName.replace(/_/g," ").replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())}`
                     : `${this.deviceData.name}`
 
             let discoveryMessage = {
@@ -22,7 +23,7 @@ class RingDevice {
                 device: this.deviceData
             }
 
-            switch (this.entities[entity].type) {
+            switch (entity.type) {
                 case 'switch':
                     discoveryMessage = {
                         ...discoveryMessage,
@@ -35,9 +36,9 @@ class RingDevice {
                         ...discoveryMessage,
                         state_topic: `${entityTopic}/state`,
                         json_attributes_topic: `${entityTopic}/state`,
-                        ...this.entities[entity].valueTemplate ? { value_template: this.entities[entity].valueTemplate } : {},
-                        ...this.entities[entity].unitOfMeasure ? { unit_of_measure: this.entities[entity].unitOfMeasure } : {},
-                        ...this.entities[entity].icon ? { icon: this.entities[entity].icon } : { icon: 'mdi:information-outline' }
+                        ...entity.hasOwnPoperty('valueTemplate') ? { value_template: entity.valueTemplate } : {},
+                        ...entity.hasOwnPoperty('unitOfMeasure') ? { unit_of_measure: entity.unitOfMeasure } : {},
+                        ...entity.hasOwnPoperty('icon') ? { icon: entity.icon } : { icon: 'mdi:information-outline' }
                     }
                     break;
                 case 'number':
@@ -45,18 +46,19 @@ class RingDevice {
                         ...discoveryMessage,
                         state_topic: `${entityTopic}/state`,
                         command_topic: `${entityTopic}/command`,
-                        ...this.entities[entity].min ? { min: this.entities[entity].min } : {},
-                        ...this.entities[entity].max ? { max: this.entities[entity].max } : {}
+                        ...entity.hasOwnPoperty('min') ? { min: entity.min } : {},
+                        ...entity.hasOwnPoperty('max') ? { max: entity.max } : {}
                     }
                     break;
             }
 
-            // Save state/command topics to entity properties for later use
-            if (!this.entities[entity].hasOwnProperty('stateTopic')) {
-                this.entities[entity].stateTopic = `${entityTopic}/state`
+            // On first discovery save the generated state/command topics to
+            // entity properties and subscribe to any command topics
+            if (!this.entities[entityName].hasOwnProperty('stateTopic')) {
+                this.entities[entityName].stateTopic = `${entityTopic}/state`
                 if (discoveryMessage.hasOwnProperty('command_topic')) {
-                    this.entities[entity].commandTopic = discoveryMessage.command_topic
-                    this.mqttClient.subscribe(this.entities[entity].commandTopic)
+                    this.entities[entityName].commandTopic = discoveryMessage.command_topic
+                    this.mqttClient.subscribe(this.entities[entityName].commandTopic)
                 }
             }
 
