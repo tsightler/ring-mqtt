@@ -1,7 +1,7 @@
 const debug = require('debug')('ring-mqtt')
 const utils = require('../lib/utils')
 
-class BaseDevice {
+class RingDevice {
 
     async publishDiscovery() {
         Object.keys(this.entities).forEach(entity => {
@@ -13,7 +13,7 @@ class BaseDevice {
                     ? `${this.deviceData.name} ${entity.replace(/_/g," ").replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())}`
                     : `${this.deviceData.name}`
 
-            const discoveryMessage = {
+            let discoveryMessage = {
                 name: deviceName,
                 unique_id: entityId,
                 availability_topic: this.availabilityTopic,
@@ -24,19 +24,30 @@ class BaseDevice {
 
             switch (this.entities[entity].type) {
                 case 'switch':
-                    discoveryMessage.state_topic = `${entityTopic}/state`
-                    discoveryMessage.command_topic = `${entityTopic}/command`
+                    discoveryMessage = {
+                        ...discoveryMessage,
+                        state_topic: `${entityTopic}/state`,
+                        command_topic: `${entityTopic}/command`
+                    }
                     break;
                 case 'sensor':
-                    discoveryMessage.state_topic = `${entityTopic}/state`
-                    discoveryMessage.json_attributes_topic = `${entityTopic}/state`
-                    discoveryMessage.icon = 'mdi:information-outline'
+                    discoveryMessage = {
+                        ...discoveryMessage,
+                        state_topic: `${entityTopic}/state`,
+                        json_attributes_topic: `${entityTopic}/state`,
+                        value_template: this.entities[entity].value_template,
+                        unit_of_measure: this.entities[entity].max,
+                        icon: 'mdi:information-outline'
+                    }
                     break;
                 case 'number':
-                    discoveryMessage.state_topic = `${entityTopic}/state`
-                    discoveryMessage.command_topic = `${entityTopic}/command`
-                    discoveryMessage.min = this.entities[entity].min
-                    discoveryMessage.max = this.entities[entity].max
+                    discoveryMessage = {
+                        ...discoveryMessage,
+                        state_topic: `${entityTopic}/state`,
+                        command_topic: `${entityTopic}/command`,
+                        min: this.entities[entity].min,
+                        max: this.entities[entity].max
+                    }
                     break;
             }
 
@@ -59,4 +70,4 @@ class BaseDevice {
     }
 }
 
-module.exports = BaseDevice
+module.exports = RingDevice

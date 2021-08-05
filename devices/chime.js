@@ -1,9 +1,9 @@
 const debug = require('debug')('ring-mqtt')
 const utils = require('../lib/utils')
 const clientApi = require('../node_modules/ring-client-api/lib/api/rest-client').clientApi
-const BaseDevice = require('./ring-base-device')
+const RingDevice = require('./base-ring-device')
 
-class Chime extends BaseDevice {
+class Chime extends RingDevice {
     constructor(deviceInfo) {
         super()
 
@@ -43,7 +43,9 @@ class Chime extends BaseDevice {
                 state: Boolean(this.device.data.do_not_disturb.seconds_left) ? 'ON' : 'OFF'
             },
             info: {
-                type: 'sensor'
+                type: 'sensor',
+                value_template = '{{ value_json["wirelessSignal"] | default }}',
+                unit_of_measurement = 'RSSI'
             }
         }
     }
