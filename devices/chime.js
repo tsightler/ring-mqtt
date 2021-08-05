@@ -47,38 +47,30 @@ class Chime {
         this.publishDiscovery()
     }
 
-    // Publish device state data and subscribe to
-    // device data events and command topics as needed
+    // Perforsms device publish and re-publish functions (subscribed vs not subscribed)
     async publish() {
         const debugMsg = (this.availabilityState === 'init') ? 'Publishing new ' : 'Republishing existing '
         debug(debugMsg+'device id: '+this.deviceId)
 
-        // Publish discovery message
-        if (!this.discoveryData.length) { await this.initDiscoveryData() }
-        await this.publishDiscoveryData()
-        await utils.sleep(2)
+        await this.publishDiscovery()
         await this.online()
 
         if (this.subscribed) {
             this.publishData()
+            this.publishInfoState()
         } else {
             // Subscribe to data updates for device
-            this.device.onData.subscribe(() => { this.publishData(true) })
-            // this.schedulePublishAttributes()
+            this.device.onData.subscribe(data => { this.publishData(data) })
 
-            // Subscribe to any device command topics
-            const properties = Object.getOwnPropertyNames(this)
-            const commandTopics = properties.filter(p => p.match(/^commandTopic.*/g))
-            commandTopics.forEach(commandTopic => {
-                this.mqttClient.subscribe(this[commandTopic])
-            })
+            this.publishInfoState()
+            this.schedulePublishInfo()
 
             // Mark device as subscribed
             this.subscribed = true
         }
     }
 
-    publishDiscovery() {
+    async publishDiscovery() {
         Object.keys(this.entities).forEach(entity => {
             const entityTopic = `${this.deviceTopic}/${entity}`
             const entityId = this.entities[entity].hasOwnProperty('id') ? this.entities[entity].id : `${this.deviceId}_${entity}`
@@ -87,9 +79,6 @@ class Chime {
                 : Object.keys(this.entities).length > 1
                     ? `${this.deviceData.name} ${entity.replace(/_/g," ").replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())}`
                     : `${this.deviceData.name}`
-
-            this.entities[entity].stateTopic = `${entityTopic}/state`
-            this.entities[entity].configTopic = `homeassistant/${this.entities[entity].type}/${this.locationId}/${entityId}/config`
 
             const discoveryMessage = {
                 name: deviceName,
@@ -102,66 +91,58 @@ class Chime {
 
             switch (this.entities[entity].type) {
                 case 'switch':
-                    discoveryMessage.state_topic = this.entities[entity].stateTopic,
+                    discoveryMessage.state_topic = `${entityTopic}/state`
                     discoveryMessage.command_topic = `${entityTopic}/command`
                     break;
                 case 'sensor':
-                    discoveryMessage.state_topic = this.entities[entity].stateTopic
-                    discoveryMessage.json_attributes_topic = this.entities[entity].stateTopic
+                    discoveryMessage.state_topic = `${entityTopic}/state`
+                    discoveryMessage.json_attributes_topic = `${entityTopic}/state`
                     discoveryMessage.icon = 'mdi:information-outline'
                     break;
                 case 'number':
-                    discoveryMessage.state_topic = this.entities[entity].stateTopic
+                    discoveryMessage.state_topic = `${entityTopic}/state`
                     discoveryMessage.command_topic = `${entityTopic}/command`
                     discoveryMessage.min = this.entities[entity].min
                     discoveryMessage.max = this.entities[entity].max
                     break;
             }
 
-            if (discoveryMessage.hasOwnProperty('command_topic')) {
-                this.entities[entity].commandTopic = discoveryMessage.command_topic
+            // Save state/command topics to entity properties for later use
+            if (!this.entities[entity].hasOwnProperty('stateTopic')) {
+                this.entities[entity].stateTopic = `${entityTopic}/state`
+                if (discoveryMessage.hasOwnProperty('command_topic')) {
+                    this.entities[entity].commandTopic = discoveryMessage.command_topic
+                    this.mqttClient.subscribe(this.entities[entity].commandTopic)
+                }
             }
-            console.log(this.entities[entity])
-            console.log(discoveryMessage)
-        })
-    }
 
-    // Publish all discovery data for device
-    async publishDiscoveryData() {
-        const debugMsg = (this.availabilityState == 'init') ? 'Publishing new ' : 'Republishing existing '
-        debug(debugMsg+'device id: '+this.deviceId)
-        this.discoveryData.forEach(dd => {
-            debug('HASS config topic: '+dd.configTopic)
-            debug(dd.message)
-            this.publishMqtt(dd.configTopic, JSON.stringify(dd.message))
+            const configTopic = `homeassistant/${this.entities[entity].type}/${this.locationId}/${entityId}/config`
+            debug('HASS config topic: '+configTopic)
+            debug(discoveryMessage)
+            this.publishMqtt(configTopic, JSON.stringify(discoveryMessage))
         })
         // Sleep for a few seconds to give HA time to process discovery message
         await utils.sleep(2)
     }
 
-    async publishData(isDataEvent) {
-        debug(clientApi())
-        const chimeHealth = await this.device.restClient.request({
-            url: clientApi(`chimes/${this.device.id}/health`),
-            responseType: 'json',
-        })
-        debug(chimeHealth)
+    async publishData(data) {
         let volumeState = this.device.data.settings.volume
         let snoozeState = Boolean(this.device.data.do_not_disturb.seconds_left) ? 'ON' : 'OFF'
 
-        if (isDataEvent) {
-            volumeState = (this.entities.volume.state !== volumeState ) ? volumeState : false
-            snoozeState = (this.entities.snooze.state !== snoozeState ) ? snoozeState : false
+        // If it's a data event only published changed vaolumes
+        if (data) {
+            volumeState = (this.entities.volume.state !== volumeState) ? volumeState : false
+            this.entities.volume.state = volumeState
+
+            snoozeState = (this.entities.snooze.state !== snoozeState) ? snoozeState : false
+            this.entities.snooze.state = snoozeState
         }
 
         // Publish sensor state
-        if (volumeState) {
-            this.entities.volume.state = volumeState
+        if (volumeState) { 
             this.publishMqtt(this.entities.volume.stateTopic, volumeState.toString(), true)
         }
-
         if (snoozeState) { 
-            this.entities.snooze.state = snoozeState
             this.publishMqtt(this.entities.snooze.stateTopic, snoozeState, true)
         }
     }
@@ -180,7 +161,7 @@ class Chime {
             attributes.wirelessSignal = deviceHealth.latest_signal_strength
             attributes.firmwareStatus = deviceHealth.firmware
             attributes.lastUpdate = deviceHealth.updated_at.slice(0,-6)+"Z"
-            this.publishMqtt(this.deviceTopic+'/info/state', JSON.stringify(attributes), true)
+            this.publishMqtt(this.entities.info.stateTopic, JSON.stringify(attributes), true)
         }
     }
 
