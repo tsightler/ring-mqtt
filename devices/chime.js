@@ -5,6 +5,8 @@ const BaseDevice = require('./ring-base-device')
 
 class Chime extends BaseDevice {
     constructor(deviceInfo) {
+        super()
+        
         // Set default properties for alarm device object model 
         this.device = deviceInfo.device
         this.mqttClient = deviceInfo.mqttClient
