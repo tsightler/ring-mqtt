@@ -81,8 +81,8 @@ class Chime {
     publishDiscovery() {
         Object.keys(this.entities).forEach(entity => {
             const entityTopic = `${this.deviceTopic}/${entity}`
-            const discoveryId = (Object.keys(this.entities) > 1) ? `${this.deviceId}_${entity}` : this.deviceId
-            const deviceName = (Object.keys(this.entities) > 1)
+            const discoveryId = (Object.keys(this.entities).length > 1) ? `${this.deviceId}_${entity}` : this.deviceId
+            const deviceName = (Object.keys(this.entities).length > 1)
                 ? `${entity.replace(/_/g," ").replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())}`
                 : `${this.deviceData.name}`
 
@@ -98,7 +98,7 @@ class Chime {
                 device: this.deviceData
             }
 
-            switch (entity.type) {
+            switch (this.entities[entity].type) {
                 case 'switch':
                     discoveryMessage = {
                         state_topic: this.entities[entity].stateTopic,
