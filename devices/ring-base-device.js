@@ -2,7 +2,7 @@ const debug = require('debug')('ring-mqtt')
 const utils = require('../lib/utils')
 
 class BaseDevice {
-    
+
     async publishDiscovery() {
         Object.keys(this.entities).forEach(entity => {
             const entityTopic = `${this.deviceTopic}/${entity}`
@@ -16,7 +16,7 @@ class BaseDevice {
             const discoveryMessage = {
                 name: deviceName,
                 unique_id: entityId,
-                availabilityTopic: this.availabilityTopic,
+                availability_topic: this.availabilityTopic,
                 payload_available: 'online',
                 payload_not_available: 'offline',
                 device: this.deviceData
