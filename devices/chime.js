@@ -125,9 +125,9 @@ class Chime {
             if (discoveryMessage.hasOwnProperty('command_topic')) {
                 this.entities[entity].commandTopic = discoveryMessage.command_topic
             }
+            console.log(this.entities[entity])
+            console.log(discoveryMessage)
         })
-        console.log(this.entities[entity])
-        console.log(discoveryMessage)
     }
 
     // Publish all discovery data for device
