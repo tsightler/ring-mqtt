@@ -89,7 +89,7 @@ class Chime {
             this.entities[entity].stateTopic = `${entityTopic}/state`
             this.entities[entity].configTopic = `homeassistant/${this.entities[entity].type}/${this.locationId}/${discoveryId}/config`
 
-            const discoveryMessage = {
+            let discoveryMessage = {
                 name: deviceName,
                 unique_id: discoveryId,
                 availabilityTopic: this.availabilityTopic,
