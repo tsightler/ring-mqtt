@@ -73,7 +73,7 @@ class RingDevice {
                 }
             }
 
-            const configTopic = `homeassistant/${this.entities[entity].type}/${this.locationId}/${entityId}/config`
+            const configTopic = `homeassistant/${entity.type}/${this.locationId}/${entityId}/config`
             debug('HASS config topic: '+configTopic)
             debug(discoveryMessage)
             this.publishMqtt(configTopic, JSON.stringify(discoveryMessage))
