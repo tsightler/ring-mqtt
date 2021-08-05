@@ -36,7 +36,8 @@ class Chime extends RingDevice {
                 type: 'number',
                 state: this.device.data.settings.volume,
                 min: 0,
-                max: 11
+                max: 11,
+                icon: 'hass:volume-high'
             },
             snooze: {
                 type: 'switch',
