@@ -18,7 +18,7 @@ class SecurityPanel extends AlarmDevice {
         // Build required MQTT topics
         this.stateTopic = this.deviceTopic+'/alarm/state'
         this.commandTopic = this.deviceTopic+'/alarm/command'
-        this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'_alarm/config'
+        this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
         
         this.stateTopic_siren = this.deviceTopic+'/siren/state'
         this.commandTopic_siren = this.deviceTopic+'/siren/command'
