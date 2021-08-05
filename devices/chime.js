@@ -113,11 +113,6 @@ class Chime {
         })
 
         // Snooze state
-        this.entity.snooze = {
-                stateTopic: this.deviceTopic+'/snooze/state',
-                commandTopic: this.deviceTopic+'/snooze/command',
-                configTopic: 'homeassistant/binary_sensor/'+this.locationId+'/'+this.deviceId+'_snooze/config'
-        }
         this.discoveryData.push({
             message: {
                 name: this.deviceData.name+' Snooze Activated',
