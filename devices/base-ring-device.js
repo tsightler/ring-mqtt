@@ -2,7 +2,6 @@ const debug = require('debug')('ring-mqtt')
 const utils = require('../lib/utils')
 
 class RingDevice {
-
     // This function loops through each entity of the device, generates
     // a unique device ID for each one and creates the state/command topics.
     // Finally it generates a Home Assistant MQTT discovery message for the entity

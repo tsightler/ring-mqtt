@@ -56,7 +56,7 @@ class Chime extends RingDevice {
         const debugMsg = (this.availabilityState === 'init') ? 'Publishing new ' : 'Republishing existing '
         debug(debugMsg+'device id: '+this.deviceId)
 
-        await this.publishDiscovery()
+        await this.publishDevice()
         await this.online()
 
         if (this.subscribed) {
