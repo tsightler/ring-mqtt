@@ -100,20 +100,20 @@ class Chime {
 
             switch (this.entities[entity].type) {
                 case 'switch':
-                    discoveryMessage = {
+                    discoveryMessage += {
                         state_topic: this.entities[entity].stateTopic,
                         command_topic: `${entityTopic}/command`
                     }
                     break;
                 case 'sensor':
-                    discoveryMessage = {
+                    discoveryMessage += {
                         state_topic: this.entities[entity].stateTopic,
                         json_attributes_topic: this.entities[entity].stateTopic,
                         icon: 'mdi:information-outline'
                     }
                     break;
                 case 'number':
-                    discoveryMessage = {
+                    discoveryMessage += {
                         state_topic: this.entities[entity].stateTopic,
                         command_topic: `${entityTopic}/command`,
                         min: this.entities[entity].min,
