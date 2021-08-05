@@ -28,31 +28,23 @@ class Chime {
         this.deviceTopic = this.config.ring_topic+'/'+this.locationId+'/chime/'+this.deviceId
         this.availabilityTopic = this.deviceTopic+'/status'
 
-        this.entity = {
+        this.entities = {
             volume: {
                 type: 'number',
-                suffix: 'volume',
                 state: this.device.data.settings.volume,
-                stateTopic: this.deviceTopic+'/volume/state',
-                commandTopic: this.deviceTopic+'/volume/command',
-                configTopic: 'homeassistant/number/'+this.locationId+'/'+this.deviceId+'_volume/config'
+                min: 0,
+                max: 11
             },
             snooze: {
                 type: 'switch',
-                suffix: 'snooze',
-                state: Boolean(this.device.data.do_not_disturb.seconds_left) ? 'ON' : 'OFF',
-                stateTopic: this.deviceTopic+'/snooze/state',
-                commandTopic: this.deviceTopic+'/snooze/command',
-                configTopic: 'homeassistant/switch/'+this.locationId+'/'+this.deviceId+'_snooze/config'
+                state: Boolean(this.device.data.do_not_disturb.seconds_left) ? 'ON' : 'OFF'
             },
             info: {
-                type: 'sensor',
-                suffix: 'info',
-                stateTopic: this.deviceTopic+'/info/state',
-                configTopic: 'homeassistant/sensor/'+this.locationId+'/'+this.deviceId+'_info/config'
+                type: 'sensor'
             }
         }
-        this.initDiscoveryData()
+
+        this.publishDiscovery()
     }
 
     // Publish device state data and subscribe to
@@ -86,45 +78,56 @@ class Chime {
         }
     }
 
-    initDiscoveryData() {
-        Object.keys(this.entity).forEach(e => {
-            console.log(`key=${e} value=${JSON.stringify(this.entity[e])}`)
-            switch (e.type) {
+    publishDiscovery() {
+        Object.keys(this.entities).forEach(entity => {
+            const entityTopic = `${this.deviceTopic}/${entity}`
+            const discoveryId = (Object.keys(this.entities) > 1) ? `${this.deviceId}_${entity}` : this.deviceId
+            const deviceName = (Object.keys(this.entities) > 1)
+                ? `${entity.replace(/_/g," ").replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())}`
+                : `${this.deviceData.name}`
+
+            this.entities[entity].stateTopic = `${entityTopic}/state`
+            this.entities[entity].configTopic = `homeassistant/${this.entities[entity].type}/${this.locationId}/${discoveryId}/config`
+
+            const discoveryMessage = {
+                name: deviceName,
+                unique_id: discoveryId,
+                availabilityTopic: this.availabilityTopic,
+                payload_available: 'online',
+                payload_not_available: 'offline',
+                device: this.deviceData
+            }
+
+            switch (entity.type) {
                 case 'switch':
+                    discoveryMessage = {
+                        state_topic: this.entities[entity].stateTopic,
+                        command_topic: `${entityTopic}/command`
+                    }
+                    break;
                 case 'sensor':
+                    discoveryMessage = {
+                        state_topic: this.entities[entity].stateTopic,
+                        json_attributes_topic: this.entities[entity].stateTopic,
+                        icon: 'mdi:information-outline'
+                    }
+                    break;
                 case 'number':
+                    discoveryMessage = {
+                        state_topic: this.entities[entity].stateTopic,
+                        command_topic: `${entityTopic}/command`,
+                        min: this.entities[entity].min,
+                        max: this.entities[entity].max
+                    }
+                    break;
+            }
+
+            if (discoveryMessage.hasOwnProperty('command_topic')) {
+                this.entities[entity].commandTopic = discoveryMessage.command_topic
             }
         })
-        // Chime Volume Level
-        this.discoveryData.push({
-            message: {
-                name: this.deviceData.name+' Volume',
-                unique_id: this.deviceId+'_volume',
-                availability_topic: this.availabilityTopic,
-                payload_available: 'online',
-                payload_not_available: 'offline',
-                state_topic: this.entity.volume.stateTopic,
-                command_topic: this.entity.volume.commandTopic,
-                min: 0,
-                max: 11,
-                device: this.deviceData
-            },
-            configTopic: this.entity.volume.configTopic
-        })
-
-        // Snooze state
-        this.discoveryData.push({
-            message: {
-                name: this.deviceData.name+' Snooze Activated',
-                unique_id: this.deviceId+'_snooze',
-                availability_topic: this.availabilityTopic,
-                payload_available: 'online',
-                payload_not_available: 'offline',
-                state_topic: this.entity.snooze.stateTopic,
-                device: this.deviceData
-            },
-            configTopic: this.entity.snooze.configTopic
-        })
+        console.log(this.entities[entity])
+        console.log(discoveryMessage)
     }
 
     // Publish all discovery data for device
@@ -151,19 +154,19 @@ class Chime {
         let snoozeState = Boolean(this.device.data.do_not_disturb.seconds_left) ? 'ON' : 'OFF'
 
         if (isDataEvent) {
-            volumeState = (this.entity.volume.state !== volumeState ) ? volumeState : false
-            snoozeState = (this.entity.snooze.state !== snoozeState ) ? snoozeState : false
+            volumeState = (this.entities.volume.state !== volumeState ) ? volumeState : false
+            snoozeState = (this.entities.snooze.state !== snoozeState ) ? snoozeState : false
         }
 
         // Publish sensor state
         if (volumeState) {
-            this.entity.volume.state = volumeState
-            this.publishMqtt(this.entity.volume.stateTopic, volumeState.toString(), true)
+            this.entities.volume.state = volumeState
+            this.publishMqtt(this.entities.volume.stateTopic, volumeState.toString(), true)
         }
 
         if (snoozeState) { 
-            this.entity.snooze.state = snoozeState
-            this.publishMqtt(this.entity.snooze.stateTopic, snoozeState, true)
+            this.entities.snooze.state = snoozeState
+            this.publishMqtt(this.entities.snooze.stateTopic, snoozeState, true)
         }
     }
 
