@@ -6,7 +6,7 @@ const BaseDevice = require('./ring-base-device')
 class Chime extends BaseDevice {
     constructor(deviceInfo) {
         super()
-        
+
         // Set default properties for alarm device object model 
         this.device = deviceInfo.device
         this.mqttClient = deviceInfo.mqttClient
@@ -46,8 +46,6 @@ class Chime extends BaseDevice {
                 type: 'sensor'
             }
         }
-
-        this.publishDiscovery()
     }
 
     // Perforsms device publish and re-publish functions (subscribed vs not subscribed)
