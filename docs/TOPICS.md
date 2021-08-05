@@ -56,14 +56,14 @@ ring/<location_id>/alarm/<device_id>/info/state      <-- Device info sensor
 
 Contact Sensor:
 ```
-ring/<location_id>/alarm/<device_id>/cotact/state    <-- ON = Contact Open
+ring/<location_id>/alarm/<device_id>/contact/state    <-- ON = Contact Open
 ring/<location_id>/alarm/<device_id>/info/state      <-- Device info sensor
 ```
 
 Ring Retrofit Sensor:
 ```
 ring/<location_id>/alarm/<device_id>/zone/state      <-- ON = Zone Tripped
-ring/<location_id>/alarm/<device_id>/zone/state      <-- Device info sensor
+ring/<location_id>/alarm/<device_id>/info/state      <-- Device info sensor
 ```
 
 Fan switch:
@@ -95,7 +95,7 @@ Modes Control Panel (virtual alarm control panel for setting Ring location modes
 locations with Ring cameras but not Ring alarm):
 ```
 ring/<location_id>/alarm/<device_id>/mode/state      <-- Get location mode: ("disarmed", "armed_home", "armed_away")
-ring/<location_id>/alarm/<device_id>/mode/state      <-- Set location mode: ("disarm", "arm_home", "arm_away")
+ring/<location_id>/alarm/<device_id>/mode/command    <-- Set location mode: ("disarm", "arm_home", "arm_away")
 ```
 
 Motion Sensor:
