@@ -81,17 +81,19 @@ class Chime {
     publishDiscovery() {
         Object.keys(this.entities).forEach(entity => {
             const entityTopic = `${this.deviceTopic}/${entity}`
-            const discoveryId = (Object.keys(this.entities).length > 1) ? `${this.deviceId}_${entity}` : this.deviceId
-            const deviceName = (Object.keys(this.entities).length > 1)
-                ? `${entity.replace(/_/g," ").replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())}`
-                : `${this.deviceData.name}`
+            const entityId = this.entities[entity].hasOwnProperty('id') ? this.entities[entity].id : `${this.deviceId}_${entity}`
+            const deviceName = this.entities[entity].hasOwnProperty('suffix')
+                ?  `${this.deviceData.name} ${this.entities[entity].suffix}`
+                : Object.keys(this.entities).length > 1
+                    ? `${entity.replace(/_/g," ").replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())}`
+                    : `${this.deviceData.name}`
 
             this.entities[entity].stateTopic = `${entityTopic}/state`
-            this.entities[entity].configTopic = `homeassistant/${this.entities[entity].type}/${this.locationId}/${discoveryId}/config`
+            this.entities[entity].configTopic = `homeassistant/${this.entities[entity].type}/${this.locationId}/${entityId}/config`
 
             const discoveryMessage = {
                 name: deviceName,
-                unique_id: discoveryId,
+                unique_id: entityId,
                 availabilityTopic: this.availabilityTopic,
                 payload_available: 'online',
                 payload_not_available: 'offline',
