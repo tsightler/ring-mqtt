@@ -49,7 +49,7 @@ class RingDevice {
                         ...discoveryMessage,
                         json_attributes_topic: `${entityTopic}/state`,
                         ...entity.hasOwnPoperty('valueTemplate') ? { value_template: entity.valueTemplate } : {},
-                        ...entity.hasOwnPoperty('unitOfMeasure') ? { unit_of_measure: entity.unitOfMeasure } : {},
+                        ...entity.hasOwnPoperty('unitOfMeasure') ? { unit_of_measurement: entity.unitOfMeasurement } : {},
                         ...entity.hasOwnPoperty('icon') ? { icon: entity.icon } : { icon: 'mdi:information-outline' }
                     }
                     break;
