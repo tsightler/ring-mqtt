@@ -95,18 +95,17 @@ class Chime extends BaseDevice {
 
     // Publish device data to info topic
     async publishInfoState() {
-        const deviceHealth = 
+        const response = 
             await this.device.restClient.request({
                 url: clientApi(`chimes/${this.device.id}/health`),
                 responseType: 'json'
             }).catch()
-        console.log(deviceHealth)
-        if (deviceHealth) {
+        if (response) {
             const attributes = {}
-            attributes.wirelessNetwork = deviceHealth.wifi_name
-            attributes.wirelessSignal = deviceHealth.latest_signal_strength
-            attributes.firmwareStatus = deviceHealth.firmware
-            attributes.lastUpdate = deviceHealth.updated_at.slice(0,-6)+"Z"
+            attributes.wirelessNetwork = response.device_health.wifi_name
+            attributes.wirelessSignal = response.device_health.latest_signal_strength
+            attributes.firmwareStatus = response.device_health.firmware
+            attributes.lastUpdate = response.device_health.updated_at.slice(0,-6)+"Z"
             this.publishMqtt(this.entities.info.stateTopic, JSON.stringify(attributes), true)
         }
     }
