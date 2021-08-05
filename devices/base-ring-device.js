@@ -35,9 +35,9 @@ class RingDevice {
                         ...discoveryMessage,
                         state_topic: `${entityTopic}/state`,
                         json_attributes_topic: `${entityTopic}/state`,
-                        value_template: this.entities[entity].value_template,
-                        unit_of_measure: this.entities[entity].max,
-                        icon: 'mdi:information-outline'
+                        ...this.entities[entity].valueTemplate ? { value_template: this.entities[entity].valueTemplate } : {},
+                        ...this.entities[entity].unitOfMeasure ? { unit_of_measure: this.entities[entity].unitOfMeasure } : {},
+                        ...this.entities[entity].icon ? { icon: this.entities[entity].icon } : { icon: 'mdi:information-outline' }
                     }
                     break;
                 case 'number':
@@ -45,8 +45,8 @@ class RingDevice {
                         ...discoveryMessage,
                         state_topic: `${entityTopic}/state`,
                         command_topic: `${entityTopic}/command`,
-                        min: this.entities[entity].min,
-                        max: this.entities[entity].max
+                        ...this.entities[entity].min ? { min: this.entities[entity].min } : {},
+                        ...this.entities[entity].max ? { max: this.entities[entity].max } : {}
                     }
                     break;
             }
