@@ -85,7 +85,7 @@ class Chime {
             const deviceName = this.entities[entity].hasOwnProperty('suffix')
                 ?  `${this.deviceData.name} ${this.entities[entity].suffix}`
                 : Object.keys(this.entities).length > 1
-                    ? `${entity.replace(/_/g," ").replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())}`
+                    ? `${this.deviceData.name} ${entity.replace(/_/g," ").replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())}`
                     : `${this.deviceData.name}`
 
             this.entities[entity].stateTopic = `${entityTopic}/state`
