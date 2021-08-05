@@ -89,7 +89,7 @@ class Chime {
             this.entities[entity].stateTopic = `${entityTopic}/state`
             this.entities[entity].configTopic = `homeassistant/${this.entities[entity].type}/${this.locationId}/${discoveryId}/config`
 
-            let discoveryMessage = {
+            const discoveryMessage = {
                 name: deviceName,
                 unique_id: discoveryId,
                 availabilityTopic: this.availabilityTopic,
@@ -100,25 +100,19 @@ class Chime {
 
             switch (this.entities[entity].type) {
                 case 'switch':
-                    discoveryMessage += {
-                        state_topic: this.entities[entity].stateTopic,
-                        command_topic: `${entityTopic}/command`
-                    }
+                    discoveryMessage.state_topic = this.entities[entity].stateTopic,
+                    discoveryMessage.command_topic = `${entityTopic}/command`
                     break;
                 case 'sensor':
-                    discoveryMessage += {
-                        state_topic: this.entities[entity].stateTopic,
-                        json_attributes_topic: this.entities[entity].stateTopic,
-                        icon: 'mdi:information-outline'
-                    }
+                    discoveryMessage.state_topic = this.entities[entity].stateTopic
+                    discoveryMessage.json_attributes_topic = this.entities[entity].stateTopic
+                    discoveryMessage.icon = 'mdi:information-outline'
                     break;
                 case 'number':
-                    discoveryMessage += {
-                        state_topic: this.entities[entity].stateTopic,
-                        command_topic: `${entityTopic}/command`,
-                        min: this.entities[entity].min,
-                        max: this.entities[entity].max
-                    }
+                    discoveryMessage.state_topic = this.entities[entity].stateTopic
+                    discoveryMessage.command_topic = `${entityTopic}/command`
+                    discoveryMessage.min = this.entities[entity].min
+                    discoveryMessage.max = this.entities[entity].max
                     break;
             }
 
