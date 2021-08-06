@@ -139,8 +139,24 @@ class Chime extends RingDevice {
         }
     }
 
-    setSnoozeState(message) {
-        return
+    async setSnoozeState(message) {
+        debug('Received set snooze '+message+' for chime Id: '+this.deviceId)
+        debug('Location Id: '+ this.locationId)
+
+        const command = message.toLowerCase()
+
+        switch(command) {
+            case 'on':
+                await this.device.snooze(24 * 60)
+                break;
+            case 'off': {
+                await this.device.clearSnooze()
+                break;
+            }
+            default:
+                debug('Received invalid command for switch!')
+        }
+        this.device.requestUpdate()
     }
 
     setSnoozeDuration(message) {
