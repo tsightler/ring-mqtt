@@ -50,7 +50,7 @@ class RingDevice {
                 case 'sensor':
                     discoveryMessage = {
                         ...discoveryMessage,
-                        json_attributes_topic: `${entityTopic}/state`,
+                        ...entity.hasOwnProperty('attribute') ? {} : { json_attributes_topic: `${entityTopic}/state` },
                         ...entity.hasOwnProperty('valueTemplate') ? { value_template: entity.valueTemplate } : {},
                         ...entity.hasOwnProperty('unitOfMeasurement') ? { unit_of_measurement: entity.unitOfMeasurement } : {},
                         ...entity.hasOwnProperty('icon') ? { icon: entity.icon } : { icon: 'mdi:information-outline' },
