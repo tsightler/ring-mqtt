@@ -44,7 +44,8 @@ class RingDevice {
                 case 'switch':
                     discoveryMessage = {
                         ...discoveryMessage,
-                        command_topic: `${entityTopic}/command`
+                        command_topic: `${entityTopic}/command`,
+                        ...entity.hasOwnProperty('icon') ? { icon: entity.icon } : {}
                     }
                     break;
                 case 'sensor':

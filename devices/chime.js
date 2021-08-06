@@ -48,7 +48,18 @@ class Chime extends RingDevice {
                 state: 1440,
                 min: 1,
                 max: 1440,
-                icon: "hass:timer"
+                icon: 'hass:timer',
+                suffix: 'Snooze Duration Minutes'
+            },
+            play_ding_sound: {
+                type: 'switch',
+                state: 'OFF',
+                icon: 'hass:play'
+            },
+            play_motion_sound: {
+                type: 'switch',
+                state: 'OFF',
+                icon: 'hass:play'
             },
             wireless: {
                 type: 'sensor',
@@ -88,21 +99,25 @@ class Chime extends RingDevice {
         }
     }
 
-    async publishData(isPublish) {
+    async publishData(republish) {
         const volumeState = this.device.data.settings.volume
         const snoozeState = Boolean(this.device.data.do_not_disturb.seconds_left) ? 'ON' : 'OFF'
 
-        // Publish sensor state
-        if (isPublish || volumeState !== this.entities.volume.state) { 
+        // Polled states are published only if value changes or it's a republish
+        if (volumeState !== this.entities.volume.state || republish) { 
             this.publishMqtt(this.entities.volume.stateTopic, volumeState.toString(), true)
             this.entities.volume.state = volumeState
         }
-        if (isPublish || snoozeState !== this.entities.snooze.state ) { 
+        if (snoozeState !== this.entities.snooze.state || republish) { 
             this.publishMqtt(this.entities.snooze.stateTopic, snoozeState, true)
             this.entities.snooze.state = snoozeState
         }
-        if (isPublish || !this.subscribed) {
+
+        // Data states are published only for publish/republish
+        if (!this.subscribed || republish) {
             this.publishMqtt(this.entities.snooze_duration.stateTopic, this.entities.snooze_duration.state.toString(), true)
+            this.publishMqtt(this.entities.play_ding_sound.stateTopic, this.entities.snooze_duration.state, true)
+            this.publishMqtt(this.entities.play_motion_sound.stateTopic, this.entities.snooze_duration.state, true)
         }
 
     }
@@ -145,15 +160,20 @@ class Chime extends RingDevice {
             case 'volume':
                 this.setVolumeLevel(message)
                 break;
+            case 'play_ding_sound':
+                this.playSound(message, 'ding')
+                break;
+            case 'play_motion_sound':
+                this.playSound(message, 'motion')
+                break;
             default:
-                debug('Somehow received message to unknown state topic for camera '+this.deviceId)
+                debug('Somehow received message to unknown state topic for chime '+this.deviceId)
         }
     }
 
     async setSnoozeState(message) {
         debug('Received set snooze '+message+' for chime Id: '+this.deviceId)
         debug('Location Id: '+ this.locationId)
-
         const command = message.toLowerCase()
 
         switch(command) {
@@ -165,7 +185,7 @@ class Chime extends RingDevice {
                 break;
             }
             default:
-                debug('Received invalid command for switch!')
+                debug('Received invalid command for set snooze!')
         }
         this.device.requestUpdate()
     }
@@ -196,6 +216,26 @@ class Chime extends RingDevice {
         } else {
             await this.device.setVolume(volume)
             this.device.requestUpdate()
+        }
+    }
+
+    async playSound(message, chimeOfType) {
+        debug('Receieved play '+chimeOfType+' chime sound '+message+' for chime Id: '+this.deviceId)
+        debug('Location Id: '+ this.locationId)
+        const command = message.toLowerCase()
+
+        switch(command) {
+            case 'on':
+                this.publishMqtt(this.entities[`play_${chimeOfType}_sound`].stateTopic, 'ON', true)
+                await this.device.playSound(chimeOfType)
+                await utils.sleep(5)
+                this.publishMqtt(this.entities[`play_${chimeOfType}_sound`].stateTopic, 'OFF', true)
+                break;
+            case 'off': {
+                break;
+            }
+            default:
+                debug('Received invalid command for play chime sound!')
         }
     }
 
