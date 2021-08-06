@@ -41,25 +41,25 @@ class Chime extends RingDevice {
             },
             snooze: {
                 type: 'switch',
-                state: null
+                state: null,
+                icon: 'hass:bell-sleep'
             },
-            snooze_duration: {
+            snooze_minutes_set: {
                 type: 'number',
                 state: 1440,
                 min: 1,
                 max: 1440,
-                icon: 'hass:timer',
-                suffix: 'Snooze Duration Minutes'
+                icon: 'hass:timer'
             },
             play_ding_sound: {
                 type: 'switch',
                 state: 'OFF',
-                icon: 'hass:play'
+                icon: 'hass:bell-ring'
             },
             play_motion_sound: {
                 type: 'switch',
                 state: 'OFF',
-                icon: 'hass:play'
+                icon: 'hass:bell-ring'
             },
             wireless: {
                 type: 'sensor',
