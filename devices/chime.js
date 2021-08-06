@@ -83,23 +83,26 @@ class Chime extends RingDevice {
 
         await this.publishDevice()
         await this.online()
-
         if (this.subscribed) {
             this.publishData(true)
             this.publishInfoState()
         } else {
             // Subscribe to data updates for device
             this.device.onData.subscribe(() => { this.publishData() })
-
             this.publishInfoState()
             this.schedulePublishInfo()
-
-            // Mark device as subscribed
+            this.monitorConnection()
             this.subscribed = true
         }
     }
 
     async publishData(republish) {
+        // Reset heartbeat counter on every polled state and set device online if not already
+        this.heartbeat = 3
+        if (this.availabilityState !== 'online') {
+            await this.online()
+        }
+
         const volumeState = this.device.data.settings.volume
         const snoozeState = Boolean(this.device.data.do_not_disturb.seconds_left) ? 'ON' : 'OFF'
 
@@ -113,7 +116,7 @@ class Chime extends RingDevice {
             this.entities.snooze.state = snoozeState
         }
 
-        // Data states are published only for publish/republish
+        // Realtime states are published only for publish/republish
         if (!this.subscribed || republish) {
             this.publishMqtt(this.entities.snooze_minutes.stateTopic, this.entities.snooze_minutes.state.toString(), true)
             this.publishMqtt(this.entities.play_ding_sound.stateTopic, this.entities.play_ding_sound.state, true)
@@ -144,6 +147,24 @@ class Chime extends RingDevice {
         await utils.sleep(this.availabilityState === 'offline' ? 60 : 300)
         if (this.availabilityState === 'online') { this.publishInfoState() }
         this.schedulePublishInfo()
+    }
+
+    // Super simple heartbeat function decrements the heartbeat counter every 20 seconds.
+    // In normal operation heartbeat is constantly reset in data publish function due to
+    // 20 second polling events constantly calling function even with no changes.
+    // If heatbeat counter reaches 0 it indicates that the polling cycle has stopped.
+    // In that case this function sets the device offline.  When polling cycle resumes
+    // the heartbeat is again set >0 and the device is set online
+    async monitorConnection() {
+        if (this.heartbeat > 0) {
+            this.heartbeat--
+        } else {
+            if (this.availabilityState !== 'offline') { 
+                this.offline()
+            }
+        }
+        await utils.sleep(20)
+        this.monitorConnection()
     }
 
     // Process messages from MQTT command topic
