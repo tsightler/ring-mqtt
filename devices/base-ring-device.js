@@ -55,7 +55,7 @@ class RingDevice {
                         ...entity.hasOwnProperty('unitOfMeasurement') ? { unit_of_measurement: entity.unitOfMeasurement } : {},
                         ...entity.hasOwnProperty('icon')
                             ? { icon: entity.icon } 
-                            : entity.hasOwnProperty('deviceClass') ? {} : { icon: 'mdi:information-outline' },
+                            : entity.hasOwnProperty('deviceClass') && entityName !== "info" ? {} : { icon: 'mdi:information-outline' },
                         ...entity.hasOwnProperty('deviceClass') ? { device_class: entity.deviceClass } : {}
                     }
                     break;
