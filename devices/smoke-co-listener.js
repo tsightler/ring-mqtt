@@ -1,6 +1,6 @@
-const AlarmDevice = require('./alarm-device')
+const RingSocketDevice = require('./base-socket-device')
 
-class SmokeCoListener extends AlarmDevice {
+class SmokeCoListener extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo)
 

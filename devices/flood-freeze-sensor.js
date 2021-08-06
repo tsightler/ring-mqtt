@@ -1,6 +1,6 @@
-const AlarmDevice = require('./alarm-device')
+const RingSocketDevice = require('./base-socket-device')
 
-class FloodFreezeSensor extends AlarmDevice {
+class FloodFreezeSensor extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo)
 

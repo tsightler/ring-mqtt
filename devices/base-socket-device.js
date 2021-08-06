@@ -1,7 +1,8 @@
 const debug = require('debug')('ring-mqtt')
 const utils = require('../lib/utils')
 
-class AlarmDevice {
+// Base class for devices that communicate with hubs via websocket (alarm/smart lighting)
+class RingSocketDevice {
     constructor(deviceInfo) {
         // Set default properties for alarm device object model 
         this.device = deviceInfo.device
@@ -196,4 +197,4 @@ class AlarmDevice {
     }
 }
 
-module.exports = AlarmDevice
+module.exports = RingSocketDevice

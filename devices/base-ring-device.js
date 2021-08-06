@@ -1,6 +1,7 @@
 const debug = require('debug')('ring-mqtt')
 const utils = require('../lib/utils')
 
+// Base class with functions common to all devices
 class RingDevice {
     // This function loops through each entity of the device, generates
     // a unique device ID for each one and creates the state/command topics.

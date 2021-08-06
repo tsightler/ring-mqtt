@@ -1,10 +1,10 @@
 const debug = require('debug')('ring-mqtt')
 const utils = require( '../lib/utils' )
-const AlarmDevice = require('./alarm-device')
 const alarmStates = require('ring-client-api').allAlarmStates
 const RingDeviceType = require('ring-client-api').RingDeviceType
+const RingSocketDevice = require('./base-socket-device')
 
-class SecurityPanel extends AlarmDevice {
+class SecurityPanel extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo)
 

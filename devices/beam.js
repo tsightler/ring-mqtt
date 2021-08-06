@@ -1,7 +1,7 @@
 const debug = require('debug')('ring-mqtt')
-const AlarmDevice = require('./alarm-device')
+const RingSocketDevice = require('./base-socket-device')
 
-class Beam extends AlarmDevice {
+class Beam extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo)
 
