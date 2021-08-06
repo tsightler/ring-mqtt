@@ -34,14 +34,14 @@ class Chime extends RingDevice {
         this.entities = {
             volume: {
                 type: 'number',
-                state: this.device.data.settings.volume,
+                state: 'init',
                 min: 0,
                 max: 11,
                 icon: 'hass:volume-high'
             },
             snooze: {
                 type: 'switch',
-                state: Boolean(this.device.data.do_not_disturb.seconds_left) ? 'ON' : 'OFF'
+                state: 'init'
             },
             info: {
                 type: 'sensor',
@@ -88,10 +88,10 @@ class Chime extends RingDevice {
         }
 
         // Publish sensor state
-        if (volumeState === false) { 
+        if (volumeState !== false) { 
             this.publishMqtt(this.entities.volume.stateTopic, volumeState.toString(), true)
         }
-        if (snoozeState === false) { 
+        if (snoozeState !== false) { 
             this.publishMqtt(this.entities.snooze.stateTopic, snoozeState, true)
         }
     }
