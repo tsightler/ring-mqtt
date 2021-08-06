@@ -43,6 +43,13 @@ class Chime extends RingDevice {
                 type: 'switch',
                 state: null
             },
+            snooze_duration: {
+                type: 'number',
+                state: 1440,
+                min: 1,
+                max: 1440,
+                icon: "hass:timer"
+            },
             wireless: {
                 type: 'sensor',
                 attribute: 'info',
@@ -94,6 +101,10 @@ class Chime extends RingDevice {
             this.publishMqtt(this.entities.snooze.stateTopic, snoozeState, true)
             this.entities.snooze.state = snoozeState
         }
+        if (isPublish) {
+            this.publishMqtt(this.entities.snooze_duration.stateTopic, this.entities.snooze_duration.state.toString(), true)
+        }
+
     }
 
     // Publish device data to info topic
@@ -147,7 +158,7 @@ class Chime extends RingDevice {
 
         switch(command) {
             case 'on':
-                await this.device.snooze(24 * 60)
+                await this.device.snooze(this.entities.snooze_duration.state)
                 break;
             case 'off': {
                 await this.device.clearSnooze()
@@ -160,7 +171,17 @@ class Chime extends RingDevice {
     }
 
     setSnoozeDuration(message) {
-        return
+        const duration = message
+        debug('Received set snooze duration to '+duration+' seconds for chime Id: '+this.deviceId)
+        debug('Location Id: '+ this.locationId)
+        if (isNaN(duration)) {
+                debug('Snooze duration command received but value is not a number')
+        } else if (!(duration >= 0 && duration <= 32767)) {
+            debug('Snooze duration command received but out of range (0-1440)')
+        } else {
+            this.snoozeDuration = parseInt(duration)
+            this.publishMqtt(this.entities.snooze_duration.stateTopic, this.entities.snooze_duration.state.toString(), true)           
+        }
     }
 
     // Set volume level on received MQTT command message
