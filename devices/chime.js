@@ -34,14 +34,14 @@ class Chime extends RingDevice {
         this.entities = {
             volume: {
                 type: 'number',
-                state: 'init',
+                state: null,
                 min: 0,
                 max: 11,
                 icon: 'hass:volume-high'
             },
             snooze: {
                 type: 'switch',
-                state: 'init'
+                state: null
             },
             info: {
                 type: 'sensor',
