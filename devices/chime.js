@@ -101,7 +101,7 @@ class Chime extends RingDevice {
             this.publishMqtt(this.entities.snooze.stateTopic, snoozeState, true)
             this.entities.snooze.state = snoozeState
         }
-        if (isPublish) {
+        if (isPublish || !this.subscribed) {
             this.publishMqtt(this.entities.snooze_duration.stateTopic, this.entities.snooze_duration.state.toString(), true)
         }
 
