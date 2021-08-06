@@ -47,12 +47,13 @@ class Chime extends RingDevice {
                 type: 'sensor',
                 attribute: 'info',
                 deviceClass: 'signal_strength',
-                valueTemplate: '{{ value_json["wirelessSignal"] | default }}'
+                valueTemplate: '{{ value_json["wirelessSignal"] | default }}',
+                unitOfMeasurement: 'dBm'
             },
             info: {
                 type: 'sensor',
                 valueTemplate: '{{ value_json["wirelessSignal"] | default }}',
-                unitOfMeasurement: 'RSSI'
+                unitOfMeasurement: 'dbm'
             }
         }
     }
