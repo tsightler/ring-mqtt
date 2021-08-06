@@ -52,8 +52,7 @@ class Chime extends RingDevice {
             },
             info: {
                 type: 'sensor',
-                valueTemplate: '{{ value_json["lastUpdate"] | default }}',
-                deviceClass: 'timestamp'
+                valueTemplate: '{{ value_json["lastUpdate"] | default }}'
             }
         }
     }
