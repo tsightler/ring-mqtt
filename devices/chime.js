@@ -60,11 +60,11 @@ class Chime extends RingDevice {
         await this.online()
 
         if (this.subscribed) {
-            this.publishData()
+            this.publishData(true)
             this.publishInfoState()
         } else {
             // Subscribe to data updates for device
-            this.device.onData.subscribe(data => { this.publishData(data) })
+            this.device.onData.subscribe(() => { this.publishData() })
 
             this.publishInfoState()
             this.schedulePublishInfo()
@@ -74,26 +74,18 @@ class Chime extends RingDevice {
         }
     }
 
-    async publishData(data) {
-        console.log(data)
-        let volumeState = this.device.data.settings.volume
-        let snoozeState = Boolean(this.device.data.do_not_disturb.seconds_left) ? 'ON' : 'OFF'
-
-        // If it's a data event only published changed vaolumes
-        if (data) {
-            volumeState = (this.entities.volume.state !== volumeState) ? volumeState : false
-            this.entities.volume.state = volumeState
-
-            snoozeState = (this.entities.snooze.state !== snoozeState) ? snoozeState : false
-            this.entities.snooze.state = snoozeState
-        }
+    async publishData(isPublish) {
+        const volumeState = this.device.data.settings.volume
+        const snoozeState = Boolean(this.device.data.do_not_disturb.seconds_left) ? 'ON' : 'OFF'
 
         // Publish sensor state
-        if (volumeState !== false) { 
+        if (isPublish || volumeState !== this.entities.volume.state) { 
             this.publishMqtt(this.entities.volume.stateTopic, volumeState.toString(), true)
+            this.entities.volume.state = volumeState
         }
-        if (snoozeState !== false) { 
+        if (isPublish || snoozeState !== this.entities.snooze.state ) { 
             this.publishMqtt(this.entities.snooze.stateTopic, snoozeState, true)
+            this.entities.snooze.state = snoozeState
         }
     }
 
