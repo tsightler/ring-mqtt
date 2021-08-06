@@ -172,14 +172,14 @@ class Chime extends RingDevice {
 
     setSnoozeDuration(message) {
         const duration = message
-        debug('Received set snooze duration to '+duration+' seconds for chime Id: '+this.deviceId)
+        debug('Received set snooze duration to '+duration+' minutes for chime Id: '+this.deviceId)
         debug('Location Id: '+ this.locationId)
         if (isNaN(duration)) {
                 debug('Snooze duration command received but value is not a number')
         } else if (!(duration >= 0 && duration <= 32767)) {
-            debug('Snooze duration command received but out of range (0-1440)')
+            debug('Snooze duration command received but out of range (0-1440 minutes)')
         } else {
-            this.snoozeDuration = parseInt(duration)
+            this.entities.snooze_duration.state = parseInt(duration)
             this.publishMqtt(this.entities.snooze_duration.stateTopic, this.entities.snooze_duration.state.toString(), true)           
         }
     }
