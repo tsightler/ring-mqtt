@@ -45,6 +45,7 @@ class Chime extends RingDevice {
             },
             wireless: {
                 type: 'sensor',
+                attribute: 'info',
                 deviceClass: 'signal_strength',
                 valueTemplate: '{{ value_json["wirelessSignal"] | default }}'
             },

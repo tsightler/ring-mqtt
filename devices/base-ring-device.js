@@ -9,7 +9,11 @@ class RingDevice {
     async publishDevice() {
         Object.keys(this.entities).forEach(entityName => {
             const entity = this.entities[entityName]
-            const entityTopic = `${this.deviceTopic}/${entityName}`
+
+            let entityTopic = `${this.deviceTopic}/${entityName}`
+            if (entity.hasOwnProperty('attribute')) {
+                entityTopic = `${this.deviceTopic}/${entity.attribute}`
+            }
 
             // Due to legacy reasons, devices with a single entity, as well as the alarm control panel
             // entity, use the device ID without a suffix as the unique ID.  All other devices append
@@ -69,7 +73,7 @@ class RingDevice {
             if (!this.entities[entityName].hasOwnProperty('stateTopic')) {
                 this.entities[entityName].stateTopic = `${entityTopic}/state`
                 if (discoveryMessage.hasOwnProperty('command_topic')) {
-                    this.entities[entityName].commandTopic = discoveryMessage.command_topic
+                    this.entities[entityName].commandTopic = `${entityTopic}/state`
                     this.mqttClient.subscribe(this.entities[entityName].commandTopic)
                 }
             }
