@@ -88,10 +88,10 @@ class Chime extends RingDevice {
         }
 
         // Publish sensor state
-        if (volumeState) { 
+        if (volumeState === false) { 
             this.publishMqtt(this.entities.volume.stateTopic, volumeState.toString(), true)
         }
-        if (snoozeState) { 
+        if (snoozeState === false) { 
             this.publishMqtt(this.entities.snooze.stateTopic, snoozeState, true)
         }
     }
