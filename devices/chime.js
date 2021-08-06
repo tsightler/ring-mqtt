@@ -75,6 +75,7 @@ class Chime extends RingDevice {
     }
 
     async publishData(data) {
+        console.log(data)
         let volumeState = this.device.data.settings.volume
         let snoozeState = Boolean(this.device.data.do_not_disturb.seconds_left) ? 'ON' : 'OFF'
 
