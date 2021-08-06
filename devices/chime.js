@@ -45,7 +45,7 @@ class Chime extends RingDevice {
             },
             info: {
                 type: 'sensor',
-                valueTemplate: '{{ value_json["wirelessSignal"] | default }}',
+                valueTemplate: '{{ value_json["wirelessSignal"] }}',
                 unitOfMeasurement: 'RSSI'
             }
         }
