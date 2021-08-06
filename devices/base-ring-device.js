@@ -75,7 +75,7 @@ class RingDevice {
             if (!this.entities[entityName].hasOwnProperty('stateTopic')) {
                 this.entities[entityName].stateTopic = `${entityTopic}/state`
                 if (discoveryMessage.hasOwnProperty('command_topic')) {
-                    this.entities[entityName].commandTopic = `${entityTopic}/state`
+                    this.entities[entityName].commandTopic = `${entityTopic}/command`
                     this.mqttClient.subscribe(this.entities[entityName].commandTopic)
                 }
             }

@@ -139,6 +139,14 @@ class Chime extends RingDevice {
         }
     }
 
+    setSnoozeState(message) {
+        return
+    }
+
+    setSnoozeDuration(message) {
+        return
+    }
+
     // Set volume level on received MQTT command message
     setVolumeLevel(message) {
         const volume = message
