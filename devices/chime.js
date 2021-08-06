@@ -148,7 +148,7 @@ class Chime extends RingDevice {
     }
 
     // Set volume level on received MQTT command message
-    setVolumeLevel(message) {
+    async setVolumeLevel(message) {
         const volume = message
         debug('Received set volume level to '+volume+' for chime: '+this.deviceId)
         debug('Location Id: '+ this.locationId)
@@ -157,7 +157,7 @@ class Chime extends RingDevice {
         } else if (!(message >= 0 && message <= 11)) {
             debug('Volume command received but out of range (0-11)')
         } else {
-            this.device.setVolume(volume)
+            await this.device.setVolume(volume)
             this.device.requestUpdate()
         }
     }
