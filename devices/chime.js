@@ -52,7 +52,7 @@ class Chime extends RingDevice {
             },
             info: {
                 type: 'sensor',
-                valueTemplate: '{{ value_json["xyz"] | default("attributes") }}'
+                valueTemplate: '{{ attributes }}'
             }
         }
     }
