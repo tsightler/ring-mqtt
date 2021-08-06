@@ -120,6 +120,40 @@ class Chime extends RingDevice {
         this.schedulePublishInfo()
     }
 
+    // Process messages from MQTT command topic
+    processCommand(message, topic) {
+        topic = topic.split('/')
+        const component = topic[topic.length - 2]
+        switch(component) {
+            case 'snooze':
+                this.setSnoozeState(message)
+                break;
+            case 'snooze_duration':
+                this.setSnoozeDuration(message)
+                break;    
+            case 'volume':
+                this.setVolumeLevel(message)
+                break;
+            default:
+                debug('Somehow received message to unknown state topic for camera '+this.deviceId)
+        }
+    }
+
+    // Set volume level on received MQTT command message
+    setVolumeLevel(message) {
+        const volume = message
+        debug('Received set volume level to '+volume+' for chime: '+this.deviceId)
+        debug('Location Id: '+ this.locationId)
+        if (isNaN(message)) {
+                debug('Volume command received but value is not a number')
+        } else if (!(message >= 0 && message <= 11)) {
+            debug('Volume command received but out of range (0-11)')
+        } else {
+            this.device.setVolume(volume)
+            this.device.requestUpdate()
+        }
+    }
+
     // Publish state messages with debug
     publishMqtt(topic, message, isDebug) {
         if (isDebug) { debug(topic, message) }
