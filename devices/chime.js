@@ -44,12 +44,12 @@ class Chime extends RingDevice {
                 state: null,
                 icon: 'hass:bell-sleep'
             },
-            snooze_minutes_set: {
+            snooze_minutes: {
                 type: 'number',
                 state: 1440,
                 min: 1,
                 max: 1440,
-                icon: 'hass:timer'
+                icon: 'hass:timer-sand'
             },
             play_ding_sound: {
                 type: 'switch',
@@ -115,9 +115,9 @@ class Chime extends RingDevice {
 
         // Data states are published only for publish/republish
         if (!this.subscribed || republish) {
-            this.publishMqtt(this.entities.snooze_duration.stateTopic, this.entities.snooze_duration.state.toString(), true)
-            this.publishMqtt(this.entities.play_ding_sound.stateTopic, this.entities.snooze_duration.state, true)
-            this.publishMqtt(this.entities.play_motion_sound.stateTopic, this.entities.snooze_duration.state, true)
+            this.publishMqtt(this.entities.snooze_minutes.stateTopic, this.entities.snooze_minutes.state.toString(), true)
+            this.publishMqtt(this.entities.play_ding_sound.stateTopic, this.entities.play_ding_sound.state, true)
+            this.publishMqtt(this.entities.play_motion_sound.stateTopic, this.entities.play_motion_sound.state, true)
         }
 
     }
@@ -154,8 +154,8 @@ class Chime extends RingDevice {
             case 'snooze':
                 this.setSnoozeState(message)
                 break;
-            case 'snooze_duration':
-                this.setSnoozeDuration(message)
+            case 'snooze_minutes':
+                this.setSnoozeMinutes(message)
                 break;    
             case 'volume':
                 this.setVolumeLevel(message)
@@ -178,7 +178,7 @@ class Chime extends RingDevice {
 
         switch(command) {
             case 'on':
-                await this.device.snooze(this.entities.snooze_duration.state)
+                await this.device.snooze(this.entities.snooze_minutes.state)
                 break;
             case 'off': {
                 await this.device.clearSnooze()
@@ -190,17 +190,17 @@ class Chime extends RingDevice {
         this.device.requestUpdate()
     }
 
-    setSnoozeDuration(message) {
-        const duration = message
-        debug('Received set snooze duration to '+duration+' minutes for chime Id: '+this.deviceId)
+    setSnoozeMinutes(message) {
+        const minutes = message
+        debug('Received set snooze minutes to '+minutes+' minutes for chime Id: '+this.deviceId)
         debug('Location Id: '+ this.locationId)
-        if (isNaN(duration)) {
-                debug('Snooze duration command received but value is not a number')
-        } else if (!(duration >= 0 && duration <= 32767)) {
-            debug('Snooze duration command received but out of range (0-1440 minutes)')
+        if (isNaN(minutes)) {
+                debug('Snooze minutes command received but value is not a number')
+        } else if (!(minutes >= 0 && minutes <= 32767)) {
+            debug('Snooze minutes command received but out of range (0-1440 minutes)')
         } else {
-            this.entities.snooze_duration.state = parseInt(duration)
-            this.publishMqtt(this.entities.snooze_duration.stateTopic, this.entities.snooze_duration.state.toString(), true)           
+            this.entities.snooze_minutes.state = parseInt(minutes)
+            this.publishMqtt(this.entities.snooze_minutes.stateTopic, this.entities.snooze_minutes.state.toString(), true)           
         }
     }
 
