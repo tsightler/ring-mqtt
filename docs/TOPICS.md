@@ -140,16 +140,17 @@ ring/<location_id>/alarm/<device_id>/info/state      <-- Device info sensor
 
 Cameras (available topics vary based by device capabilities):
 ```
-ring/<location_id>/camera/<device_id>/ding/state          <-- ON = Doorbell Ding Detected
-ring/<location_id>/camera/<device_id>/motion/state        <-- ON = Motion Detected
-ring/<location_id>/camera/<device_id>/light/state         <-- Get Light ON/OFF
-ring/<location_id>/camera/<device_id>/light/command       <-- Set Light ON/OFF
-ring/<location_id>/camera/<device_id>/siren/state         <-- Get Siren ON/OFF
-ring/<location_id>/camera/<device_id>/siren/command       <-- Set Siren ON/OFF
-ring/<location_id>/camera/<device_id>/info/state          <-- Device info sensor
-ring/<location_id>/camera/<device_id>/snapshot/image      <-- Snapshot images (JPEG binary data)
-ring/<location_id>/camera/<device_id>/snapshot/attributes <-- JSON attributes for image (timestamp)
-ring/<location_id>/camera/<device_id>/snapshot/interval   <-- Command topic to override default snapshot refresh interval
+ring/<location_id>/camera/<device_id>/ding/state                <-- ON = Doorbell Ding Detected
+ring/<location_id>/camera/<device_id>/motion/state              <-- ON = Motion Detected
+ring/<location_id>/camera/<device_id>/light/state               <-- Get Light ON/OFF
+ring/<location_id>/camera/<device_id>/light/command             <-- Set Light ON/OFF
+ring/<location_id>/camera/<device_id>/siren/state               <-- Get Siren ON/OFF
+ring/<location_id>/camera/<device_id>/siren/command             <-- Set Siren ON/OFF
+ring/<location_id>/camera/<device_id>/info/state                <-- Device info sensor
+ring/<location_id>/camera/<device_id>/snapshot/image            <-- Snapshot images (JPEG binary data)
+ring/<location_id>/camera/<device_id>/snapshot/attributes       <-- JSON attributes for image (timestamp)
+ring/<location_id>/camera/<device_id>/snapshot_interval/state   <-- Get snapshot refresh interval
+ring/<location_id>/camera/<device_id>/snapshot_interval/command <-- Set snapshot refresh interval
 ```
 
 Ring Smart Lighting (available topics vary by device capabilities)
