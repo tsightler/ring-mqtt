@@ -33,13 +33,13 @@ class RingSocketDevice extends RingDevice {
         // Create info device topics
         this.stateTopic_info = this.deviceTopic+'/info/state'
         this.configTopic_info = 'homeassistant/sensor/'+this.locationId+'/'+this.deviceId+'_info/config'
-        this.attributeStateConfigWithTopics = attributeStateConfig.map(attribute => {
-            return {
-                stateTopic: `${this.deviceTopic}/${attribute.topic}/state`,
-                configTopic: `homeassistant/${attribute.component}/${this.location}/${this.deviceId}_${attribute.topic}/config`,
+        this.attributeStateConfigWithTopics = attributeStateConfig
+            .filter(attribute => attribute.shouldSend(this.device))
+            .map(attribute => ({
+                stateTopic: `${this.deviceTopic}/${attribute.id}/state`,
+                configTopic: `homeassistant/${attribute.component}/${this.location}/${this.deviceId}_${attribute.id}/config`,
                 ...attribute
-            }
-        })
+            }))
     }
 
     // Return batterylevel or convert battery status to estimated level
@@ -82,11 +82,11 @@ class RingSocketDevice extends RingDevice {
             configTopic: this.configTopic_info
         })
 
-        for (const {key, title, properties, configTopic, stateTopic} of this.attributeStateConfigWithTopics) {
+        for (const {id, title, properties, configTopic, stateTopic} of this.attributeStateConfigWithTopics) {
             this.discoveryData.push({
                 message: {
                     name: `${this.device.name} ${title}`,
-                    unique_id: `${this.deviceId}_${key}`,
+                    unique_id: `${this.deviceId}_${id}`,
                     availability_topic: this.availabilityTopic,
                     payload_available: 'online',
                     payload_not_available: 'offline',
@@ -184,10 +184,8 @@ class RingSocketDevice extends RingDevice {
         }
         this.publishMqtt(this.stateTopic_info, JSON.stringify(attributes), true)
 
-        for(const {key, stateTopic} of this.attributeStateConfigWithTopics) {
-            if(attributes.hasOwnProperty(key)) {
-                this.publishMqtt(stateTopic, attributes[key].toString(), true);
-            }
+        for(const {stateTopic, getValue} of this.attributeStateConfigWithTopics) {
+           this.publishMqtt(stateTopic, getValue(this.device).toString(), true);
         }
     }
 
