@@ -59,7 +59,8 @@ class RingDevice {
                     ? { max: entity.max } : {},
                 ...entity.hasOwnProperty('icon')
                     ? { icon: entity.icon } 
-                    : entity.hasOwnProperty('deviceClass') && entityName !== "info" ? {} : { icon: 'mdi:information-outline' },
+                    : entityName === "info" 
+                        ? { icon: 'mdi:information-outline' } : {},
                 device: this.deviceData
             }
 
