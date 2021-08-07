@@ -48,7 +48,7 @@ class Camera extends RingPolledDevice {
             ...this.device.isDoorbot
                 ? { ding: { type: 'binary_sensor', deviceClass: 'occupancy', jsonAttributes: true }}
                 : {},
-            ...this.device.isDoorbot
+            ...this.device.hasLight
                 ? { light: { type: 'light' }}
                 : {},
             ...this.device.hasSiren
@@ -61,8 +61,7 @@ class Camera extends RingPolledDevice {
                 ? { snapshot_interval: { type: 'number', min: 10, max: 3600, icon: 'hass:timer' }}
                 : {},
             info: {
-                type: 'sensor',
-                deviceClass: 'timestamp',
+                type: 'sensor', deviceClass: 'timestamp',
                 valueTemplate: '{{ value_json["lastUpdate"] | default }}'
             }
         }

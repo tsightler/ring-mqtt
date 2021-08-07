@@ -8,35 +8,11 @@ class Chime extends RingPolledDevice {
         super(deviceInfo, 'chime')
 
         this.entities = {
-            volume: {
-                type: 'number',
-                state: null,
-                min: 0,
-                max: 11,
-                icon: 'hass:volume-high'
-            },
-            snooze: {
-                type: 'switch',
-                state: null,
-                icon: 'hass:bell-sleep'
-            },
-            snooze_minutes: {
-                type: 'number',
-                state: 1440,
-                min: 1,
-                max: 1440,
-                icon: 'hass:timer-sand'
-            },
-            play_ding_sound: {
-                type: 'switch',
-                state: 'OFF',
-                icon: 'hass:bell-ring'
-            },
-            play_motion_sound: {
-                type: 'switch',
-                state: 'OFF',
-                icon: 'hass:bell-ring'
-            },
+            volume: { type: 'number', state: null, min: 0, max: 11, icon: 'hass:volume-high' },
+            snooze: { type: 'switch', state: null, icon: 'hass:bell-sleep' },
+            snooze_minutes: { type: 'number', state: 1440, min: 1, max: 1440, icon: 'hass:timer-sand' },
+            play_ding_sound: { type: 'switch', state: 'OFF', icon: 'hass:bell-ring' },
+            play_motion_sound: { type: 'switch', state: 'OFF', icon: 'hass:bell-ring' },
             wireless: {
                 type: 'sensor',
                 deviceClass: 'signal_strength',
@@ -59,7 +35,7 @@ class Chime extends RingPolledDevice {
 
         await this.publishDevice()
         await this.online()
-        
+
         if (this.subscribed) {
             this.publishData(true)
             this.publishInfoState()
