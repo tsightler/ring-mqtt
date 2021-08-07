@@ -124,14 +124,13 @@ class RingDevice {
     publishAvailabilityState(enableDebug) {
         this.publishMqtt(this.availabilityTopic, this.availabilityState, enableDebug)
     }
-    
 
     // Set state topic online
     async online() {
         const enableDebug = (this.availabilityState === 'online') ? false : true
         await utils.sleep(1)
         this.availabilityState = 'online'
-        publishAvailabilityState(enableDebug)
+        this.publishAvailabilityState(enableDebug)
         await utils.sleep(1)
     }
 
@@ -139,7 +138,7 @@ class RingDevice {
     offline() {
         const enableDebug = (this.availabilityState === 'offline') ? false : true
         this.availabilityState = 'offline'
-        publishAvailabilityState(enableDebug)
+        this.publishAvailabilityState(enableDebug)
     }
 }
 
