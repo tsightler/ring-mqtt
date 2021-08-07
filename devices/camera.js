@@ -548,7 +548,7 @@ class Camera extends RingPolledDevice {
         debug('Location Id: '+ this.locationId)
         const command = message.toLowerCase()
 
-        switch (message) {
+        switch (command) {
             case 'on':
                 await this.device.setLight(true)
                 break;
@@ -568,7 +568,7 @@ class Camera extends RingPolledDevice {
         debug('Location '+ this.locationId)
         const command = message.toLowerCase()
 
-        switch (message) {
+        switch (command) {
             case 'on':
                 await this.device.setSiren(true)
                 break;
