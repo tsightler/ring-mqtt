@@ -6,8 +6,6 @@ const RingDevice = require('./base-ring-device')
 class RingPolledDevice extends RingDevice {
     constructor(deviceInfo, deviceType) {
         super()
-
-        // Set default properties for camera device object model 
         this.device = deviceInfo.device
         this.mqttClient = deviceInfo.mqttClient
         this.subscribed = false

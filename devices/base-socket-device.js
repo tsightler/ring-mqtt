@@ -5,7 +5,7 @@ const RingDevice = require('./base-ring-device')
 // Base class for devices that communicate with hubs via websocket (alarm/smart lighting)
 class RingSocketDevice extends RingDevice {
     constructor(deviceInfo) {
-        // Set default properties for alarm device object model 
+        super() 
         this.device = deviceInfo.device
         this.mqttClient = deviceInfo.mqttClient
         this.subscribed = false
