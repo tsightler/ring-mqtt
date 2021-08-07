@@ -170,26 +170,6 @@ class RingSocketDevice extends RingDevice {
         }
         this.schedulePublishAttributes()
     }
-
-    // Set state topic online
-    async online() {
-        // Debug output only if state changed from prior published state
-        // Prevents spamming debug log with availability events during republish
-        const enableDebug = (this.availabilityState == 'online') ? false : true
-        await utils.sleep(1)
-        this.availabilityState = 'online'
-        this.publishMqtt(this.availabilityTopic, this.availabilityState, enableDebug)
-        await utils.sleep(1)
-    }
-
-    // Set state topic offline
-    offline() {
-        // Debug log output only if state changed from prior published state
-        // Prevents spamming debug log with online/offline events during republish
-        const enableDebug = (this.availabilityState == 'offline') ? false : true
-        this.availabilityState = 'offline'
-        this.publishMqtt(this.availabilityTopic, this.availabilityState, enableDebug)
-    }
 }
 
 module.exports = RingSocketDevice

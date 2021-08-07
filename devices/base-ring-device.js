@@ -3,12 +3,6 @@ const utils = require('../lib/utils')
 
 // Base class with functions common to all devices
 class RingDevice {
-    // Publish state messages with debug
-    publishMqtt(topic, message, isDebug) {
-        if (isDebug) { debug(topic, message) }
-        this.mqttClient.publish(topic, message, { qos: 1 })
-    }
-
     // This function loops through each entity of the device, generates
     // a unique device ID for each one and creates the state/command topics.
     // Finally it generates a Home Assistant MQTT discovery message for the entity
@@ -95,6 +89,28 @@ class RingDevice {
         })
         // Sleep for a few seconds to give HA time to process discovery message
         await utils.sleep(2)
+    }
+
+    // Publish state messages with debug
+    publishMqtt(topic, message, isDebug) {
+        if (isDebug) { debug(topic, message) }
+        this.mqttClient.publish(topic, message, { qos: 1 })
+    }
+
+    // Set state topic online
+    async online() {
+        const enableDebug = (this.availabilityState === 'online') ? false : true
+        await utils.sleep(1)
+        this.availabilityState = 'online'
+        this.publishMqtt(this.availabilityTopic, this.availabilityState, enableDebug)
+        await utils.sleep(1)
+    }
+
+    // Set state topic offline
+    offline() {
+        const enableDebug = (this.availabilityState === 'offline') ? false : true
+        this.availabilityState = 'offline'
+        this.publishMqtt(this.availabilityTopic, this.availabilityState, enableDebug)
     }
 }
 
