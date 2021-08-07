@@ -3,6 +3,12 @@ const utils = require('../lib/utils')
 
 // Base class with functions common to all devices
 class RingDevice {
+    // Publish state messages with debug
+    publishMqtt(topic, message, isDebug) {
+        if (isDebug) { debug(topic, message) }
+        this.mqttClient.publish(topic, message, { qos: 1 })
+    }
+
     // This function loops through each entity of the device, generates
     // a unique device ID for each one and creates the state/command topics.
     // Finally it generates a Home Assistant MQTT discovery message for the entity

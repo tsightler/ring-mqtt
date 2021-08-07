@@ -1,8 +1,9 @@
 const debug = require('debug')('ring-mqtt')
 const utils = require('../lib/utils')
+const RingDevice = require('./base-ring-device')
 
 // Base class for devices that communicate with hubs via websocket (alarm/smart lighting)
-class RingSocketDevice {
+class RingSocketDevice extends RingDevice {
     constructor(deviceInfo) {
         // Set default properties for alarm device object model 
         this.device = deviceInfo.device
@@ -85,12 +86,6 @@ class RingSocketDevice {
         })
         // Sleep for a few seconds to give HA time to process discovery message
         await utils.sleep(2)
-    }
-
-    // Publish state messages with debug
-    publishMqtt(topic, message, isDebug) {
-        if (isDebug) { debug(topic, message) }
-        this.mqttClient.publish(topic, message, { qos: 1 })
     }
 
     // Publish device state data and subscribe to

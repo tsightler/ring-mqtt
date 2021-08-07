@@ -8,11 +8,7 @@ const RingPolledDevice = require('./base-polled-device')
 
 class Camera extends RingPolledDevice {
     constructor(deviceInfo) {
-        super(deviceInfo)
-
-        // Create top level MQTT topics
-        this.deviceTopic = this.config.ring_topic+'/'+this.locationId+'/camera/'+this.deviceId
-        this.availabilityTopic = this.deviceTopic+'/status'
+        super(deviceInfo, 'camera')
 
         // Camera sepecific properties
         this.publishedLightState = this.device.hasLight ? 'publish' : 'none'
@@ -132,7 +128,7 @@ class Camera extends RingPolledDevice {
 
             // Start monitor of availability state for camera
             this.schedulePublishInfo()
-            this.monitorCameraConnection()
+            this.monitorHeartbeat()
         } else {
             // Set states to force republish
             this.publishedLightState = this.device.hasLight ? 'republish' : 'none'
@@ -365,11 +361,24 @@ class Camera extends RingPolledDevice {
     // Writes state to custom property to keep from publishing state except
     // when values change from previous polling interval
     async publishPolledState() {
-        // Reset heartbeat counter on every polled state and set device online if not already
+        // Reset heartbeat counter on every polled state
         this.heartbeat = 3
-        if (this.availabilityState !== 'online') {
-            await this.online()
-        }     
+
+        // Check for subscription to ding and motion events and attempt to resubscribe
+        if (!this.device.data.subscribed === true) {
+            debug('Camera Id '+this.deviceId+' lost subscription to ding events, attempting to resubscribe...')
+            this.device.subscribeToDingEvents().catch(e => { 
+                debug('Failed to resubscribe camera Id ' +this.deviceId+' to ding events. Will retry in 60 seconds.') 
+                debug(e)
+            })
+        }
+        if (!this.device.data.subscribed_motions === true) {
+            debug('Camera Id '+this.deviceId+' lost subscription to motion events, attempting to resubscribe...')
+            this.device.subscribeToMotionEvents().catch(e => {
+                debug('Failed to resubscribe camera Id '+this.deviceId+' to motion events.  Will retry in 60 seconds.')
+                debug(e)
+            })
+        }
 
         if (this.device.hasLight) {
             const stateTopic = this.deviceTopic+'/light/state'
@@ -596,40 +605,6 @@ class Camera extends RingPolledDevice {
             debug(e)
             this.livestream.active = false
         }
-    }
-
-    // Super simple heartbeat function decrements the heartbeat counter every 20 seconds.
-    // In normal operation heartbeat is constantly reset in data publish function due to
-    // 20 second polling events constantly calling function even with no changes.
-    // If heatbeat counter reaches 0 it indicates that the polling cycle has stopped.
-    // In that case this function sets the device offline.  When polling cycle resumes
-    // the heartbeat is again set >0 and the device is set online
-    async monitorCameraConnection() {
-        if (this.heartbeat > 0) {
-            this.heartbeat--
-        } else {
-            if (this.availabilityState !== 'offline') { 
-                this.offline()
-            }
-        }
-        
-        // Check for subscription to ding and motion events and attempt to resubscribe
-        if (!this.device.data.subscribed === true) {
-            debug('Camera Id '+camera.data.device_id+' lost subscription to ding events, attempting to resubscribe...')
-            this.device.subscribeToDingEvents().catch(e => { 
-                debug('Failed to resubscribe camera Id ' +this.deviceId+' to ding events. Will retry in 60 seconds.') 
-                debug(e)
-            })
-        }
-        if (!this.device.data.subscribed_motions === true) {
-            debug('Camera Id '+camera.data.device_id+' lost subscription to motion events, attempting to resubscribe...')
-            this.device.subscribeToMotionEvents().catch(e => {
-                debug('Failed to resubscribe camera Id '+this.deviceId+' to motion events.  Will retry in 60 seconds.')
-                debug(e)
-            })
-        }
-        await utils.sleep(20)
-        this.monitorCameraConnection()
     }
 
     // Process messages from MQTT command topic

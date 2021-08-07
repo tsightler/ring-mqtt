@@ -4,7 +4,7 @@ const RingDevice = require('./base-ring-device')
 
 // Base class for devices/features that communicate via HTTP polling interface (cameras/chime/modes)
 class RingPolledDevice extends RingDevice {
-    constructor(deviceInfo) {
+    constructor(deviceInfo, deviceType) {
         super()
 
         // Set default properties for camera device object model 
@@ -24,12 +24,31 @@ class RingPolledDevice extends RingDevice {
             mf: 'Ring',
             mdl: this.device.model
         }
+
+        // Set device location and top level MQTT topics 
+        this.deviceTopic = `${this.config.ring_topic}/${this.locationId}/${deviceType}/${this.deviceId}`
+        this.availabilityTopic = `${this.deviceTopic}/status`
     }
 
-    // Publish state messages with debug
-    publishMqtt(topic, message, isDebug) {
-        if (isDebug) { debug(topic, message) }
-        this.mqttClient.publish(topic, message, { qos: 1 })
+    // This simple heartbeat function decrements the heartbeat counter every 20 seconds.
+    // In normal operation heartbeat is constantly reset in data publish function due to
+    // 20 second polling events constantly calling this function even with no changes.
+    // If the heatbeat counter reaches 0 it indicates that the polling cycle has stopped.
+    // In that case this function sets the device status offline.  When polling resumes 
+    // the heartbeat is again set > 0 and this function sets the device online.
+    async monitorHeartbeat() {
+        if (this.heartbeat > 0) {
+            if (this.availabilityState !== 'online') {
+                await this.online()
+            }
+            this.heartbeat--
+        } else {
+            if (this.availabilityState !== 'offline') { 
+                this.offline()
+            }
+        } 
+        await utils.sleep(20)
+        this.monitorHeartbeat()
     }
 
     // Publish availability state
