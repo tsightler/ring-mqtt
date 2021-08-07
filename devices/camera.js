@@ -10,30 +10,6 @@ class Camera extends RingPolledDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'camera')
 
-        this.entities = {
-            motion: { type: 'binary_sensor', deviceClass: 'motion', jsonAttributes: true },
-            ...this.device.isDoorbot
-                ? { ding: { type: 'binary_sensor', deviceClass: 'occupancy', jsonAttributes: true }}
-                : {},
-            ...this.device.isDoorbot
-                ? { light: { type: 'light' }}
-                : {},
-            ...this.device.hasSiren
-                ? { siren: { type: 'switch' }}
-                : {},
-            ...(this.snapshot.motion || this.snapshot.interval)
-                ? { snapshot: { type: 'camera', jsonAttributes: true }}
-                : {},
-            ...(this.snapshot.motion || this.snapshot.interval)
-                ? { snapshot_interval: { type: 'number', min: 10, max: 3600, icon: 'hass:timer' }}
-                : {},
-            info: {
-                type: 'sensor',
-                deviceClass: 'timestamp',
-                valueTemplate: '{{ value_json["lastUpdate"] | default }}'
-            }
-        }
-
         // Camera sepecific properties
         this.publishedLightState = this.device.hasLight ? 'publish' : 'none'
         this.publishedSirenState = this.device.hasSiren ? 'publish' : 'none'
@@ -64,6 +40,30 @@ class Camera extends RingPolledDevice {
                 } else {
                     this.snapshot.interval = 30
                 }
+            }
+        }
+
+        this.entities = {
+            motion: { type: 'binary_sensor', deviceClass: 'motion', jsonAttributes: true },
+            ...this.device.isDoorbot
+                ? { ding: { type: 'binary_sensor', deviceClass: 'occupancy', jsonAttributes: true }}
+                : {},
+            ...this.device.isDoorbot
+                ? { light: { type: 'light' }}
+                : {},
+            ...this.device.hasSiren
+                ? { siren: { type: 'switch' }}
+                : {},
+            ...(this.snapshot.motion || this.snapshot.interval)
+                ? { snapshot: { type: 'camera', jsonAttributes: true }}
+                : {},
+            ...(this.snapshot.motion || this.snapshot.interval)
+                ? { snapshot_interval: { type: 'number', min: 10, max: 3600, icon: 'hass:timer' }}
+                : {},
+            info: {
+                type: 'sensor',
+                deviceClass: 'timestamp',
+                valueTemplate: '{{ value_json["lastUpdate"] | default }}'
             }
         }
 
