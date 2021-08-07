@@ -11,15 +11,17 @@ class RingDevice {
     async publishDevice() {
         Object.keys(this.entities).forEach(entityName => {
             const entity = this.entities[entityName]
+            const entityTopic = `${this.deviceTopic}/${entityName}`
 
-            let entityTopic = `${this.deviceTopic}/${entityName}`
-            if (entity.hasOwnProperty('parentAttributeEntity')) {
-                entityTopic = `${this.deviceTopic}/${entity.parentAttributeEntity}`
-            }
+            // If this entity uses state values from a parent entity set this here
+            // otherwise use standard state topic value
+            const entityStateTopic = entity.hasOwnProperty('parentStateTopic')
+                ? `${this.deviceTopic}/${entity.parentStateTopic}`
+                : `${entityTopic}/state`
 
-            // Due to legacy reasons, devices with a single entity, as well as the alarm control panel
-            // entity, use the device ID without a suffix as the unique ID.  All other devices append
-            // the entityName as suffix to create a unique ID.
+            // Due to legacy reasons, devices with a single entity, as well as the
+            // alarm control panel entity, use a device ID without a suffix.  All
+            // other devices append the entityName as suffix to create the unique ID.
             const entityId = (Object.keys(this.entities).length > 1 && entity.type !== 'alarm_control_panel')
                 ? `${this.deviceId}_${entityName}`
                 : this.deviceId
@@ -31,68 +33,34 @@ class RingDevice {
                     ? `${this.deviceData.name} ${entityName.replace(/_/g," ").replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())}`
                     : `${this.deviceData.name}`
 
-            // Set (mostly) universal values
+            // Build the discovery message
             let discoveryMessage = {
                 name: deviceName,
                 unique_id: entityId,
-                state_topic: `${entityTopic}/state`,
                 availability_topic: this.availabilityTopic,
                 payload_available: 'online',
                 payload_not_available: 'offline',
-                ...entity.hasOwnProperty('jsonAttributes') ? { json_attributes_topic: `${entityTopic}/attributes` } : {},
+                ...entity.type === 'camera' 
+                    ? { state_topic: `${entityStateTopic}` }
+                    : { state: `${entityStateTopic}` },
+                ...entity.type.match(/^(switch|number|light)$/)
+                    ? { command_topic: `${entityTopic}/command` } : {},
+                ...entity.hasOwnProperty('attributes') 
+                    ? { json_attributes_topic: `${entityTopic}/attributes` } : {},
+                ...entity.hasOwnProperty('deviceClass')
+                    ? { device_class: entity.deviceClass } : {},
+                ...entity.hasOwnProperty('unitOfMeasurement')
+                    ? { unit_of_measurement: entity.unitOfMeasurement } : {},
+                ...entity.hasOwnProperty('valueTemplate')
+                    ? { value_template: entity.valueTemplate } : {},
+                ...entity.hasOwnProperty('min')
+                    ? { min: entity.min } : {},
+                ...entity.hasOwnProperty('max')
+                    ? { max: entity.max } : {},
+                ...entity.hasOwnProperty('icon')
+                    ? { icon: entity.icon } 
+                    : entity.hasOwnProperty('deviceClass') && entityName !== "info" ? {} : { icon: 'mdi:information-outline' },
                 device: this.deviceData
-            }
-
-            switch (entity.type) {
-                case 'binary_sensor':
-                    discoveryMessage = {
-                        ...discoveryMessage,
-                        ...entity.hasOwnProperty('deviceClass') ? { device_class: entity.deviceClass } : {},
-                        ...entity.hasOwnProperty('icon') ? { icon: entity.icon } : {}
-                    }
-                    break;
-                case 'switch':
-                    discoveryMessage = {
-                        ...discoveryMessage,
-                        command_topic: `${entityTopic}/command`,
-                        ...entity.hasOwnProperty('icon') ? { icon: entity.icon } : {}
-                    }
-                    break;
-                case 'sensor':
-                    discoveryMessage = {
-                        ...discoveryMessage,
-                        ...entity.hasOwnProperty('attribute') ? {} : { json_attributes_topic: `${entityTopic}/state` },
-                        ...entity.hasOwnProperty('valueTemplate') ? { value_template: entity.valueTemplate } : {},
-                        ...entity.hasOwnProperty('deviceClass') ? { device_class: entity.deviceClass } : {},
-                        ...entity.hasOwnProperty('unitOfMeasurement') ? { unit_of_measurement: entity.unitOfMeasurement } : {},
-                        ...entity.hasOwnProperty('icon')
-                            ? { icon: entity.icon } 
-                            : entity.hasOwnProperty('deviceClass') && entityName !== "info" ? {} : { icon: 'mdi:information-outline' }
-                    }
-                    break;
-                case 'number':
-                    discoveryMessage = {
-                        ...discoveryMessage,
-                        command_topic: `${entityTopic}/command`,
-                        ...entity.hasOwnProperty('min') ? { min: entity.min } : {},
-                        ...entity.hasOwnProperty('max') ? { max: entity.max } : {},
-                        ...entity.hasOwnProperty('icon') ? { icon: entity.icon } : {}
-                    }
-                    break;
-                case 'light':
-                    discoveryMessage = {
-                        ...discoveryMessage,
-                        command_topic: `${entityTopic}/command`,
-                        ...entity.hasOwnProperty('icon') ? { icon: entity.icon } : {}
-                    }
-                    break;
-                case 'camera':
-                    delete discoveryMessage.state_topic
-                    discoveryMessage = {
-                        ...discoveryMessage,
-                        topic: `${entityTopic}/image`
-                    }
-                    break;
             }
 
             // On first discovery save the generated state/command topics to
