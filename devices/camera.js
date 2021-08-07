@@ -546,16 +546,19 @@ class Camera extends RingPolledDevice {
     async setLightState(message) {
         debug('Received set light state '+message+' for camera '+this.deviceId)
         debug('Location Id: '+ this.locationId)
+        const command = message.toLowerCase()
+
         switch (message) {
-            case 'ON':
+            case 'on':
                 await this.device.setLight(true)
                 break;
-            case 'OFF':
+            case 'off':
                 await this.device.setLight(false)
                 break;
             default:
                 debug('Received unknown command for light on camera '+this.deviceId)
         }
+        await utils.sleep(1)
         this.device.requestUpdate()
     }
 
@@ -563,16 +566,19 @@ class Camera extends RingPolledDevice {
     async setSirenState(message) {
         debug('Received set siren state '+message+' for camera '+this.deviceId)
         debug('Location '+ this.locationId)
+        const command = message.toLowerCase()
+
         switch (message) {
-            case 'ON':
+            case 'on':
                 await this.device.setSiren(true)
                 break;
-            case 'OFF':
+            case 'off':
                 await this.device.setSiren(false)
                 break;
             default:
                 debug('Received unkonw command for light on camera '+this.deviceId)
         }
+        await utils.sleep(1)
         this.device.requestUpdate()
     }
 
