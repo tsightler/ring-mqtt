@@ -522,15 +522,15 @@ class Camera extends RingPolledDevice {
     }
 
     // Set switch target state on received MQTT command message
-    setLightState(message) {
+    async setLightState(message) {
         debug('Received set light state '+message+' for camera '+this.deviceId)
         debug('Location Id: '+ this.locationId)
         switch (message) {
             case 'ON':
-                this.device.setLight(true)
+                await this.device.setLight(true)
                 break;
             case 'OFF':
-                this.device.setLight(false)
+                await this.device.setLight(false)
                 break;
             default:
                 debug('Received unknown command for light on camera '+this.deviceId)
@@ -539,15 +539,15 @@ class Camera extends RingPolledDevice {
     }
 
     // Set switch target state on received MQTT command message
-    setSirenState(message) {
+    async setSirenState(message) {
         debug('Received set siren state '+message+' for camera '+this.deviceId)
         debug('Location '+ this.locationId)
         switch (message) {
             case 'ON':
-                this.device.setSiren(true)
+                await this.device.setSiren(true)
                 break;
             case 'OFF':
-                this.device.setSiren(false)
+                await this.device.setSiren(false)
                 break;
             default:
                 debug('Received unkonw command for light on camera '+this.deviceId)
