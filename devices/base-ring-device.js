@@ -41,7 +41,7 @@ class RingDevice {
                 payload_available: 'online',
                 payload_not_available: 'offline',
                 ...entity.type === 'camera' 
-                    ? { topic: `${entityStateTopic}` }
+                    ? { topic: `${entityTopic}/image` }
                     : { state_topic: `${entityStateTopic}` },
                 ...entity.type.match(/^(switch|number|light)$/)
                     ? { command_topic: `${entityTopic}/command` } : {},
