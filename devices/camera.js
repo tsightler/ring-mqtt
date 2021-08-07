@@ -10,6 +10,30 @@ class Camera extends RingPolledDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'camera')
 
+        this.entities = {
+            motion: { type: 'binary_sensor', deviceClass: 'motion', jsonAttributes: true },
+            ...this.device.isDoorbot
+                ? { ding: { type: 'binary_sensor', deviceClass: 'occupancy', jsonAttributes: true }}
+                : {},
+            ...this.device.isDoorbot
+                ? { light: { type: 'light' }}
+                : {},
+            ...this.device.hasSiren
+                ? { siren: { type: 'switch' }}
+                : {},
+            ...(this.snapshot.motion || this.snapshot.interval)
+                ? { snapshot: { type: 'camera', jsonAttributes: true }}
+                : {},
+            ...(this.snapshot.motion || this.snapshot.interval)
+                ? { snapshot_interval: { type: 'number', min: 10, max: 3600, icon: 'hass:timer' }}
+                : {},
+            info: {
+                type: 'sensor',
+                deviceClass: 'timestamp',
+                valueTemplate: '{{ value_json["lastUpdate"] | default }}'
+            }
+        }
+
         // Camera sepecific properties
         this.publishedLightState = this.device.hasLight ? 'publish' : 'none'
         this.publishedSirenState = this.device.hasSiren ? 'publish' : 'none'
@@ -81,7 +105,7 @@ class Camera extends RingPolledDevice {
         const debugMsg = (this.availabilityState === 'init') ? 'Publishing new ' : 'Republishing existing '
         debug(debugMsg+'device id: '+this.deviceId)
 
-        await this.publishCapabilities()
+        await this.publishDevice()
         await this.online()
 
         // Publish device state and, if new device, subscribe for state updates
@@ -148,130 +172,6 @@ class Camera extends RingPolledDevice {
             this.publishInfoState()
             this.publishAvailabilityState()
         }
-    }
-
-    publishCapabilities() {
-        // Publish motion sensor feature for camera
-        this.publishCapability({
-            type: 'motion',
-            component: 'binary_sensor',
-            className: 'motion',
-            attributes: true,
-            command: false
-        })
-
-        // Publish info sensor for camera
-        this.publishCapability({
-            type: 'info',
-            component: 'sensor',
-            attributes: false,
-            command: false
-        })
-        
-        // If doorbell publish doorbell sensor
-        if (this.device.isDoorbot) {
-            this.publishCapability({
-                type: 'ding',
-                component: 'binary_sensor',
-                className: 'occupancy',
-                attributes: true,
-                command: false
-            })
-        }
-
-        // If camera has a light publish light component
-        if (this.device.hasLight) {
-            this.publishCapability({
-                type: 'light',
-                component: 'light',
-                attributes: false,
-                command: true
-            })
-        }
-
-        // If camera has a siren publish switch component
-        if (this.device.hasSiren) {
-            this.publishCapability({
-                type: 'siren',
-                component: 'switch',
-                attributes: false,
-                command: true
-            })
-        }
-
-        // If snapshots enabled, publish snapshot capability
-        if (this.snapshot.motion || this.snapshot.interval) {
-            this.publishCapability({
-                type: 'snapshot',
-                component: 'camera',
-                attributes: true,
-                command: false
-            })
-
-            this.publishCapability({
-                type: 'snapshot_interval',
-                component: 'number',
-                attributes: false,
-                command: true
-            })
-        }
-    }
-
-    // Build and publish a Home Assistant MQTT discovery packet for camera capability
-    async publishCapability(capability) {
-        let capabilityTopic = this.deviceTopic+'/'+capability.type
-        const configTopic = 'homeassistant/'+capability.component+'/'+this.locationId+'/'+this.deviceId+'_'+capability.type+'/config'
-
-        const message = {
-            name: this.device.name+' '+capability.type.replace(/_/g," ").replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase()),
-            unique_id: this.deviceId+'_'+capability.type,
-            availability_topic: this.availabilityTopic,
-            payload_available: 'online',
-            payload_not_available: 'offline',
-            device: this.deviceData,
-            ... capability.attributes ? { json_attributes_topic: capabilityTopic+'/attributes' } : {},
-            ... capability.className ? { device_class: capability.className } : {},
-            ... capability.command ? { command_topic: capabilityTopic+'/command' } : {}
-        }
-
-        if (capability.command) {
-            this.mqttClient.subscribe(capabilityTopic+'/command')
-        }
-
-        switch (capability.type) {
-            case 'info':
-                // Set the primary state value for info sensors based on power (battery/wired)
-                // and connectivity (Wifi/ethernet)
-                message.state_topic = capabilityTopic+'/state'
-                message.json_attributes_topic = capabilityTopic+'/state'
-                message.icon = 'mdi:information-outline'
-                const deviceHealth = await Promise.race([this.device.getHealth(), utils.sleep(5)]).then(function(result) { return result; })
-                if (deviceHealth) {
-                    if (deviceHealth.network_connection && deviceHealth.network_connection === 'ethernet') {
-                        message.value_template = '{{value_json["wiredNetwork"]}}'
-                    } else {
-                        // Device is connected via wifi, track that as primary
-                        message.value_template = '{{value_json["wirelessSignal"]}}'
-                        message.unit_of_measurement = 'RSSI'
-                    }
-                }
-                break;
-            case 'snapshot':
-                message.topic = capabilityTopic+'/image'
-                break;
-            case 'snapshot_interval':
-                message.state_topic = capabilityTopic+'/state'
-                message.min = 10
-                message.max = 3600
-                message.icon = 'hass:timer'
-                break;
-            default:
-                message.state_topic = capabilityTopic+'/state'
-        }
-
-        debug('HASS config topic: '+configTopic)
-        debug(message)
-        this.mqttClient.publish(configTopic, JSON.stringify(message), { qos: 1 })
     }
     
     // Process a ding event

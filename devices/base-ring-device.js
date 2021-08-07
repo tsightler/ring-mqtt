@@ -3,6 +3,7 @@ const utils = require('../lib/utils')
 
 // Base class with functions common to all devices
 class RingDevice {
+
     // This function loops through each entity of the device, generates
     // a unique device ID for each one and creates the state/command topics.
     // Finally it generates a Home Assistant MQTT discovery message for the entity
@@ -12,8 +13,8 @@ class RingDevice {
             const entity = this.entities[entityName]
 
             let entityTopic = `${this.deviceTopic}/${entityName}`
-            if (entity.hasOwnProperty('attribute')) {
-                entityTopic = `${this.deviceTopic}/${entity.attribute}`
+            if (entity.hasOwnProperty('parentAttributeEntity')) {
+                entityTopic = `${this.deviceTopic}/${entity.parentAttributeEntity}`
             }
 
             // Due to legacy reasons, devices with a single entity, as well as the alarm control panel
@@ -38,10 +39,18 @@ class RingDevice {
                 availability_topic: this.availabilityTopic,
                 payload_available: 'online',
                 payload_not_available: 'offline',
+                ...entity.hasOwnProperty('jsonAttributes') ? { json_attributes_topic: `${entityTopic}/attributes` } : {},
                 device: this.deviceData
             }
 
             switch (entity.type) {
+                case 'binary_sensor':
+                    discoveryMessage = {
+                        ...discoveryMessage,
+                        ...entity.hasOwnProperty('deviceClass') ? { device_class: entity.deviceClass } : {},
+                        ...entity.hasOwnProperty('icon') ? { icon: entity.icon } : {}
+                    }
+                    break;
                 case 'switch':
                     discoveryMessage = {
                         ...discoveryMessage,
@@ -54,11 +63,11 @@ class RingDevice {
                         ...discoveryMessage,
                         ...entity.hasOwnProperty('attribute') ? {} : { json_attributes_topic: `${entityTopic}/state` },
                         ...entity.hasOwnProperty('valueTemplate') ? { value_template: entity.valueTemplate } : {},
+                        ...entity.hasOwnProperty('deviceClass') ? { device_class: entity.deviceClass } : {},
                         ...entity.hasOwnProperty('unitOfMeasurement') ? { unit_of_measurement: entity.unitOfMeasurement } : {},
                         ...entity.hasOwnProperty('icon')
                             ? { icon: entity.icon } 
-                            : entity.hasOwnProperty('deviceClass') && entityName !== "info" ? {} : { icon: 'mdi:information-outline' },
-                        ...entity.hasOwnProperty('deviceClass') ? { device_class: entity.deviceClass } : {}
+                            : entity.hasOwnProperty('deviceClass') && entityName !== "info" ? {} : { icon: 'mdi:information-outline' }
                     }
                     break;
                 case 'number':
@@ -68,6 +77,20 @@ class RingDevice {
                         ...entity.hasOwnProperty('min') ? { min: entity.min } : {},
                         ...entity.hasOwnProperty('max') ? { max: entity.max } : {},
                         ...entity.hasOwnProperty('icon') ? { icon: entity.icon } : {}
+                    }
+                    break;
+                case 'light':
+                    discoveryMessage = {
+                        ...discoveryMessage,
+                        command_topic: `${entityTopic}/command`,
+                        ...entity.hasOwnProperty('icon') ? { icon: entity.icon } : {}
+                    }
+                    break;
+                case 'camera':
+                    delete discoveryMessage.state_topic
+                    discoveryMessage = {
+                        ...discoveryMessage,
+                        topic: `${entityTopic}/image`
                     }
                     break;
             }

@@ -39,9 +39,9 @@ class Chime extends RingPolledDevice {
             },
             wireless: {
                 type: 'sensor',
-                attribute: 'info',
                 deviceClass: 'signal_strength',
                 unitOfMeasurement: 'dBm',
+                parentAttributeEntity: 'info',
                 valueTemplate: '{{ value_json["wirelessSignal"] | default }}',
             },
             info: {
@@ -59,6 +59,7 @@ class Chime extends RingPolledDevice {
 
         await this.publishDevice()
         await this.online()
+        
         if (this.subscribed) {
             this.publishData(true)
             this.publishInfoState()
