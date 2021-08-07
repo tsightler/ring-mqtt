@@ -41,7 +41,7 @@ class RingDevice {
                 payload_available: 'online',
                 payload_not_available: 'offline',
                 ...entity.type === 'camera' 
-                    ? { state: `${entityStateTopic}` }
+                    ? { topic: `${entityStateTopic}` }
                     : { state_topic: `${entityStateTopic}` },
                 ...entity.type.match(/^(switch|number|light)$/)
                     ? { command_topic: `${entityTopic}/command` } : {},
@@ -67,7 +67,7 @@ class RingDevice {
             // On first discovery save the generated state/command topics to
             // entity properties and subscribe to any command topics
             if (!this.entities[entityName].hasOwnProperty('stateTopic')) {
-                this.entities[entityName].stateTopic = `${entityTopic}/state`
+                this.entities[entityName].stateTopic = entityStateTopic
                 if (discoveryMessage.hasOwnProperty('command_topic')) {
                     this.entities[entityName].commandTopic = `${entityTopic}/command`
                     this.mqttClient.subscribe(this.entities[entityName].commandTopic)
@@ -75,7 +75,7 @@ class RingDevice {
             }
 
             const configTopic = `homeassistant/${entity.type}/${this.locationId}/${entityId}/config`
-            debug('HASS config topic: '+configTopic)
+            debug(`HASS config topic: ${configTopic}`)
             debug(discoveryMessage)
             this.publishMqtt(configTopic, JSON.stringify(discoveryMessage))
         })
