@@ -92,13 +92,6 @@ class Chime extends RingPolledDevice {
         }
     }
 
-    // Publish heath state every 5 minutes when online
-    async schedulePublishInfo() {
-        await utils.sleep(this.availabilityState === 'offline' ? 60 : 300)
-        if (this.availabilityState === 'online') { this.publishInfoState() }
-        this.schedulePublishInfo()
-    }
-
     // Process messages from MQTT command topic
     processCommand(message, topic) {
         topic = topic.split('/')

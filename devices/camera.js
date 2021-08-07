@@ -326,13 +326,6 @@ class Camera extends RingPolledDevice {
         }
     }
 
-    // Publish heath state every 5 minutes when online
-    async schedulePublishInfo() {
-        await utils.sleep(this.availabilityState === 'offline' ? 60 : 300)
-        if (this.availabilityState === 'online') { this.publishInfoState() }
-        this.schedulePublishInfo()
-    }
-
     async refreshSnapshot() {
         let newSnapshot
         try {
@@ -542,6 +535,7 @@ class Camera extends RingPolledDevice {
             default:
                 debug('Received unknown command for light on camera '+this.deviceId)
         }
+        this.device.requestUpdate()
     }
 
     // Set switch target state on received MQTT command message
@@ -558,6 +552,7 @@ class Camera extends RingPolledDevice {
             default:
                 debug('Received unkonw command for light on camera '+this.deviceId)
         }
+        this.device.requestUpdate()
     }
 
     // Set refresh interval for snapshots
