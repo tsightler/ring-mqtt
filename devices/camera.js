@@ -7,7 +7,7 @@ const net = require('net');
 const getPort = require('get-port')
 
 class Camera extends RingPolledDevice {
-    constructor(deviceInfo) {
+    async constructor(deviceInfo) {
         super(deviceInfo, 'camera')
 
         // Camera sepecific properties
