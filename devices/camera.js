@@ -7,7 +7,7 @@ const net = require('net');
 const getPort = require('get-port')
 
 class Camera extends RingPolledDevice {
-    async constructor(deviceInfo) {
+    constructor(deviceInfo) {
         super(deviceInfo, 'camera')
 
         // Camera sepecific properties
@@ -88,15 +88,6 @@ class Camera extends RingPolledDevice {
             }
         }
 
-        const deviceHealth = await this.device.getHealth()
-        if (deviceHealth) {
-            if (deviceHealth.hasOwnProperty('network_connection') && deviceHealth.network_connection === 'ethernet') {
-                console.log(deviceHealth)
-            } else {
-                console.log(deviceHealth)
-            }  
-        }
-
         // Initialize livestream parameters
         this.livestream = {
             duration: (this.device.data.settings.video_settings.hasOwnProperty('clip_length_max') && this.device.data.settings.video_settings.clip_length_max) 
@@ -134,6 +125,15 @@ class Camera extends RingPolledDevice {
     async publish() {
         const debugMsg = (this.availabilityState === 'init') ? 'Publishing new ' : 'Republishing existing '
         debug(debugMsg+'device id: '+this.deviceId)
+
+        const deviceHealth = await this.device.getHealth()
+        if (deviceHealth) {
+            if (deviceHealth.hasOwnProperty('network_connection') && deviceHealth.network_connection === 'ethernet') {
+                console.log(deviceHealth)
+            } else {
+                console.log(deviceHealth)
+            }  
+        }
 
         await this.publishDevice()
         await this.online()
