@@ -43,7 +43,7 @@ class Camera extends RingPolledDevice {
             }
         }
 
-        // Define entities for this device
+        // Define standard entities for this device
         this.entities = {
             motion: {
                 type: 'binary_sensor',
@@ -126,13 +126,16 @@ class Camera extends RingPolledDevice {
         const debugMsg = (this.availabilityState === 'init') ? 'Publishing new ' : 'Republishing existing '
         debug(debugMsg+'device id: '+this.deviceId)
 
+        // If device is wireless publish wireless signal strength as entity
         const deviceHealth = await this.device.getHealth()
-        if (deviceHealth) {
-            if (deviceHealth.hasOwnProperty('network_connection') && deviceHealth.network_connection === 'ethernet') {
-                console.log(deviceHealth)
-            } else {
-                console.log(deviceHealth)
-            }  
+        if (deviceHealth && !(deviceHealth.hasOwnProperty('network_connection') && deviceHealth.network_connection === 'ethernet')) {
+            this.entities.wireless = {
+                type: 'sensor',
+                deviceClass: 'signal_strength',
+                unitOfMeasurement: 'dBm',
+                parentStateTopic: 'info/state',
+                valueTemplate: '{{ value_json["wirelessSignal"] | default }}',
+            }
         }
 
         await this.publishDevice()
