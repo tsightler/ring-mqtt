@@ -5,7 +5,7 @@ const RingPolledDevice = require('./base-polled-device')
 
 class Chime extends RingPolledDevice {
     constructor(deviceInfo) {
-        super(deviceInfo, 'chime')
+        super(deviceInfo)
 
         // Define entities for this device
         this.entities = {
@@ -58,7 +58,7 @@ class Chime extends RingPolledDevice {
         const debugMsg = (this.availabilityState === 'init') ? 'Publishing new ' : 'Republishing existing '
         debug(debugMsg+'device id: '+this.deviceId)
 
-        await this.publishDevice()
+        await this.publishDiscovery()
         await this.online()
 
         if (this.subscribed) {

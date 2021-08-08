@@ -8,7 +8,7 @@ const getPort = require('get-port')
 
 class Camera extends RingPolledDevice {
     constructor(deviceInfo) {
-        super(deviceInfo, 'camera')
+        super(deviceInfo)
 
         // Camera sepecific properties
         this.publishedLightState = this.device.hasLight ? 'publish' : 'none'
@@ -167,7 +167,7 @@ class Camera extends RingPolledDevice {
         const debugMsg = (this.availabilityState === 'init') ? 'Publishing new ' : 'Republishing existing '
         debug(debugMsg+'device id: '+this.deviceId)
 
-        await this.publishDevice()
+        await this.publishDiscovery()
         await this.online()
 
         // Publish device state and, if new device, subscribe for state updates

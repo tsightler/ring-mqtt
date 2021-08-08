@@ -1,18 +1,12 @@
-const debug = require('debug')('ring-mqtt')
 const utils = require('../lib/utils')
 const RingDevice = require('./base-ring-device')
 
 // Base class for devices/features that communicate via HTTP polling interface (cameras/chime/modes)
 class RingPolledDevice extends RingDevice {
-    constructor(deviceInfo, deviceType) {
-        super()
-        this.device = deviceInfo.device
-        this.mqttClient = deviceInfo.mqttClient
-        this.subscribed = false
-        this.availabilityState = 'init'
+    constructor(deviceInfo) {
+        super(deviceInfo)
         this.deviceId = this.device.data.device_id
         this.locationId = this.device.data.location_id
-        this.config = deviceInfo.CONFIG
         this.heartbeat = 3
 
         // Sevice data for Home Assistant device registry 
@@ -22,10 +16,6 @@ class RingPolledDevice extends RingDevice {
             mf: 'Ring',
             mdl: this.device.model
         }
-
-        // Set device location and top level MQTT topics 
-        this.deviceTopic = `${this.config.ring_topic}/${this.locationId}/${deviceType}/${this.deviceId}`
-        this.availabilityTopic = `${this.deviceTopic}/status`
     }
 
     // This simple heartbeat function decrements the heartbeat counter every 20 seconds.

@@ -5,14 +5,9 @@ const RingDevice = require('./base-ring-device')
 // Base class for devices that communicate with hubs via websocket (alarm/smart lighting)
 class RingSocketDevice extends RingDevice {
     constructor(deviceInfo) {
-        super() 
-        this.device = deviceInfo.device
-        this.mqttClient = deviceInfo.mqttClient
-        this.subscribed = false
-        this.availabilityState = 'init'
-        this.deviceId = this.device.id
+        super(deviceInfo)
+        this.deviceId = this.device.id 
         this.locationId = this.device.location.locationId
-        this.config = deviceInfo.CONFIG
         this.discoveryData = new Array()
 
         // Set default device data for Home Assistant device registry
@@ -23,56 +18,23 @@ class RingSocketDevice extends RingDevice {
             mf: (this.device.data && this.device.data.manufacturerName) ? this.device.data.manufacturerName : 'Ring',
             mdl: this.device.deviceType
         }
-        
-        // Set device location and top level MQTT topics 
-        this.ringTopic = this.config.ring_topic
-        this.deviceTopic = this.ringTopic+'/'+this.locationId+'/'+deviceInfo.category+'/'+this.deviceId
-        this.availabilityTopic = this.deviceTopic+'/status'
-        
-        // Create info device topics
-        this.stateTopic_info = this.deviceTopic+'/info/state'
-        this.configTopic_info = 'homeassistant/sensor/'+this.locationId+'/'+this.deviceId+'_info/config'
     }
 
-    // Return batterylevel or convert battery status to estimated level
-    getBatteryLevel() {
-        if (this.device.data.batteryLevel !== undefined) {
-            // Return 100% if 99% reported, otherwise return reported battery level
-            return (this.device.data.batteryLevel === 99) ? 100 : this.device.data.batteryLevel
-        } else if (this.device.data.batteryStatus === 'full' || this.device.data.batteryStatus === 'charged') {
-            return 100
-        } else if (this.device.data.batteryStatus === 'ok' || this.device.data.batteryStatus === 'charging') {
-            return 50
-        } else if (this.device.data.batteryStatus === 'none') {
-            return 'none'
-        }
-        return 0
+    // ***** REMOVE BEFORE RELEASE *****
+    // Temporary compatibility function
+    initInfoDiscoveryData(deviceValue) {
+        initInfoSensor(deviceValue)
     }
 
     // Create device discovery data
-    initInfoDiscoveryData(deviceValue) {
-        // If set override value tempate setting with device specific value
-        const value = deviceValue
-            ? { template: '{{value_json["'+deviceValue+'"]}}' }
-            : { template: '{{value_json["batteryLevel"]}}', uom: '%' }
-
-        // Init info entity (extended device data)
-        this.discoveryData.push({
-            message: {
-                name: this.deviceData.name+' Info',
-                unique_id: this.deviceId+'_info',
-                availability_topic: this.availabilityTopic,
-                payload_available: 'online',
-                payload_not_available: 'offline',
-                state_topic: this.stateTopic_info,
-                json_attributes_topic: this.stateTopic_info,
-                icon: "mdi:information-outline",
-                ... value.template ? { value_template: value.template } : {},
-                ... value.uom ? { unit_of_measurement: value.uom } : {},
-                device: this.deviceData
-            },
-            configTopic: this.configTopic_info
-        })
+    initInfoSensor(deviceValue) {
+        this.entities.info = {
+            type: 'sensor',
+            deviceClass: 'timestamp',
+            ...deviceValue
+                ? { valueTemplate: `{{value_json[${deviceValue}"] | default }}` }
+                : { valueTemplate: '{{value_json["batteryLevel"] | default }}', unitOfMeasurement: '%'  }
+        }
     }
 
     // Publish all discovery data for device
@@ -99,6 +61,7 @@ class RingSocketDevice extends RingDevice {
             // Publish discovery message
             if (!this.discoveryData.length) { await this.initDiscoveryData() }
             await this.publishDiscoveryData()
+            await this.publishDiscovery()
             await this.online()
 
             if (this.subscribed) {
@@ -158,14 +121,14 @@ class RingSocketDevice extends RingDevice {
             ... this.device.data.hasOwnProperty('volume') ? {volume: this.device.data.volume } : {},
             ... this.device.data.hasOwnProperty('maxVolume') ? {maxVolume: this.device.data.maxVolume } : {},
         }
-        this.publishMqtt(this.stateTopic_info, JSON.stringify(attributes), true)
+        this.publishMqtt(this.entities.info.stateTopic, JSON.stringify(attributes), true)
     }
 
     // Refresh device info attributes on a sechedule
     async schedulePublishAttributes() {
         await utils.sleep(300)
         // Only publish when site is online
-        if (this.availabilityState === 'online') { 
+        if (this.availabilityState === 'online') {
             this.publishAttributes()
         }
         this.schedulePublishAttributes()

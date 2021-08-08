@@ -3,12 +3,23 @@ const utils = require('../lib/utils')
 
 // Base class with functions common to all devices
 class RingDevice {
+    constructor(deviceInfo) {
+        this.device = deviceInfo.device
+        this.mqttClient = deviceInfo.mqttClient
+        this.subscribed = false
+        this.availabilityState = 'init'
+        this.config = deviceInfo.CONFIG
+
+        // Build device base and availability topic
+        this.deviceTopic = `${this.config.ring_topic}/${this.locationId}/${deviceInfo.category}/${this.deviceId}`
+        this.availabilityTopic = `${this.deviceTopic}/status`
+    }
 
     // This function loops through each entity of the device, generates
     // a unique device ID for each and build state, command and attribute topics.
     // Finally it generates a Home Assistant MQTT discovery message for the entity
     // and publishes this message to the config topic
-    async publishDevice() {
+    async publishDiscovery() {
         Object.keys(this.entities).forEach(entityName => {
             const entity = this.entities[entityName]
             const entityTopic = `${this.deviceTopic}/${entityName}`

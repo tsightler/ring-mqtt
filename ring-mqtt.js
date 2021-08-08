@@ -64,8 +64,10 @@ function getDevice(device, mqttClient) {
         CONFIG
     }
     if (device instanceof RingCamera) {
+        deviceInfo.category = 'camera'
         return new Camera(deviceInfo)
     } else if (device instanceof RingChime) {
+        deviceInfo.category = 'chime'
         return new Chime(deviceInfo)
     }
     switch (device.deviceType) {
