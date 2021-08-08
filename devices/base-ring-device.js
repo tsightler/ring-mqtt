@@ -45,8 +45,10 @@ class RingDevice {
                     : { state_topic: `${entityStateTopic}` },
                 ...entity.type.match(/^(switch|number|light)$/)
                     ? { command_topic: `${entityTopic}/command` } : {},
-                ...entity.hasOwnProperty('attributes') || entityName === 'info'
+                ...entity.hasOwnProperty('attributes')
                     ? { json_attributes_topic: `${entityTopic}/attributes` } : {},
+                ...entityName === "info"
+                    ? { json_attributes_topic: `${entityStateTopic}` } : {},
                 ...entity.hasOwnProperty('deviceClass')
                     ? { device_class: entity.deviceClass } : {},
                 ...entity.hasOwnProperty('unitOfMeasurement')
