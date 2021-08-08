@@ -138,10 +138,10 @@ class Camera extends RingPolledDevice {
             }
         }
 
-        console.log(this.entities)
-
         await this.publishDevice()
         await this.online()
+
+        console.log(this.entities)
 
         // Publish device state and, if new device, subscribe for state updates
         if (!this.subscribed) {
