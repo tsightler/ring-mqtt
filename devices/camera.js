@@ -43,6 +43,7 @@ class Camera extends RingPolledDevice {
             }
         }
 
+        // Define entities for this device
         this.entities = {
             motion: {
                 type: 'binary_sensor',
@@ -85,6 +86,15 @@ class Camera extends RingPolledDevice {
                 deviceClass: 'timestamp',
                 valueTemplate: '{{ value_json["lastUpdate"] | default }}'
             }
+        }
+
+        const deviceHealth = await this.device.getHealth()
+        if (deviceHealth) {
+            if (deviceHealth.hasOwnProperty('network_connection') && deviceHealth.network_connection === 'ethernet') {
+                console.log(deviceHealth)
+            } else {
+                console.log(deviceHealth)
+            }  
         }
 
         // Initialize livestream parameters
@@ -337,7 +347,7 @@ class Camera extends RingPolledDevice {
             }
             attributes.firmwareStatus = deviceHealth.firmware
             attributes.lastUpdate = deviceHealth.updated_at.slice(0,-6)+"Z"
-            if (deviceHealth.network_connection && deviceHealth.network_connection === 'ethernet') {
+            if (deviceHealth.hasOwnProperty('network_connection') && deviceHealth.network_connection === 'ethernet') {
                 attributes.wiredNetwork = this.device.data.alerts.connection
             } else {
                 attributes.wirelessNetwork = deviceHealth.wifi_name

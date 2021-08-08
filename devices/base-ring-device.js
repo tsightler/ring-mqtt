@@ -45,10 +45,6 @@ class RingDevice {
                     : { state_topic: `${entityStateTopic}` },
                 ...entity.type.match(/^(switch|number|light)$/)
                     ? { command_topic: `${entityTopic}/command` } : {},
-                ...entity.hasOwnProperty('attributes')
-                    ? { json_attributes_topic: `${entityTopic}/attributes` } : {},
-                ...entityName === "info"
-                    ? { json_attributes_topic: `${entityStateTopic}` } : {},
                 ...entity.hasOwnProperty('deviceClass')
                     ? { device_class: entity.deviceClass } : {},
                 ...entity.hasOwnProperty('unitOfMeasurement')
@@ -59,6 +55,10 @@ class RingDevice {
                     ? { min: entity.min } : {},
                 ...entity.hasOwnProperty('max')
                     ? { max: entity.max } : {},
+                ...entity.hasOwnProperty('attributes')
+                    ? { json_attributes_topic: `${entityTopic}/attributes` } 
+                    : entityName === "info"
+                        ? { json_attributes_topic: `${entityStateTopic}` } : {},
                 ...entity.hasOwnProperty('icon')
                     ? { icon: entity.icon } 
                     : entityName === "info" 
@@ -66,13 +66,16 @@ class RingDevice {
                 device: this.deviceData
             }
 
-            // On first discovery save the generated state/command topics to
-            // entity properties and subscribe to any command topics
+            // On first discovery save all generated topics to entity properties
             if (!this.entities[entityName].hasOwnProperty('stateTopic')) {
                 this.entities[entityName].stateTopic = entityStateTopic
                 if (discoveryMessage.hasOwnProperty('command_topic')) {
-                    this.entities[entityName].commandTopic = `${entityTopic}/command`
-                    this.mqttClient.subscribe(this.entities[entityName].commandTopic)
+                    this.entities[entityName].commandTopic = discoveryMessage.command_topic
+                    // Also subscribe to command topics
+                    this.mqttClient.subscribe(discoveryMessage.command_topic)
+                }
+                if (discoveryMessage.hasOwnProperty('json_attributes_topic')) {
+                    this.entities[entityName].attributesTopic = discoveryMessage.json_attributes_topic
                 }
             }
 
