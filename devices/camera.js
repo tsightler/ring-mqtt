@@ -88,6 +88,8 @@ class Camera extends RingPolledDevice {
             }
         }
 
+        this.initAttributeEntities()
+
         // Initialize livestream parameters
         this.livestream = {
             duration: (this.device.data.settings.video_settings.hasOwnProperty('clip_length_max') && this.device.data.settings.video_settings.clip_length_max) 
@@ -100,7 +102,6 @@ class Camera extends RingPolledDevice {
       
         // Properties for storing ding states
         this.motion = {
-            name: 'motion',
             active_ding: false,
             ding_duration: 180,
             last_ding: 0,
@@ -111,7 +112,6 @@ class Camera extends RingPolledDevice {
 
         if (this.device.isDoorbot) {
             this.ding = {
-                name: 'doorbell',
                 active_ding: false,
                 ding_duration: 180,
                 last_ding: 0,
@@ -121,13 +121,10 @@ class Camera extends RingPolledDevice {
         }
     }
 
-    // Publish camera capabilities and state and subscribe to events
-    async publish() {
-        const debugMsg = (this.availabilityState === 'init') ? 'Publishing new ' : 'Republishing existing '
-        debug(debugMsg+'device id: '+this.deviceId)
-
-        // If device is wireless publish wireless signal strength as entity
+    async initAttributeEntities() {
+         // If device is wireless publish wireless signal strength as entity
         const deviceHealth = await this.device.getHealth()
+
         if (deviceHealth && !(deviceHealth.hasOwnProperty('network_connection') && deviceHealth.network_connection === 'ethernet')) {
             this.entities.wireless = {
                 type: 'sensor',
@@ -137,6 +134,22 @@ class Camera extends RingPolledDevice {
                 valueTemplate: '{{ value_json["wirelessSignal"] | default }}',
             }
         }
+
+        if (!this.device.hasBattery) {
+            this.entities.battery = {
+                type: 'sensor',
+                deviceClass: 'battery',
+                unitOfMeasurement: '%',
+                parentStateTopic: 'info/state',
+                valueTemplate: '{{ value_json["batteryLevel"] | default }}'
+            }
+        }
+    }
+
+    // Publish camera capabilities and state and subscribe to events
+    async publish() {
+        const debugMsg = (this.availabilityState === 'init') ? 'Publishing new ' : 'Republishing existing '
+        debug(debugMsg+'device id: '+this.deviceId)
 
         await this.publishDevice()
         await this.online()

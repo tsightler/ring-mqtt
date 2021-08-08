@@ -5,7 +5,7 @@ const utils = require('../lib/utils')
 class RingDevice {
 
     // This function loops through each entity of the device, generates
-    // a unique device ID for each one and creates the state/command topics.
+    // a unique device ID for each and build state, command and attribute topics.
     // Finally it generates a Home Assistant MQTT discovery message for the entity
     // and publishes this message to the config topic
     async publishDevice() {
@@ -14,7 +14,7 @@ class RingDevice {
             const entityTopic = `${this.deviceTopic}/${entityName}`
 
             // If this entity uses state values from a parent entity set this here
-            // otherwise use standard state topic value
+            // otherwise use standard state topic for entity ('image' for camera, 'state' for all others)
             const entityStateTopic = entity.hasOwnProperty('parentStateTopic')
                 ? `${this.deviceTopic}/${entity.parentStateTopic}`
                 : entity.type === 'camera'
@@ -23,12 +23,14 @@ class RingDevice {
 
             // Due to legacy reasons, devices with a single entity, as well as the
             // alarm control panel entity, use a device ID without a suffix.  All
-            // other devices append the entityName as suffix to create the unique ID.
+            // other devices append the entityName as suffix to create a unique ID.
+            // I'd love to get rid of this one day, but it's a breaking change for
+            // upgrading users so this logic maintains compatibility
             const entityId = (Object.keys(this.entities).length > 1 && entity.type !== 'alarm_control_panel')
                 ? `${this.deviceId}_${entityName}`
                 : this.deviceId
             
-            // Use a custom name suffix if provided, otherwise add entityName if device has more than one entity
+            // Use a custom name suffix if provided, otherwise, if device has more than one entity, suffix with entity name
             const deviceName = entity.hasOwnProperty('suffix')
                 ?  `${this.deviceData.name} ${entity.suffix}`
                 : Object.keys(this.entities).length > 1
@@ -73,8 +75,7 @@ class RingDevice {
                 this.entities[entityName].stateTopic = entityStateTopic
                 if (discoveryMessage.hasOwnProperty('command_topic')) {
                     this.entities[entityName].commandTopic = discoveryMessage.command_topic
-                    // Subscribe to command topics
-                    this.mqttClient.subscribe(discoveryMessage.command_topic)
+                    this.mqttClient.subscribe(discoveryMessage.command_topic)  // Subscribe to command topics
                 }
                 if (discoveryMessage.hasOwnProperty('json_attributes_topic')) {
                     this.entities[entityName].attributesTopic = discoveryMessage.json_attributes_topic
