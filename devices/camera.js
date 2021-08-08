@@ -138,6 +138,8 @@ class Camera extends RingPolledDevice {
             }
         }
 
+        console.log(entities)
+
         await this.publishDevice()
         await this.online()
 
@@ -271,10 +273,11 @@ class Camera extends RingPolledDevice {
     }
 
     publishMotionAttributes() {
-        const attributes = {}
-        attributes.lastMotion = this.motion.last_ding
-        attributes.lastMotionTime = this.motion.last_ding_time
-        attributes.personDetected = this.motion.is_person
+        const attributes = {
+            lastMotion: this.motion.last_ding,
+            lastMotionTime: this.motion.last_ding_time,
+            personDetected: this.motion.is_person
+        }
         if (this.device.data.settings && typeof this.device.data.settings.motion_detection_enabled !== 'undefined') {
             attributes.motionDetectionEnabled = this.device.data.settings.motion_detection_enabled
             this.publishedMotionDetectionEnabled = attributes.motionDetectionEnabled
@@ -283,9 +286,10 @@ class Camera extends RingPolledDevice {
     }
 
     publishDingAttributes() {
-        const attributes = {}
-        attributes.lastDing = this.ding.last_ding
-        attributes.lastDingTime = this.ding.last_ding_time
+        const attributes = {
+            lastDing: this.ding.last_ding,
+            lastDingTime: this.ding.last_ding_time
+        }
         this.publishMqtt(this.entities.ding.attributesTopic, JSON.stringify(attributes), true)
     }
 
@@ -378,13 +382,13 @@ class Camera extends RingPolledDevice {
 
     // Publish snapshot image/metadata
     async publishSnapshot() {
-        debug(this.deviceTopic+'/snapshot/image', '<binary_image_data>')
-        this.publishMqtt(this.deviceTopic+'/snapshot/image', this.snapshot.imageData)
-        this.publishMqtt(this.deviceTopic+'/snapshot/attributes', JSON.stringify({ timestamp: this.snapshot.timestamp }))
+        debug(this.entities.snapshot.stateTopic, '<binary_image_data>')
+        this.publishMqtt(this.entities.snapshot.stateTopic, this.snapshot.imageData)
+        this.publishMqtt(this.entities.snapshot.attributesTopic, JSON.stringify({ timestamp: this.snapshot.timestamp }))
     }
 
     async publishSnapshotInterval() {
-        this.publishMqtt(this.deviceTopic+'/snapshot_interval/state', this.snapshot.interval.toString(), true)
+        this.publishMqtt(this.entities.snapshot_interval.stateTopic, this.snapshot.interval.toString(), true)
     }
 
     // This function uses various methods to get a snapshot to work around limitations
