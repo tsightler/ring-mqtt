@@ -357,7 +357,7 @@ class Camera extends RingPolledDevice {
         
         if (deviceHealth) {
             const attributes = {}
-            if (this.device.hasBattery) {
+            if (!this.device.hasBattery) {
                 attributes.batteryLevel = deviceHealth.battery_percentage
             }
             attributes.firmwareStatus = deviceHealth.firmware
