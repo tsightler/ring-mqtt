@@ -138,7 +138,7 @@ class Camera extends RingPolledDevice {
             }
         }
 
-        console.log(entities)
+        console.log(this.entities)
 
         await this.publishDevice()
         await this.online()
