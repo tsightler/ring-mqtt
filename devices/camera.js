@@ -140,9 +140,10 @@ class Camera extends RingPolledDevice {
                 valueTemplate: '{{ value_json["batteryLevel"] | default }}'
             }
         }
+        await this.populateLatestEvent()
     }
 
-    getLastEvent() {
+    async populateLatestEvent() {
         // Update motion properties with most recent historical event data
         const lastMotionEvent = (await this.device.getEvents({ limit: 1, kind: 'motion'})).events[0]
         const lastMotionDate = (lastMotionEvent && lastMotionEvent.hasOwnProperty('created_at')) ? new Date(lastMotionEvent.created_at) : false
