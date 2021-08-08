@@ -141,8 +141,6 @@ class Camera extends RingPolledDevice {
         await this.publishDevice()
         await this.online()
 
-        console.log(this.entities)
-
         // Publish device state and, if new device, subscribe for state updates
         if (!this.subscribed) {
             this.subscribed = true
@@ -262,9 +260,8 @@ class Camera extends RingPolledDevice {
 
     // Publish ding state and attributes
     publishDingState(dingKind) {
-        const dingTopic = this.deviceTopic+'/'+dingKind
         const dingState = this[dingKind].active_ding ? 'ON' : 'OFF'
-        this.publishMqtt(dingTopic+'/state', dingState, true)
+        this.publishMqtt(this.entities[dingKind].stateTopic, dingState, true)
 
         if (dingKind === 'motion') {
             this.publishMotionAttributes()
@@ -282,14 +279,14 @@ class Camera extends RingPolledDevice {
             attributes.motionDetectionEnabled = this.device.data.settings.motion_detection_enabled
             this.publishedMotionDetectionEnabled = attributes.motionDetectionEnabled
         }
-        this.publishMqtt(this.deviceTopic+'/motion/attributes', JSON.stringify(attributes), true)
+        this.publishMqtt(this.entities.motion.attributesTopic, JSON.stringify(attributes), true)
     }
 
     publishDingAttributes() {
         const attributes = {}
         attributes.lastDing = this.ding.last_ding
         attributes.lastDingTime = this.ding.last_ding_time
-        this.publishMqtt(this.deviceTopic+'/ding/attributes', JSON.stringify(attributes), true)
+        this.publishMqtt(this.entities.ding.attributesTopic, JSON.stringify(attributes), true)
     }
 
     // Publish camera state for polled attributes (light/siren state, etc)
@@ -316,17 +313,15 @@ class Camera extends RingPolledDevice {
         }
 
         if (this.device.hasLight) {
-            const stateTopic = this.deviceTopic+'/light/state'
             if (this.device.data.led_status !== this.publishedLightState) {
-                this.publishMqtt(stateTopic, (this.device.data.led_status === 'on' ? 'ON' : 'OFF'), true)
+                this.publishMqtt(this.entities.light.stateTopic, (this.device.data.led_status === 'on' ? 'ON' : 'OFF'), true)
                 this.publishedLightState = this.device.data.led_status
             }
         }
         if (this.device.hasSiren) {
-            const stateTopic = this.deviceTopic+'/siren/state'
             const sirenStatus = this.device.data.siren_status.seconds_remaining > 0 ? 'ON' : 'OFF'
             if (sirenStatus !== this.publishedSirenState) {
-                this.publishMqtt(stateTopic, sirenStatus, true)
+                this.publishMqtt(this.entities.siren.stateTopic, sirenStatus, true)
                 this.publishedSirenState = sirenStatus
             }
         }
@@ -358,7 +353,7 @@ class Camera extends RingPolledDevice {
                 attributes.wirelessNetwork = deviceHealth.wifi_name
                 attributes.wirelessSignal = deviceHealth.latest_signal_strength
             }            
-            this.publishMqtt(this.deviceTopic+'/info/state', JSON.stringify(attributes), true)
+            this.publishMqtt(this.entities.info.stateTopic, JSON.stringify(attributes), true)
         }
     }
 

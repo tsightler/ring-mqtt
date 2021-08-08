@@ -17,7 +17,9 @@ class RingDevice {
             // otherwise use standard state topic value
             const entityStateTopic = entity.hasOwnProperty('parentStateTopic')
                 ? `${this.deviceTopic}/${entity.parentStateTopic}`
-                : `${entityTopic}/state`
+                : entity.type === 'camera'
+                    ? `${entityTopic}/image`
+                    : `${entityTopic}/state`
 
             // Due to legacy reasons, devices with a single entity, as well as the
             // alarm control panel entity, use a device ID without a suffix.  All
@@ -41,8 +43,8 @@ class RingDevice {
                 payload_available: 'online',
                 payload_not_available: 'offline',
                 ...entity.type === 'camera' 
-                    ? { topic: `${entityTopic}/image` }
-                    : { state_topic: `${entityStateTopic}` },
+                    ? { topic: entityStateTopic }
+                    : { state_topic: entityStateTopic },
                 ...entity.type.match(/^(switch|number|light)$/)
                     ? { command_topic: `${entityTopic}/command` } : {},
                 ...entity.hasOwnProperty('deviceClass')
@@ -71,7 +73,7 @@ class RingDevice {
                 this.entities[entityName].stateTopic = entityStateTopic
                 if (discoveryMessage.hasOwnProperty('command_topic')) {
                     this.entities[entityName].commandTopic = discoveryMessage.command_topic
-                    // Also subscribe to command topics
+                    // Subscribe to command topics
                     this.mqttClient.subscribe(discoveryMessage.command_topic)
                 }
                 if (discoveryMessage.hasOwnProperty('json_attributes_topic')) {

@@ -7,6 +7,7 @@ class Chime extends RingPolledDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'chime')
 
+        // Define entities for this device
         this.entities = {
             volume: { 
                 type: 'number',
