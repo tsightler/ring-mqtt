@@ -23,11 +23,11 @@ class RingSocketDevice extends RingDevice {
     // ***** REMOVE BEFORE RELEASE *****
     // Temporary compatibility function
     initInfoDiscoveryData(deviceValue) {
-        initInfoSensor(deviceValue)
+        this.initInfoEntities(deviceValue)
     }
 
     // Create device discovery data
-    initInfoSensor(deviceValue) {
+    initInfoEntities(deviceValue) {
         this.entities.info = {
             type: 'sensor',
             deviceClass: 'timestamp',
