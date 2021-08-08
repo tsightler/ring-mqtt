@@ -103,7 +103,7 @@ class Chime extends RingPolledDevice {
     // Publish device data to info topic
     async publishInfoState() {
         const deviceHealth = await this.device.getHealth()
-        if (response) {
+        if (deviceHealth) {
             const attributes = {}
             attributes.wirelessNetwork = deviceHealth.wifi_name
             attributes.wirelessSignal = deviceHealth.latest_signal_strength
