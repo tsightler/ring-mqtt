@@ -5,21 +5,21 @@ class ContactSensor extends RingSocketDevice {
         super(deviceInfo)
 
          // Set Home Assistant component type and device class (appropriate icon in UI)
-        let entityName = (this.device.data.subCategoryId == 2) ? 'window' : 'door'
-        let device_class = 'contact'
+        this.entityName = 'contact'
         this.deviceData.mdl = 'Contact Sensor'
+        let device_class = (this.device.data.subCategoryId == 2) ? 'window' : 'door'
 
         // Override icons and and topics
         switch (this.device.deviceType) {
             case 'sensor.zone':
-                entityName = 'safety'
-                device_class = 'zone'
+                this.entityName = 'zone'
                 this.deviceData.mdl = 'Retrofit Zone'
+                device_class = 'safety'
                 break;
             case 'sensor.tilt':
-                entityName = 'garage_door'
-                device_class = 'tilt'
+                this.entityName = 'tilt'
                 this.deviceData.mdl = 'Tilt Sensor'
+                device_class = 'garage_door'
                 break;
         }
 
@@ -37,7 +37,7 @@ class ContactSensor extends RingSocketDevice {
     publishData() {
         const contactState = this.device.data.faulted ? 'ON' : 'OFF'
         // Publish sensor state
-        this.publishMqtt(this.stateTopic, contactState, true)
+        this.publishMqtt(this.entities[this.entityName].state_topic, contactState, true)
         // Publish attributes (batterylevel, tamper status)
         this.publishAttributes()
     }
