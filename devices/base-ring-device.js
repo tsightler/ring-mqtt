@@ -106,7 +106,7 @@ class RingDevice {
 
             // On first discovery store all generated topics to entity properties
             // and perform one-time operations such as subscribing to command topics
-            if (!this.entities[entityName].hasOwnProperty('state_topic')) {
+            if (!(this.entities[entityName].hasOwnProperty('state_topic') || this.entities[entityName].hasOwnProperty('topic'))) {
                 Object.keys(discoveryMessage).filter(property => property.match('state_topic')).forEach(stateTopic => {
                     this.entities[entityName][stateTopic] = discoveryMessage[stateTopic]
                 })
@@ -126,6 +126,8 @@ class RingDevice {
                     this.entities[entityName].json_attributes_topic = discoveryMessage.json_attributes_topic
                 }
             }
+
+            console.log(this.entities[entityName])
 
             const configTopic = `homeassistant/${entity.component}/${this.locationId}/${discoveryMessage.unique_id}/config`
             debug(`HASS config topic: ${configTopic}`)
