@@ -26,12 +26,14 @@ class RingSocketDevice extends RingDevice {
 
     // Create device discovery data
     initInfoEntities(deviceValue) {
-        this.entities.info = {
-            type: 'sensor',
-            deviceClass: 'timestamp',
-            ...deviceValue
-                ? { valueTemplate: `{{value_json[${deviceValue}"] | default }}` }
-                : { valueTemplate: '{{value_json["batteryLevel"] | default }}', unitOfMeasurement: '%'  }
+        this.entities = {
+            info: {
+                type: 'sensor',
+                deviceClass: 'timestamp',
+                ...deviceValue
+                    ? { valueTemplate: `{{value_json[${deviceValue}"] | default }}` }
+                    : { valueTemplate: '{{value_json["batteryLevel"] | default }}', unitOfMeasurement: '%'  }
+            }
         }
     }
 
