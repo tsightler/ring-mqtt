@@ -29,12 +29,12 @@ class RingSocketDevice extends RingDevice {
         this.entities = {
             info: {
                 type: 'sensor',
-                deviceClass: 'timestamp',
                 ...deviceValue
                     ? { valueTemplate: `{{value_json[${deviceValue}"] | default }}` }
-                    : { valueTemplate: '{{value_json["batteryLevel"] | default }}', unitOfMeasurement: '%'  }
+                    : { valueTemplate: '{{value_json["batteryLevel"] | default }}', deviceClass: 'battery', unitOfMeasurement: '%'  }
             }
         }
+        console.log(this.entities.info)
     }
 
     // Publish all discovery data for device
