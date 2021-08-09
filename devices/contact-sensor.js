@@ -30,7 +30,7 @@ class ContactSensor extends RingSocketDevice {
             }
         }
 
-        this.initInfoEntities(deviceValue)
+        this.initInfoEntities()
     }
 
     publishData() {
