@@ -9,7 +9,7 @@ class SecurityPanel extends RingSocketDevice {
         super(deviceInfo)
         this.deviceData.mdl = 'Alarm Control Panel'
         this.deviceData.name = `${this.device.location.name} Alarm`
-
+        
         this.entities.alarm = {
             component: 'alarm_control_panel',
             unique_id: this.deviceId

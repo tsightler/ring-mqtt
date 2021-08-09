@@ -5,13 +5,11 @@ class MultiLevelSwitch extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo)
         this.deviceData.mdl = 'Dimming Light'
-
         this.entities.light = {
             component: 'light',
             brightness_scale: 100,
             unique_id: this.deviceId
         }
-
         this.initInfoEntities()
     }
 

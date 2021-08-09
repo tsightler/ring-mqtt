@@ -4,14 +4,13 @@ class SmokeAlarm extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo)
         this.deviceData.mdl = 'Smoke Alarm'
-
+        
         this.entities.smoke = {
             component: 'binary_sensor',
             device_class: 'smoke',
             unique_id: this.deviceId
         }
-
-        this.initInfoEntities()        
+        this.initInfoEntities()
     }
 
     publishData() {

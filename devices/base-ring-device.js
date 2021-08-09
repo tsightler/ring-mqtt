@@ -35,93 +35,92 @@ class RingDevice {
                     ? `${entityTopic}/image`
                     : `${entityTopic}/state`
             
-            // Similar to the above, legacy versions of ring-mqtt created entity names for single
-            // function devices with no suffix. Because of this, devices that pass their own ID also
-            // get legacy name generation. Default entity name generation can also be completely
-            // overridden with 'name' parameter.
-            const deviceName = entity.hasOwnProperty('name')
-                ? entity.name
-                : entity.hasOwnProperty('id')
-                    ? `${this.deviceData.name}`
-                    : `${this.deviceData.name} ${entityName.replace(/_/g," ").replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())}`
-
-            // Build the discovery message
+            // ***** Build a Home Assistant style MQTT discovery message *****
+            // Legacy versions of ring-mqtt created entity names and IDs for single function devices
+            // without using any type of suffix. To maintain compatibility with older version entities
+            // can pass their unique_id in the entity definition. If this is detected then the device
+            // will also get legacy device name generation (i.e. no name suffix either). However,
+            // automatic name generation can also be completely overridden with entity 'name' parameter.
+            //
+            // I know the below will offend the sensibilities of some people, especially with regards
+            // to formatting, but, for whatever reason, my brain reads through it easily and parses the
+            // logic out easily, so I went with it.
             let discoveryMessage = {
-                name: deviceName,
-                ...entity.hasOwnProperty('unique_id') // Required for legacy entity ID compatibility
+                ... entity.hasOwnProperty('name')
+                    ? { name: entity.name }
+                    : entity.hasOwnProperty('unique_id')
+                        ? { name: `${this.deviceData.name}` }
+                        : { name: `${this.deviceData.name} ${entityName.replace(/_/g," ").replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())}` },
+                ... entity.hasOwnProperty('unique_id') // Required for legacy entity ID compatibility
                     ? { unique_id: entity.unique_id }
                     : { unique_id: `${this.deviceId}_${entityName}` },
-                availability_topic: this.availabilityTopic,
-                payload_available: 'online',
-                payload_not_available: 'offline',
-                ...entity.component === 'camera' 
+                ... entity.component === 'camera' 
                     ? { topic: entityStateTopic }
                     : { state_topic: entityStateTopic },
-                ...entity.component.match(/^(switch|number|light|fan|lock|alarm_control_panel)$/)
+                ... entity.component.match(/^(switch|number|light|fan|lock|alarm_control_panel)$/)
                     ? { command_topic: `${entityTopic}/command` } : {},
-                ...entity.hasOwnProperty('device_class')
+                ... entity.hasOwnProperty('device_class')
                     ? { device_class: entity.device_class } : {},
-                ...entity.hasOwnProperty('unit_of_measurement')
+                ... entity.hasOwnProperty('unit_of_measurement')
                     ? { unit_of_measurement: entity.unit_of_measurement } : {},
-                ...entity.hasOwnProperty('state_class')
+                ... entity.hasOwnProperty('state_class')
                     ? { state_class: entity.state_class } : {},
-                ...entity.hasOwnProperty('value_template')
+                ... entity.hasOwnProperty('value_template')
                     ? { value_template: entity.value_template } : {},
-                ...entity.hasOwnProperty('min')
+                ... entity.hasOwnProperty('min')
                     ? { min: entity.min } : {},
-                ...entity.hasOwnProperty('max')
+                ... entity.hasOwnProperty('max')
                     ? { max: entity.max } : {},
-                ...entity.hasOwnProperty('attributes')
+                ... entity.hasOwnProperty('attributes')
                     ? { json_attributes_topic: `${entityTopic}/attributes` } 
                     : entityName === "info"
                         ? { json_attributes_topic: `${entityStateTopic}` } : {},
-                ...entity.hasOwnProperty('icon')
+                ... entity.hasOwnProperty('icon')
                     ? { icon: entity.icon } 
                     : entityName === "info" 
                         ? { icon: 'mdi:information-outline' } : {},
-                ...entity.component === 'alarm_control_panel' && this.config.disarm_code
-                    ? {
-                        code: this.config.disarm_code.toString(),
+                ... entity.component === 'alarm_control_panel' && this.config.disarm_code
+                    ? { code: this.config.disarm_code.toString(),
                         code_arm_required: false,
-                        code_disarm_required: true
-                    } : {},
-                ...entity.hasOwnProperty('brightness_scale')
-                    ? { 
-                        brightness_state_topic: `${entityTopic}/brightness_state`, 
+                        code_disarm_required: true } : {},
+                ... entity.hasOwnProperty('brightness_scale')
+                    ? { brightness_state_topic: `${entityTopic}/brightness_state`, 
                         brightness_command_topic: `${entityTopic}/brightness_command`,
-                        brightness_scale: entity.brightness_scale
-                    } : {},
-                ...entity.component === 'fan'
-                    ? {
-                        percentage_state_topic: `${entityTopic}/percent_speed_state`,
+                        brightness_scale: entity.brightness_scale } : {},
+                ... entity.component === 'fan'
+                    ? { percentage_state_topic: `${entityTopic}/percent_speed_state`,
                         percentage_command_topic: `${entityTopic}/percent_speed_command`,
                         preset_mode_state_topic: `${entityTopic}/speed_state`,
                         preset_mode_command_topic: `${entityTopic}/speed_command`,
                         preset_modes: [ "low", "medium", "high" ],
                         speed_range_min: 11,
-                        speed_range_max: 100
-                    } : {},
+                        speed_range_max: 100 } : {},
+                availability_topic: this.availabilityTopic,
+                payload_available: 'online',
+                payload_not_available: 'offline',
                 device: this.deviceData
             }
 
-            // On first discovery store all generated topics to entity properties
-            // and perform one-time operations such as subscribing to command topics
+            // On the first publish store the generated topics in the entities object and perform
+            // one-time operations such as subscribing to command topics
             if (!(this.entities[entityName].hasOwnProperty('state_topic') || this.entities[entityName].hasOwnProperty('topic'))) {
+                // State topics (except cameras)
                 Object.keys(discoveryMessage).filter(property => property.match('state_topic')).forEach(stateTopic => {
                     this.entities[entityName][stateTopic] = discoveryMessage[stateTopic]
                 })
 
-                // Also store and subscribe to any command topics
+                // Since cameras send binary image data rather than "state", they use topic vs state_topic, yay!
+                if (entity.component === 'camera') {
+                    this.entities[entityName].topic = discoveryMessage.topic
+                }                
+
+                // Command topics (including subscribe)
                 Object.keys(discoveryMessage).filter(property => property.match('command_topic')).forEach(commandTopic => {
                     this.entities[entityName][commandTopic] = discoveryMessage[commandTopic]
                     this.mqttClient.subscribe(discoveryMessage[commandTopic])
                 })
 
-                // Since cameras send images rather than state, they use topic vs state_topic
-                if (entity.component === 'camera') {
-                    this.entities[entityName].topic = discoveryMessage.topic
-                }
-
+                // JSON Attributes topic
                 if (discoveryMessage.hasOwnProperty('json_attributes_topic')) {
                     this.entities[entityName].json_attributes_topic = discoveryMessage.json_attributes_topic
                 }

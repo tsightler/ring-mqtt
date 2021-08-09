@@ -9,10 +9,11 @@ class Fan extends RingSocketDevice {
 
         this.entities.fan = {
             component: 'fan',
-            unique_id: this.deviceId,
-            state: { targetFanPercent: undefined }
+            state: { 
+                targetFanPercent: undefined 
+            },
+            unique_id: this.deviceId
         }
-
         this.initInfoEntities()
     }
 

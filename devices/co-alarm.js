@@ -11,7 +11,6 @@ class CoAlarm extends RingSocketDevice {
             device_class: 'gas',
             unique_id: this.deviceId
         }
-
         this.initInfoEntities()
     }
 

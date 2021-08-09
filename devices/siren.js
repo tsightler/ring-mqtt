@@ -4,12 +4,11 @@ class Siren extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo)
         this.deviceData.mdl = 'Siren'
-
+        
         this.entities.siren = {
             component: 'binary_sensor',
             unique_id: this.deviceId
         }
-
         this.initInfoEntities()
     }
 

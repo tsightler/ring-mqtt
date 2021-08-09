@@ -6,7 +6,6 @@ const RingDevice = require('./base-ring-device')
 class RingSocketDevice extends RingDevice {
     constructor(deviceInfo) {
         super(deviceInfo, deviceInfo.device.id, deviceInfo.device.location.locationId)
-        this.discoveryData = new Array()
 
         // Set default device data for Home Assistant device registry
         // Values may be overridden by individual devices
@@ -18,14 +17,25 @@ class RingSocketDevice extends RingDevice {
         }
     }
 
-    // ***** REMOVE BEFORE RELEASE *****
-    // Temporary compatibility function
-    initInfoDiscoveryData(deviceValue) {
-        this.initInfoEntities(deviceValue)
+    // Publish/republish the device discovery and all state data
+    async publish(locationConnected) {
+        if (locationConnected) {
+            await this.publishDiscovery()
+            await this.online()
+
+            if (this.subscribed) {
+                this.publishData()
+            } else {
+                // Subscribe to data updates for device
+                this.device.onData.subscribe(() => { this.publishData() })
+                this.schedulePublishAttributes()
+                this.subscribed = true
+            }
+        }
     }
 
     // Create device discovery data
-    initInfoEntities(deviceValue) {
+    initAttributeEntities(deviceValue) {
         this.entities = {
             ...this.entities,
             ...this.device.data.hasOwnProperty('batteryLevel') ? { 
@@ -57,53 +67,6 @@ class RingSocketDevice extends RingDevice {
         }
     }
 
-    // Publish all discovery data for device
-    async publishDiscoveryData() {
-        const debugMsg = (this.availabilityState == 'init') ? 'Publishing new ' : 'Republishing existing '
-        debug(debugMsg+'device id: '+this.deviceId)
-        this.discoveryData.forEach(dd => {
-            debug('HASS config topic: '+dd.configTopic)
-            debug(dd.message)
-            this.publishMqtt(dd.configTopic, JSON.stringify(dd.message))
-        })
-        // Sleep for a few seconds to give HA time to process discovery message
-        await utils.sleep(2)
-    }
-
-    // Publish device state data and subscribe to
-    // device data events and command topics as needed
-    async publish(locationConnected) {
-        // If device has custom publish function call that, otherwise
-        // use common publish function
-        if (typeof this.publishCustom === 'function') {
-            this.publishCustom()
-        } else if (locationConnected) {
-            // Publish discovery message
-            if (!this.discoveryData.length && typeof this.initDiscoveryData === 'function') { await this.initDiscoveryData() }
-            await this.publishDiscoveryData()
-            await this.publishDiscovery()
-            await this.online()
-
-            if (this.subscribed) {
-                this.publishData()
-            } else {
-                // Subscribe to data updates for device
-                this.device.onData.subscribe(() => { this.publishData() })
-                this.schedulePublishAttributes()
-
-                // Subscribe to any device command topics
-                const properties = Object.getOwnPropertyNames(this)
-                const commandTopics = properties.filter(p => p.match(/^commandTopic.*/g))
-                commandTopics.forEach(commandTopic => {
-                    this.mqttClient.subscribe(this[commandTopic])
-                })
-
-                // Mark device as subscribed
-                this.subscribed = true
-            }
-        }
-    }
-
     // Publish device info
     async publishAttributes() {
         let alarmState
@@ -117,17 +80,13 @@ class RingSocketDevice extends RingDevice {
             ... this.device.data.acStatus ? { acStatus: this.device.data.acStatus } : {},
             ... alarmState ? { alarmState: alarmState } : {},
             ... this.device.data.hasOwnProperty('batteryLevel')
-                ? { batteryLevel: this.device.data.batteryLevel === 99 ? 100 : this.device.data.batteryLevel }
-                : {},
+                ? { batteryLevel: this.device.data.batteryLevel === 99 ? 100 : this.device.data.batteryLevel } : {},
             ... this.device.data.batteryStatus && this.device.data.batteryStatus !== 'none'
-                ? { batteryStatus: this.device.data.batteryStatus }
-                : {},
+                ? { batteryStatus: this.device.data.batteryStatus } : {},
             ... (this.device.data.hasOwnProperty('auxBattery') && this.device.data.auxBattery.hasOwnProperty('level'))
-                ? { auxBatteryLevel: this.device.data.auxBattery.level === 99 ? 100 : this.device.data.auxBattery.level }
-                : {},
+                ? { auxBatteryLevel: this.device.data.auxBattery.level === 99 ? 100 : this.device.data.auxBattery.level } : {},
             ... (this.device.data.hasOwnProperty('auxBattery') && this.device.data.auxBattery.hasOwnProperty('status'))
-                ? { auxBatteryStatus: this.device.data.auxBattery.status }
-                : {},
+                ? { auxBatteryStatus: this.device.data.auxBattery.status } : {},
             ... this.device.data.hasOwnProperty('brightness') ? { brightness: this.device.data.brightness } : {},
             ... this.device.data.chirps && this.device.deviceType == 'security-keypad' ? {chirps: this.device.data.chirps } : {},
             ... this.device.data.commStatus ? { commStatus: this.device.data.commStatus } : {},

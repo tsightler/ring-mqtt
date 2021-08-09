@@ -1,69 +1,45 @@
 const debug = require('debug')('ring-mqtt')
-const utils = require( '../lib/utils' )
-const RingSocketDevice = require('./base-socket-device')
+const utils = require('../lib/utils')
+const RingPolledDevice = require('./base-polled-device')
 
-class ModesPanel extends RingSocketDevice {
+class ModesPanel extends RingPolledDevice {
     constructor(deviceInfo) {
         super(deviceInfo)
-
-        // Home Assistant component type
-        this.component = 'alarm_control_panel'
-
-        // Device data for Home Assistant device registry
         this.deviceData.mdl = 'Mode Control Panel'
-        this.deviceData.name = this.device.location.name + ' Mode'
+        this.deviceData.name = `${this.device.location.name} Mode`
 
-        // Build required MQTT topics
-        this.stateTopic = this.deviceTopic+'/mode/state'
-        this.commandTopic = this.deviceTopic+'/mode/command'
-        this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
-
-        this.currentMode = 'unknown'
+        this.entities.mode = {
+            component: 'alarm_control_panel',
+            unique_id: this.deviceId,
+            state: { 
+                currentMode = 'publish'
+            }
+        }
     }
- 
-    async publishCustom() {
+    
+    async publish() {
         // Publish discovery message
-        if (!this.discoveryData.length) { await this.initDiscoveryData() }
-        await this.publishDiscoveryData()
+        await this.publishDiscovery()
         await this.online()
 
         // This is a polled device so don't use common publish/subscribe function
         if (this.subscribed) {
-            const priorMode = this.currentMode
-            this.currentMode = 'republish'
+            const priorMode = this.entities.mode.state.currentMode
+            this.entities.mode.state.currentMode = 'republish'
             this.publishData(priorMode)
         } else {
-            // Subscribe to data updates for location modes
             this.device.location.onLocationMode.subscribe((mode) => {
                 this.publishData(mode)
             })
-
-            // Subscribe to device command topic
-            this.mqttClient.subscribe(this.commandTopic)
-
-            // Mark device as subscribed
+            this.monitorHeartbeat()
             this.subscribed = true
         }
     }
 
-    initDiscoveryData() {
-        // Build the MQTT discovery message
-        this.discoveryData.push({
-            message: {
-                name: this.deviceData.name,
-                unique_id: this.deviceId,
-                availability_topic: this.availabilityTopic,
-                payload_available: 'online',
-                payload_not_available: 'offline',
-                state_topic: this.stateTopic,
-                command_topic: this.commandTopic,
-                device: this.deviceData
-            },
-            configTopic: this.configTopic
-        })
-    }
-
     async publishData(mode) {
+        // Reset heartbeat counter on every polled state
+        this.heartbeat = 3
+
         let mqttMode
         switch(mode) {
             case 'disarmed':
@@ -80,20 +56,27 @@ class ModesPanel extends RingSocketDevice {
         }
 
         // Publish device state if it's changed from prior state
-        if (this.currentMode !== mode) {
-            this.currentMode = mode
-            this.publishMqtt(this.stateTopic, mqttMode, true)
+        if (this.entities.mode.state.currentMode !== mode) {
+            this.entities.mode.state.currentMode = mode
+            this.publishMqtt(this.entities.mode.state_topic, mqttMode, true)
+        }
+    }
+
+    // Process messages from MQTT command topic
+    processCommand(message, topic) {
+        const matchTopic = topic.split("/").slice(-2).join("/")
+        switch (matchTopic) {
+            case 'mode/command':
+                this.setLocationMode(message)
+                break;
+            default:
+                debug('Received unknown mode command topic '+topic+' for location: '+this.deviceId)
         }
     }
     
-    // Process messages from MQTT command topic
-    processCommand(message) {
-        this.setLocationMode(message)
-    }
-
     // Set Alarm Mode on received MQTT command message
     async setLocationMode(message) {
-        debug('Received set mode command '+message+' for location '+this.device.location.name+' ('+this.location+')')
+        debug('Received command set mode '+message+' for location '+this.device.location.name+' ('+this.location+')')
 
         // Try to set alarm mode and retry after delay if mode set fails
         // Initial attempt with no delay
@@ -127,7 +110,7 @@ class ModesPanel extends RingSocketDevice {
                 targetMode = 'away'
                 break
             default:
-                debug('Cannot set alarm mode: Unknown')
+                debug('Cannot set location mode: Unknown')
                 return 'unknown'
         }
         debug('Set location mode: '+targetMode)

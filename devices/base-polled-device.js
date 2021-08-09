@@ -16,12 +16,13 @@ class RingPolledDevice extends RingDevice {
         }
     }
 
-    // This simple heartbeat function decrements the heartbeat counter every 20 seconds.
-    // In normal operation heartbeat is constantly reset in data publish function due to
-    // 20 second polling events constantly calling this function even with no changes.
-    // If the heatbeat counter reaches 0 it indicates that the polling cycle has stopped.
-    // In that case this function sets the device status offline.  When polling resumes 
-    // the heartbeat is again set > 0 and this function sets the device online.
+    // This is a simple heartbeat function for devices which use polling.  This
+    // function decrements the heartbeat counter every 20 seconds.  In normal operation
+    // the heartbeat is constantly reset in the data publish function due to data
+    // polling events however, if something interrupts the connection, polling stops
+    // and this function will decrement until the heartbeat reaches zero.  In this case
+    // this function sets the device status offline.  When polling resumes the heartbeat 
+    // is set > 0 and this function will set the device back online after a short delay.
     async monitorHeartbeat() {
         if (this.heartbeat > 0) {
             if (this.availabilityState !== 'online') {
@@ -39,10 +40,12 @@ class RingPolledDevice extends RingDevice {
         this.monitorHeartbeat()
     }
 
-    // Publish heath state every 5 minutes when online
+    // Publish health state every 5 minutes when online
     async schedulePublishInfo() {
         await utils.sleep(this.availabilityState === 'offline' ? 60 : 300)
-        if (this.availabilityState === 'online') { this.publishInfoState() }
+        if (this.availabilityState === 'online') { 
+            this.publishInfoState() 
+        }
         this.schedulePublishInfo()
     }
 }

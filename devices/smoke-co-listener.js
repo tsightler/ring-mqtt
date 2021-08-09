@@ -4,7 +4,7 @@ class SmokeCoListener extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo)
         this.deviceData.mdl = 'Smoke & CO Listener'
-
+        
         this.entities.smoke = {
             component: 'binary_sensor',
             device_class: 'smoke'
@@ -13,8 +13,7 @@ class SmokeCoListener extends RingSocketDevice {
             component: 'binary_sensor',
             device_class: 'gas'
         }
-
-        this.initInfoEntities() 
+        this.initInfoEntities()
     }
 
     publishData() {

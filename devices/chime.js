@@ -65,7 +65,9 @@ class Chime extends RingPolledDevice {
             this.publishInfoState()
         } else {
             // Subscribe to data updates for device
-            this.device.onData.subscribe(() => { this.publishData() })
+            this.device.onData.subscribe(() => { 
+                this.publishData() 
+            })
             this.publishInfoState()
             this.schedulePublishInfo()
             this.monitorHeartbeat()
