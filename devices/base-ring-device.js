@@ -34,21 +34,24 @@ class RingDevice {
                     ? `${entityTopic}/image`
                     : `${entityTopic}/state`
 
-            // Due to legacy reasons, devices with a single entity, as well as the
-            // alarm control panel entity, use a device ID without a suffix.  All
-            // other devices append the entityName as suffix to create a unique ID.
-            // I'd love to get rid of this one day, but it's a breaking change for
-            // upgrading users so this logic maintains compatibility
-            const entityId = (Object.keys(this.entities).length > 1 && entity.type !== 'alarm_control_panel')
-                ? `${this.deviceId}_${entityName}`
-                : this.deviceId
+            // Due to legacy reasons alarm devices with only a single entity, as well as
+            // the alarm control panel entity, use a device ID without a suffix.  The
+            // info sensor and all other entities append the entityName as suffix to
+            // create a unique ID for each entity.  I'd love to get rid of this one day,
+            // but it's a breaking change for upgrading users so this logic maintains
+            // compatibility with older versions for now.
+            const entityId = ((Object.keys(this.entities).length <= 2 && entity.type !== 'info') || entity.type === 'alarm_control_panel')
+                ? this.deviceId
+                : `${this.deviceId}_${entityName}`
             
-            // Use a custom name suffix if provided, otherwise, if device has more than one entity, suffix with entity name
+            // If defined, ise a custom suffice for the device name, otherwise, if the
+            // device has more than a single entity, suffix with entity name
+            // For devices with a single entity, only the info sensor gets a suffix
             const deviceName = entity.hasOwnProperty('suffix')
                 ?  `${this.deviceData.name} ${entity.suffix}`
-                : Object.keys(this.entities).length > 1
-                    ? `${this.deviceData.name} ${entityName.replace(/_/g," ").replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())}`
-                    : `${this.deviceData.name}`
+                : Object.keys(this.entities).length <= 2 && entity.type !== 'info'
+                    ? `${this.deviceData.name}`
+                    : `${this.deviceData.name} ${entityName.replace(/_/g," ").replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())}`
 
             // Build the discovery message
             let discoveryMessage = {
