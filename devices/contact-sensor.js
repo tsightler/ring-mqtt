@@ -23,12 +23,10 @@ class ContactSensor extends RingSocketDevice {
                 break;
         }
 
-        this.entities = {
-            [this.entityName]: {
-                component: 'binary_sensor',
-                device_class: device_class,
-                legacy: true
-            }
+        this.entities[this.entityName] = {
+            component: 'binary_sensor',
+            device_class: device_class,
+            legacy: true
         }
 
         console.log(this.entities)
