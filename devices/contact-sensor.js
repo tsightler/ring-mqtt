@@ -31,6 +31,8 @@ class ContactSensor extends RingSocketDevice {
             }
         }
 
+        console.log(this.entities)
+
         this.initInfoEntities()
     }
 
