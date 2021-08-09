@@ -51,7 +51,6 @@ class RingDevice {
                 ...entity.hasOwnProperty('unique_id') // Required for legacy entity ID compatibility
                     ? { unique_id: entity.unique_id }
                     : { unique_id: `${this.deviceId}_${entityName}` },
-                unique_id: entityId,
                 availability_topic: this.availabilityTopic,
                 payload_available: 'online',
                 payload_not_available: 'offline',
