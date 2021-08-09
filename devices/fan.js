@@ -39,7 +39,7 @@ class Fan extends RingSocketDevice {
             this.publishMqtt(this.entities.fan.percentage_state_topic, fanPercent.toString(), true)
         }
         this.publishMqtt(this.entities.fan.state_topic, fanState, true)
-        this.publishMqtt(this.entities.fan.preset_state_topic, fanPreset, true)
+        this.publishMqtt(this.entities.fan.preset_mode_state_topic, fanPreset, true)
 
         // Publish device attributes (batterylevel, tamper status)
         this.publishAttributes()
@@ -55,7 +55,7 @@ class Fan extends RingSocketDevice {
             case 'fan/percent_speed_command':
                 this.setFanPercent(message)
                 break;
-            case 'fan/preset_speed_command':
+            case 'fan/speed_command':
                 this.setFanPreset(message)
                 break;
             default:
