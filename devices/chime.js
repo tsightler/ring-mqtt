@@ -114,22 +114,21 @@ class Chime extends RingPolledDevice {
 
     // Process messages from MQTT command topic
     processCommand(message, topic) {
-        topic = topic.split('/')
-        const entity = topic[topic.length - 2]
-        switch(entity) {
-            case 'snooze':
+        const matchTopic = topic.split("/").slice(-2).join("/")
+        switch (matchTopic) {
+            case 'snooze/command':
                 this.setSnoozeState(message)
                 break;
-            case 'snooze_minutes':
+            case 'snooze_minutes/command':
                 this.setSnoozeMinutes(message)
                 break;    
-            case 'volume':
+            case 'volume/command':
                 this.setVolumeLevel(message)
                 break;
-            case 'play_ding_sound':
+            case 'play_ding_sound/command':
                 this.playSound(message, 'ding')
                 break;
-            case 'play_motion_sound':
+            case 'play_motion_sound/command':
                 this.playSound(message, 'motion')
                 break;
             default:

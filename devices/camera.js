@@ -393,7 +393,7 @@ class Camera extends RingPolledDevice {
     // Publish snapshot image/metadata
     async publishSnapshot() {
         debug(this.entities.snapshot.state_topic, '<binary_image_data>')
-        this.publishMqtt(this.entities.snapshot.state_topic, this.snapshot.imageData)
+        this.publishMqtt(this.entities.snapshot.topic, this.snapshot.imageData)
         this.publishMqtt(this.entities.snapshot.json_attributes_topic, JSON.stringify({ timestamp: this.snapshot.timestamp }))
     }
 
@@ -546,19 +546,18 @@ class Camera extends RingPolledDevice {
 
     // Process messages from MQTT command topic
     processCommand(message, topic) {
-        topic = topic.split('/')
-        const entity = topic[topic.length - 2]
-        switch(entity) {
-            case 'light':
+        const matchTopic = topic.split("/").slice(-2).join("/")
+        switch (matchTopic) {
+            case 'light/command':
                 this.setLightState(message)
                 break;
-            case 'siren':
+            case 'siren/command':
                 this.setSirenState(message)
                 break;
-            case 'snapshot':
+            case 'snapshot/command':
                 this.setSnapshotInterval(message)
                 break;
-            case 'snapshot_interval':
+            case 'snapshot_interval/command':
                 this.setSnapshotInterval(message)
                 break;
             default:

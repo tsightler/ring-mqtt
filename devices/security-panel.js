@@ -10,12 +10,9 @@ class SecurityPanel extends RingSocketDevice {
         this.deviceData.mdl = 'Alarm Control Panel'
         this.deviceData.name = `${this.device.location.name} Alarm`
 
-        // Home Assistant component type
-        this.component = 'alarm_control_panel'
-
         this.entities.alarm = {
             component: 'alarm_control_panel',
-            id: this.deviceId
+            unique_id: this.deviceId
         }
         this.entities.siren = {
             component: 'switch'
@@ -112,22 +109,21 @@ class SecurityPanel extends RingSocketDevice {
 
     // Process messages from MQTT command topic
     processCommand(message, topic) {
-        topic = topic.split('/')
-        const entity = topic[topic.length - 2]
-        switch (entity) {
-            case 'alarm':
+        const matchTopic = topic.split("/").slice(-2).join("/")
+        switch (matchTopic) {
+            case 'alarm/command':
                 this.setAlarmMode(message)
                 break;
-            case 'siren':
+            case 'siren/command':
                 this.setSirenMode(message)
                 break;
-            case 'bypass':
+            case 'bypass/command':
                 this.setBypassMode(message)
                 break;
-            case 'police':
+            case 'police/command':
                 this.setPoliceMode(message)
                 break;
-            case 'fire':
+            case 'fire/command':
                 this.setFireMode(message)
                 break;
             default:

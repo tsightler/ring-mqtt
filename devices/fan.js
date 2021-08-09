@@ -5,49 +5,13 @@ const RingSocketDevice = require('./base-socket-device')
 class Fan extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo)
-
-        // Home Assistant component type
-        this.component = 'fan'
-
-        // Device data for Home Assistant device registry
         this.deviceData.mdl = 'Fan Control'
 
-        // Build required MQTT topics 
-        this.stateTopic_fan = this.deviceTopic+'/fan/state'
-        this.commandTopic_fan = this.deviceTopic+'/fan/command'
-        this.stateTopic_preset = this.deviceTopic+'/fan/speed_state'
-        this.commandTopic_preset = this.deviceTopic+'/fan/speed_command'
-        this.stateTopic_percent = this.deviceTopic+'/fan/percent_speed_state'
-        this.commandTopic_percent = this.deviceTopic+'/fan/percent_speed_command'
-        this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
-        this.prevFanState = undefined
-        this.targetFanPercent = undefined
-    }
-    
-    initDiscoveryData() {
-        // Build the MQTT discovery message
-        this.discoveryData.push({
-            message: {
-                name: this.device.name,
-                unique_id: this.deviceId,
-                availability_topic: this.availabilityTopic,
-                payload_available: 'online',
-                payload_not_available: 'offline',
-                state_topic: this.stateTopic_fan,
-                command_topic: this.commandTopic_fan,
-                percentage_state_topic: this.stateTopic_percent,
-                percentage_command_topic: this.commandTopic_percent,
-                preset_mode_state_topic: this.stateTopic_preset,
-                preset_mode_command_topic: this.commandTopic_preset,
-                preset_modes: [ "low", "medium", "high" ],
-                speed_range_min: 11,
-                speed_range_max: 100,
-                device: this.deviceData
-            },
-            configTopic: this.configTopic
-        })
-
-        this.initInfoDiscoveryData('commStatus')
+        this.entities.fan = {
+            component: 'fan',
+            unique_id: this.deviceId,
+            state: { targetFanPercent: undefined }
+        }
     }
 
     publishData() {
@@ -66,14 +30,14 @@ class Fan extends RingSocketDevice {
         
         // Publish device state
         // targetFanPercent is a small hack to work around Home Assistant UI behavior
-        if (this.targetFanPercent && this.targetFanPercent != fanPercent) {
-            this.publishMqtt(this.stateTopic_percent, this.targetFanPercent.toString(), true)
-            this.targetFanPercent = undefined
+        if (this.entities.fan.state.targetFanPercent && this.entities.fan.state.targetFanPercent !== fanPercent) {
+            this.publishMqtt(this.entities.fan.percentage_state_topic, this.entities.fan.state.targetFanPercent.toString(), true)
+            this.entities.fan.state.targetFanPercent = undefined
         } else {
-            this.publishMqtt(this.stateTopic_percent, fanPercent.toString(), true)
+            this.publishMqtt(this.entities.fan.percentage_state_topic, fanPercent.toString(), true)
         }
-        this.publishMqtt(this.stateTopic_fan, fanState, true)
-        this.publishMqtt(this.stateTopic_preset, fanPreset, true)
+        this.publishMqtt(this.entities.fan.state_topic, fanState, true)
+        this.publishMqtt(this.entities.fan.preset_state_topic, fanPreset, true)
 
         // Publish device attributes (batterylevel, tamper status)
         this.publishAttributes()
@@ -81,14 +45,19 @@ class Fan extends RingSocketDevice {
     
     // Process messages from MQTT command topic
     processCommand(message, topic) {
-        if (topic == this.commandTopic_fan) {
-            this.setFanState(message)
-        } else if (topic == this.commandTopic_percent) {
-            this.setFanPercent(message)
-        } else if (topic == this.commandTopic_preset) {
-            this.setFanPreset(message)
-        } else {
-            debug('Received unknown command topic '+topic+' for fan: '+this.deviceId)
+        const matchTopic = topic.split("/").slice(-2).join("/")
+        switch (matchTopic) {
+            case 'fan/command':
+                this.setFanState(message)
+                break;
+            case 'fan/percent_speed_command':
+                this.setFanPercent(message)
+                break;
+            case 'fan/preset_speed_command':
+                this.setFanPreset(message)
+                break;
+            default:
+                debug('Received unknown command topic '+topic+' for fan: '+this.deviceId)
         }
     }
 

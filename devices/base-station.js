@@ -40,19 +40,18 @@ class BaseStation extends RingSocketDevice {
             const currentVolume = (this.device.data.volume && !isNaN(this.device.data.volume) ? Math.round(100 * this.device.data.volume) : 0)
             this.publishMqtt(this.entities.volume.state_topic, currentVolume.toString(), true)
         }
-
-        // Publish device attributes (batterylevel, tamper status)
         this.publishAttributes()
     }
 
     // Process messages from MQTT command topic
     processCommand(message, topic) {
-        topic = topic.split('/')
-        const entity = topic[topic.length - 2]
-        if (entity === 'volume') {
-            this.setVolumeLevel(message)
-        } else {
-            debug('Received unknown command topic '+topic+' for base station: '+this.deviceId)
+        const matchTopic = topic.split("/").slice(-2).join("/")
+        switch (matchTopic) {
+            case 'volume/command':
+                this.setVolumeLevel(message)
+                break;
+            default:
+                debug('Received unknown command topic '+topic+' for keypad: '+this.deviceId)
         }
     }
 

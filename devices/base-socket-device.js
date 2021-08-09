@@ -51,8 +51,7 @@ class RingSocketDevice extends RingDevice {
                 ...deviceValue
                     ? { value_template: `{{value_json["${deviceValue}"] | default }}` }
                     : { 
-                        value_template: '{{value_json["batteryLevel"] | default }}', 
-                        unit_of_measurement: '%'
+                        value_template: '{{value_json["commStatus"] | default }}'
                     }
             }
         }

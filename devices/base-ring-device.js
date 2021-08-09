@@ -34,23 +34,6 @@ class RingDevice {
                 : entity.component === 'camera'
                     ? `${entityTopic}/image`
                     : `${entityTopic}/state`
-
-            // In legacy versions of ring-mqtt alarm devices with only a single entity, as
-            // well as the alarm control panel entity, were created using only the device ID
-            // as the unique ID.  As the code was expanded to support multi-function devices,
-            // add info sensors, and more, all of these new entities append the entityName as a
-            // suffix to create a unique entity ID from the device ID as required for Home Assistant
-            //
-            // One day I want to get rid of this and generate unique entity IDs with suffixes
-            // for all entities but, as it's a breaking change for upgrading users, for now,
-            // the logic below maintains device ID compatibility with older versions. Devices
-            // that use the legacy device IDs simply define the id parameter in the entity.
-            //
-            // I need to research if there's a way to deal with this without breaking updates.
-            // Maybe a transition period with both IDs in the device data, but this works for now.
-            const entityId = entity.hasOwnProperty('id')
-                ? entity.id
-                : `${this.deviceId}_${entityName}`
             
             // Similar to the above, legacy versions of ring-mqtt created entity names for single
             // function devices with no suffix. Because of this, devices that pass their own ID also
@@ -65,6 +48,9 @@ class RingDevice {
             // Build the discovery message
             let discoveryMessage = {
                 name: deviceName,
+                ...entity.hasOwnProperty('unique_id') // Required for legacy entity ID compatibility
+                    ? { unique_id: entity.unique_id }
+                    : { unique_id: `${this.deviceId}_${entityName}` },
                 unique_id: entityId,
                 availability_topic: this.availabilityTopic,
                 payload_available: 'online',
@@ -95,24 +81,54 @@ class RingDevice {
                     : entityName === "info" 
                         ? { icon: 'mdi:information-outline' } : {},
                 ...entity.component === 'alarm_control_panel' && this.config.disarm_code
-                    ? { code: this.config.disarm_code.toString(), code_arm_required: false, code_disarm_required: true } : {},
+                    ? {
+                        code: this.config.disarm_code.toString(),
+                        code_arm_required: false,
+                        code_disarm_required: true
+                    } : {},
+                ...entity.hasOwnProperty('brightness_scale')
+                    ? { 
+                        brightness_state_topic: `${entityTopic}/brightness_state`, 
+                        brightness_command_topic: `${entityTopic}/brightness_command`,
+                        brightness_scale: entity.brightness_scale
+                    } : {},
+                ...entity.component === 'fan'
+                    ? {
+                        percentage_state_topic: `${entityTopic}/percent_speed_state`,
+                        percentage_command_topic: `${entityTopic}/percent_speed_command`,
+                        preset_mode_state_topic: `${entityTopic}/speed_state`,
+                        preset_mode_command_topic: `${entityTopic}/speed_command`,
+                        preset_modes: [ "low", "medium", "high" ],
+                        speed_range_min: 11,
+                        speed_range_max: 100
+                    } : {},
                 device: this.deviceData
             }
 
-            // On first discovery save all generated topics to entity properties
+            // On first discovery store all generated topics to entity properties
             // and perform one-time operations such as subscribing to command topics
             if (!this.entities[entityName].hasOwnProperty('state_topic')) {
-                this.entities[entityName].state_topic = entityStateTopic
-                if (discoveryMessage.hasOwnProperty('command_topic')) {
-                    this.entities[entityName].command_topic = discoveryMessage.command_topic
-                    this.mqttClient.subscribe(discoveryMessage.command_topic)  // Subscribe to command topics
+                Object.keys(discoveryMessage).filter(property => property.match('state_topic')).forEach(stateTopic => {
+                    this.entities[entityName][stateTopic] = discoveryMessage[stateTopic]
+                })
+
+                // Also store and subscribe to any command topics
+                Object.keys(discoveryMessage).filter(property => property.match('command_topic')).forEach(commandTopic => {
+                    this.entities[entityName][commandTopic] = discoveryMessage[commandTopic]
+                    this.mqttClient.subscribe(discoveryMessage[commandTopic])
+                })
+
+                // Since cameras send images rather than state, they use topic vs state_topic
+                if (entity.component === 'camera') {
+                    this.entities[entityName].topic = discoveryMessage.topic
                 }
+
                 if (discoveryMessage.hasOwnProperty('json_attributes_topic')) {
                     this.entities[entityName].json_attributes_topic = discoveryMessage.json_attributes_topic
                 }
             }
 
-            const configTopic = `homeassistant/${entity.component}/${this.locationId}/${entityId}/config`
+            const configTopic = `homeassistant/${entity.component}/${this.locationId}/${discoveryMessage.unique_id}/config`
             debug(`HASS config topic: ${configTopic}`)
             debug(discoveryMessage)
             this.publishMqtt(configTopic, JSON.stringify(discoveryMessage))
