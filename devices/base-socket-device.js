@@ -30,7 +30,7 @@ class RingSocketDevice extends RingDevice {
             info: {
                 type: 'sensor',
                 ...deviceValue
-                    ? { valueTemplate: `{{value_json[${deviceValue}"] | default }}` }
+                    ? { valueTemplate: `{{value_json["${deviceValue}"] | default }}` }
                     : { valueTemplate: '{{value_json["batteryLevel"] | default }}', deviceClass: 'battery', unitOfMeasurement: '%'  }
             }
         }
