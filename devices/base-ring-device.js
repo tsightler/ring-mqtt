@@ -127,8 +127,6 @@ class RingDevice {
                 }
             }
 
-            console.log(this.entities[entityName])
-
             const configTopic = `homeassistant/${entity.component}/${this.locationId}/${discoveryMessage.unique_id}/config`
             debug(`HASS config topic: ${configTopic}`)
             debug(discoveryMessage)

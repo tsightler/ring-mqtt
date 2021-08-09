@@ -392,7 +392,7 @@ class Camera extends RingPolledDevice {
 
     // Publish snapshot image/metadata
     async publishSnapshot() {
-        debug(this.entities.snapshot.state_topic, '<binary_image_data>')
+        debug(this.entities.snapshot.topic, '<binary_image_data>')
         this.publishMqtt(this.entities.snapshot.topic, this.snapshot.imageData)
         this.publishMqtt(this.entities.snapshot.json_attributes_topic, JSON.stringify({ timestamp: this.snapshot.timestamp }))
     }
