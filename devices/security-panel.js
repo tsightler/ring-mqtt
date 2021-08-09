@@ -15,25 +15,25 @@ class SecurityPanel extends RingSocketDevice {
 
         this.entities.alarm = {
             component: 'alarm_control_panel',
-            legacy: true
+            id: this.deviceId
         }
         this.entities.siren = {
             component: 'switch'
         }
         this.entities.bypass = {
             component: 'switch',
-            suffix: 'Arming Bypass Mode',
+            name: `${this.device.location.name} Arming Bypass Mode`,
             state: false
         }
 
         if (this.config.enable_panic) {
             this.entities.police = { 
                 component: 'switch',
-                suffix: 'Panic - Police'
+                name: `${this.device.location.name} Panic - Police`
             }
             this.entities.fire = { 
                 component: 'switch',
-                suffix: 'Panic - Fire'
+                name: `${this.device.location.name} Panic - Fire`
             }
         }
         this.initInfoEntities('alarmState')

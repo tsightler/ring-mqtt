@@ -8,7 +8,7 @@ class SmokeAlarm extends RingSocketDevice {
         this.entities.smoke = {
             component: 'binary_sensor',
             device_class: 'smoke',
-            legacy: true
+            id:this.deviceId
         }
 
         this.initInfoEntities()        

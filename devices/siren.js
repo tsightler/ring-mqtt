@@ -7,7 +7,7 @@ class Siren extends RingSocketDevice {
 
         this.entities.siren = {
             component: 'binary_sensor',
-            legacy: true
+            id: this.deviceId
         }
 
         this.initInfoEntities()

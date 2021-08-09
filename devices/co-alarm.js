@@ -9,7 +9,7 @@ class CoAlarm extends RingSocketDevice {
         this.entities.co = {
             component: 'binary_sensor',
             device_class: 'gas',
-            legacy: true
+            id: this.deviceId
         }
 
         this.initInfoEntities()

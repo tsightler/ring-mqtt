@@ -37,27 +37,28 @@ class RingDevice {
 
             // In legacy versions of ring-mqtt alarm devices with only a single entity, as
             // well as the alarm control panel entity, were created using only the device ID
-            // for the unique ID.  As the code was expanded to support multi-function devices,
-            // add info sensors, etc all of these new entities append the entityName as a
-            // suffix to create a unique entity ID from the device ID.
+            // as the unique ID.  As the code was expanded to support multi-function devices,
+            // add info sensors, and more, all of these new entities append the entityName as a
+            // suffix to create a unique entity ID from the device ID as required for Home Assistant
             //
             // One day I want to get rid of this and generate unique entity IDs with suffixes
-            // for all entities but it's a breaking change for upgrading users so, for now,
-            // the logic below maintains device ID compatibility with older versions.  Devices
-            // that use the legacy device ID and naming include a "legacy: true" property.
+            // for all entities but, as it's a breaking change for upgrading users, for now,
+            // the logic below maintains device ID compatibility with older versions. Devices
+            // that use the legacy device IDs simply define the id parameter in the entity.
             //
             // I need to research if there's a way to deal with this without breaking updates.
             // Maybe a transition period with both IDs in the device data, but this works for now.
-            const entityId = entity.hasOwnProperty('legacy') && entity.legacy
-                ? this.deviceId
+            const entityId = entity.hasOwnProperty('id')
+                ? entity.id
                 : `${this.deviceId}_${entityName}`
             
-            // Similar to above, legacy alarm devices with a single entity used the device name
-            // with no suffix.  The "legacy: true" property is used for this.  Suffix can also be
-            // completely overridden with a custom "suffix" parameter
-            const deviceName = entity.hasOwnProperty('suffix')
-                ?  `${this.deviceData.name} ${entity.suffix}`
-                : entity.hasOwnProperty('legacy') && entity.legacy
+            // Similar to the above, legacy versions of ring-mqtt created entity names for single
+            // function devices with no suffix. Because of this, devices that pass their own ID also
+            // get legacy name generation. Default entity name generation can also be completely
+            // overridden with 'name' parameter.
+            const deviceName = entity.hasOwnProperty('name')
+                ? entity.name
+                : entity.hasOwnProperty('id')
                     ? `${this.deviceData.name}`
                     : `${this.deviceData.name} ${entityName.replace(/_/g," ").replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())}`
 
