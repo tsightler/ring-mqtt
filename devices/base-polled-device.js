@@ -4,8 +4,8 @@ const RingDevice = require('./base-ring-device')
 // Base class for devices/features that communicate via HTTP polling interface (cameras/chime/modes)
 class RingPolledDevice extends RingDevice {
     constructor(deviceInfo) {
-        this.deviceId = this.device.data.device_id
-        this.locationId = this.device.data.location_id
+        this.deviceId = deviceInfo.device.data.device_id
+        this.locationId = deviceInfo.device.data.location_id
         super(deviceInfo)
         this.heartbeat = 3
 
