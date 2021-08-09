@@ -10,7 +10,7 @@ class Lock extends RingSocketDevice {
             component: 'lock',
             unique_id: this.deviceId
         }
-        this.initInfoEntities()
+        this.initAttributeEntities()
     }
 
     publishData() {

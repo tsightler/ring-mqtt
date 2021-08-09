@@ -10,7 +10,7 @@ class SmokeAlarm extends RingSocketDevice {
             device_class: 'smoke',
             unique_id: this.deviceId
         }
-        this.initInfoEntities()
+        this.initAttributeEntities()
     }
 
     publishData() {

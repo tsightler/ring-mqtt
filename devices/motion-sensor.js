@@ -10,7 +10,7 @@ class MotionSensor extends RingSocketDevice {
             device_class: 'motion',
             unique_id: this.deviceId
         }
-        this.initInfoEntities()
+        this.initAttributeEntities()
     }
 
     publishData() {

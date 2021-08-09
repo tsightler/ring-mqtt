@@ -15,7 +15,7 @@ class Keypad extends RingSocketDevice {
             max: 100,
             icon: 'hass:volume-high'
         }
-        this.initInfoEntities()
+        this.initAttributeEntities()
     }
 
     publishData() {

@@ -14,7 +14,7 @@ class Fan extends RingSocketDevice {
             },
             unique_id: this.deviceId
         }
-        this.initInfoEntities()
+        this.initAttributeEntities()
     }
 
     publishData() {

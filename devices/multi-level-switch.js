@@ -10,7 +10,7 @@ class MultiLevelSwitch extends RingSocketDevice {
             brightness_scale: 100,
             unique_id: this.deviceId
         }
-        this.initInfoEntities()
+        this.initAttributeEntities()
     }
 
     publishData() {

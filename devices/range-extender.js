@@ -6,7 +6,7 @@ class RangeExtender extends RingSocketDevice {
         this.deviceData.mdl = 'Z-Wave Range Extender'
         this.deviceData.name = this.device.location.name + ' Range Extender'
         
-        this.initInfoEntities('acStatus')
+        this.initAttributeEntities('acStatus')
     }
 
     publishData() {

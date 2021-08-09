@@ -11,7 +11,7 @@ class Switch extends RingSocketDevice {
             component: this.component,
             unique_id: this.deviceId
         }
-        this.initInfoEntities()
+        this.initAttributeEntities()
     }
 
     publishData() {

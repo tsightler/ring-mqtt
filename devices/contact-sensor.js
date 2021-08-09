@@ -28,7 +28,7 @@ class ContactSensor extends RingSocketDevice {
             device_class: device_class,
             unique_id: this.deviceId
         }
-        this.initInfoEntities()
+        this.initAttributeEntities()
     }
 
     publishData() {

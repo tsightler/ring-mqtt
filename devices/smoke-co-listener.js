@@ -13,7 +13,7 @@ class SmokeCoListener extends RingSocketDevice {
             component: 'binary_sensor',
             device_class: 'gas'
         }
-        this.initInfoEntities()
+        this.initAttributeEntities()
     }
 
     publishData() {

@@ -33,7 +33,7 @@ class SecurityPanel extends RingSocketDevice {
                 name: `${this.device.location.name} Panic - Fire`
             }
         }
-        this.initInfoEntities('alarmState')
+        this.initAttributeEntities('alarmState')
     }
 
     publishData() {

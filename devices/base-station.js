@@ -12,7 +12,7 @@ class BaseStation extends RingSocketDevice {
         this.publishMqtt('homeassistant/light/'+this.locationId+'/'+this.deviceId+'_audio/config', '', false)
 
         this.initVolumeEntity()
-        this.initInfoEntities('acStatus')
+        this.initAttributeEntities('acStatus')
     }
     
     // Check if account has access to control base state volume and initialize topics if so
