@@ -1,6 +1,5 @@
 const debug = require('debug')('ring-mqtt')
 const utils = require('../lib/utils')
-const clientApi = require('../node_modules/ring-client-api/lib/api/rest-client').clientApi
 const RingPolledDevice = require('./base-polled-device')
 
 class Chime extends RingPolledDevice {
@@ -9,46 +8,46 @@ class Chime extends RingPolledDevice {
 
         // Define entities for this device
         this.entities = {
-            volume: { 
-                type: 'number',
+            volume: {
+                component: 'number',
                 state: null,
                 min: 0,
                 max: 11,
                 icon: 'hass:volume-high'
             },
             snooze: {
-                type: 'switch',
+                component: 'switch',
                 state: null,
                 icon: 'hass:bell-sleep'
             },
             snooze_minutes: {
-                type: 'number',
+                component: 'number',
                 state: 1440,
                 min: 1,
                 max: 1440,
                 icon: 'hass:timer-sand'
             },
             play_ding_sound: {
-                type: 'switch',
+                component: 'switch',
                 state: 'OFF',
                 icon: 'hass:bell-ring'
             },
             play_motion_sound: {
-                type: 'switch',
+                component: 'switch',
                 state: 'OFF',
                 icon: 'hass:bell-ring'
             },
             wireless: {
-                type: 'sensor',
-                deviceClass: 'signal_strength',
-                unitOfMeasurement: 'dBm',
-                parentStateTopic: 'info/state',
-                valueTemplate: '{{ value_json["wirelessSignal"] | default }}',
+                component: 'sensor',
+                device_class: 'signal_strength',
+                unit_of_measurement: 'dBm',
+                parent_state_topic: 'info/state',
+                value_template: '{{ value_json["wirelessSignal"] | default }}',
             },
             info: {
-                type: 'sensor',
-                deviceClass: 'timestamp',
-                valueTemplate: '{{ value_json["lastUpdate"] | default }}'
+                component: 'sensor',
+                device_class: 'timestamp',
+                value_template: '{{ value_json["lastUpdate"] | default }}'
             }
         }
     }
@@ -83,19 +82,19 @@ class Chime extends RingPolledDevice {
 
         // Polled states are published only if value changes or it's a republish
         if (volumeState !== this.entities.volume.state || republish) { 
-            this.publishMqtt(this.entities.volume.stateTopic, volumeState.toString(), true)
+            this.publishMqtt(this.entities.volume.state_topic, volumeState.toString(), true)
             this.entities.volume.state = volumeState
         }
         if (snoozeState !== this.entities.snooze.state || republish) { 
-            this.publishMqtt(this.entities.snooze.stateTopic, snoozeState, true)
+            this.publishMqtt(this.entities.snooze.state_topic, snoozeState, true)
             this.entities.snooze.state = snoozeState
         }
 
         // Realtime states are published only for publish/republish
         if (!this.subscribed || republish) {
-            this.publishMqtt(this.entities.snooze_minutes.stateTopic, this.entities.snooze_minutes.state.toString(), true)
-            this.publishMqtt(this.entities.play_ding_sound.stateTopic, this.entities.play_ding_sound.state, true)
-            this.publishMqtt(this.entities.play_motion_sound.stateTopic, this.entities.play_motion_sound.state, true)
+            this.publishMqtt(this.entities.snooze_minutes.state_topic, this.entities.snooze_minutes.state.toString(), true)
+            this.publishMqtt(this.entities.play_ding_sound.state_topic, this.entities.play_ding_sound.state, true)
+            this.publishMqtt(this.entities.play_motion_sound.state_topic, this.entities.play_motion_sound.state, true)
         }
 
     }
@@ -109,7 +108,7 @@ class Chime extends RingPolledDevice {
             attributes.wirelessSignal = deviceHealth.latest_signal_strength
             attributes.firmwareStatus = deviceHealth.firmware
             attributes.lastUpdate = deviceHealth.updated_at.slice(0,-6)+"Z"
-            this.publishMqtt(this.entities.info.stateTopic, JSON.stringify(attributes), true)
+            this.publishMqtt(this.entities.info.state_topic, JSON.stringify(attributes), true)
         }
     }
 
@@ -167,7 +166,7 @@ class Chime extends RingPolledDevice {
             debug('Snooze minutes command received but out of range (0-1440 minutes)')
         } else {
             this.entities.snooze_minutes.state = parseInt(minutes)
-            this.publishMqtt(this.entities.snooze_minutes.stateTopic, this.entities.snooze_minutes.state.toString(), true)           
+            this.publishMqtt(this.entities.snooze_minutes.state_topic, this.entities.snooze_minutes.state.toString(), true)           
         }
     }
 
@@ -186,17 +185,17 @@ class Chime extends RingPolledDevice {
         }
     }
 
-    async playSound(message, chimeOfType) {
-        debug('Receieved play '+chimeOfType+' chime sound '+message+' for chime Id: '+this.deviceId)
+    async playSound(message, chimeType) {
+        debug('Receieved play '+chimeType+' chime sound '+message+' for chime Id: '+this.deviceId)
         debug('Location Id: '+ this.locationId)
         const command = message.toLowerCase()
 
         switch(command) {
             case 'on':
-                this.publishMqtt(this.entities[`play_${chimeOfType}_sound`].stateTopic, 'ON', true)
-                await this.device.playSound(chimeOfType)
+                this.publishMqtt(this.entities[`play_${chimeType}_sound`].state_topic, 'ON', true)
+                await this.device.playSound(chimeType)
                 await utils.sleep(5)
-                this.publishMqtt(this.entities[`play_${chimeOfType}_sound`].stateTopic, 'OFF', true)
+                this.publishMqtt(this.entities[`play_${chimeType}_sound`].state_topic, 'OFF', true)
                 break;
             case 'off': {
                 break;

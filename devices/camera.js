@@ -61,8 +61,8 @@ class Camera extends RingPolledDevice {
     async initEntities() {
         this.entities = {
             motion: {
-                type: 'binary_sensor',
-                deviceClass: 'motion',
+                component: 'binary_sensor',
+                device_class: 'motion',
                 attributes: true,
                 state: {
                     active_ding: false,
@@ -75,8 +75,8 @@ class Camera extends RingPolledDevice {
             },
             ...this.device.isDoorbot ? {
                 ding: {
-                    type: 'binary_sensor',
-                    deviceClass: 'occupancy',
+                    component: 'binary_sensor',
+                    device_class: 'occupancy',
                     attributes: true,
                     state: {
                         active_ding: false,
@@ -89,32 +89,32 @@ class Camera extends RingPolledDevice {
             } : {},
             ...this.device.hasLight ? {
                 light: {
-                    type: 'light'
+                    component: 'light'
                 }
             } : {},
             ...this.device.hasSiren ? {
                 siren: {
-                    type: 'switch'
+                    component: 'switch'
                 }
             } : {},
             ...(this.snapshot.motion || this.snapshot.interval) ? { 
                 snapshot: {
-                    type: 'camera',
+                    component: 'camera',
                     attributes: true
                 }
             } : {},
             ...(this.snapshot.motion || this.snapshot.interval) ? {
                 snapshot_interval: {
-                    type: 'number',
+                    component: 'number',
                     min: 10,
                     max: 3600,
                     icon: 'hass:timer'
                 }
             } : {},
             info: {
-                type: 'sensor',
-                deviceClass: 'timestamp',
-                valueTemplate: '{{ value_json["lastUpdate"] | default }}'
+                component: 'sensor',
+                device_class: 'timestamp',
+                value_template: '{{ value_json["lastUpdate"] | default }}'
             }
         }
 
@@ -122,28 +122,26 @@ class Camera extends RingPolledDevice {
         const deviceHealth = await this.device.getHealth()
         if (deviceHealth && !(deviceHealth.hasOwnProperty('network_connection') && deviceHealth.network_connection === 'ethernet')) {
             this.entities.wireless = {
-                type: 'sensor',
-                deviceClass: 'signal_strength',
-                unitOfMeasurement: 'dBm',
-                parentStateTopic: 'info/state',
-                valueTemplate: '{{ value_json["wirelessSignal"] | default }}',
+                component: 'sensor',
+                device_class: 'signal_strength',
+                unit_of_measurement: 'dBm',
+                parent_state_topic: 'info/state',
+                value_template: '{{ value_json["wirelessSignal"] | default }}',
             }
         }
 
         // If device is battery powered publish battery entity
         if (this.device.hasBattery) {
             this.entities.battery = {
-                type: 'sensor',
-                deviceClass: 'battery',
-                unitOfMeasurement: '%',
-                parentStateTopic: 'info/state',
-                valueTemplate: '{{ value_json["batteryLevel"] | default }}'
+                component: 'sensor',
+                device_class: 'battery',
+                unit_of_measurement: '%',
+                state_class: 'measurement',
+                parent_state_topic: 'info/state',
+                value_template: '{{ value_json["batteryLevel"] | default }}'
             }
         }
-        await this.populateLatestEvent()
-    }
 
-    async populateLatestEvent() {
         // Update motion properties with most recent historical event data
         const lastMotionEvent = (await this.device.getEvents({ limit: 1, kind: 'motion'})).events[0]
         const lastMotionDate = (lastMotionEvent && lastMotionEvent.hasOwnProperty('created_at')) ? new Date(lastMotionEvent.created_at) : false
@@ -275,7 +273,7 @@ class Camera extends RingPolledDevice {
     // Publish ding state and attributes
     publishDingState(dingKind) {
         const dingState = this.entities[dingKind].state.active_ding ? 'ON' : 'OFF'
-        this.publishMqtt(this.entities[dingKind].stateTopic, dingState, true)
+        this.publishMqtt(this.entities[dingKind].state_topic, dingState, true)
 
         if (dingKind === 'motion') {
             this.publishMotionAttributes()
@@ -294,7 +292,7 @@ class Camera extends RingPolledDevice {
             attributes.motionDetectionEnabled = this.device.data.settings.motion_detection_enabled
             this.publishedMotionDetectionEnabled = attributes.motionDetectionEnabled
         }
-        this.publishMqtt(this.entities.motion.attributesTopic, JSON.stringify(attributes), true)
+        this.publishMqtt(this.entities.motion.attributes_topic, JSON.stringify(attributes), true)
     }
 
     publishDingAttributes() {
@@ -302,7 +300,7 @@ class Camera extends RingPolledDevice {
             lastDing: this.entities.ding.state.last_ding,
             lastDingTime: this.entities.ding.state.last_ding_time
         }
-        this.publishMqtt(this.entities.ding.attributesTopic, JSON.stringify(attributes), true)
+        this.publishMqtt(this.entities.ding.attributes_topic, JSON.stringify(attributes), true)
     }
 
     // Publish camera state for polled attributes (light/siren state, etc)
@@ -330,14 +328,14 @@ class Camera extends RingPolledDevice {
 
         if (this.device.hasLight) {
             if (this.device.data.led_status !== this.publishedLightState) {
-                this.publishMqtt(this.entities.light.stateTopic, (this.device.data.led_status === 'on' ? 'ON' : 'OFF'), true)
+                this.publishMqtt(this.entities.light.state_topic, (this.device.data.led_status === 'on' ? 'ON' : 'OFF'), true)
                 this.publishedLightState = this.device.data.led_status
             }
         }
         if (this.device.hasSiren) {
             const sirenStatus = this.device.data.siren_status.seconds_remaining > 0 ? 'ON' : 'OFF'
             if (sirenStatus !== this.publishedSirenState) {
-                this.publishMqtt(this.entities.siren.stateTopic, sirenStatus, true)
+                this.publishMqtt(this.entities.siren.state_topic, sirenStatus, true)
                 this.publishedSirenState = sirenStatus
             }
         }
@@ -369,7 +367,7 @@ class Camera extends RingPolledDevice {
                 attributes.wirelessNetwork = deviceHealth.wifi_name
                 attributes.wirelessSignal = deviceHealth.latest_signal_strength
             }            
-            this.publishMqtt(this.entities.info.stateTopic, JSON.stringify(attributes), true)
+            this.publishMqtt(this.entities.info.state_topic, JSON.stringify(attributes), true)
         }
     }
 
@@ -394,13 +392,13 @@ class Camera extends RingPolledDevice {
 
     // Publish snapshot image/metadata
     async publishSnapshot() {
-        debug(this.entities.snapshot.stateTopic, '<binary_image_data>')
-        this.publishMqtt(this.entities.snapshot.stateTopic, this.snapshot.imageData)
-        this.publishMqtt(this.entities.snapshot.attributesTopic, JSON.stringify({ timestamp: this.snapshot.timestamp }))
+        debug(this.entities.snapshot.state_topic, '<binary_image_data>')
+        this.publishMqtt(this.entities.snapshot.state_topic, this.snapshot.imageData)
+        this.publishMqtt(this.entities.snapshot.attributes_topic, JSON.stringify({ timestamp: this.snapshot.timestamp }))
     }
 
     async publishSnapshotInterval() {
-        this.publishMqtt(this.entities.snapshot_interval.stateTopic, this.snapshot.interval.toString(), true)
+        this.publishMqtt(this.entities.snapshot_interval.state_topic, this.snapshot.interval.toString(), true)
     }
 
     // This function uses various methods to get a snapshot to work around limitations

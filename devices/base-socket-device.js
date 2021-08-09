@@ -27,14 +27,26 @@ class RingSocketDevice extends RingDevice {
     // Create device discovery data
     initInfoEntities(deviceValue) {
         this.entities = {
+            ...this.device.data.hasOwnProperty('batteryLevel') ? { 
+                battery: {
+                    component: 'sensor',
+                    device_class: 'battery',
+                    unit_of_measurement: '%',
+                    state_class: 'measurement',
+                    parent_state_topic: 'info/state',
+                    value_template: '{{ value_json["batteryLevel"] | default }}'
+                }
+            } : {},
             info: {
-                type: 'sensor',
+                component: 'sensor',
                 ...deviceValue
-                    ? { valueTemplate: `{{value_json["${deviceValue}"] | default }}` }
-                    : { valueTemplate: '{{value_json["batteryLevel"] | default }}', deviceClass: 'battery', unitOfMeasurement: '%'  }
+                    ? { value_template: `{{value_json["${deviceValue}"] | default }}` }
+                    : { 
+                        value_template: '{{value_json["batteryLevel"] | default }}', 
+                        unit_of_measurement: '%'
+                    }
             }
         }
-        console.log(this.entities.info)
     }
 
     // Publish all discovery data for device
@@ -121,7 +133,7 @@ class RingSocketDevice extends RingDevice {
             ... this.device.data.hasOwnProperty('volume') ? {volume: this.device.data.volume } : {},
             ... this.device.data.hasOwnProperty('maxVolume') ? {maxVolume: this.device.data.maxVolume } : {},
         }
-        this.publishMqtt(this.entities.info.stateTopic, JSON.stringify(attributes), true)
+        this.publishMqtt(this.entities.info.state_topic, JSON.stringify(attributes), true)
     }
 
     // Refresh device info attributes on a sechedule

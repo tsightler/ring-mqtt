@@ -28,24 +28,30 @@ class RingDevice {
 
             // If this entity uses state values from a parent entity set this here
             // otherwise use standard state topic for entity ('image' for camera, 'state' for all others)
-            const entityStateTopic = entity.hasOwnProperty('parentStateTopic')
-                ? `${this.deviceTopic}/${entity.parentStateTopic}`
-                : entity.type === 'camera'
+            const entityStateTopic = entity.hasOwnProperty('parent_state_topic')
+                ? `${this.deviceTopic}/${entity.parent_state_topic}`
+                : entity.component === 'camera'
                     ? `${entityTopic}/image`
                     : `${entityTopic}/state`
 
-            // Due to legacy reasons alarm devices with only a single entity, as well as
-            // the alarm control panel entity, use a device ID without a suffix.  The
-            // info sensor and all other entities append the entityName as suffix to
-            // create a unique ID for each entity.  I'd love to get rid of this one day,
-            // but it's a breaking change for upgrading users so this logic maintains
-            // compatibility with older versions for now.
-            const entityId = ((Object.keys(this.entities).length <= 2 && entityName !== 'info') || entity.type === 'alarm_control_panel')
+            // Due to legacy reasons alarm devices with only a single primary entity, as
+            // well as the alarm control panel entity, use a device ID without a suffix.
+            // The info sensor, as well as all other entities, append the entityName as a
+            // suffix to create a unique entity ID from the device ID.
+            //
+            // One day I want to get rid of this and generate unique entity IDs with suffixes
+            // for all entities but it's a breaking change for upgrading users so, for now,
+            // the logic below maintains device ID compatibility with older versions.
+            //
+            // I need to research if there's a way to deal with this without breaking updates.
+            // Maybe a transition period with both IDs in the device data?
+            const entityId = ((Object.keys(this.entities).length <= 2 && entityName !== 'info') || entity.component === 'alarm_control_panel')
                 ? this.deviceId
                 : `${this.deviceId}_${entityName}`
             
-            // If defined, ise a custom suffice for the device name, otherwise, if the
-            // device has more than a single entity, suffix with entity name
+            // If defined, append a custom suffix to the device name, otherwise, if the
+            // device has more than a single primary entity, suffix with entity name with
+            // a generated name based on entityName
             // For devices with a single entity, only the info sensor gets a suffix
             const deviceName = entity.hasOwnProperty('suffix')
                 ?  `${this.deviceData.name} ${entity.suffix}`
@@ -60,17 +66,19 @@ class RingDevice {
                 availability_topic: this.availabilityTopic,
                 payload_available: 'online',
                 payload_not_available: 'offline',
-                ...entity.type === 'camera' 
+                ...entity.component === 'camera' 
                     ? { topic: entityStateTopic }
                     : { state_topic: entityStateTopic },
-                ...entity.type.match(/^(switch|number|light)$/)
+                ...entity.component.match(/^(switch|number|light)$/)
                     ? { command_topic: `${entityTopic}/command` } : {},
                 ...entity.hasOwnProperty('deviceClass')
-                    ? { device_class: entity.deviceClass } : {},
+                    ? { device_class: entity.device_class } : {},
                 ...entity.hasOwnProperty('unitOfMeasurement')
-                    ? { unit_of_measurement: entity.unitOfMeasurement } : {},
+                    ? { unit_of_measurement: entity.unit_of_measurement } : {},
+                ...entity.hasOwnProperty('state_class')
+                    ? { state_class: entity.state_class } : {},
                 ...entity.hasOwnProperty('valueTemplate')
-                    ? { value_template: entity.valueTemplate } : {},
+                    ? { value_template: entity.value_template } : {},
                 ...entity.hasOwnProperty('min')
                     ? { min: entity.min } : {},
                 ...entity.hasOwnProperty('max')
@@ -87,18 +95,18 @@ class RingDevice {
             }
 
             // On first discovery save all generated topics to entity properties
-            if (!this.entities[entityName].hasOwnProperty('stateTopic')) {
-                this.entities[entityName].stateTopic = entityStateTopic
+            if (!this.entities[entityName].hasOwnProperty('state_topic')) {
+                this.entities[entityName].state_topic = entityStateTopic
                 if (discoveryMessage.hasOwnProperty('command_topic')) {
-                    this.entities[entityName].commandTopic = discoveryMessage.command_topic
+                    this.entities[entityName].command_topic = discoveryMessage.command_topic
                     this.mqttClient.subscribe(discoveryMessage.command_topic)  // Subscribe to command topics
                 }
                 if (discoveryMessage.hasOwnProperty('json_attributes_topic')) {
-                    this.entities[entityName].attributesTopic = discoveryMessage.json_attributes_topic
+                    this.entities[entityName].json_attributes_topic = discoveryMessage.json_attributes_topic
                 }
             }
 
-            const configTopic = `homeassistant/${entity.type}/${this.locationId}/${entityId}/config`
+            const configTopic = `homeassistant/${entity.component}/${this.locationId}/${entityId}/config`
             debug(`HASS config topic: ${configTopic}`)
             debug(discoveryMessage)
             this.publishMqtt(configTopic, JSON.stringify(discoveryMessage))
