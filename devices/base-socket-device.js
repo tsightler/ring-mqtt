@@ -37,6 +37,14 @@ class RingSocketDevice extends RingDevice {
                     value_template: '{{ value_json["batteryLevel"] | default }}'
                 }
             } : {},
+            ...this.device.data.hasOwnProperty('batteryLevel') ? {
+                tamper: {
+                    component: 'binary_sensor',
+                    device_class: 'problem',
+                    parent_state_topic: 'info/state',
+                    value_template: '{% if value is equalto "tamper" %} ON {% else %} OFF {% endif %}'
+                }
+            }: {},
             info: {
                 component: 'sensor',
                 ...deviceValue
