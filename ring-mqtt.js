@@ -94,7 +94,6 @@ function getDevice(device, mqttClient) {
             deviceInfo.category = 'lighting'
             return new Beam(deviceInfo)
         case RingDeviceType.MultiLevelSwitch:
-            console.log(device)
             return newDevice = (device.categoryId === 17)
                 ? new Fan(deviceInfo)
                 : new MultiLevelSwitch(deviceInfo)
