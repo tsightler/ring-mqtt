@@ -79,7 +79,7 @@ class RingSocketDevice extends RingDevice {
             this.publishCustom()
         } else if (locationConnected) {
             // Publish discovery message
-            if (!this.discoveryData.length) { await this.initDiscoveryData() }
+            if (!this.discoveryData.length && typeof this.initDiscoveryData === 'function') { await this.initDiscoveryData() }
             await this.publishDiscoveryData()
             await this.publishDiscovery()
             await this.online()
