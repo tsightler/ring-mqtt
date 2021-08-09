@@ -5,16 +5,18 @@ const RingSocketDevice = require('./base-socket-device')
 class BaseStation extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo)
-
-        // Device data for Home Assistant device registry
         this.deviceData.mdl = 'Alarm Base Station'
         this.deviceData.name = this.device.location.name + ' Base Station'
 
-        this.initVolumeTopics()
+        // Eventually remove this but for now this attempts to delete the old light component based volume control from Home Assistant
+        this.publishMqtt('homeassistant/light/'+this.locationId+'/'+this.deviceId+'_audio/config', '', false)
+
+        this.initVolumeEntity()
+        this.initInfoEntities()
     }
     
-    // Check if account has access to volume control and initialize topics if so
-    async initVolumeTopics() {
+    // Check if account has access to control base state volume and initialize topics if so
+    async initVolumeEntity() {
         const origVolume = (this.device.data.volume && !isNaN(this.device.data.volume) ? this.device.data.volume : 0)
         const testVolume = (origVolume === 1) ? .99 : origVolume+.01
         this.device.setVolume(testVolume)
@@ -22,45 +24,21 @@ class BaseStation extends RingSocketDevice {
         if (this.device.data.volume === testVolume) {
             debug('Account has access to set volume on base station, enabling volume control')
             this.device.setVolume(origVolume)
-            this.stateTopic_volume = this.deviceTopic+'/volume/state'
-            this.commandTopic_volume = this.deviceTopic+'/volume/command'
-            this.configTopic_volume = 'homeassistant/number/'+this.locationId+'/'+this.deviceId+'_volume/config'
-            this.configTopic_audio = 'homeassistant/light/'+this.locationId+'/'+this.deviceId+'_audio/config'
-            this.publishMqtt(this.configTopic_audio, '', false)
+            this.entities.volume = {
+                component: 'number',
+                min: 0,
+                max: 100,
+                icon: 'hass:volume-high'
+            }
         } else {
             debug('Account does not have access to set volume on base station, disabling volume control')
         }
     }
 
-    initDiscoveryData() {
-        if (this.stateTopic_volume) {
-            // Build the MQTT discovery messages
-            this.discoveryData.push({
-                message: {
-                    name: this.deviceData.name+' Volume',
-                    unique_id: this.deviceId+'_volume',
-                    availability_topic: this.availabilityTopic,
-                    payload_available: 'online',
-                    payload_not_available: 'offline',
-                    state_topic: this.stateTopic_volume,
-                    command_topic: this.commandTopic_volume,
-                    min: 0,
-                    max: 100,
-                    icon: 'hass:volume-high',
-                    device: this.deviceData
-                },
-                configTopic: this.configTopic_volume
-            })
-        }
-
-        // Device has no sensors, only publish info data
-        this.initInfoDiscoveryData('acStatus')
-    }
-
     publishData() {
-        if (this.stateTopic_volume) {
+        if (this.entities.hasOwnProperty('volume')) {
             const currentVolume = (this.device.data.volume && !isNaN(this.device.data.volume) ? Math.round(100 * this.device.data.volume) : 0)
-            this.publishMqtt(this.stateTopic_volume, currentVolume.toString(), true)
+            this.publishMqtt(this.entities.volume.state_topic, currentVolume.toString(), true)
         }
 
         // Publish device attributes (batterylevel, tamper status)
@@ -69,7 +47,9 @@ class BaseStation extends RingSocketDevice {
 
     // Process messages from MQTT command topic
     processCommand(message, topic) {
-        if (topic === this.commandTopic_volume) {
+        topic = topic.split('/')
+        const entity = topic[topic.length - 2]
+        if (entity === 'volume') {
             this.setVolumeLevel(message)
         } else {
             debug('Received unknown command topic '+topic+' for base station: '+this.deviceId)
