@@ -29,11 +29,7 @@ class ContactSensor extends RingSocketDevice {
             legacy: true
         }
 
-        console.log(this.entities)
-
         this.initInfoEntities()
-
-        console.log(this.entities)
     }
 
     publishData() {

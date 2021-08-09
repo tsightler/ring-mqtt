@@ -19,7 +19,7 @@ class MotionSensor extends RingSocketDevice {
     publishData() {
         const motionState = this.device.data.faulted ? 'ON' : 'OFF'
         // Publish device sensor state
-        this.publishMqtt(this.stateTopic, motionState, true)
+        this.publishMqtt(this.entities.motion.state_topic, motionState, true)
         // Publish device attributes (batterylevel, tamper status)
         this.publishAttributes()
     }
