@@ -71,7 +71,7 @@ class RingDevice {
                 ...entity.component === 'camera' 
                     ? { topic: entityStateTopic }
                     : { state_topic: entityStateTopic },
-                ...entity.component.match(/^(switch|number|light)$/)
+                ...entity.component.match(/^(switch|number|light|fan|lock|alarm_control_panel)$/)
                     ? { command_topic: `${entityTopic}/command` } : {},
                 ...entity.hasOwnProperty('device_class')
                     ? { device_class: entity.device_class } : {},
@@ -93,12 +93,8 @@ class RingDevice {
                     ? { icon: entity.icon } 
                     : entityName === "info" 
                         ? { icon: 'mdi:information-outline' } : {},
-                ... this.config.disarm_code
-                    ? { 
-                        code: this.config.disarm_code.toString(),
-                        code_arm_required: false,
-                        code_disarm_required: true }
-                    : {},
+                ...entity.component === 'alarm_control_panel' && this.config.disarm_code
+                    ? { code: this.config.disarm_code.toString(), code_arm_required: false, code_disarm_required: true } : {},
                 device: this.deviceData
             }
 
