@@ -12,7 +12,7 @@ class ModesPanel extends RingPolledDevice {
             component: 'alarm_control_panel',
             unique_id: this.deviceId,
             state: { 
-                currentMode = 'publish'
+                currentMode: 'publish'
             }
         }
     }
