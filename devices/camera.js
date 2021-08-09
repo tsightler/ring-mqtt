@@ -292,7 +292,7 @@ class Camera extends RingPolledDevice {
             attributes.motionDetectionEnabled = this.device.data.settings.motion_detection_enabled
             this.publishedMotionDetectionEnabled = attributes.motionDetectionEnabled
         }
-        this.publishMqtt(this.entities.motion.attributes_topic, JSON.stringify(attributes), true)
+        this.publishMqtt(this.entities.motion.json_attributes_topic, JSON.stringify(attributes), true)
     }
 
     publishDingAttributes() {
@@ -300,7 +300,7 @@ class Camera extends RingPolledDevice {
             lastDing: this.entities.ding.state.last_ding,
             lastDingTime: this.entities.ding.state.last_ding_time
         }
-        this.publishMqtt(this.entities.ding.attributes_topic, JSON.stringify(attributes), true)
+        this.publishMqtt(this.entities.ding.json_attributes_topic, JSON.stringify(attributes), true)
     }
 
     // Publish camera state for polled attributes (light/siren state, etc)
@@ -394,7 +394,7 @@ class Camera extends RingPolledDevice {
     async publishSnapshot() {
         debug(this.entities.snapshot.state_topic, '<binary_image_data>')
         this.publishMqtt(this.entities.snapshot.state_topic, this.snapshot.imageData)
-        this.publishMqtt(this.entities.snapshot.attributes_topic, JSON.stringify({ timestamp: this.snapshot.timestamp }))
+        this.publishMqtt(this.entities.snapshot.json_attributes_topic, JSON.stringify({ timestamp: this.snapshot.timestamp }))
     }
 
     async publishSnapshotInterval() {

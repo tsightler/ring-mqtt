@@ -71,13 +71,13 @@ class RingDevice {
                     : { state_topic: entityStateTopic },
                 ...entity.component.match(/^(switch|number|light)$/)
                     ? { command_topic: `${entityTopic}/command` } : {},
-                ...entity.hasOwnProperty('deviceClass')
+                ...entity.hasOwnProperty('device_class')
                     ? { device_class: entity.device_class } : {},
-                ...entity.hasOwnProperty('unitOfMeasurement')
+                ...entity.hasOwnProperty('unit_of_measurement')
                     ? { unit_of_measurement: entity.unit_of_measurement } : {},
                 ...entity.hasOwnProperty('state_class')
                     ? { state_class: entity.state_class } : {},
-                ...entity.hasOwnProperty('valueTemplate')
+                ...entity.hasOwnProperty('value_template')
                     ? { value_template: entity.value_template } : {},
                 ...entity.hasOwnProperty('min')
                     ? { min: entity.min } : {},
