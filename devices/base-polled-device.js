@@ -25,6 +25,8 @@ class RingPolledDevice extends RingDevice {
     async monitorHeartbeat() {
         if (this.heartbeat > 0) {
             if (this.availabilityState !== 'online') {
+                // If device was offline give 5 seconds in case we're in shutdown state
+                await utils.sleep(5)
                 await this.online()
             }
             this.heartbeat--
