@@ -11,6 +11,7 @@ class RingDevice {
         this.subscribed = false
         this.availabilityState = 'init'
         this.config = deviceInfo.CONFIG
+        this.entities = {}
 
         // Build device base and availability topic
         this.deviceTopic = `${this.config.ring_topic}/${this.locationId}/${deviceInfo.category}/${this.deviceId}`

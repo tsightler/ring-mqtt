@@ -7,12 +7,10 @@ class MotionSensor extends RingSocketDevice {
         // Device data for Home Assistant device registry
         this.deviceData.mdl = 'Motion Sensor'
 
-        this.entities = {
-            motion: {
-                component: 'binary_sensor',
-                device_class: 'motion',
-                legacy: true
-            }
+        this.entities.motion = {
+            component: 'binary_sensor',
+            device_class: 'motion',
+            legacy: true
         }
 
         this.initInfoEntities()

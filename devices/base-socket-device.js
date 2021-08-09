@@ -27,6 +27,7 @@ class RingSocketDevice extends RingDevice {
     // Create device discovery data
     initInfoEntities(deviceValue) {
         this.entities = {
+            ...this.entities,
             ...this.device.data.hasOwnProperty('batteryLevel') ? { 
                 battery: {
                     component: 'sensor',
