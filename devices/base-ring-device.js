@@ -40,7 +40,7 @@ class RingDevice {
             // create a unique ID for each entity.  I'd love to get rid of this one day,
             // but it's a breaking change for upgrading users so this logic maintains
             // compatibility with older versions for now.
-            const entityId = ((Object.keys(this.entities).length <= 2 && entity.type !== 'info') || entity.type === 'alarm_control_panel')
+            const entityId = ((Object.keys(this.entities).length <= 2 && entityName !== 'info') || entity.type === 'alarm_control_panel')
                 ? this.deviceId
                 : `${this.deviceId}_${entityName}`
             
@@ -49,7 +49,7 @@ class RingDevice {
             // For devices with a single entity, only the info sensor gets a suffix
             const deviceName = entity.hasOwnProperty('suffix')
                 ?  `${this.deviceData.name} ${entity.suffix}`
-                : Object.keys(this.entities).length <= 2 && entity.type !== 'info'
+                : Object.keys(this.entities).length <= 2 && entityName !== 'info'
                     ? `${this.deviceData.name}`
                     : `${this.deviceData.name} ${entityName.replace(/_/g," ").replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())}`
 
