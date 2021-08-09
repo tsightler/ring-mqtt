@@ -3,64 +3,25 @@ const RingSocketDevice = require('./base-socket-device')
 class FloodFreezeSensor extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo)
-
-        // Set Home Assistant component type and device class (appropriate icon in UI)
-        this.className_flood = 'moisture'
-        this.className_freeze = 'cold'
-        this.component = 'binary_sensor'
-
-        // Device data for Home Assistant device registry
         this.deviceData.mdl = 'Flood & Freeze Sensor'
 
-        // Build a save MQTT topics
-        this.stateTopic_flood = this.deviceTopic+'/flood/state'
-        this.stateTopic_freeze = this.deviceTopic+'/freeze/state'
-        this.configTopic_flood = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'_flood/config'
-        this.configTopic_freeze = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'_freeze/config'
+        this.entities.flood = {
+            component: 'binary_sensor',
+            device_class: 'moisture'
+        }
+        this.entities.freeze = {
+            component: 'binary_sensor',
+            device_class: 'cold'
+        }
+
+        this.initInfoEntities()
     }
         
-    initDiscoveryData() {
-        // Build the MQTT discovery messages
-        this.discoveryData.push({
-            message: {
-                name: this.device.name+' Flood',
-                unique_id: this.deviceId+'_'+this.className_flood,
-                availability_topic: this.availabilityTopic,
-                payload_available: 'online',
-                payload_not_available: 'offline',
-                state_topic: this.stateTopic_flood,
-                device_class: this.className_flood,
-                device: this.deviceData
-            },
-            configTopic: this.configTopic_flood
-        })
-
-        this.discoveryData.push({
-            message: {
-                name: this.device.name+' Freeze',
-                unique_id: this.deviceId+'_'+this.className_freeze,
-                availability_topic: this.availabilityTopic,
-                payload_available: 'online',
-                payload_not_available: 'offline',
-                state_topic: this.stateTopic_freeze,
-                device_class: this.className_freeze,
-                device: this.deviceData
-            },
-            configTopic: this.configTopic_freeze
-        })
-
-        this.initInfoDiscoveryData()
-    }
-
     publishData() {
         const floodState = this.device.data.flood && this.device.data.flood.faulted ? 'ON' : 'OFF'
         const freezeState = this.device.data.freeze && this.device.data.freeze.faulted ? 'ON' : 'OFF'
-
-        // Publish sensor states
-        this.publishMqtt(this.stateTopic_flood, floodState, true)
-        this.publishMqtt(this.stateTopic_freeze, freezeState, true)
-
-        // Publish device attributes (batterylevel, tamper status)
+        this.publishMqtt(this.entities.flood.state_topic, floodState, true)
+        this.publishMqtt(this.entities.freeze.state_topic, freezeState, true)
         this.publishAttributes()
     }
 }

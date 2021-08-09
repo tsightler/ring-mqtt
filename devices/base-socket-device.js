@@ -26,7 +26,6 @@ class RingSocketDevice extends RingDevice {
 
     // Create device discovery data
     initInfoEntities(deviceValue) {
-        console.log(this.entities)
         this.entities = {
             ...this.entities,
             ...this.device.data.hasOwnProperty('batteryLevel') ? { 
@@ -57,7 +56,6 @@ class RingSocketDevice extends RingDevice {
                     }
             }
         }
-        console.log(this.entities)
     }
 
     // Publish all discovery data for device
