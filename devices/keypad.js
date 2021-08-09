@@ -28,8 +28,8 @@ class Keypad extends RingSocketDevice {
     // Process messages from MQTT command topic
     processCommand(message, topic) {
         topic = topic.split('/')
-        const component = topic[topic.length - 2]
-        if (component === 'volume') {
+        const entity = topic[topic.length - 2]
+        if (entity === 'volume') {
             this.setVolumeLevel(message)
         } else {
             debug('Received unknown command topic '+topic+' for keypad: '+this.deviceId)

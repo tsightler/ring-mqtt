@@ -93,6 +93,12 @@ class RingDevice {
                     ? { icon: entity.icon } 
                     : entityName === "info" 
                         ? { icon: 'mdi:information-outline' } : {},
+                ... this.config.disarm_code
+                    ? { 
+                        code: this.config.disarm_code.toString(),
+                        code_arm_required: false,
+                        code_disarm_required: true }
+                    : {},
                 device: this.deviceData
             }
 

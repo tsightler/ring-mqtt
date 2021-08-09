@@ -547,8 +547,8 @@ class Camera extends RingPolledDevice {
     // Process messages from MQTT command topic
     processCommand(message, topic) {
         topic = topic.split('/')
-        const component = topic[topic.length - 2]
-        switch(component) {
+        const entity = topic[topic.length - 2]
+        switch(entity) {
             case 'light':
                 this.setLightState(message)
                 break;
