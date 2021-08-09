@@ -4,9 +4,7 @@ const RingDevice = require('./base-ring-device')
 // Base class for devices/features that communicate via HTTP polling interface (cameras/chime/modes)
 class RingPolledDevice extends RingDevice {
     constructor(deviceInfo) {
-        this.deviceId = deviceInfo.device.data.device_id
-        this.locationId = deviceInfo.device.data.location_id
-        super(deviceInfo)
+        super(deviceInfo, deviceInfo.device.data.device_id, deviceInfo.device.data.location_id)
         this.heartbeat = 3
 
         // Sevice data for Home Assistant device registry 

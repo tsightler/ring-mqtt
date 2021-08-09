@@ -5,9 +5,7 @@ const RingDevice = require('./base-ring-device')
 // Base class for devices that communicate with hubs via websocket (alarm/smart lighting)
 class RingSocketDevice extends RingDevice {
     constructor(deviceInfo) {
-        this.deviceId = deviceInfo.device.id
-        this.locationId = deviceInfo.device.location.locationId
-        super(deviceInfo)
+        super(deviceInfo, deviceInfo.device.id, deviceInfo.device.location.locationId)
         this.discoveryData = new Array()
 
         // Set default device data for Home Assistant device registry

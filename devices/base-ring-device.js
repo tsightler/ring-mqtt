@@ -3,9 +3,11 @@ const utils = require('../lib/utils')
 
 // Base class with functions common to all devices
 class RingDevice {
-    constructor(deviceInfo) {
+    constructor(deviceInfo, deviceId, locationId) {
         this.device = deviceInfo.device
         this.mqttClient = deviceInfo.mqttClient
+        this.deviceId = deviceId
+        this.locationId = locationId
         this.subscribed = false
         this.availabilityState = 'init'
         this.config = deviceInfo.CONFIG
