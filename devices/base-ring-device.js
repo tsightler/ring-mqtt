@@ -34,28 +34,29 @@ class RingDevice {
                     ? `${entityTopic}/image`
                     : `${entityTopic}/state`
 
-            // Due to legacy reasons alarm devices with only a single primary entity, as
-            // well as the alarm control panel entity, use a device ID without a suffix.
-            // The info sensor, as well as all other entities, append the entityName as a
+            // In legacy versions of ring-mqtt alarm devices with only a single entity, as
+            // well as the alarm control panel entity, were created using only the device ID
+            // for the unique ID.  As the code was expanded to support multi-function devices,
+            // add info sensors, etc all of these new entities append the entityName as a
             // suffix to create a unique entity ID from the device ID.
             //
             // One day I want to get rid of this and generate unique entity IDs with suffixes
             // for all entities but it's a breaking change for upgrading users so, for now,
-            // the logic below maintains device ID compatibility with older versions.
+            // the logic below maintains device ID compatibility with older versions.  Devices
+            // that use the legacy device ID and naming include a "legacy: true" property.
             //
             // I need to research if there's a way to deal with this without breaking updates.
-            // Maybe a transition period with both IDs in the device data?
-            const entityId = ((Object.keys(this.entities).length <= 2 && entityName !== 'info') || entity.component === 'alarm_control_panel')
+            // Maybe a transition period with both IDs in the device data, but this works for now.
+            const entityId = entity.hasOwnProperty('legacy') && entity.legacy
                 ? this.deviceId
                 : `${this.deviceId}_${entityName}`
             
-            // If defined, append a custom suffix to the device name, otherwise, if the
-            // device has more than a single primary entity, suffix with entity name with
-            // a generated name based on entityName
-            // For devices with a single entity, only the info sensor gets a suffix
+            // Similar to above, legacy alarm devices with a single entity used the device name
+            // with no suffix.  The "legacy: true" property is used for this.  Suffix can also be
+            // completely overridden with a custom "suffix" parameter
             const deviceName = entity.hasOwnProperty('suffix')
                 ?  `${this.deviceData.name} ${entity.suffix}`
-                : Object.keys(this.entities).length <= 2 && entityName !== 'info'
+                : entity.hasOwnProperty('legacy') && entity.legacy
                     ? `${this.deviceData.name}`
                     : `${this.deviceData.name} ${entityName.replace(/_/g," ").replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())}`
 
@@ -95,6 +96,7 @@ class RingDevice {
             }
 
             // On first discovery save all generated topics to entity properties
+            // and perform one-time operations such as subscribing to command topics
             if (!this.entities[entityName].hasOwnProperty('state_topic')) {
                 this.entities[entityName].state_topic = entityStateTopic
                 if (discoveryMessage.hasOwnProperty('command_topic')) {
