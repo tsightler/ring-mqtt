@@ -74,30 +74,37 @@ class RingSocketDevice extends RingDevice {
 
         // Get full set of device data and publish to info topic
         const attributes = {
-            ... this.device.data.acStatus ? { acStatus: this.device.data.acStatus } : {},
-            ... alarmState ? { alarmState: alarmState } : {},
-            ... this.device.data.hasOwnProperty('batteryLevel')
-                ? { batteryLevel: this.device.data.batteryLevel === 99 ? 100 : this.device.data.batteryLevel } : {},
-            ... this.device.data.batteryStatus && this.device.data.batteryStatus !== 'none'
-                ? { batteryStatus: this.device.data.batteryStatus } : {},
-            ... (this.device.data.hasOwnProperty('auxBattery') && this.device.data.auxBattery.hasOwnProperty('level'))
-                ? { auxBatteryLevel: this.device.data.auxBattery.level === 99 ? 100 : this.device.data.auxBattery.level } : {},
-            ... (this.device.data.hasOwnProperty('auxBattery') && this.device.data.auxBattery.hasOwnProperty('status'))
-                ? { auxBatteryStatus: this.device.data.auxBattery.status } : {},
-            ... this.device.data.hasOwnProperty('brightness') ? { brightness: this.device.data.brightness } : {},
-            ... this.device.data.chirps && this.device.deviceType == 'security-keypad' ? {chirps: this.device.data.chirps } : {},
-            ... this.device.data.commStatus ? { commStatus: this.device.data.commStatus } : {},
-            ... this.device.data.firmwareUpdate ? { firmwareStatus: this.device.data.firmwareUpdate.state } : {},
-            ... this.device.data.lastCommTime ? { lastCommTime: utils.getISOTime(this.device.data.lastUpdate) } : {},
-            ... this.device.data.lastUpdate ? { lastUpdate: utils.getISOTime(this.device.data.lastUpdate) } : {},
-            ... this.device.data.linkQuality ? { linkQuality: this.device.data.linkQuality } : {},
-            ... this.device.data.powerSave ? { powerSave: this.device.data.powerSave } : {},
-            ... this.device.data.serialNumber ? { serialNumber: this.device.data.serialNumber } : {},
-            ... this.device.data.tamperStatus ? { tamperStatus: this.device.data.tamperStatus } : {},
-            ... this.device.data.hasOwnProperty('volume') ? {volume: this.device.data.volume } : {},
-            ... this.device.data.hasOwnProperty('maxVolume') ? {maxVolume: this.device.data.maxVolume } : {},
+            battery: {
+                ... this.device.data.hasOwnProperty('batteryLevel')
+                    ? { batteryLevel: this.device.data.batteryLevel === 99 ? 100 : this.device.data.batteryLevel } : {},
+                ... this.device.data.batteryStatus && this.device.data.batteryStatus !== 'none'
+                    ? { batteryStatus: this.device.data.batteryStatus } : {},
+                ... (this.device.data.hasOwnProperty('auxBattery') && this.device.data.auxBattery.hasOwnProperty('level'))
+                    ? { auxBatteryLevel: this.device.data.auxBattery.level === 99 ? 100 : this.device.data.auxBattery.level } : {},
+                ... (this.device.data.hasOwnProperty('auxBattery') && this.device.data.auxBattery.hasOwnProperty('status'))
+                    ? { auxBatteryStatus: this.device.data.auxBattery.status } : {}
+            },
+            misc: {
+                ... this.device.data.acStatus ? { acStatus: this.device.data.acStatus } : {},
+                ... alarmState ? { alarmState: alarmState } : {},
+                ... this.device.data.hasOwnProperty('brightness') ? { brightness: this.device.data.brightness } : {},
+                ... this.device.data.chirps && this.device.deviceType == 'security-keypad' ? {chirps: this.device.data.chirps } : {},
+                ... this.device.data.commStatus ? { commStatus: this.device.data.commStatus } : {},
+                ... this.device.data.firmwareUpdate ? { firmwareStatus: this.device.data.firmwareUpdate.state } : {},
+                ... this.device.data.lastCommTime ? { lastCommTime: utils.getISOTime(this.device.data.lastUpdate) } : {},
+                ... this.device.data.lastUpdate ? { lastUpdate: utils.getISOTime(this.device.data.lastUpdate) } : {},
+                ... this.device.data.linkQuality ? { linkQuality: this.device.data.linkQuality } : {},
+                ... this.device.data.powerSave ? { powerSave: this.device.data.powerSave } : {},
+                ... this.device.data.serialNumber ? { serialNumber: this.device.data.serialNumber } : {},
+                ... this.device.data.tamperStatus ? { tamperStatus: this.device.data.tamperStatus } : {},
+                ... this.device.data.hasOwnProperty('volume') ? {volume: this.device.data.volume } : {},
+                ... this.device.data.hasOwnProperty('maxVolume') ? {maxVolume: this.device.data.maxVolume } : {},
+            }
         }
-        this.publishMqtt(this.entities.info.state_topic, JSON.stringify(attributes), true)
+        this.publishMqtt(this.entities.info.state_topic, JSON.stringify(...attributes.battery,...attributes.misc), true)
+        if (this.entities.hasOwnProperty('battery')) {
+            this.publishMqtt(this.entities.battery.json_attributes_topic, JSON.stringify(attributes.battery), true)
+        }
     }
 
     // Refresh device info attributes on a sechedule
