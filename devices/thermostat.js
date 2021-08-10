@@ -12,7 +12,7 @@ class Thermostat extends RingSocketDevice {
             unique_id: this.deviceId
         } */
         debug(this.device)
-        debug(this.device.onComponentDevices)
+        debug(deviceInfo.childDevices)
         this.initAttributeEntities()
     }
 
