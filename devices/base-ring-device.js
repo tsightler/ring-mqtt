@@ -114,6 +114,7 @@ class RingDevice {
                         mode_state_topic: `${entityTopic}/mode_state`,
                         mode_command_topic: `${entityTopic}/mode_command`,
                         temperature_state_topic: `${entityTopic}/temperature_state`,
+                        temperature_command_topic: `${entityTopic}/temperature_command`,
                         temperature_unit: 'C' } : {},
                 availability_topic: this.availabilityTopic,
                 payload_available: 'online',
