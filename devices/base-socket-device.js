@@ -45,6 +45,7 @@ class RingSocketDevice extends RingDevice {
                     unit_of_measurement: '%',
                     state_class: 'measurement',
                     parent_state_topic: 'info/state',
+                    attributes: true,
                     value_template: '{{ value_json["batteryLevel"] | default }}'
                 }
             } : {},
