@@ -115,7 +115,8 @@ async function getDevice(device, mqttClient) {
         case 'siren.outdoor-strobe':
             return new Siren(deviceInfo)
         case RingDeviceType.Thermostat:
-            deviceInfo.childDevices = await device.location.getDevices().find(d=> d.data.parentZid === device.id)
+            getDevices = await device.location.getDevices()
+            deviceInfo.childDevices = getDevices.find(d=> d.data.parentZid === device.id)
             return new Thermostat(deviceInfo)
     }
     if (/^lock($|\.)/.test(device.deviceType)) {
