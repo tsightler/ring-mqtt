@@ -57,7 +57,7 @@ async function processExit(exitCode) {
 }
 
 // Return supported device
-function getDevice(device, mqttClient) {
+async function getDevice(device, mqttClient) {
     const deviceInfo = {
         device: device,
         category: 'alarm',
@@ -115,8 +115,7 @@ function getDevice(device, mqttClient) {
         case 'siren.outdoor-strobe':
             return new Siren(deviceInfo)
         case RingDeviceType.Thermostat:
-            getDevices = device.location.getDevices()
-            deviceInfo.childDevices = getDevices.find(d=> d.data.parentZid === device.id)
+            deviceInfo.childDevices = await device.location.getDevices().find(d=> d.data.parentZid === device.id)
             return new Thermostat(deviceInfo)
     }
     if (/^lock($|\.)/.test(device.deviceType)) {
