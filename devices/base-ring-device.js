@@ -73,10 +73,8 @@ class RingDevice {
                     ? { max: entity.max } : {},
                 ... entity.hasOwnProperty('attributes')
                     ? { json_attributes_topic: `${entityTopic}/attributes` } 
-                    : entityName === "info" || entityName === "battery"
+                    : entityName === "info"
                         ? { json_attributes_topic: `${entityStateTopic}` } : {},
-                ... entity.hasOwnProperty('json_attributes_template')
-                    ? { json_attributes_template: entity.json_attributes_template } : {},
                 ... entity.hasOwnProperty('icon')
                     ? { icon: entity.icon } 
                     : entityName === "info" 

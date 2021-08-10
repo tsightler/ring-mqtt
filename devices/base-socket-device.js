@@ -45,13 +45,7 @@ class RingSocketDevice extends RingDevice {
                     unit_of_measurement: '%',
                     state_class: 'measurement',
                     parent_state_topic: 'info/state',
-                    value_template: '{{ value_json["batteryLevel"] | default }}',
-                    json_attributes_template: '{ ' +
-                        '{% if my_test_json.batteryLevel is defined %}"batteryLevel": {{ my_test_json.batteryLevel }}, {% endif %} ' +
-                        '{% if my_test_json.batteryLevel is defined %}"batteryStatus": "{{ my_test_json.batteryStatus }}", {% endif %} ' +
-                        '{% if my_test_json.auxbatteryLevel is defined %}"auxBatteryLevel": {{ my_test_json.auxBatteryLevel }}, {% endif %} ' +
-                        '{% if my_test_json.auxbatteryStatus is defined %}"auxbatteryStatus": "{{ my_test_json.auxBatteryStatus }}", {% endif %} ' +
-                    '}'
+                    value_template: '{{ value_json["batteryLevel"] | default }}'
                 }
             } : {},
             ...this.device.data.hasOwnProperty('tamperStatus') ? {
