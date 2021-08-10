@@ -45,26 +45,11 @@ class Thermostat extends RingSocketDevice {
             // First publish so we need to find the other thermostat components as well
             await this.findComponentDevices()
         }
-        debug(`fanMode: ${this.device.data.fanMode}`)
-        debug(`mode: ${this.device.data.mode}`)
-        debug(this.device.data.modeSetpoints)
-        debug(`setPoint: ${this.device.data.setPoint}`)
-        debug(`setPointMin: ${this.device.data.setPointMin}`)
-        debug(`setPointMax: ${this.device.data.setPointMax}`)
-
-        if (this.operatingStatus) {
-            debug(`isCoolOn: ${this.operatingStatus.data.isCoolOn}`)
-            debug(`isHeatOn: ${this.operatingStatus.data.isHeatOn}`)
-            debug(`isCool2ndOn: ${this.operatingStatus.data.isCool2ndOn}`)
-            debug(`isHeat2ndOn: ${this.operatingStatus.data.isHeat2ndOn}`)
-            debug(`operatingMode: ${this.operatingStatus.data.operatingMode}`)
-        }
-        if (this.temperatureSensor) {
-            debug(`Temperature: ${this.temperatureSensor.data.celsius}`)
-            debug(`faultHigh: ${this.temperatureSensor.data.faultHigh}`)
-            debug(`faultLow: ${this.temperatureSensor.data.faultLow}`)
-            debug(`faulted: ${this.temperatureSensor.data.faulted}`)
-        }
+        this.publishMqtt(this.entities.climate.action_topic, (this.this.operatingStatus.data.operatingMode === 'off') ? 'off' : `${this.this.operatingStatus.data.operatingMode}ing`, true)
+        this.publishMqtt(this.entities.climate.mode_state_topic, (this.device.data.mode === 'aux') ? 'heat' : this.device.data.mode, true)
+        this.publishMqtt(this.entities.climate.temperature_state_topic, this.device.data.setPoint.toString(), true)
+        this.publishMqtt(this.entities.climate.fan_mode_state_topic, this.device.data.fanMode, true)
+        this.publishMqtt(this.entities.climate.current_temperature_topic, this.temperatureSensor.data.celsius.toString(), true)
         this.publishAttributes()
     }
 }
