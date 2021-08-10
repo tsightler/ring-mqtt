@@ -115,14 +115,15 @@ async function getDevice(device, mqttClient) {
         case 'siren.outdoor-strobe':
             return new Siren(deviceInfo)
         case RingDeviceType.Thermostat:
-            getDevices = await device.location.getDevices()
-            deviceInfo.childDevices = getDevices.filter(d=> d.data.parentZid === device.id)
             return new Thermostat(deviceInfo)
+        case RingDeviceType.TemperatureSensor:
+        case 'thermostat-operating-status':
+            return "ignore"
     }
     if (/^lock($|\.)/.test(device.deviceType)) {
         return new Lock(deviceInfo)
     }
-    return null
+    return "not-supported"
 }
 
 // Update all Ring location/device data
@@ -173,17 +174,21 @@ async function updateRingData(mqttClient, ringClient) {
         // Update Ring devices for location
         for (const device of allDevices) {
             const deviceId = (device instanceof RingCamera || device instanceof RingChime) ? device.data.device_id : device.id
-            const foundDevice = ringDevices.find(d => d.deviceId == deviceId && d.locationId == location.locationId)
+            const foundDevice = ringDevices.find(d => d.deviceId === deviceId && d.locationId === location.locationId)
             if (foundDevice) {
                 debug(colors.green('  Existing device: '+foundDevice.deviceData.name+' ('+device.deviceType+', '+deviceId+')'))
             } else {
                 const newDevice = await getDevice(device, mqttClient)
-                if (newDevice) {
-                    ringDevices.push(newDevice)
-                    debug(colors.green('  New device: '+newDevice.deviceData.name+' ('+device.deviceType+', '+deviceId+')'))
-                } else {
-                    // Save unsupported device type
-                    unsupportedDevices.push(device.deviceType)
+                switch (newDevice) {
+                    case 'not-supported':
+                        // Save unsupported device type
+                        unsupportedDevices.push(device.deviceType)
+                        break;
+                    case 'ignore':
+                        break;
+                    default:
+                        ringDevices.push(newDevice)
+                        debug(colors.green('  New device: '+newDevice.deviceData.name+' ('+device.deviceType+', '+deviceId+')'))
                 }
             }
         }

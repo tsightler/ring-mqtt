@@ -11,14 +11,17 @@ class Thermostat extends RingSocketDevice {
             device_class: 'motion',
             unique_id: this.deviceId
         } */
-        debug(this.device)
-        debug(deviceInfo.childDevices)
+        this.getComponentDevices()
         this.initAttributeEntities()
     }
 
+    async getComponentDevices() {
+        const allDevices = this.device.location.getDevices()
+        this.componentDevices = allDevices.filter(device => device.data.parentZid === this.deviceId)
+        console.log(this.componentDevices)
+    }
+
     publishData() {
-        const motionState = this.device.data.faulted ? 'ON' : 'OFF'
-        this.publishMqtt(this.entities.motion.state_topic, motionState, true)
         this.publishAttributes()
     }
 }
