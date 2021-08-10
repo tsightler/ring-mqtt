@@ -115,7 +115,8 @@ function getDevice(device, mqttClient) {
         case 'siren.outdoor-strobe':
             return new Siren(deviceInfo)
         case RingDeviceType.Thermostat:
-            deviceInfo.childDevices = device.location.getDevices().find(device => device.data.parentZid === device.id)
+            getDevices = device.location.getDevices()
+            deviceInfo.childDevices = getDevices.find(d=> d.data.parentZid === device.id)
             return new Thermostat(deviceInfo)
     }
     if (/^lock($|\.)/.test(device.deviceType)) {
