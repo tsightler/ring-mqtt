@@ -131,7 +131,7 @@ class RingDevice {
                 Object.keys(discoveryMessage).filter(property => property.match('topic')).forEach(topic => {
                     this.entities[entityName][topic] = discoveryMessage[topic]
                     if (topic.match('command_topic')) {
-                        this.mqttClient.subscribe(discoveryMessage[commandTopic])
+                        this.mqttClient.subscribe(discoveryMessage[topic])
                     }
                 })
             }
