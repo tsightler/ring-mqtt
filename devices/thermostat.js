@@ -25,13 +25,12 @@ class Thermostat extends RingSocketDevice {
 
     async findTemperatureSensor() {
         const allDevices = await this.device.location.getDevices()
-        this.temperatureSensor = allDevices.filter(device => device.data.parentZid === this.deviceId && device.deviceType === 'sensor.temperature')
-        console.log(this.temperatureSensor)
-        if (this.temperatureSensor.length > 0 ) {
+        this.temperatureSensor = allDevices.find(device => device.data.parentZid === this.deviceId && device.deviceType === 'sensor.temperature')
+        if (this.temperatureSensor) {
             debug (`Found temperature sensor ${this.temperatureSensor.id} for thermostat ${this.deviceId}`)
             // First publish also subscribe to temperature sensor updates
-            this.temperatureSensor.onData.subscribe((temperatureData) => { 
-                this.publishTemeratureData(temperatureData)
+            this.temperatureSensor.onData.subscribe((data) => { 
+                this.publishTemeratureData(data)
             })
         } else {
             debug (`Could not find temerature sensor for thermostat ${this.deviceId}`)
