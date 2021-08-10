@@ -11,29 +11,30 @@ class Thermostat extends RingSocketDevice {
             device_class: 'motion',
             unique_id: this.deviceId
         } */
-        this.findTemperatureSensor()
         this.initAttributeEntities()
-    }
-
-    async findTemperatureSensor() {
-        const allDevices = await this.device.location.getDevices()
-        this.temperatureSensor = allDevices.filter(device => device.data.parentZid === this.deviceId && device.deviceType === 'sensor.temerature')
-        if (this.temperatureSensor.length > 0 ) {
-            debug (`Found temperature sensor ${this.temperatureSensor.id} for thermostat ${this.deviceId}`)
-        } else {
-            debug (`Could not find temerature sensor for thermostat ${this.deviceId}`)
-        } 
     }
 
     publishData() {
         if (!this.subscribed) {
+            // First publish so we need to find the temperature sensor as well
+            this.findTemperatureSensor()
+        }
+        debug(JSON.stringify(data))
+        this.publishAttributes()
+    }
+
+    async findTemperatureSensor() {
+        const allDevices = await this.device.location.getDevices()
+        this.temperatureSensor = allDevices.filter(device => device.data.parentZid === this.deviceId && device.deviceType === 'sensor.temperature')
+        if (this.temperatureSensor.length > 0 ) {
+            debug (`Found temperature sensor ${this.temperatureSensor.id} for thermostat ${this.deviceId}`)
             // First publish also subscribe to temperature sensor updates
             this.temperatureSensor.onData.subscribe((temperatureData) => { 
                 this.publishTemeratureData(temperatureData)
             })
-        }
-        debug(JSON.stringify(data))
-        this.publishAttributes()
+        } else {
+            debug (`Could not find temerature sensor for thermostat ${this.deviceId}`)
+        } 
     }
 
     publishTemeratureData(data) {
