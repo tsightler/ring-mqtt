@@ -10,7 +10,7 @@ class Thermostat extends RingSocketDevice {
             device_class: 'motion',
             unique_id: this.deviceId
         } */
-        console.log(this.device)
+        debug(this.device)
         this.initAttributeEntities()
     }
 
