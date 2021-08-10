@@ -45,7 +45,7 @@ class Thermostat extends RingSocketDevice {
             // First publish so we need to find the other thermostat components as well
             await this.findComponentDevices()
         }
-        this.publishMqtt(this.entities.climate.action_topic, (this.this.operatingStatus.data.operatingMode === 'off') ? 'off' : `${this.this.operatingStatus.data.operatingMode}ing`, true)
+        this.publishMqtt(this.entities.climate.action_topic, (this.operatingStatus.data.operatingMode === 'off') ? 'off' : `${this.operatingStatus.data.operatingMode}ing`, true)
         this.publishMqtt(this.entities.climate.mode_state_topic, (this.device.data.mode === 'aux') ? 'heat' : this.device.data.mode, true)
         this.publishMqtt(this.entities.climate.temperature_state_topic, this.device.data.setPoint.toString(), true)
         this.publishMqtt(this.entities.climate.fan_mode_state_topic, this.device.data.fanMode, true)
