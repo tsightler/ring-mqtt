@@ -29,7 +29,7 @@ class Thermostat extends RingSocketDevice {
         if (this.temperatureSensor) {
             debug (`Found temperature sensor ${this.temperatureSensor.id} for thermostat ${this.deviceId}`)
             // First publish also subscribe to temperature sensor updates
-            this.temperatureSensor.onData.subscribe((data) => { 
+            this.temperatureSensor.onData.subscribe(data => { 
                 this.publishTemeratureData(data)
             })
         } else {
