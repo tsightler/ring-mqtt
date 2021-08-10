@@ -176,7 +176,7 @@ async function updateRingData(mqttClient, ringClient) {
             if (foundDevice) {
                 debug(colors.green('  Existing device: '+foundDevice.deviceData.name+' ('+device.deviceType+', '+deviceId+')'))
             } else {
-                const newDevice = getDevice(device, mqttClient)
+                const newDevice = await getDevice(device, mqttClient)
                 if (newDevice) {
                     ringDevices.push(newDevice)
                     debug(colors.green('  New device: '+newDevice.deviceData.name+' ('+device.deviceType+', '+deviceId+')'))
