@@ -16,7 +16,7 @@ class Thermostat extends RingSocketDevice {
     }
 
     async getComponentDevices() {
-        const allDevices = this.device.location.getDevices()
+        const allDevices = await this.device.location.getDevices()
         this.componentDevices = allDevices.filter(device => device.data.parentZid === this.deviceId)
         console.log(this.componentDevices)
     }
