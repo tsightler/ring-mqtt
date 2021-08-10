@@ -75,8 +75,8 @@ class RingDevice {
                     ? { json_attributes_topic: `${entityTopic}/attributes` } 
                     : entityName === "info" || entityName === "battery"
                         ? { json_attributes_topic: `${entityStateTopic}` } : {},
-                ... entity.hasOwnProperty('json_value_template')
-                    ? { json_value_template: entity.json_value_template } : {},
+                ... entity.hasOwnProperty('json_attributes_template')
+                    ? { json_attributes_template: entity.json_attributes_template } : {},
                 ... entity.hasOwnProperty('icon')
                     ? { icon: entity.icon } 
                     : entityName === "info" 
