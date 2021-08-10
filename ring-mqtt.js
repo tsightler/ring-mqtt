@@ -31,6 +31,7 @@ const Keypad = require('./devices/keypad')
 const BaseStation = require('./devices/base-station')
 const RangeExtender = require('./devices/range-extender')
 const Siren = require('./devices/siren')
+const Thermostat = require('./devices/thermostat')
 
 var CONFIG
 var ringLocations = new Array()
@@ -113,6 +114,8 @@ function getDevice(device, mqttClient) {
             return new ModesPanel(deviceInfo)
         case 'siren.outdoor-strobe':
             return new Siren(deviceInfo)
+        case RingDeviceType.Thermostat:
+            return new Thermostat(deviceInfo)
     }
     if (/^lock($|\.)/.test(device.deviceType)) {
         return new Lock(deviceInfo)
