@@ -158,7 +158,7 @@ class RingDevice {
         await utils.sleep(1)
         this.availabilityState = 'online'
         this.publishAvailabilityState(enableDebug)
-        await utils.sleep(1)
+        await utils.sleep(2)
     }
 
     // Set state topic offline
