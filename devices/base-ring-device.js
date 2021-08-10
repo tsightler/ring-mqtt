@@ -105,7 +105,7 @@ class RingDevice {
                         aux_state_topic: `${entityTopic}/aux_state`,
                         aux_command_topic: `${entityTopic}/aux_command`,
                         current_temperature_topic: `${entityTopic}/current_temperature_state`,
-                        fan_modes: [ "auto", "circulate", "on" ],
+                        fan_modes: [ "Auto", "Circulate", "On" ],
                         fan_mode_state_topic: `${entityTopic}/fan_mode_state`,
                         fan_mode_command_topic: `${entityTopic}/fan_mode_command`,
                         max_temp: 10,
