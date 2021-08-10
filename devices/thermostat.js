@@ -15,14 +15,29 @@ class Thermostat extends RingSocketDevice {
         this.initAttributeEntities()
     }
 
-    async getComponentDevices() {
+    async findTemperatureSensor() {
         const allDevices = await this.device.location.getDevices()
-        this.componentDevices = allDevices.filter(device => device.data.parentZid === this.deviceId)
-        console.log(this.componentDevices)
+        this.temperatureSensor = allDevices.filter(device => device.data.parentZid === this.deviceId && device.deviceType === 'sensor.temerature')
+        if (this.temperatureSensor) {
+            debug (`Found temperature sensor ${this.temperatureSensor.id} for thermostat ${this.deviceId}`)
+        } else {
+            debug (`Could not find temerature sensor for thermostat ${this.deviceId}`)
+        } 
     }
 
     publishData() {
+        if (!this.subscribed) {
+            // First publish also subscribe to temperature sensor updates
+            this.temperatureSensor.onData.subscribe((temperatureData) => { 
+                this.publishTemeratureData(temperatureData)
+            })
+        }
+        debug(JSON.stringify(data))
         this.publishAttributes()
+    }
+
+    publishTemeratureData(data) {
+        debug(JSON.stringify(data))
     }
 }
 

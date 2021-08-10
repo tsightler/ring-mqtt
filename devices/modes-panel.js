@@ -26,11 +26,11 @@ class ModesPanel extends RingPolledDevice {
             this.entities.mode.state.currentMode = 'republish'
             this.publishData(priorMode)
         } else {
-            this.subscribed = true
             this.device.location.onLocationMode.subscribe((mode) => {
                 this.publishData(mode)
             })
             this.monitorHeartbeat()
+            this.subscribed = true
         }
     }
 

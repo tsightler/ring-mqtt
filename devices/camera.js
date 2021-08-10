@@ -181,7 +181,6 @@ class Camera extends RingPolledDevice {
                 this.publishSnapshotInterval()
             }     
         } else {
-            this.subscribed = true
             this.onNewDingSubscription = this.device.onNewDing.subscribe(ding => {
                 this.processDing(ding)
             })
@@ -190,7 +189,7 @@ class Camera extends RingPolledDevice {
                 this.publishPolledState()
             })
             this.publishInfoState()
-            
+
             if (this.snapshot.motion || this.snapshot.interval > 0) {
                 this.refreshSnapshot()
                 if (this.snapshot.interval > 0) {
@@ -202,6 +201,7 @@ class Camera extends RingPolledDevice {
             // Start monitor of availability state for camera
             this.schedulePublishInfo()
             this.monitorHeartbeat()
+            this.subscribed = true
         }
     }
     

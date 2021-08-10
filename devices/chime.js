@@ -61,13 +61,13 @@ class Chime extends RingPolledDevice {
             this.publishData(true)
             this.publishInfoState()
         } else {
-            this.subscribed = true
             this.device.onData.subscribe(() => { 
                 this.publishData() 
             })
             this.publishInfoState()
             this.schedulePublishInfo()
             this.monitorHeartbeat()
+            this.subscribed = true
         }
     }
 
