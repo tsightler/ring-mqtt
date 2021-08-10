@@ -19,7 +19,7 @@ class Thermostat extends RingSocketDevice {
             // First publish so we need to find the temperature sensor as well
             this.findTemperatureSensor()
         }
-        debug(JSON.stringify(data))
+        debug(JSON.stringify(this.device.data))
         this.publishAttributes()
     }
 
