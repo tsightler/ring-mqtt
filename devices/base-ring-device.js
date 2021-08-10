@@ -18,16 +18,19 @@ class RingDevice {
         this.availabilityTopic = `${this.deviceTopic}/status`
     }
 
-    // This function loops through each entity of the device, generates
-    // a unique device ID for each and build state, command and attribute topics.
+    // This function loops through each entity of the device, creates a unique
+    // device ID for each one, and builds state, command, and attribute topics.
     // Finally it generates a Home Assistant MQTT discovery message for the entity
-    // and publishes this message to the config topic
+    // and publishes this message to the Home Assistant config topic
     async publishDiscovery() {
+        const debugMsg = (this.availabilityState === 'init') ? 'Publishing new ' : 'Republishing existing '
+        debug(debugMsg+'device id: '+this.deviceId)
+        
         Object.keys(this.entities).forEach(entityName => {
             const entity = this.entities[entityName]
             const entityTopic = `${this.deviceTopic}/${entityName}`
 
-            // If this entity uses state values from a parent entity set this here
+            // If this entity uses state values from the attributes of a parent entity set that here,
             // otherwise use standard state topic for entity ('image' for camera, 'state' for all others)
             const entityStateTopic = entity.hasOwnProperty('parent_state_topic')
                 ? `${this.deviceTopic}/${entity.parent_state_topic}`
@@ -43,8 +46,8 @@ class RingDevice {
             // automatic name generation can also be completely overridden with entity 'name' parameter.
             //
             // I know the below will offend the sensibilities of some people, especially with regards
-            // to formatting, but, for whatever reason, my brain reads through it easily and parses the
-            // logic out easily, so I went with it.
+            // to formatting, but, for whatever reason, my brain reads through it linerarly and parses
+            // the logic out easily, so I went with it.
             let discoveryMessage = {
                 ... entity.hasOwnProperty('name')
                     ? { name: entity.name }
@@ -101,6 +104,11 @@ class RingDevice {
                 device: this.deviceData
             }
 
+            const configTopic = `homeassistant/${entity.component}/${this.locationId}/${discoveryMessage.unique_id}/config`
+            debug(`HASS config topic: ${configTopic}`)
+            debug(discoveryMessage)
+            this.publishMqtt(configTopic, JSON.stringify(discoveryMessage))
+
             // On the first publish store the generated topics in the entities object and perform
             // one-time operations such as subscribing to command topics
             if (!(this.entities[entityName].hasOwnProperty('state_topic') || this.entities[entityName].hasOwnProperty('topic'))) {
@@ -125,11 +133,6 @@ class RingDevice {
                     this.entities[entityName].json_attributes_topic = discoveryMessage.json_attributes_topic
                 }
             }
-
-            const configTopic = `homeassistant/${entity.component}/${this.locationId}/${discoveryMessage.unique_id}/config`
-            debug(`HASS config topic: ${configTopic}`)
-            debug(discoveryMessage)
-            this.publishMqtt(configTopic, JSON.stringify(discoveryMessage))
         })
         // Sleep for a few seconds to give HA time to process discovery message
         await utils.sleep(2)

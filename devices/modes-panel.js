@@ -18,21 +18,19 @@ class ModesPanel extends RingPolledDevice {
     }
     
     async publish() {
-        // Publish discovery message
         await this.publishDiscovery()
         await this.online()
 
-        // This is a polled device so don't use common publish/subscribe function
         if (this.subscribed) {
             const priorMode = this.entities.mode.state.currentMode
             this.entities.mode.state.currentMode = 'republish'
             this.publishData(priorMode)
         } else {
+            this.subscribed = true
             this.device.location.onLocationMode.subscribe((mode) => {
                 this.publishData(mode)
             })
             this.monitorHeartbeat()
-            this.subscribed = true
         }
     }
 

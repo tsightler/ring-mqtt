@@ -54,9 +54,6 @@ class Chime extends RingPolledDevice {
 
     // Perforsms device publish and re-publish functions (subscribed vs not subscribed)
     async publish() {
-        const debugMsg = (this.availabilityState === 'init') ? 'Publishing new ' : 'Republishing existing '
-        debug(debugMsg+'device id: '+this.deviceId)
-
         await this.publishDiscovery()
         await this.online()
 
@@ -64,14 +61,13 @@ class Chime extends RingPolledDevice {
             this.publishData(true)
             this.publishInfoState()
         } else {
-            // Subscribe to data updates for device
+            this.subscribed = true
             this.device.onData.subscribe(() => { 
                 this.publishData() 
             })
             this.publishInfoState()
             this.schedulePublishInfo()
             this.monitorHeartbeat()
-            this.subscribed = true
         }
     }
 

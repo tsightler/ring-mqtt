@@ -162,33 +162,37 @@ class Camera extends RingPolledDevice {
 
     // Publish camera capabilities and state and subscribe to events
     async publish() {
-        const debugMsg = (this.availabilityState === 'init') ? 'Publishing new ' : 'Republishing existing '
-        debug(debugMsg+'device id: '+this.deviceId)
-
         await this.publishDiscovery()
         await this.online()
 
-        // Publish device state and, if new device, subscribe for state updates
-        if (!this.subscribed) {
-            this.subscribed = true
+        if (this.subscribed) {
+            // Set states to force republish
+            this.publishedLightState = this.device.hasLight ? 'republish' : 'none'
+            this.publishedSirenState = this.device.hasSiren ? 'republish' : 'none'
+            this.publishedMotionDetectionEnabled = 'republish'
 
-            // Subscribe to Ding events (all cameras have at least motion events)
+            this.publishAvailabilityState()
+            this.publishDingStates()
+            this.publishPolledState()
+            this.publishInfoState()
+
+            if (this.snapshot.motion || this.snapshot.interval) {
+                this.publishSnapshot()
+                this.publishSnapshotInterval()
+            }     
+        } else {
+            this.subscribed = true
             this.onNewDingSubscription = this.device.onNewDing.subscribe(ding => {
                 this.processDing(ding)
             })
             this.publishDingStates()
-
-            // Subscribe to poll events, default every 20 seconds
             this.onDataSubscription = this.device.onData.subscribe(() => {
                 this.publishPolledState()
             })
-
             this.publishInfoState()
-
-            // Publish snapshot if enabled
+            
             if (this.snapshot.motion || this.snapshot.interval > 0) {
                 this.refreshSnapshot()
-                // If interval based snapshots are enabled, start snapshot refresh loop
                 if (this.snapshot.interval > 0) {
                     this.scheduleSnapshotRefresh()
                 }
@@ -198,24 +202,6 @@ class Camera extends RingPolledDevice {
             // Start monitor of availability state for camera
             this.schedulePublishInfo()
             this.monitorHeartbeat()
-        } else {
-            // Set states to force republish
-            this.publishedLightState = this.device.hasLight ? 'republish' : 'none'
-            this.publishedSirenState = this.device.hasSiren ? 'republish' : 'none'
-            this.publishedMotionDetectionEnabled = 'republish'
-
-            // Republish all camera state data
-            this.publishDingStates()
-            this.publishPolledState()
-
-            // Publish snapshot image if any snapshot option is enabled
-            if (this.snapshot.motion || this.snapshot.interval) {
-                this.publishSnapshot()
-                this.publishSnapshotInterval()
-            }     
-
-            this.publishInfoState()
-            this.publishAvailabilityState()
         }
     }
     

@@ -26,10 +26,11 @@ class RingSocketDevice extends RingDevice {
             if (this.subscribed) {
                 this.publishData()
             } else {
-                // Subscribe to data updates for device
-                this.device.onData.subscribe(() => { this.publishData() })
-                this.schedulePublishAttributes()
                 this.subscribed = true
+                this.device.onData.subscribe(() => { 
+                    this.publishData()
+                })
+                this.schedulePublishAttributes()
             }
         }
     }
