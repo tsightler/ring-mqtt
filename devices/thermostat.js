@@ -1,3 +1,4 @@
+const debug = require('debug')('ring-mqtt')
 const RingSocketDevice = require('./base-socket-device')
 
 class Thermostat extends RingSocketDevice {
