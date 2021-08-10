@@ -25,7 +25,7 @@ class RingDevice {
     async publishDiscovery() {
         const debugMsg = (this.availabilityState === 'init') ? 'Publishing new ' : 'Republishing existing '
         debug(debugMsg+'device id: '+this.deviceId)
-        
+
         Object.keys(this.entities).forEach(entityName => {
             const entity = this.entities[entityName]
             const entityTopic = `${this.deviceTopic}/${entityName}`
@@ -59,7 +59,9 @@ class RingDevice {
                     : { unique_id: `${this.deviceId}_${entityName}` },
                 ... entity.component === 'camera' 
                     ? { topic: entityStateTopic }
-                    : { state_topic: entityStateTopic },
+                    : entity.component === 'climate'
+                        ? { mode_state_topic: entityStateTopic }
+                        : { state_topic: entityStateTopic },
                 ... entity.component.match(/^(switch|number|light|fan|lock|alarm_control_panel)$/)
                     ? { command_topic: `${entityTopic}/command` } : {},
                 ... entity.hasOwnProperty('device_class')
@@ -98,6 +100,20 @@ class RingDevice {
                         preset_modes: [ "low", "medium", "high" ],
                         speed_range_min: 11,
                         speed_range_max: 100 } : {},
+                ... entity.component === 'climate'
+                    ? { action_topic: `${entityTopic}/action_state`,
+                        aux_state_topic: `${entityTopic}/aux_state`,
+                        aux_command_topic: `${entityTopic}/aux_command`,
+                        current_temperature_topic: `${entityTopic}/current_temperature_state`,
+                        fan_modes: [ "auto", "circulate", "on" ],
+                        fan_mode_state_topic: `${entityTopic}/fan_mode_state`,
+                        fan_mode_command_topic: `${entityTopic}/fan_mode_command`,
+                        max_temp: 10,
+                        min_temp: 37,
+                        modes: ["off", "cool", "heat"],
+                        mode_state_topic: `${entityTopic}/mode_state`,
+                        mode_command_topic: `${entityTopic}/mode_command`,
+                        temperature_state_topic: `${entityTopic}/temperature_state` } : {},
                 availability_topic: this.availabilityTopic,
                 payload_available: 'online',
                 payload_not_available: 'offline',
@@ -109,29 +125,15 @@ class RingDevice {
             debug(discoveryMessage)
             this.publishMqtt(configTopic, JSON.stringify(discoveryMessage))
 
-            // On the first publish store the generated topics in the entities object and perform
-            // one-time operations such as subscribing to command topics
-            if (!(this.entities[entityName].hasOwnProperty('state_topic') || this.entities[entityName].hasOwnProperty('topic'))) {
-                // State topics (except cameras)
-                Object.keys(discoveryMessage).filter(property => property.match('state_topic')).forEach(stateTopic => {
-                    this.entities[entityName][stateTopic] = discoveryMessage[stateTopic]
+            // On first publish store generated topics in entities object and subscribe to command topics
+            if (!this.entities[entityName].hasOwnProperty('published')) {
+                this.entities[entityName].published = true
+                Object.keys(discoveryMessage).filter(property => property.match('topic')).forEach(topic => {
+                    this.entities[entityName][topic] = discoveryMessage[topic]
+                    if (topic.match('command_topic')) {
+                        this.mqttClient.subscribe(discoveryMessage[commandTopic])
+                    }
                 })
-
-                // Since cameras send binary image data rather than "state", they use topic vs state_topic, yay!
-                if (entity.component === 'camera') {
-                    this.entities[entityName].topic = discoveryMessage.topic
-                }                
-
-                // Command topics (including subscribe)
-                Object.keys(discoveryMessage).filter(property => property.match('command_topic')).forEach(commandTopic => {
-                    this.entities[entityName][commandTopic] = discoveryMessage[commandTopic]
-                    this.mqttClient.subscribe(discoveryMessage[commandTopic])
-                })
-
-                // JSON Attributes topic
-                if (discoveryMessage.hasOwnProperty('json_attributes_topic')) {
-                    this.entities[entityName].json_attributes_topic = discoveryMessage.json_attributes_topic
-                }
             }
         })
         // Sleep for a few seconds to give HA time to process discovery message

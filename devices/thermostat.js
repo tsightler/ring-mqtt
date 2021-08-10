@@ -7,11 +7,9 @@ class Thermostat extends RingSocketDevice {
         this.deviceData.mdl = 'Thermostat'
         this.foundComponentDevices = false
 
-        /* this.entities.motion = {
-            component: 'binary_sensor',
-            device_class: 'motion',
-            unique_id: this.deviceId
-        } */
+        this.entities.climate = {
+            component: 'climate'
+        }
         this.initAttributeEntities()
     }
 
