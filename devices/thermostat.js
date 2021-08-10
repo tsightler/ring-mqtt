@@ -11,7 +11,7 @@ class Thermostat extends RingSocketDevice {
             device_class: 'motion',
             unique_id: this.deviceId
         } */
-        this.getComponentDevices()
+        this.findTemperatureSensor()
         this.initAttributeEntities()
     }
 
