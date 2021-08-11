@@ -58,16 +58,14 @@ class Thermostat extends RingSocketDevice {
         // temperature value like other HA climate components, it appears the topic will only
         // process a number.  The only workaround I could think of was to just display the
         // current temperature as the set temperature when the unit is off.
-        const setTemperature = this.device.data.setPoint
+        const targetTemperature = this.device.data.setPoint
             ? this.device.data.setPoint.toString()
             : this.temperatureSensor.data.celsius.toString()
 
         this.publishMqtt(this.entities.climate.mode_state_topic, mode, true)
+        this.publishMqtt(this.entities.climate.temperature_state_topic, targetTemperature, true)
         this.publishMqtt(this.entities.climate.fan_mode_state_topic, fanMode, true)
         this.publishMqtt(this.entities.climate.aux_state_topic, auxMode, true)
-        if (setTemperature) {
-            this.publishMqtt(this.entities.climate.temperature_state_topic, setTemperature, true)
-        }
         this.publishOperatingMode()
         this.publishTemperature()
         this.publishAttributes()
@@ -90,6 +88,71 @@ class Thermostat extends RingSocketDevice {
             this.publishMqtt(this.entities.climate.current_temperature_topic, temperature, true)
         }
     }
+
+    // Process messages from MQTT command topic
+    processCommand(message, topic) {
+        const matchTopic = topic.split("/").slice(-2).join("/")
+        switch (matchTopic) {
+            case 'climate/mode_command':
+                this.setMode(message)
+            case 'climate/temperature_command':
+                this.setTargetTemperature(message)
+                break;
+            case 'climate/fan_mode_command':
+                this.setFanMode(message)
+                break;
+            case 'climate/aux_command':
+                this.setAuxMode(message)
+                break;
+            default:
+                debug(`Received unknown command topic ${topic} for ${this.component} ${this.deviceId}`)
+        }
+    }
+
+    setMode(message) {
+        debug(`Received set mode ${message} for thermostat ${this.deviceId}`)
+        debug(`Location Id: ${this.locationId}`)
+        const command = message.toLowerCase()
+        switch(command) {
+            case 'off':
+                this.device.setInfo({ device: { v1: { mode: command } } })
+                break;
+            case 'cool':
+                this.device.setInfo({ device: { v1: { mode: command } } })
+                break;
+            case 'heat':
+                this.device.setInfo({ device: { v1: { mode: command } } })
+                break;
+            case 'aux':
+                this.device.setInfo({ device: { v1: { mode: command } } })
+                break;
+            default:
+                debug(`Received invalid command for thermostat ${this.deviceId}`)
+        }
+
+    }
+    
+    setTargetTemperature(targetTemperature) {
+        debug('Received set target temperature to '+targetTemperature+' for thermostat '+this.deviceId)
+        debug('Location Id: '+ this.locationId)
+        if (isNaN(targetTemperature)) {
+            debug('New target temperature received but not a number!')
+        } else if (!(targetTemperature >= 10 && targetTemperature <= 37.22222)) {
+            debug('New target command received but out of range (10-37.2 Celcius)!')
+        } else {
+            this.device.setInfo({ device: { v1: { setPoint: targetTemperature } } })
+        }
+    }
+
+    setFanMode(message) {
+        debug(`Recevied set fan mode: ${message}`)
+    }
+
+    setAuxMode(message) {
+        debug(`Recevied set aux mode: ${message}`)
+        debug(this.device.data.commandTypes)
+    }
+
 }
 
 module.exports = Thermostat

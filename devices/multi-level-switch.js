@@ -61,7 +61,7 @@ class MultiLevelSwitch extends RingSocketDevice {
         if (isNaN(message)) {
              debug('Brightness command received but not a number!')
         } else if (!(message >= 0 && message <= 100)) {
-            debug('Brightness command receives but out of range (0-100)!')
+            debug('Brightness command received but out of range (0-100)!')
         } else {
             this.device.setInfo({ device: { v1: { level: level / 100 } } })
         }
