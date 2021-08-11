@@ -7,10 +7,14 @@ class Thermostat extends RingSocketDevice {
         super(deviceInfo)
         this.deviceData.mdl = 'Thermostat'
 
+        const fanModes = this.device.data.hasOwnProperty('supportedFanModes')
+            ? this.device.data.supportedFanModes.map(f => f.charAt(0).toUpperCase() + f.slice(1))
+            : ["Auto"]
+
         this.entities.climate = {
             component: 'climate',
             name: this.deviceData.name,
-            fan_modes: this.device.data.supportedFanModes.map(f => f.charAt(0).toUpperCase() + f.slice(1))
+            fan_modes: fanModes
         }
         this.initComponentDevices()
         this.initAttributeEntities()
@@ -150,17 +154,10 @@ class Thermostat extends RingSocketDevice {
         debug(`Recevied set fan mode ${message} for thermostat ${this.deviceId}`)
         debug(`Location Id: ${this.locationId}`)
         const command = message.toLowerCase()
-        switch(command) {
-            case 'auto':
-                this.device.setInfo({ device: { v1: { fanMode: command}}})
-                break;
-            case 'on':
+
+        if (this.entities.climate.fan_modes.map(e => e.toLocaleLowerCase()).includes(command)) {
             this.device.setInfo({ device: { v1: { fanMode: command}}})
-            break;
-            case 'circulate':
-            this.device.setInfo({ device: { v1: { fanMode: command}}})
-            break;
-            default:
+        } else {
                 debug('Received invalid fan mode command for thermostat!')
         }
     }
