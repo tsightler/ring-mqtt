@@ -134,24 +134,39 @@ class Thermostat extends RingSocketDevice {
     }
     
     setTargetTemperature(targetTemperature) {
-        debug('Received set target temperature to '+targetTemperature+' for thermostat '+this.deviceId)
-        debug('Location Id: '+ this.locationId)
+        debug(`Received set target temperature to ${targetTemperature} for thermostat ${this.deviceId}`)
+        debug(`Location Id: ${this.locationId}`)
         if (isNaN(targetTemperature)) {
             debug('New target temperature received but not a number!')
         } else if (!(targetTemperature >= 10 && targetTemperature <= 37.22223)) {
-            debug('New target command received but out of range (10-37.2 Celcius)!')
+            debug('New target command received but out of range (10-37.22223°C)!')
         } else {
             this.device.setInfo({ device: { v1: { setPoint: Number(targetTemperature) } } })
         }
     }
 
     setFanMode(message) {
-        debug(`Recevied set fan mode: ${message}`)
+        debug(`Recevied set fan mode ${message} for thermostat ${this.deviceId}`)
+        debug(`Location Id: ${this.locationId}`)
+        const command = message.toLowerCase()
+        switch(command) {
+            case 'auto':
+                this.device.setInfo({ device: { v1: { fanMode: command}}})
+                break;
+            case 'on':
+            this.device.setInfo({ device: { v1: { fanMode: command}}})
+            break;
+            case 'circulate':
+            this.device.setInfo({ device: { v1: { fanMode: command}}})
+            break;
+            default:
+                debug('Received invalid fan mode command for thermostat!')
+        }
     }
 
     setAuxMode(message) {
-        debug('Received set aux mode '+message+' for thermostat: '+this.deviceId)
-        debug('Location Id: '+ this.locationId)
+        debug(`Received set aux mode ${message} for thermostat ${this.deviceId}`)
+        debug(`Location Id: ${this.locationId}`)
         const command = message.toLowerCase()
         switch(command) {
             case 'on':
