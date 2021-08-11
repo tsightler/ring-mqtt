@@ -16,7 +16,7 @@ class Thermostat extends RingSocketDevice {
 
     async initComponentDevices() {
         const allDevices = await this.device.location.getDevices()
-        this.operatingMode = allDevices.find(device => device.data.parentZid === this.deviceId && device.deviceType === 'thermostat-operating-status')
+        this.operatingStatus = allDevices.find(device => device.data.parentZid === this.deviceId && device.deviceType === 'thermostat-operating-status')
         this.temperatureSensor = allDevices.find(device => device.data.parentZid === this.deviceId && device.deviceType === 'sensor.temperature')
 
         await utils.sleep(1) // Mainly just to help debug output
@@ -30,7 +30,7 @@ class Thermostat extends RingSocketDevice {
                 }
             })
         } else {
-            debug (`Could not find operating status sensor for thermostat ${this.deviceId}`)
+            debug (`WARNING - Could not find operating status sensor for thermostat ${this.deviceId}`)
         }
 
         if (this.temperatureSensor) {
@@ -42,7 +42,7 @@ class Thermostat extends RingSocketDevice {
                 }
             })
         } else {
-            debug (`Could not find temerature sensor for thermostat ${this.deviceId}`)
+            debug (`WARNING - Could not find temerature sensor for thermostat ${this.deviceId}`)
         }
     }
 
@@ -73,13 +73,17 @@ class Thermostat extends RingSocketDevice {
     }
 
     publishOperatingMode() {
-        const operatingMode = (this.operatingStatus.data.operatingMode === 'off') ? 'idle' : `${this.operatingStatus.data.operatingMode}ing`
-        this.publishMqtt(this.entities.climate.action_topic, operatingMode, true)
+        if (this.operatingStatus) {
+            const operatingMode = (this.operatingStatus.data.operatingMode === 'off') ? 'idle' : `${this.operatingStatus.data.operatingMode}ing`
+            this.publishMqtt(this.entities.climate.action_topic, operatingMode, true)
+        }
     }
 
     publishTemperature() {
-        const temperature = this.temperatureSensor.data.celsius.toString()
-        this.publishMqtt(this.entities.climate.current_temperature_topic, temperature, true)
+        if (this.temperatureSensor) {
+            const temperature = this.temperatureSensor.data.celsius.toString()
+            this.publishMqtt(this.entities.climate.current_temperature_topic, temperature, true)
+        }
     }
 }
 
