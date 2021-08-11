@@ -57,7 +57,7 @@ class Thermostat extends RingSocketDevice {
         // temperature value like other HA climate components, it appears the topic will only
         // process a number.  The only workaround I could think of was to just display the
         // current temperature as the set temperature when the unit is off.
-        const setTemperature = this.device.data.mode === 'off'
+        const setTemperature = this.device.data.setPoint
             ? this.device.data.setPoint.toString()
             : this.temperatureSensor.data.celsius.toString()
 
