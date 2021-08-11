@@ -21,8 +21,8 @@ class Thermostat extends RingSocketDevice {
 
         await utils.sleep(1) // Mainly just to help debug output
 
-        if (this.operatingMode) {
-            debug (`Found operating status sensor ${this.operatingMode.id} for thermostat ${this.deviceId}`)
+        if (this.operatingStatus) {
+            debug (`Found operating status sensor ${this.operatingStatus.id} for thermostat ${this.deviceId}`)
             // First publish also subscribe to temperature sensor updates
             this.operatingStatus.onData.subscribe(() => { 
                 if (this.subscribed) {
