@@ -95,6 +95,7 @@ class Thermostat extends RingSocketDevice {
         switch (matchTopic) {
             case 'climate/mode_command':
                 this.setMode(message)
+                break;
             case 'climate/temperature_command':
                 this.setTargetTemperature(message)
                 break;
