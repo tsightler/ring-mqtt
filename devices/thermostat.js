@@ -119,7 +119,7 @@ class Thermostat extends RingSocketDevice {
         debug(`Received set mode ${message} for thermostat ${this.deviceId}`)
         debug(`Location Id: ${this.locationId}`)
         const mode = message.toLowerCase()
-        switch(command) {
+        switch(mode) {
             case 'off':
             case 'cool':
             case 'heat':
@@ -151,7 +151,6 @@ class Thermostat extends RingSocketDevice {
         debug(`Recevied set fan mode ${message} for thermostat ${this.deviceId}`)
         debug(`Location Id: ${this.locationId}`)
         const fanMode = message.toLowerCase()
-
         if (this.entities.climate.fan_modes.map(e => e.toLocaleLowerCase()).includes(fanMode)) {
             this.device.setInfo({ device: { v1: { fanMode }}})
             this.publishMqtt(this.entities.climate.fan_mode_state_topic, fanMode.replace(/^./, str => str.toUpperCase()), true)
