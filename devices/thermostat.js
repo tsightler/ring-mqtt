@@ -156,7 +156,7 @@ class Thermostat extends RingSocketDevice {
         switch(command) {
             case 'on':
                 this.device.setInfo({ device: { v1: { mode: 'aux' } } })
-                breal
+                break;
             case 'off': {
                 this.device.setInfo({ device: { v1: { mode: 'heat' } } })
                 break;
