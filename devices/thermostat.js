@@ -8,7 +8,8 @@ class Thermostat extends RingSocketDevice {
         this.deviceData.mdl = 'Thermostat'
 
         this.entities.climate = {
-            component: 'climate'
+            component: 'climate',
+            unique_id: this.deviceId
         }
         this.initComponentDevices()
         this.initAttributeEntities()
@@ -74,11 +75,13 @@ class Thermostat extends RingSocketDevice {
 
     publishOperatingMode() {
         if (this.operatingStatus) {
-            const operatingMode = this.device.data.mode === 'off' 
-                ? 'off' 
-                : this.operatingStatus.data.operatingMode !== 'off'
-                    ? `${this.operatingStatus.data.operatingMode}ing`
-                    : 'idle'
+            const operatingMode = this.operatingStatus.data.operatingMode !== 'off'
+                ? `${this.operatingStatus.data.operatingMode}ing`
+                : this.device.data.fanMode === 'on'
+                    ? 'fan'
+                    : this.device.data.mode === 'off'
+                        ? 'off'
+                        : 'idle'
             this.publishMqtt(this.entities.climate.action_topic, operatingMode, true)
         }
     }
