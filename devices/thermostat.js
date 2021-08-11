@@ -141,7 +141,7 @@ class Thermostat extends RingSocketDevice {
         } else if (!(targetTemperature >= 10 && targetTemperature <= 37.22222)) {
             debug('New target command received but out of range (10-37.2 Celcius)!')
         } else {
-            this.device.setInfo({ device: { v1: { setPoint: targetTemperature } } })
+            this.device.setInfo({ device: { v1: { setPoint: targetTemperature / 1} } })
         }
     }
 
