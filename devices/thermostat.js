@@ -74,7 +74,11 @@ class Thermostat extends RingSocketDevice {
 
     publishOperatingMode() {
         if (this.operatingStatus) {
-            const operatingMode = (this.operatingStatus.data.operatingMode === 'off') ? 'idle' : `${this.operatingStatus.data.operatingMode}ing`
+            const operatingMode = this.device.data.mode === 'off' 
+                ? 'off' 
+                : this.operatingStatus.data.operatingMode !== 'off'
+                    ? `${this.operatingStatus.data.operatingMode}ing`
+                    : 'idle'
             this.publishMqtt(this.entities.climate.action_topic, operatingMode, true)
         }
     }
