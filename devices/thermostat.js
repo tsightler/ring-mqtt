@@ -138,7 +138,7 @@ class Thermostat extends RingSocketDevice {
         debug('Location Id: '+ this.locationId)
         if (isNaN(targetTemperature)) {
             debug('New target temperature received but not a number!')
-        } else if (!(targetTemperature >= 10 && targetTemperature <= 37.22222)) {
+        } else if (!(targetTemperature >= 10 && targetTemperature <= 37.22223)) {
             debug('New target command received but out of range (10-37.2 Celcius)!')
         } else {
             this.device.setInfo({ device: { v1: { setPoint: Number(targetTemperature) } } })
@@ -150,10 +150,21 @@ class Thermostat extends RingSocketDevice {
     }
 
     setAuxMode(message) {
-        debug(`Recevied set aux mode: ${message}`)
-        debug(this.device.data.commandTypes)
+        debug('Received set aux mode '+message+' for thermostat: '+this.deviceId)
+        debug('Location Id: '+ this.locationId)
+        const command = message.toLowerCase()
+        switch(command) {
+            case 'on':
+                this.device.setInfo({ device: { v1: { mode: 'aux' } } })
+                breal
+            case 'off': {
+                this.device.setInfo({ device: { v1: { mode: 'heat' } } })
+                break;
+            }
+            default:
+                debug('Received invalid aux mode command for thermostat!')
+        }
     }
-
 }
 
 module.exports = Thermostat
