@@ -166,11 +166,11 @@ class Thermostat extends RingSocketDevice {
         switch(auxMode) {
             case 'on':
                 this.device.setInfo({ device: { v1: { mode: 'aux' } } })
-                this.publishMqtt(this.entities.climate.mode_state_topic, 'ON', true)
+                this.publishMqtt(this.entities.climate.aux_state_topic, 'ON', true)
                 break;
             case 'off': 
                 this.device.setInfo({ device: { v1: { mode: 'heat' } } })
-                this.publishMqtt(this.entities.climate.mode_state_topic, 'OFF', true)
+                this.publishMqtt(this.entities.climate.aux_state_topic, 'OFF', true)
                 break;
             default:
                 debug('Received invalid aux mode command for thermostat!')
