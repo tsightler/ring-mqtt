@@ -26,7 +26,6 @@ class Thermostat extends RingSocketDevice {
         this.temperatureSensor = allDevices.find(device => device.data.parentZid === this.deviceId && device.deviceType === 'sensor.temperature')
 
         await utils.sleep(1) // Mainly just to help debug output
-
         if (this.operatingStatus) {
             debug (`Found operating status sensor ${this.operatingStatus.id} for thermostat ${this.deviceId}`)
             // First publish also subscribe to temperature sensor updates
@@ -95,7 +94,7 @@ class Thermostat extends RingSocketDevice {
     }
 
     // Process messages from MQTT command topic
-    processCommand(message, topic) {
+    async processCommand(message, topic) {
         const matchTopic = topic.split("/").slice(-2).join("/")
         switch (matchTopic) {
             case 'climate/mode_command':
@@ -113,6 +112,8 @@ class Thermostat extends RingSocketDevice {
             default:
                 debug(`Received unknown command topic ${topic} for ${this.component} ${this.deviceId}`)
         }
+        await utils.sleep(1)
+        this.publishData()
     }
 
     setMode(message) {
@@ -121,6 +122,7 @@ class Thermostat extends RingSocketDevice {
         const mode = message.toLowerCase()
         switch(mode) {
             case 'off':
+                this.publishMqtt(this.entities.climate.action_topic, mode, true)
             case 'cool':
             case 'heat':
             case 'aux':
@@ -130,7 +132,6 @@ class Thermostat extends RingSocketDevice {
             default:
                 debug(`Received invalid command for thermostat ${this.deviceId}`)
         }
-
     }
     
     setTargetTemperature(message) {
