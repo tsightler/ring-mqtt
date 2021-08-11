@@ -9,7 +9,7 @@ class Thermostat extends RingSocketDevice {
 
         this.entities.climate = {
             component: 'climate',
-            unique_id: this.deviceId,
+            name: this.deviceData.name,
             fan_modes: this.device.data.supportedFanModes
         }
         this.initComponentDevices()
