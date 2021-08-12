@@ -157,7 +157,7 @@ class Thermostat extends RingSocketDevice {
         } else {
             const setPoint = Number(message)
             this.device.setInfo({ device: { v1: { setPoint } } })
-            this.entities.climate.state.setPoint = setPoint
+            this.entities.climate.state.setPoint = setPoint.toString()
             this.publishStateData()
         }
     }
