@@ -83,10 +83,10 @@ class Thermostat extends RingSocketDevice {
     }
 
     publishStateData() {
-        this.publishMqtt(this.entities.climate.mode_state_topic, mode, true)
-        this.publishMqtt(this.entities.climate.temperature_state_topic, setPoint, true)
-        this.publishMqtt(this.entities.climate.fan_mode_state_topic, fanMode, true)
-        this.publishMqtt(this.entities.climate.aux_state_topic, auxMode, true)
+        this.publishMqtt(this.entities.climate.mode_state_topic, this.entities.climate.state.mode, true)
+        this.publishMqtt(this.entities.climate.temperature_state_topic, this.entities.climate.state.setPoint, true)
+        this.publishMqtt(this.entities.climate.fan_mode_state_topic, this.entities.climate.state.fanMode, true)
+        this.publishMqtt(this.entities.climate.aux_state_topic, this.entities.climate.state.auxMode, true)
     }
 
     publishOperatingMode() {
