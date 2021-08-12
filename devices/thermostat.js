@@ -14,7 +14,12 @@ class Thermostat extends RingSocketDevice {
         this.entities.climate = {
             component: 'climate',
             name: this.deviceData.name,
-            fan_modes: fanModes
+            fan_modes: fanModes,
+            state: {
+                mode: this.device.data.mode === 'aux' ? 'heat' : this.device.data.mode,
+                fanMode: this.device.data.fanMode.replace(/^./, str => str.toUpperCase()),
+                auxMode: this.device.data.mode === 'aux' ? 'ON' : 'OFF',
+            }
         }
         this.initComponentDevices()
         this.initAttributeEntities()
@@ -46,33 +51,42 @@ class Thermostat extends RingSocketDevice {
                     this.publishTemperature()
                 }
             })
+            this.entities.climate.state.setPoint = this.device.data.setPoint
+                ? this.device.data.setPoint.toString()
+                : this.temperatureSensor.data.celsius.toString()
         } else {
             debug (`WARNING - Could not find temerature sensor for thermostat ${this.deviceId}`)
         }
     }
 
     publishData() {
-        const mode = this.device.data.mode === 'aux' ? 'heat' : this.device.data.mode
-        const fanMode = this.device.data.fanMode.replace(/^./, str => str.toUpperCase())
-        const auxMode = this.device.data.mode === 'aux' ? 'ON' : 'OFF'
+        this.entities.climate.state = {
+            mode: this.device.data.mode === 'aux' ? 'heat' : this.device.data.mode,
+            fanMode: this.device.data.fanMode.replace(/^./, str => str.toUpperCase()),
+            auxMode: this.device.data.mode === 'aux' ? 'ON' : 'OFF',
 
-        // If mode is off then there's really no target temperature (setPoint is tied to the mode
-        // because setPoint can be different for 'cool' vs 'heat', but 'off" has no setPoint)
-        // I've been unable to find a way to get the MQTT HVAC component "unset" once you set a
-        // temperature value like other HA climate components, it appears the topic will only
-        // process a number.  The only workaround I could think of was to just display the
-        // current temperature as the set temperature when the unit is off.
-        const targetTemperature = this.device.data.setPoint
-            ? this.device.data.setPoint.toString()
-            : this.temperatureSensor.data.celsius.toString()
+            // If mode is off then there's really no target temperature (setPoint is tied to the mode
+            // because setPoint can be different for 'cool' vs 'heat', but 'off" has no setPoint)
+            // I've been unable to find a way to get the MQTT HVAC component "unset" once you set a
+            // temperature value like other HA climate components, it appears the topic will only
+            // process a number.  The only workaround I could think of was to just display the
+            // current temperature as the set temperature when the unit is off.
+            setPoint: this.device.data.setPoint
+                ? this.device.data.setPoint.toString()
+                : this.temperatureSensor.data.celsius.toString()
+        }
 
-        this.publishMqtt(this.entities.climate.mode_state_topic, mode, true)
-        this.publishMqtt(this.entities.climate.temperature_state_topic, targetTemperature, true)
-        this.publishMqtt(this.entities.climate.fan_mode_state_topic, fanMode, true)
-        this.publishMqtt(this.entities.climate.aux_state_topic, auxMode, true)
+        this.publishStateData()
         this.publishOperatingMode()
         this.publishTemperature()
         this.publishAttributes()
+    }
+
+    publishStateData() {
+        this.publishMqtt(this.entities.climate.mode_state_topic, mode, true)
+        this.publishMqtt(this.entities.climate.temperature_state_topic, setPoint, true)
+        this.publishMqtt(this.entities.climate.fan_mode_state_topic, fanMode, true)
+        this.publishMqtt(this.entities.climate.aux_state_topic, auxMode, true)
     }
 
     publishOperatingMode() {
@@ -101,7 +115,7 @@ class Thermostat extends RingSocketDevice {
                 this.setMode(message)
                 break;
             case 'climate/temperature_command':
-                this.setTargetTemperature(message)
+                this.setSetPoint(message)
                 break;
             case 'climate/fan_mode_command':
                 this.setFanMode(message)
@@ -112,8 +126,6 @@ class Thermostat extends RingSocketDevice {
             default:
                 debug(`Received unknown command topic ${topic} for ${this.component} ${this.deviceId}`)
         }
-        await utils.sleep(1)
-        this.publishData()
     }
 
     setMode(message) {
@@ -127,14 +139,15 @@ class Thermostat extends RingSocketDevice {
             case 'heat':
             case 'aux':
                 this.device.setInfo({ device: { v1: { mode } } })
-                this.publishMqtt(this.entities.climate.mode_state_topic, mode, true)
+                this.entities.climate.state.mode = mode
+                this.publishStateData()
                 break;
             default:
                 debug(`Received invalid command for thermostat ${this.deviceId}`)
         }
     }
     
-    setTargetTemperature(message) {
+    setSetPoint(message) {
         debug(`Received set target temperature to ${message} for thermostat ${this.deviceId}`)
         debug(`Location Id: ${this.locationId}`)
         if (isNaN(message)) {
@@ -144,7 +157,8 @@ class Thermostat extends RingSocketDevice {
         } else {
             const setPoint = Number(message)
             this.device.setInfo({ device: { v1: { setPoint } } })
-            this.publishMqtt(this.entities.climate.temperature_state_topic, setPoint, true)
+            this.entities.climate.state.setPoint = setPoint
+            this.publishStateData()
         }
     }
 
@@ -154,7 +168,8 @@ class Thermostat extends RingSocketDevice {
         const fanMode = message.toLowerCase()
         if (this.entities.climate.fan_modes.map(e => e.toLocaleLowerCase()).includes(fanMode)) {
             this.device.setInfo({ device: { v1: { fanMode }}})
-            this.publishMqtt(this.entities.climate.fan_mode_state_topic, fanMode.replace(/^./, str => str.toUpperCase()), true)
+            this.entities.climate.state.fanMode = fanMode.replace(/^./, str => str.toUpperCase())
+            this.publishStateData()
         } else {
                 debug('Received invalid fan mode command for thermostat!')
         }
@@ -167,11 +182,13 @@ class Thermostat extends RingSocketDevice {
         switch(auxMode) {
             case 'on':
                 this.device.setInfo({ device: { v1: { mode: 'aux' } } })
-                this.publishMqtt(this.entities.climate.aux_state_topic, 'ON', true)
+                this.entities.climate.state.auxMode = 'ON'
+                this.publishStateData()
                 break;
             case 'off': 
                 this.device.setInfo({ device: { v1: { mode: 'heat' } } })
-                this.publishMqtt(this.entities.climate.aux_state_topic, 'OFF', true)
+                this.entities.climate.state.auxMode = 'OFF'
+                this.publishStateData()
                 break;
             default:
                 debug('Received invalid aux mode command for thermostat!')
