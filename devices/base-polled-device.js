@@ -26,9 +26,13 @@ class RingPolledDevice extends RingDevice {
     async monitorHeartbeat() {
         if (this.heartbeat > 0) {
             if (this.availabilityState !== 'online') {
-                // If device was offline give 5 seconds in case we're in shutdown state
-                await utils.sleep(5)
-                await this.online()
+                // If device was offline wait 10 seconds and check again, if still offline
+                // put device online.  Useful for initial startup or republish scenarios
+                // as publish will put the device online.
+                await utils.sleep(10)
+                if (this.heartbeat > 0 && this.availabilityState !== 'online') {
+                    await this.online()
+                }
             }
             this.heartbeat--
         } else {
@@ -38,15 +42,6 @@ class RingPolledDevice extends RingDevice {
         } 
         await utils.sleep(20)
         this.monitorHeartbeat()
-    }
-
-    // Publish health state every 5 minutes when online
-    async schedulePublishInfo() {
-        await utils.sleep(this.availabilityState === 'offline' ? 60 : 300)
-        if (this.availabilityState === 'online') { 
-            this.publishInfoState() 
-        }
-        this.schedulePublishInfo()
     }
 }
 

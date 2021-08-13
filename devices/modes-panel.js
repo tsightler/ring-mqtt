@@ -8,7 +8,7 @@ class ModesPanel extends RingPolledDevice {
         this.deviceData.mdl = 'Mode Control Panel'
         this.deviceData.name = `${this.device.location.name} Mode`
 
-        this.entities.mode = {
+        this.entity.mode = {
             component: 'alarm_control_panel',
             unique_id: this.deviceId,
             state: { 
@@ -22,8 +22,8 @@ class ModesPanel extends RingPolledDevice {
         await this.online()
 
         if (this.subscribed) {
-            const priorMode = this.entities.mode.state.currentMode
-            this.entities.mode.state.currentMode = 'republish'
+            const priorMode = this.entity.mode.state.currentMode
+            this.entity.mode.state.currentMode = 'republish'
             this.publishData(priorMode)
         } else {
             this.device.location.onLocationMode.subscribe((mode) => {
@@ -54,16 +54,15 @@ class ModesPanel extends RingPolledDevice {
         }
 
         // Publish device state if it's changed from prior state
-        if (this.entities.mode.state.currentMode !== mode) {
-            this.entities.mode.state.currentMode = mode
-            this.publishMqtt(this.entities.mode.state_topic, mqttMode, true)
+        if (this.entity.mode.state.currentMode !== mode) {
+            this.entity.mode.state.currentMode = mode
+            this.publishMqtt(this.entity.mode.state_topic, mqttMode, true)
         }
     }
 
     // Process messages from MQTT command topic
     processCommand(message, topic) {
-        const matchTopic = topic.split("/").slice(-2).join("/")
-        switch (matchTopic) {
+        switch (topic.split("/").slice(-2).join("/")) {
             case 'mode/command':
                 this.setLocationMode(message)
                 break;

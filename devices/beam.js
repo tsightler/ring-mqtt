@@ -32,19 +32,19 @@ class Beam extends RingSocketDevice {
     }
     
     initMotion() {
-        this.entities.motion = {
+        this.entity.motion = {
             component: 'binary_sensor',
             device_class: 'motion'
         }
     }
 
     initLight() {
-        this.entities.light = {
+        this.entity.light = {
             component: 'light',
             ...this.device.data.deviceType === 'switch.multilevel.beams' ? { brightness_scale: 100 } : {}
         }
 
-        this.entities.beam_duration = {
+        this.entity.beam_duration = {
             name: this.device.name+' Duration',
             unique_id: this.deviceId+'_duration',
             component: 'number',
@@ -54,25 +54,25 @@ class Beam extends RingSocketDevice {
         }
 
         if (this.config.hasOwnProperty('beam_duration') && this.config.beam_duration > 0) {
-            this.entities.beam_duration.state = this.config.beam_duration
+            this.entity.beam_duration.state = this.config.beam_duration
         } else {
-            this.entities.beam_duration.state = this.device.data.hasOwnProperty('onDuration') ? this.device.data.onDuration : 0
+            this.entity.beam_duration.state = this.device.data.hasOwnProperty('onDuration') ? this.device.data.onDuration : 0
         }
     }
 
     publishData() {
-        if (this.entities.motion.hasOwnProperty('state_topic')) {
+        if (this.entity.motion.hasOwnProperty('state_topic')) {
             const motionState = this.device.data.motionStatus === 'faulted' ? 'ON' : 'OFF'
-            this.publishMqtt(this.entities.motion.state_topic, motionState, true)
+            this.publishMqtt(this.entity.motion.state_topic, motionState, true)
         }
-        if (this.entities.light.hasOwnProperty('state_topic')) {
+        if (this.entity.light.hasOwnProperty('state_topic')) {
             const switchState = this.device.data.on ? 'ON' : 'OFF'
-            this.publishMqtt(this.entities.light.state_topic, switchState, true)
-            if (this.entities.light.hasOwnProperty('brightness_state_topic')) {
+            this.publishMqtt(this.entity.light.state_topic, switchState, true)
+            if (this.entity.light.hasOwnProperty('brightness_state_topic')) {
                 const switchLevel = (this.device.data.level && !isNaN(this.device.data.level) ? Math.round(100 * this.device.data.level) : 0)
-                this.publishMqtt(this.entities.light.brightness_state_topic, switchLevel.toString(), true)
+                this.publishMqtt(this.entity.light.brightness_state_topic, switchLevel.toString(), true)
             }
-            this.publishMqtt(this.entities.beam_duration.state_topic, this.entities.beam_duration.state.toString(), true)
+            this.publishMqtt(this.entity.beam_duration.state_topic, this.entity.beam_duration.state.toString(), true)
         }
         if (!this.isLightGroup) {
             this.publishAttributes()
@@ -81,8 +81,7 @@ class Beam extends RingSocketDevice {
 
     // Process messages from MQTT command topic
     processCommand(message, topic) {
-        const matchTopic = topic.split("/").slice(-2).join("/")
-        switch (matchTopic) {
+        switch (topic.split("/").slice(-2).join("/")) {
             case 'light/command':
                 this.setLightState(message)
                 break;
@@ -105,7 +104,7 @@ class Beam extends RingSocketDevice {
         switch(command) {
             case 'on':
             case 'off': {
-                const duration = this.entities.beam_duration.state ? Math.min(this.entities.beam_duration.state, 32767) : undefined
+                const duration = this.entity.beam_duration.state ? Math.min(this.entity.beam_duration.state, 32767) : undefined
                 const on = command === 'on' ? true : false
                 if (this.isLightGroup && this.groupId) {
                     this.device.location.setLightGroup(this.groupId, on, duration)
@@ -143,8 +142,8 @@ class Beam extends RingSocketDevice {
         } else if (!(duration >= 0 && duration <= 32767)) {
             debug('Light duration command received but out of range (0-32767)')
         } else {
-            this.entities.beam_duration.state = parseInt(duration)
-            this.publishMqtt(this.entities.beam_duration.state_topic, this.entities.beam_duration.state.toString(), true)            
+            this.entity.beam_duration.state = parseInt(duration)
+            this.publishMqtt(this.entity.beam_duration.state_topic, this.entity.beam_duration.state.toString(), true)            
         }
     }
 }

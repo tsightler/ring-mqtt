@@ -9,7 +9,7 @@ class Keypad extends RingSocketDevice {
         // Eventually remove this but for now this attempts to delete the old light component based volume control from Home Assistant
         this.publishMqtt('homeassistant/light/'+this.locationId+'/'+this.deviceId+'_audio/config', '', false)
 
-        this.entities.volume = {
+        this.entity.volume = {
             component: 'number',
             min: 0,
             max: 100,
@@ -20,14 +20,13 @@ class Keypad extends RingSocketDevice {
 
     publishData() {
         const currentVolume = (this.device.data.volume && !isNaN(this.device.data.volume) ? Math.round(100 * this.device.data.volume) : 0)
-        this.publishMqtt(this.entities.volume.state_topic, currentVolume.toString(), true)
+        this.publishMqtt(this.entity.volume.state_topic, currentVolume.toString(), true)
         this.publishAttributes()
     }
 
     // Process messages from MQTT command topic
     processCommand(message, topic) {
-        const matchTopic = topic.split("/").slice(-2).join("/")
-        switch (matchTopic) {
+        switch (topic.split("/").slice(-2).join("/")) {
             case 'volume/command':
                 this.setVolumeLevel(message)
                 break;

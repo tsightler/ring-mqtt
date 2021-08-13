@@ -6,16 +6,18 @@ class RingDevice {
     constructor(deviceInfo, deviceId, locationId) {
         this.device = deviceInfo.device
         this.mqttClient = deviceInfo.mqttClient
+        this.config = deviceInfo.CONFIG
         this.deviceId = deviceId
         this.locationId = locationId
-        this.subscribed = false
-        this.availabilityState = 'init'
-        this.config = deviceInfo.CONFIG
-        this.entities = {}
+        this.availabilityState = 'offline'
+        this.isOnline = () => { return this.availabilityState === 'online' ? true : false }
+        this.entity = {}
 
         // Build device base and availability topic
         this.deviceTopic = `${this.config.ring_topic}/${this.locationId}/${deviceInfo.category}/${this.deviceId}`
         this.availabilityTopic = `${this.deviceTopic}/status`
+
+        this.schedulePublishAttributes()
     }
 
     // This function loops through each entity of the device, creates a unique
@@ -26,8 +28,8 @@ class RingDevice {
         const debugMsg = (this.availabilityState === 'init') ? 'Publishing new ' : 'Republishing existing '
         debug(debugMsg+'device id: '+this.deviceId)
 
-        Object.keys(this.entities).forEach(entityName => {
-            const entity = this.entities[entityName]
+        Object.keys(this.entity).forEach(entityName => {
+            const entity = this.entity[entityName]
             const entityTopic = `${this.deviceTopic}/${entityName}`
 
             // If this entity uses state values from the attributes of a parent entity set that here,
@@ -128,10 +130,10 @@ class RingDevice {
             this.publishMqtt(configTopic, JSON.stringify(discoveryMessage))
 
             // On first publish store generated topics in entities object and subscribe to command topics
-            if (!this.entities[entityName].hasOwnProperty('published')) {
-                this.entities[entityName].published = true
+            if (!this.entity[entityName].hasOwnProperty('published')) {
+                this.entity[entityName].published = true
                 Object.keys(discoveryMessage).filter(property => property.match('topic')).forEach(topic => {
-                    this.entities[entityName][topic] = discoveryMessage[topic]
+                    this.entity[entityName][topic] = discoveryMessage[topic]
                     if (topic.match('command_topic')) {
                         this.mqttClient.subscribe(discoveryMessage[topic])
                     }
@@ -140,6 +142,15 @@ class RingDevice {
         })
         // Sleep for a few seconds to give HA time to process discovery message
         await utils.sleep(2)
+    }
+
+    // Refresh device info attributes on a sechedule
+    async schedulePublishAttributes() {
+        await utils.sleep(this.availabilityState === 'offline' ? 60 : 300)
+        if (this.availabilityState === 'online') {
+            this.publishAttributes()
+        }
+        this.schedulePublishAttributes()
     }
 
     // Publish state messages with debug

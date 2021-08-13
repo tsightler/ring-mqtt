@@ -15,6 +15,10 @@ class RingSocketDevice extends RingDevice {
             mf: (this.device.data && this.device.data.manufacturerName) ? this.device.data.manufacturerName : 'Ring',
             mdl: this.device.deviceType
         }
+
+        this.device.onData.subscribe(() => {
+            if (this.isOnline()) { this.publishData() }
+        })
     }
 
     // Publish/republish the device discovery and all state data
@@ -22,23 +26,14 @@ class RingSocketDevice extends RingDevice {
         if (locationConnected) {
             await this.publishDiscovery()
             await this.online()
-
-            if (this.subscribed) {
-                this.publishData()
-            } else {
-                this.device.onData.subscribe(() => { 
-                    this.publishData()
-                })
-                this.schedulePublishAttributes()
-                this.subscribed = true
-            }
+            this.publishData(true)
         }
     }
 
     // Create device discovery data
     initAttributeEntities(deviceValue) {
-        this.entities = {
-            ...this.entities,
+        this.entity = {
+            ...this.entity,
             ...this.device.data.hasOwnProperty('batteryLevel') ? { 
                 battery: {
                     component: 'sensor',
@@ -103,20 +98,10 @@ class RingSocketDevice extends RingDevice {
                 ... this.device.data.hasOwnProperty('maxVolume') ? {maxVolume: this.device.data.maxVolume } : {},
             }
         }
-        this.publishMqtt(this.entities.info.state_topic, JSON.stringify({...attributes.battery,...attributes.misc}), true)
-        if (this.entities.hasOwnProperty('battery')) {
-            this.publishMqtt(this.entities.battery.json_attributes_topic, JSON.stringify(attributes.battery), true)
+        this.publishMqtt(this.entity.info.state_topic, JSON.stringify({...attributes.battery,...attributes.misc}), true)
+        if (this.entity.hasOwnProperty('battery')) {
+            this.publishMqtt(this.entity.battery.json_attributes_topic, JSON.stringify(attributes.battery), true)
         }
-    }
-
-    // Refresh device info attributes on a sechedule
-    async schedulePublishAttributes() {
-        await utils.sleep(300)
-        // Only publish when site is online
-        if (this.availabilityState === 'online') {
-            this.publishAttributes()
-        }
-        this.schedulePublishAttributes()
     }
 }
 

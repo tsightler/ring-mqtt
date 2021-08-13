@@ -23,7 +23,7 @@ class ContactSensor extends RingSocketDevice {
                 break;
         }
 
-        this.entities[this.entityName] = {
+        this.entity[this.entityName] = {
             component: 'binary_sensor',
             device_class: device_class,
             unique_id: this.deviceId
@@ -33,7 +33,7 @@ class ContactSensor extends RingSocketDevice {
 
     publishData() {
         const contactState = this.device.data.faulted ? 'ON' : 'OFF'
-        this.publishMqtt(this.entities[this.entityName].state_topic, contactState, true)
+        this.publishMqtt(this.entity[this.entityName].state_topic, contactState, true)
         this.publishAttributes()
     }
 }

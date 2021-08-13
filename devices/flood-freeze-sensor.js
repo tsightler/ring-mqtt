@@ -5,11 +5,11 @@ class FloodFreezeSensor extends RingSocketDevice {
         super(deviceInfo)
         this.deviceData.mdl = 'Flood & Freeze Sensor'
 
-        this.entities.flood = {
+        this.entity.flood = {
             component: 'binary_sensor',
             device_class: 'moisture'
         }
-        this.entities.freeze = {
+        this.entity.freeze = {
             component: 'binary_sensor',
             device_class: 'cold'
         }
@@ -19,8 +19,8 @@ class FloodFreezeSensor extends RingSocketDevice {
     publishData() {
         const floodState = this.device.data.flood && this.device.data.flood.faulted ? 'ON' : 'OFF'
         const freezeState = this.device.data.freeze && this.device.data.freeze.faulted ? 'ON' : 'OFF'
-        this.publishMqtt(this.entities.flood.state_topic, floodState, true)
-        this.publishMqtt(this.entities.freeze.state_topic, freezeState, true)
+        this.publishMqtt(this.entity.flood.state_topic, floodState, true)
+        this.publishMqtt(this.entity.freeze.state_topic, freezeState, true)
         this.publishAttributes()
     }
 }

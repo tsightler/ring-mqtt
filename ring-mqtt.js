@@ -57,7 +57,7 @@ async function processExit(exitCode) {
 }
 
 // Return supported device
-async function getDevice(device, mqttClient) {
+async function getDevice(device, mqttClient, allDevices) {
     const deviceInfo = {
         device: device,
         category: 'alarm',
@@ -115,7 +115,11 @@ async function getDevice(device, mqttClient) {
         case 'siren.outdoor-strobe':
             return new Siren(deviceInfo)
         case RingDeviceType.Thermostat:
-            return new Thermostat(deviceInfo)
+            const operatingStatus = allDevices.find(d => d.data.parentZid === device.id && d.deviceType === 'thermostat-operating-status')
+            const temperatureSensor = allDevices.find(d => d.data.parentZid === device.id && d.deviceType === 'sensor.temperature')
+            if (operatingStatus && temperatureSensor) {
+                return new Thermostat(deviceInfo, operatingStatus, temperatureSensor)
+            }
         case RingDeviceType.TemperatureSensor:
         case 'thermostat-operating-status':
             return "ignore"
@@ -174,21 +178,28 @@ async function updateRingData(mqttClient, ringClient) {
         // Update Ring devices for location
         for (const device of allDevices) {
             const deviceId = (device instanceof RingCamera || device instanceof RingChime) ? device.data.device_id : device.id
-            const foundDevice = ringDevices.find(d => d.deviceId === deviceId && d.locationId === location.locationId)
-            if (foundDevice) {
-                debug(colors.green('  Existing device: '+foundDevice.deviceData.name+' ('+device.deviceType+', '+deviceId+')'))
+            let foundMessage = 'New'
+            let ringDevice = ringDevices.find(d => d.deviceId === deviceId && d.locationId === location.locationId)
+            if (ringDevice) {
+                foundMessage = 'Existing'
             } else {
-                const newDevice = await getDevice(device, mqttClient)
-                switch (newDevice) {
+                ringDevice = await getDevice(device, mqttClient, allDevices)
+                switch (ringDevice) {
                     case 'not-supported':
                         // Save unsupported device type
-                        unsupportedDevices.push(device.deviceType)
-                        break;
+                        unsupportedDevices.push(ringDevice.deviceType)
                     case 'ignore':
-                        break;
+                        ringDevice=false
+                        break
                     default:
-                        ringDevices.push(newDevice)
-                        debug(colors.green('  New device: '+newDevice.deviceData.name+' ('+device.deviceType+', '+deviceId+')'))
+                        ringDevices.push(ringDevice)
+                }
+            }
+            if (ringDevice) {
+                debug(colors.green(`  ${foundMessage} device: ${ringDevice.deviceData.name} (${ringDevice.deviceType}, ${deviceId})`))
+                if (device.deviceType === RingDeviceType.Thermostat) {
+                    debug(colors.green('          ├─: Thermostat Operating Status ('+ringDevice.operatingStatus.deviceType+', '+ringDevice.operatingStatus.id+')'))
+                    debug(colors.green('          └─: Thermostat Temperature Sensor ('+ringDevice.temperatureSensor.deviceType+', '+ringDevice.temperatureSensor.id+')'))
                 }
             }
         }

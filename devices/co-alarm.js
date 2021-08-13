@@ -6,7 +6,7 @@ class CoAlarm extends RingSocketDevice {
         this.deviceData.mdl = 'CO Alarm'
         this.deviceData.mf = 'First Alert' // Hardcode for now until refactor for relationship support
 
-        this.entities.co = {
+        this.entity.co = {
             component: 'binary_sensor',
             device_class: 'gas',
             unique_id: this.deviceId
@@ -16,7 +16,7 @@ class CoAlarm extends RingSocketDevice {
 
     publishData() {
         const coState = this.device.data.alarmStatus === 'active' ? 'ON' : 'OFF'
-        this.publishMqtt(this.entities.co.state_topic, coState, true)
+        this.publishMqtt(this.entity.co.state_topic, coState, true)
         this.publishAttributes()
     }
 }

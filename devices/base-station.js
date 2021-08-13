@@ -24,7 +24,7 @@ class BaseStation extends RingSocketDevice {
         if (this.device.data.volume === testVolume) {
             debug('Account has access to set volume on base station, enabling volume control')
             this.device.setVolume(origVolume)
-            this.entities.volume = {
+            this.entity.volume = {
                 component: 'number',
                 min: 0,
                 max: 100,
@@ -36,17 +36,16 @@ class BaseStation extends RingSocketDevice {
     }
 
     publishData() {
-        if (this.entities.hasOwnProperty('volume')) {
+        if (this.entity.hasOwnProperty('volume')) {
             const currentVolume = (this.device.data.volume && !isNaN(this.device.data.volume) ? Math.round(100 * this.device.data.volume) : 0)
-            this.publishMqtt(this.entities.volume.state_topic, currentVolume.toString(), true)
+            this.publishMqtt(this.entity.volume.state_topic, currentVolume.toString(), true)
         }
         this.publishAttributes()
     }
 
     // Process messages from MQTT command topic
     processCommand(message, topic) {
-        const matchTopic = topic.split("/").slice(-2).join("/")
-        switch (matchTopic) {
+        switch (topic.split("/").slice(-2).join("/")) {
             case 'volume/command':
                 this.setVolumeLevel(message)
                 break;

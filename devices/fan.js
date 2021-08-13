@@ -7,7 +7,7 @@ class Fan extends RingSocketDevice {
         super(deviceInfo)
         this.deviceData.mdl = 'Fan Control'
 
-        this.entities.fan = {
+        this.entity.fan = {
             component: 'fan',
             state: { 
                 targetFanPercent: undefined 
@@ -33,14 +33,14 @@ class Fan extends RingSocketDevice {
         
         // Publish device state
         // targetFanPercent is a small hack to work around Home Assistant UI behavior
-        if (this.entities.fan.state.targetFanPercent && this.entities.fan.state.targetFanPercent !== fanPercent) {
-            this.publishMqtt(this.entities.fan.percentage_state_topic, this.entities.fan.state.targetFanPercent.toString(), true)
-            this.entities.fan.state.targetFanPercent = undefined
+        if (this.entity.fan.state.targetFanPercent && this.entity.fan.state.targetFanPercent !== fanPercent) {
+            this.publishMqtt(this.entity.fan.percentage_state_topic, this.entity.fan.state.targetFanPercent.toString(), true)
+            this.entity.fan.state.targetFanPercent = undefined
         } else {
-            this.publishMqtt(this.entities.fan.percentage_state_topic, fanPercent.toString(), true)
+            this.publishMqtt(this.entity.fan.percentage_state_topic, fanPercent.toString(), true)
         }
-        this.publishMqtt(this.entities.fan.state_topic, fanState, true)
-        this.publishMqtt(this.entities.fan.preset_mode_state_topic, fanPreset, true)
+        this.publishMqtt(this.entity.fan.state_topic, fanState, true)
+        this.publishMqtt(this.entity.fan.preset_mode_state_topic, fanPreset, true)
 
         // Publish device attributes (batterylevel, tamper status)
         this.publishAttributes()
@@ -48,8 +48,7 @@ class Fan extends RingSocketDevice {
     
     // Process messages from MQTT command topic
     processCommand(message, topic) {
-        const matchTopic = topic.split("/").slice(-2).join("/")
-        switch (matchTopic) {
+        switch (topic.split("/").slice(-2).join("/")) {
             case 'fan/command':
                 this.setFanState(message)
                 break;

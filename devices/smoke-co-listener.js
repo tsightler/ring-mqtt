@@ -5,11 +5,11 @@ class SmokeCoListener extends RingSocketDevice {
         super(deviceInfo)
         this.deviceData.mdl = 'Smoke & CO Listener'
         
-        this.entities.smoke = {
+        this.entity.smoke = {
             component: 'binary_sensor',
             device_class: 'smoke'
         }
-        this.entities.co = {
+        this.entity.co = {
             component: 'binary_sensor',
             device_class: 'gas'
         }
@@ -19,8 +19,8 @@ class SmokeCoListener extends RingSocketDevice {
     publishData() {
         const smokeState = this.device.data.smoke && this.device.data.smoke.alarmStatus === 'active' ? 'ON' : 'OFF'
         const coState = this.device.data.co && this.device.data.co.alarmStatus === 'active' ? 'ON' : 'OFF'
-        this.publishMqtt(this.entities.smoke.state_topic, smokeState, true)
-        this.publishMqtt(this.entities.co.state_topic, coState, true)
+        this.publishMqtt(this.entity.smoke.state_topic, smokeState, true)
+        this.publishMqtt(this.entity.co.state_topic, coState, true)
         this.publishAttributes()
     }
 }

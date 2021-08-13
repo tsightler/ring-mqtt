@@ -6,7 +6,7 @@ class Lock extends RingSocketDevice {
         super(deviceInfo)
         this.deviceData.mdl = 'Lock'
 
-        this.entities.lock = {
+        this.entity.lock = {
             component: 'lock',
             unique_id: this.deviceId
         }
@@ -25,14 +25,13 @@ class Lock extends RingSocketDevice {
             default:
                 lockState = 'UNKNOWN'
         }
-        this.publishMqtt(this.entities.lock.state_topic, lockState, true)
+        this.publishMqtt(this.entity.lock.state_topic, lockState, true)
         this.publishAttributes()
     }
 
     // Process messages from MQTT command topic
     processCommand(message, topic) {
-        const matchTopic = topic.split("/").slice(-2).join("/")
-        switch (matchTopic) {
+        switch (topic.split("/").slice(-2).join("/")) {
             case 'lock/command':
                 this.setLockState(message)
                 break;

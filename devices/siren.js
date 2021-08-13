@@ -5,7 +5,7 @@ class Siren extends RingSocketDevice {
         super(deviceInfo)
         this.deviceData.mdl = 'Siren'
         
-        this.entities.siren = {
+        this.entity.siren = {
             component: 'binary_sensor',
             unique_id: this.deviceId
         }
@@ -14,7 +14,7 @@ class Siren extends RingSocketDevice {
 
     publishData() {
         const sirenState = this.device.data.sirenStatus === 'active' ? 'ON' : 'OFF'
-        this.publishMqtt(this.entities.siren.state_topic, sirenState, true)
+        this.publishMqtt(this.entity.siren.state_topic, sirenState, true)
         this.publishAttributes()
     }
 }

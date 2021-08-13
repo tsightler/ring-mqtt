@@ -59,7 +59,7 @@ class Camera extends RingPolledDevice {
 
     // Build standard and optional entities for device
     async initEntities() {
-        this.entities = {
+        this.entity = {
             motion: {
                 component: 'binary_sensor',
                 device_class: 'motion',
@@ -121,7 +121,7 @@ class Camera extends RingPolledDevice {
          // If device is wireless publish signal strength entity
         const deviceHealth = await this.device.getHealth()
         if (deviceHealth && !(deviceHealth.hasOwnProperty('network_connection') && deviceHealth.network_connection === 'ethernet')) {
-            this.entities.wireless = {
+            this.entity.wireless = {
                 component: 'sensor',
                 device_class: 'signal_strength',
                 unit_of_measurement: 'dBm',
@@ -132,7 +132,7 @@ class Camera extends RingPolledDevice {
 
         // If device is battery powered publish battery entity
         if (this.device.hasBattery) {
-            this.entities.battery = {
+            this.entity.battery = {
                 component: 'sensor',
                 device_class: 'battery',
                 unit_of_measurement: '%',
@@ -145,18 +145,18 @@ class Camera extends RingPolledDevice {
         // Update motion properties with most recent historical event data
         const lastMotionEvent = (await this.device.getEvents({ limit: 1, kind: 'motion'})).events[0]
         const lastMotionDate = (lastMotionEvent && lastMotionEvent.hasOwnProperty('created_at')) ? new Date(lastMotionEvent.created_at) : false
-        this.entities.motion.state.last_ding = lastMotionDate ? Math.floor(lastMotionDate/1000) : 0
-        this.entities.motion.state.last_ding_time = lastMotionDate ? utils.getISOTime(lastMotionDate) : ''
+        this.entity.motion.state.last_ding = lastMotionDate ? Math.floor(lastMotionDate/1000) : 0
+        this.entity.motion.state.last_ding_time = lastMotionDate ? utils.getISOTime(lastMotionDate) : ''
         if (lastMotionEvent && lastMotionEvent.hasOwnProperty('cv_properties')) {
-            this.entities.motion.state.is_person = (lastMotionEvent.cv_properties.detection_type === 'human') ? true : false
+            this.entity.motion.state.is_person = (lastMotionEvent.cv_properties.detection_type === 'human') ? true : false
         }
 
         // Update motion properties with most recent historical event data
         if (this.device.isDoorbot) {
             const lastDingEvent = (await this.device.getEvents({ limit: 1, kind: 'ding'})).events[0]
             const lastDingDate = (lastDingEvent && lastDingEvent.hasOwnProperty('created_at')) ? new Date(lastDingEvent.created_at) : false
-            this.entities.ding.state.last_ding = lastDingDate ? Math.floor(lastDingDate/1000) : 0
-            this.entities.ding.state.last_ding_time = lastDingDate ? utils.getISOTime(lastDingDate) : ''
+            this.entity.ding.state.last_ding = lastDingDate ? Math.floor(lastDingDate/1000) : 0
+            this.entity.ding.state.last_ding_time = lastDingDate ? utils.getISOTime(lastDingDate) : ''
         }
     }
 
@@ -174,7 +174,7 @@ class Camera extends RingPolledDevice {
             this.publishAvailabilityState()
             this.publishDingStates()
             this.publishPolledState()
-            this.publishInfoState()
+            this.publishAttributes()
 
             if (this.snapshot.motion || this.snapshot.interval) {
                 this.publishSnapshot()
@@ -188,7 +188,7 @@ class Camera extends RingPolledDevice {
             this.onDataSubscription = this.device.onData.subscribe(() => {
                 this.publishPolledState()
             })
-            this.publishInfoState()
+            this.publishAttributes()
 
             if (this.snapshot.motion || this.snapshot.interval > 0) {
                 this.refreshSnapshot()
@@ -199,7 +199,6 @@ class Camera extends RingPolledDevice {
             }
 
             // Start monitor of availability state for camera
-            this.schedulePublishInfo()
             this.monitorHeartbeat()
             this.subscribed = true
         }
@@ -212,18 +211,18 @@ class Camera extends RingPolledDevice {
         debug(`Camera ${this.deviceId} received ${ding.kind === 'ding' ? 'doorbell' : 'motion'} ding at ${Math.floor(ding.now)}, expires in ${ding.expires_in} seconds`)
 
         // Is this a new Ding or refresh of active ding?
-        const newDing = (!this.entities[ding.kind].state.active_ding) ? true : false
-        this.entities[ding.kind].state.active_ding = true
+        const newDing = (!this.entity[ding.kind].state.active_ding) ? true : false
+        this.entity[ding.kind].state.active_ding = true
 
         // Update last_ding, duration and expire time
-        this.entities[ding.kind].state.last_ding = Math.floor(ding.now)
-        this.entities[ding.kind].state.last_ding_time = utils.getISOTime(ding.now*1000)
-        this.entities[ding.kind].state.ding_duration = ding.expires_in
-        this.entities[ding.kind].state.last_ding_expires = this.entities[ding.kind].state.last_ding+ding.expires_in
+        this.entity[ding.kind].state.last_ding = Math.floor(ding.now)
+        this.entity[ding.kind].state.last_ding_time = utils.getISOTime(ding.now*1000)
+        this.entity[ding.kind].state.ding_duration = ding.expires_in
+        this.entity[ding.kind].state.last_ding_expires = this.entity[ding.kind].state.last_ding+ding.expires_in
 
         // If motion ding and snapshots on motion are enabled, publish a new snapshot
         if (ding.kind === 'motion') {
-            this.entities[ding.kind].state.is_person = (ding.detection_type === 'human') ? true : false
+            this.entity[ding.kind].state.is_person = (ding.detection_type === 'human') ? true : false
             if (this.snapshot.motion) {
                 this.refreshSnapshot()
             }
@@ -237,13 +236,13 @@ class Camera extends RingPolledDevice {
         if (newDing) {
             // Loop until current time is > last_ding expires time.  Sleeps until
             // estimated expire time, but may loop if new dings increase last_ding_expires
-            while (Math.floor(Date.now()/1000) < this.entities[ding.kind].state.last_ding_expires) {
-                const sleeptime = (this.entities[ding.kind].state.last_ding_expires - Math.floor(Date.now()/1000)) + 1
+            while (Math.floor(Date.now()/1000) < this.entity[ding.kind].state.last_ding_expires) {
+                const sleeptime = (this.entity[ding.kind].state.last_ding_expires - Math.floor(Date.now()/1000)) + 1
                 await utils.sleep(sleeptime)
             }
             // All dings have expired, set ding state back to false/off and publish
             debug(`All ${ding.kind === 'ding' ? 'doorbell' : 'motion'} dings for camera ${this.deviceId} have expired`)
-            this.entities[ding.kind].state.active_ding = false
+            this.entity[ding.kind].state.active_ding = false
             this.publishDingState(ding.kind)
         }
     }
@@ -258,8 +257,8 @@ class Camera extends RingPolledDevice {
 
     // Publish ding state and attributes
     publishDingState(dingKind) {
-        const dingState = this.entities[dingKind].state.active_ding ? 'ON' : 'OFF'
-        this.publishMqtt(this.entities[dingKind].state_topic, dingState, true)
+        const dingState = this.entity[dingKind].state.active_ding ? 'ON' : 'OFF'
+        this.publishMqtt(this.entity[dingKind].state_topic, dingState, true)
 
         if (dingKind === 'motion') {
             this.publishMotionAttributes()
@@ -270,23 +269,23 @@ class Camera extends RingPolledDevice {
 
     publishMotionAttributes() {
         const attributes = {
-            lastMotion: this.entities.motion.state.last_ding,
-            lastMotionTime: this.entities.motion.state.last_ding_time,
-            personDetected: this.entities.motion.state.is_person
+            lastMotion: this.entity.motion.state.last_ding,
+            lastMotionTime: this.entity.motion.state.last_ding_time,
+            personDetected: this.entity.motion.state.is_person
         }
         if (this.device.data.settings && typeof this.device.data.settings.motion_detection_enabled !== 'undefined') {
             attributes.motionDetectionEnabled = this.device.data.settings.motion_detection_enabled
             this.publishedMotionDetectionEnabled = attributes.motionDetectionEnabled
         }
-        this.publishMqtt(this.entities.motion.json_attributes_topic, JSON.stringify(attributes), true)
+        this.publishMqtt(this.entity.motion.json_attributes_topic, JSON.stringify(attributes), true)
     }
 
     publishDingAttributes() {
         const attributes = {
-            lastDing: this.entities.ding.state.last_ding,
-            lastDingTime: this.entities.ding.state.last_ding_time
+            lastDing: this.entity.ding.state.last_ding,
+            lastDingTime: this.entity.ding.state.last_ding_time
         }
-        this.publishMqtt(this.entities.ding.json_attributes_topic, JSON.stringify(attributes), true)
+        this.publishMqtt(this.entity.ding.json_attributes_topic, JSON.stringify(attributes), true)
     }
 
     // Publish camera state for polled attributes (light/siren state, etc)
@@ -314,14 +313,14 @@ class Camera extends RingPolledDevice {
 
         if (this.device.hasLight) {
             if (this.device.data.led_status !== this.publishedLightState) {
-                this.publishMqtt(this.entities.light.state_topic, (this.device.data.led_status === 'on' ? 'ON' : 'OFF'), true)
+                this.publishMqtt(this.entity.light.state_topic, (this.device.data.led_status === 'on' ? 'ON' : 'OFF'), true)
                 this.publishedLightState = this.device.data.led_status
             }
         }
         if (this.device.hasSiren) {
             const sirenStatus = this.device.data.siren_status.seconds_remaining > 0 ? 'ON' : 'OFF'
             if (sirenStatus !== this.publishedSirenState) {
-                this.publishMqtt(this.entities.siren.state_topic, sirenStatus, true)
+                this.publishMqtt(this.entity.siren.state_topic, sirenStatus, true)
                 this.publishedSirenState = sirenStatus
             }
         }
@@ -337,7 +336,7 @@ class Camera extends RingPolledDevice {
     }
 
     // Publish device data to info topic
-    async publishInfoState() {
+    async publishAttributes() {
         const deviceHealth = await this.device.getHealth()
         
         if (deviceHealth) {
@@ -353,7 +352,7 @@ class Camera extends RingPolledDevice {
                 attributes.wirelessNetwork = deviceHealth.wifi_name
                 attributes.wirelessSignal = deviceHealth.latest_signal_strength
             }            
-            this.publishMqtt(this.entities.info.state_topic, JSON.stringify(attributes), true)
+            this.publishMqtt(this.entity.info.state_topic, JSON.stringify(attributes), true)
         }
     }
 
@@ -378,13 +377,13 @@ class Camera extends RingPolledDevice {
 
     // Publish snapshot image/metadata
     async publishSnapshot() {
-        debug(this.entities.snapshot.topic, '<binary_image_data>')
-        this.publishMqtt(this.entities.snapshot.topic, this.snapshot.imageData)
-        this.publishMqtt(this.entities.snapshot.json_attributes_topic, JSON.stringify({ timestamp: this.snapshot.timestamp }))
+        debug(this.entity.snapshot.topic, '<binary_image_data>')
+        this.publishMqtt(this.entity.snapshot.topic, this.snapshot.imageData)
+        this.publishMqtt(this.entity.snapshot.json_attributes_topic, JSON.stringify({ timestamp: this.snapshot.timestamp }))
     }
 
     async publishSnapshotInterval() {
-        this.publishMqtt(this.entities.snapshot_interval.state_topic, this.snapshot.interval.toString(), true)
+        this.publishMqtt(this.entity.snapshot_interval.state_topic, this.snapshot.interval.toString(), true)
     }
 
     // This function uses various methods to get a snapshot to work around limitations
@@ -395,7 +394,7 @@ class Camera extends RingPolledDevice {
             return false
         }
 
-        if (this.entities.motion.state.active_ding) {
+        if (this.entity.motion.state.active_ding) {
             if (this.device.operatingOnBattery) {
                 // Battery powered cameras can't take snapshots while recording, try to get image from video stream instead
                 debug('Motion event detected on battery powered camera '+this.deviceId+' snapshot will be updated from live stream')
@@ -428,7 +427,7 @@ class Camera extends RingPolledDevice {
     // Refresh snapshot on scheduled interval
     async scheduleSnapshotRefresh() {
             this.snapshot.intervalTimerId = setInterval(() => {
-                if (this.snapshot.motion && !this.entities.motion.state.active_ding && this.availabilityState === 'online') {
+                if (this.isOnline() && this.snapshot.motion && !this.entity.motion.state.active_ding) {
                     this.refreshSnapshot()
                 }
             }, this.snapshot.interval * 1000)
@@ -532,8 +531,7 @@ class Camera extends RingPolledDevice {
 
     // Process messages from MQTT command topic
     processCommand(message, topic) {
-        const matchTopic = topic.split("/").slice(-2).join("/")
-        switch (matchTopic) {
+        switch (topic.split("/").slice(-2).join("/")) {
             case 'light/command':
                 this.setLightState(message)
                 break;

@@ -10,25 +10,25 @@ class SecurityPanel extends RingSocketDevice {
         this.deviceData.mdl = 'Alarm Control Panel'
         this.deviceData.name = `${this.device.location.name} Alarm`
         
-        this.entities.alarm = {
+        this.entity.alarm = {
             component: 'alarm_control_panel',
             unique_id: this.deviceId
         }
-        this.entities.siren = {
+        this.entity.siren = {
             component: 'switch'
         }
-        this.entities.bypass = {
+        this.entity.bypass = {
             component: 'switch',
             name: `${this.device.location.name} Arming Bypass Mode`,
             state: false
         }
 
         if (this.config.enable_panic) {
-            this.entities.police = { 
+            this.entity.police = { 
                 component: 'switch',
                 name: `${this.device.location.name} Panic - Police`
             }
-            this.entities.fire = { 
+            this.entity.fire = { 
                 component: 'switch',
                 name: `${this.device.location.name} Panic - Fire`
             }
@@ -64,13 +64,13 @@ class SecurityPanel extends RingSocketDevice {
                     alarmMode = 'unknown'
             }
         }
-        this.publishMqtt(this.entities.alarm.state_topic, alarmMode, true)
+        this.publishMqtt(this.entity.alarm.state_topic, alarmMode, true)
 
         const sirenState = (this.device.data.siren && this.device.data.siren.state === 'on') ? 'ON' : 'OFF'
-        this.publishMqtt(this.entities.siren.state_topic, sirenState, true)
+        this.publishMqtt(this.entity.siren.state_topic, sirenState, true)
 
-        const bypassState = this.entities.bypass.state ? 'ON' : 'OFF'
-        this.publishMqtt(this.entities.bypass.state_topic, bypassState, true)
+        const bypassState = this.entity.bypass.state ? 'ON' : 'OFF'
+        this.publishMqtt(this.entity.bypass.state_topic, bypassState, true)
 
         if (this.config.enable_panic) {
             let policeState = 'OFF'
@@ -89,8 +89,8 @@ class SecurityPanel extends RingSocketDevice {
                     fireState = 'ON'
                     debug('Fire alarm is active for '+this.device.location.name)
             }
-            this.publishMqtt(this.entities.police.state_topic, policeState, true)
-            this.publishMqtt(this.entities.fire.state_topic, fireState, true)
+            this.publishMqtt(this.entity.police.state_topic, policeState, true)
+            this.publishMqtt(this.entity.fire.state_topic, fireState, true)
         }
 
         this.publishAttributes()
@@ -102,15 +102,14 @@ class SecurityPanel extends RingSocketDevice {
             exitDelayMs = this.device.data.transitionDelayEndTimestamp - Date.now()
             if (exitDelayMs <= 0) {
                 // Publish device sensor state
-                this.publishMqtt(this.entities.alarm.state_topic, 'armed_away', true)
+                this.publishMqtt(this.entity.alarm.state_topic, 'armed_away', true)
             }
         }
     }
 
     // Process messages from MQTT command topic
     processCommand(message, topic) {
-        const matchTopic = topic.split("/").slice(-2).join("/")
-        switch (matchTopic) {
+        switch (topic.split("/").slice(-2).join("/")) {
             case 'alarm/command':
                 this.setAlarmMode(message)
                 break;
@@ -143,7 +142,7 @@ class SecurityPanel extends RingSocketDevice {
             let bypassDeviceIds = []
 
             // If arming bypass arming mode is enabled, get device ids requiring bypass
-            if (message.toLowerCase() !== 'disarm' && this.entities.bypass.state) {
+            if (message.toLowerCase() !== 'disarm' && this.entity.bypass.state) {
                 const bypassDevices = (await this.device.location.getDevices()).filter((device) => {
                     return (
                         (device.deviceType === RingDeviceType.ContactSensor && device.data.faulted) ||
@@ -207,11 +206,11 @@ class SecurityPanel extends RingSocketDevice {
         switch(message.toLowerCase()) {
             case 'on':
                 debug('Enabling arming bypass mode for '+this.device.location.name)
-                this.entities.bypass.state = true
+                this.entity.bypass.state = true
                 break;
             case 'off': {
                 debug('Disabling arming bypass mode for '+this.device.location.name)
-                this.entities.bypass.state = false
+                this.entity.bypass.state = false
                 break;
             }
             default:

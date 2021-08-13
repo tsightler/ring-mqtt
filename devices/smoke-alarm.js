@@ -5,7 +5,7 @@ class SmokeAlarm extends RingSocketDevice {
         super(deviceInfo)
         this.deviceData.mdl = 'Smoke Alarm'
         
-        this.entities.smoke = {
+        this.entity.smoke = {
             component: 'binary_sensor',
             device_class: 'smoke',
             unique_id: this.deviceId
@@ -15,7 +15,7 @@ class SmokeAlarm extends RingSocketDevice {
 
     publishData() {
         const smokeState = this.device.data.alarmStatus === 'active' ? 'ON' : 'OFF'
-        this.publishMqtt(this.entities.smoke.state_topic, smokeState, true)
+        this.publishMqtt(this.entity.smoke.state_topic, smokeState, true)
         this.publishAttributes()
     }
 }
