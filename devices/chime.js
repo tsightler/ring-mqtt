@@ -37,18 +37,21 @@ class Chime extends RingPolledDevice {
                 state: 'OFF',
                 icon: 'hass:bell-ring'
             },
-            wireless: {
-                component: 'sensor',
-                device_class: 'signal_strength',
-                unit_of_measurement: 'dBm',
-                parent_state_topic: 'info/state',
-                value_template: '{{ value_json["wirelessSignal"] | default }}',
-            },
             info: {
                 component: 'sensor',
                 device_class: 'timestamp',
                 value_template: '{{ value_json["lastUpdate"] | default }}'
             }
+        }
+    }
+
+    initAttributeEntities() {
+        this.entity.wireless = {
+            component: 'sensor',
+            device_class: 'signal_strength',
+            unit_of_measurement: 'dBm',
+            parent_state_topic: 'info/state',
+            value_template: '{{ value_json["wirelessSignal"] | default }}'
         }
     }
 
@@ -71,9 +74,8 @@ class Chime extends RingPolledDevice {
             this.publishMqtt(this.entity.snooze_minutes.state_topic, this.entity.snooze_minutes.state.toString(), true)
             this.publishMqtt(this.entity.play_ding_sound.state_topic, this.entity.play_ding_sound.state, true)
             this.publishMqtt(this.entity.play_motion_sound.state_topic, this.entity.play_motion_sound.state, true)
+            this.publishAttributes()
         }
-
-        this.publishAttributes()
     }
 
     // Publish device data to info topic

@@ -6,7 +6,7 @@ const RingSocketDevice = require('./base-socket-device')
 
 class SecurityPanel extends RingSocketDevice {
     constructor(deviceInfo) {
-        super(deviceInfo)
+        super(deviceInfo, 'alarmState')
         this.deviceData.mdl = 'Alarm Control Panel'
         this.deviceData.name = `${this.device.location.name} Alarm`
         
@@ -33,7 +33,6 @@ class SecurityPanel extends RingSocketDevice {
                 name: `${this.device.location.name} Panic - Fire`
             }
         }
-        this.initAttributeEntities('alarmState')
     }
 
     publishData() {

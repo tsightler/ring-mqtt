@@ -4,7 +4,7 @@ const RingSocketDevice = require('./base-socket-device')
 
 class BaseStation extends RingSocketDevice {
     constructor(deviceInfo) {
-        super(deviceInfo)
+        super(deviceInfo, 'acStatus')
         this.deviceData.mdl = 'Alarm Base Station'
         this.deviceData.name = this.device.location.name + ' Base Station'
 
@@ -12,7 +12,6 @@ class BaseStation extends RingSocketDevice {
         this.publishMqtt('homeassistant/light/'+this.locationId+'/'+this.deviceId+'_audio/config', '', false)
 
         this.initVolumeEntity()
-        this.initAttributeEntities('acStatus')
     }
     
     // Check if account has access to control base state volume and initialize topics if so

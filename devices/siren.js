@@ -9,7 +9,6 @@ class Siren extends RingSocketDevice {
             component: 'binary_sensor',
             unique_id: this.deviceId
         }
-        this.initAttributeEntities()
     }
 
     publishData() {

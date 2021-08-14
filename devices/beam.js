@@ -28,7 +28,6 @@ class Beam extends RingSocketDevice {
                 this.initMotionEntity()
                 break;
         }
-        this.initAttributeEntities()
     }
     
     initMotion() {

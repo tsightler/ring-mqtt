@@ -13,7 +13,6 @@ class FloodFreezeSensor extends RingSocketDevice {
             component: 'binary_sensor',
             device_class: 'cold'
         }
-        this.initAttributeEntities()
     }
         
     publishData() {

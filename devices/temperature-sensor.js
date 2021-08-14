@@ -11,12 +11,11 @@ class TemperatureSensor extends RingSocketDevice {
             unit_of_measurement: '°C',
             state_class: 'measurement'
         }
-        this.initAttributeEntities()
     }
 
     publishData() {
-        const temperature = this.temperatureSensor.data.celsius.toString()
-        this.publishMqtt(this.entity.motion.state_topic, motionState, true)
+        const temperature = this.device.data.celsius.toString()
+        this.publishMqtt(this.entity.temperature.state_topic, temperature, true)
         this.publishAttributes()
     }
 }

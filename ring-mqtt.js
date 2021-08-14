@@ -71,11 +71,13 @@ async function getDevice(device, mqttClient, allDevices) {
     } else if (device instanceof RingChime) {
         deviceInfo.category = 'chime'
         return new Chime(deviceInfo)
+    } else if (/^lock($|\.)/.test(device.deviceType)) {
+        return new Lock(deviceInfo)
     }
     switch (device.deviceType) {
         case RingDeviceType.ContactSensor:
         case RingDeviceType.RetrofitZone:
-        case 'sensor.tilt':
+        case RingDeviceType.TiltSensor:
             return new ContactSensor(deviceInfo)
         case RingDeviceType.MotionSensor:
             return new MotionSensor(deviceInfo)
@@ -122,8 +124,8 @@ async function getDevice(device, mqttClient, allDevices) {
                 return new Thermostat(deviceInfo, operatingStatus, temperatureSensor)
             }
         case RingDeviceType.TemperatureSensor:
-            const isThermostat = allDevices.find(d => d.data.id === device.data.parentZid && d.deviceType === RingDeviceType.Thermostat)
-            if (isThermostat) {
+            const isThermostatComponent = allDevices.find(d => d.id === device.data.parentZid && d.deviceType === RingDeviceType.Thermostat)
+            if (!isThermostatComponent) {
                 return new TemperatureSensor(deviceInfo)
             }
         case 'thermostat-operating-status':
@@ -133,9 +135,6 @@ async function getDevice(device, mqttClient, allDevices) {
         case 'adapter.zigbee':
         case 'adapter.zwave':
             return "ignore"
-    }
-    if (/^lock($|\.)/.test(device.deviceType)) {
-        return new Lock(deviceInfo)
     }
     return "not-supported"
 }

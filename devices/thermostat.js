@@ -16,7 +16,7 @@ class Thermostat extends RingSocketDevice {
                 : ["Auto"],
         }
 
-        this.value = {
+        this.data = {
             get: {
                 mode: (() => { return this.device.data.mode === 'aux' ? 'heat' : this.device.data.mode }),
                 fanMode: (() => { return this.device.data.fanMode.replace(/^./, str => str.toUpperCase()) }),
@@ -50,26 +50,24 @@ class Thermostat extends RingSocketDevice {
                 this.publishAttributes()
             }
         })
-
-        this.initAttributeEntities()
     }
 
     async publishData(isDevicePublish) {
-        this.publishMqtt(this.entity.thermostat.mode_state_topic, this.value.get.mode(), true)
-        this.publishMqtt(this.entity.thermostat.temperature_state_topic, this.value.get.setPoint(), true)
-        this.publishMqtt(this.entity.thermostat.fan_mode_state_topic, this.value.get.fanMode(), true)
-        this.publishMqtt(this.entity.thermostat.aux_state_topic, this.value.get.auxMode(), true)
+        this.publishMqtt(this.entity.thermostat.mode_state_topic, this.data.get.mode(), true)
+        this.publishMqtt(this.entity.thermostat.temperature_state_topic, this.data.get.setPoint(), true)
+        this.publishMqtt(this.entity.thermostat.fan_mode_state_topic, this.data.get.fanMode(), true)
+        this.publishMqtt(this.entity.thermostat.aux_state_topic, this.data.get.auxMode(), true)
         this.publishOperatingMode()
         if (isDevicePublish) { this.publishTemperature() }
         this.publishAttributes()
     }
 
     publishOperatingMode() {
-        this.publishMqtt(this.entity.thermostat.action_topic, this.value.get.operatingMode(), true)
+        this.publishMqtt(this.entity.thermostat.action_topic, this.data.get.operatingMode(), true)
     }
 
     publishTemperature() {
-        this.publishMqtt(this.entity.thermostat.current_temperature_topic, this.value.get.temperature(), true)
+        this.publishMqtt(this.entity.thermostat.current_temperature_topic, this.data.get.temperature(), true)
     }
 
     // Process messages from MQTT command topic

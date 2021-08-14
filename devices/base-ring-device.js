@@ -3,7 +3,7 @@ const utils = require('../lib/utils')
 
 // Base class with functions common to all devices
 class RingDevice {
-    constructor(deviceInfo, deviceId, locationId) {
+    constructor(deviceInfo, deviceId, locationId, primaryAttribute) {
         this.device = deviceInfo.device
         this.mqttClient = deviceInfo.mqttClient
         this.config = deviceInfo.CONFIG
@@ -17,7 +17,10 @@ class RingDevice {
         this.deviceTopic = `${this.config.ring_topic}/${this.locationId}/${deviceInfo.category}/${this.deviceId}`
         this.availabilityTopic = `${this.deviceTopic}/status`
 
-        this.schedulePublishAttributes()
+        if (primaryAttribute !== 'disable') {
+            this.initAttributeEntities(primaryAttribute)
+            this.schedulePublishAttributes()
+        }
     }
 
     // This function loops through each entity of the device, creates a unique

@@ -4,8 +4,8 @@ const RingDevice = require('./base-ring-device')
 
 // Base class for devices that communicate with hubs via websocket (alarm/smart lighting)
 class RingSocketDevice extends RingDevice {
-    constructor(deviceInfo) {
-        super(deviceInfo, deviceInfo.device.id, deviceInfo.device.location.locationId)
+    constructor(deviceInfo, primaryAttribute) {
+        super(deviceInfo, deviceInfo.device.id, deviceInfo.device.location.locationId, primaryAttribute)
 
         // Set default device data for Home Assistant device registry
         // Values may be overridden by individual devices
@@ -31,7 +31,7 @@ class RingSocketDevice extends RingDevice {
     }
 
     // Create device discovery data
-    initAttributeEntities(deviceValue) {
+    initAttributeEntities(primaryAttribute) {
         this.entity = {
             ...this.entity,
             ...this.device.data.hasOwnProperty('batteryLevel') ? { 
@@ -55,8 +55,8 @@ class RingSocketDevice extends RingDevice {
             } : {},
             info: {
                 component: 'sensor',
-                ...deviceValue
-                    ? { value_template: `{{value_json["${deviceValue}"] | default }}` }
+                ...primaryAttribute
+                    ? { value_template: `{{value_json["${primaryAttribute}"] | default }}` }
                     : { value_template: '{{value_json["commStatus"] | default }}' }
             }
         }
