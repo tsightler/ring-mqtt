@@ -47,8 +47,8 @@ class Fan extends RingSocketDevice {
     }
     
     // Process messages from MQTT command topic
-    processCommand(message, topic) {
-        switch (topic.split("/").slice(-2).join("/")) {
+    processCommand(message, componentCommand) {
+        switch (componentCommand) {
             case 'fan/command':
                 this.setFanState(message)
                 break;

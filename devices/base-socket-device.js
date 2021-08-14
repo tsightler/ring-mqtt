@@ -21,7 +21,7 @@ class RingSocketDevice extends RingDevice {
         })
     }
 
-    // Publish/republish the device discovery and all state data
+    // Publish device discovery, set online, and send all state data
     async publish(locationConnected) {
         if (locationConnected) {
             await this.publishDiscovery()

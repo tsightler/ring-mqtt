@@ -14,6 +14,21 @@ class RingPolledDevice extends RingDevice {
             mf: 'Ring',
             mdl: this.device.model
         }
+
+        this.device.onData.subscribe(() => {
+            // Reset heartbeat counter on every polled state
+            this.heartbeat = 3
+            if (this.isOnline()) { this.publishData() }
+        })
+
+        this.monitorHeartbeat()
+    }
+
+    // Publish device discovery, set online, and send all state data
+    async publish() {
+        await this.publishDiscovery()
+        await this.online()
+        this.publishData(true)
     }
 
     // This is a simple heartbeat function for devices which use polling.  This
@@ -28,7 +43,7 @@ class RingPolledDevice extends RingDevice {
             if (this.availabilityState !== 'online') {
                 // If device was offline wait 10 seconds and check again, if still offline
                 // put device online.  Useful for initial startup or republish scenarios
-                // as publish will put the device online.
+                // as publish will forcelly put the device online.
                 await utils.sleep(10)
                 if (this.heartbeat > 0 && this.availabilityState !== 'online') {
                     await this.online()

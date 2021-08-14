@@ -11,12 +11,11 @@ class Thermostat extends RingSocketDevice {
 
         this.entity.thermostat = {
             component: 'climate',
-            name: this.deviceData.name,
             fan_modes: this.device.data.hasOwnProperty('supportedFanModes')
                 ? this.device.data.supportedFanModes.map(f => f.charAt(0).toUpperCase() + f.slice(1))
                 : ["Auto"],
         }
-        
+
         this.value = {
             get: {
                 mode: (() => { return this.device.data.mode === 'aux' ? 'heat' : this.device.data.mode }),
@@ -41,7 +40,7 @@ class Thermostat extends RingSocketDevice {
         this.operatingStatus.onData.subscribe(() => { 
             if (this.isOnline()) { 
                 this.publishOperatingMode()
-                this.publishAttributes() 
+                this.publishAttributes()
             }
         })
 
@@ -55,13 +54,13 @@ class Thermostat extends RingSocketDevice {
         this.initAttributeEntities()
     }
 
-    async publishData(isRepublish) {
+    async publishData(isDevicePublish) {
         this.publishMqtt(this.entity.thermostat.mode_state_topic, this.value.get.mode(), true)
         this.publishMqtt(this.entity.thermostat.temperature_state_topic, this.value.get.setPoint(), true)
         this.publishMqtt(this.entity.thermostat.fan_mode_state_topic, this.value.get.fanMode(), true)
         this.publishMqtt(this.entity.thermostat.aux_state_topic, this.value.get.auxMode(), true)
         this.publishOperatingMode()
-        if (isRepublish) { this.publishTemperature() }
+        if (isDevicePublish) { this.publishTemperature() }
         this.publishAttributes()
     }
 
@@ -74,18 +73,18 @@ class Thermostat extends RingSocketDevice {
     }
 
     // Process messages from MQTT command topic
-    async processCommand(message, topic) {
+    processCommand(message, topic) {
         switch (topic.split("/").slice(-2).join("/")) {
-            case 'climate/mode_command':
+            case 'thermostat/mode_command':
                 this.setMode(message)
                 break;
-            case 'climate/temperature_command':
+            case 'thermostat/temperature_command':
                 this.setSetPoint(message)
                 break;
-            case 'climate/fan_mode_command':
+            case 'thermostat/fan_mode_command':
                 this.setFanMode(message)
                 break;
-            case 'climate/aux_command':
+            case 'thermostat/aux_command':
                 this.setAuxMode(message)
                 break;
             default:
@@ -93,7 +92,7 @@ class Thermostat extends RingSocketDevice {
         }
     }
 
-    setMode(value) {
+    async setMode(value) {
         debug(`Received set mode ${value} for thermostat ${this.deviceId}`)
         debug(`Location Id: ${this.locationId}`)
         const mode = value.toLowerCase()
@@ -111,7 +110,7 @@ class Thermostat extends RingSocketDevice {
         }
     }
     
-    setSetPoint(value) {
+    async setSetPoint(value) {
         debug(`Received set target temperature to ${value} for thermostat ${this.deviceId}`)
         debug(`Location Id: ${this.locationId}`)
         if (isNaN(value)) {
@@ -120,11 +119,11 @@ class Thermostat extends RingSocketDevice {
             debug('New target command received but out of range (10-37.22223°C)!')
         } else {
             this.device.setInfo({ device: { v1: { setPoint: Number(value) } } })
-            this.publishMqtt(this.entity.thermostat.temperature_topic, value, true)
+            this.publishMqtt(this.entity.thermostat.temperature_state_topic, value, true)
         }
     }
 
-    setFanMode(value) {
+    async setFanMode(value) {
         debug(`Recevied set fan mode ${value} for thermostat ${this.deviceId}`)
         debug(`Location Id: ${this.locationId}`)
         const fanMode = value.toLowerCase()
@@ -136,7 +135,7 @@ class Thermostat extends RingSocketDevice {
         }
     }
 
-    setAuxMode(value) {
+    async setAuxMode(value) {
         debug(`Received set aux mode ${value} for thermostat ${this.deviceId}`)
         debug(`Location Id: ${this.locationId}`)
         const auxMode = value.toLowerCase()

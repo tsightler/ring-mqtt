@@ -32,6 +32,7 @@ const BaseStation = require('./devices/base-station')
 const RangeExtender = require('./devices/range-extender')
 const Siren = require('./devices/siren')
 const Thermostat = require('./devices/thermostat')
+const TemperatureSensor = require('./devices/temperature-sensor')
 
 var CONFIG
 var ringLocations = new Array()
@@ -116,12 +117,21 @@ async function getDevice(device, mqttClient, allDevices) {
             return new Siren(deviceInfo)
         case RingDeviceType.Thermostat:
             const operatingStatus = allDevices.find(d => d.data.parentZid === device.id && d.deviceType === 'thermostat-operating-status')
-            const temperatureSensor = allDevices.find(d => d.data.parentZid === device.id && d.deviceType === 'sensor.temperature')
+            const temperatureSensor = allDevices.find(d => d.data.parentZid === device.id && d.deviceType === RingDeviceType.TemperatureSensor)
             if (operatingStatus && temperatureSensor) {
                 return new Thermostat(deviceInfo, operatingStatus, temperatureSensor)
             }
         case RingDeviceType.TemperatureSensor:
+            const isThermostat = allDevices.find(d => d.data.id === device.data.parentZid && d.deviceType === RingDeviceType.Thermostat)
+            if (isThermostat) {
+                return new TemperatureSensor(deviceInfo)
+            }
         case 'thermostat-operating-status':
+        case 'access-code':
+        case 'access-code.vault':
+        case 'adapter.sidewalk':
+        case 'adapter.zigbee':
+        case 'adapter.zwave':
             return "ignore"
     }
     if (/^lock($|\.)/.test(device.deviceType)) {
@@ -187,7 +197,7 @@ async function updateRingData(mqttClient, ringClient) {
                 switch (ringDevice) {
                     case 'not-supported':
                         // Save unsupported device type
-                        unsupportedDevices.push(ringDevice.deviceType)
+                        unsupportedDevices.push(device.deviceType)
                     case 'ignore':
                         ringDevice=false
                         break
@@ -196,10 +206,10 @@ async function updateRingData(mqttClient, ringClient) {
                 }
             }
             if (ringDevice) {
-                debug(colors.green(`  ${foundMessage} device: ${ringDevice.deviceData.name} (${ringDevice.deviceType}, ${deviceId})`))
+                debug(colors.green(`  ${foundMessage} device: ${ringDevice.deviceData.name} (${ringDevice.device.deviceType}, ${ringDevice.deviceId})`))
                 if (device.deviceType === RingDeviceType.Thermostat) {
-                    debug(colors.green('          ├─: Thermostat Operating Status ('+ringDevice.operatingStatus.deviceType+', '+ringDevice.operatingStatus.id+')'))
-                    debug(colors.green('          └─: Thermostat Temperature Sensor ('+ringDevice.temperatureSensor.deviceType+', '+ringDevice.temperatureSensor.id+')'))
+                    debug(colors.green(`          ├─: Thermostat Operating Status (${ringDevice.operatingStatus.data.deviceType}, ${ringDevice.operatingStatus.id})`))
+                    debug(colors.green(`          └─: Thermostat Temperature Sensor (${ringDevice.temperatureSensor.deviceType}, ${ringDevice.temperatureSensor.id})`))
                 }
             }
         }
@@ -304,7 +314,8 @@ async function processMqttMessage(topic, message, mqttClient, ringClient) {
         const cmdDevice = ringDevices.find(d => (d.deviceId == deviceId && d.locationId == locationId))
 
         if (cmdDevice) {
-            cmdDevice.processCommand(message, topic)
+            const componentCommand = topic.split("/").slice(-2).join("/")
+            cmdDevice.processCommand(message, componentCommand)
         } else {
             debug('Received MQTT message for device Id '+deviceId+' at location Id '+locationId+' but could not find matching device')
         }

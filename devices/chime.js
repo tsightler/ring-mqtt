@@ -52,48 +52,28 @@ class Chime extends RingPolledDevice {
         }
     }
 
-    // Perforsms device publish and re-publish functions (subscribed vs not subscribed)
-    async publish() {
-        await this.publishDiscovery()
-        await this.online()
-
-        if (this.subscribed) {
-            this.publishData(true)
-            this.publishAttributes()
-        } else {
-            this.device.onData.subscribe(() => { 
-                this.publishData() 
-            })
-            this.publishAttributes()
-            this.monitorHeartbeat()
-            this.subscribed = true
-        }
-    }
-
-    async publishData(republish) {
-        // Reset heartbeat counter on every polled state
-        this.heartbeat = 3
-        
+    publishData(isPublish) {
         const volumeState = this.device.data.settings.volume
         const snoozeState = Boolean(this.device.data.do_not_disturb.seconds_left) ? 'ON' : 'OFF'
 
-        // Polled states are published only if value changes or it's a republish
-        if (volumeState !== this.entity.volume.state || republish) { 
+        // Polled states are published only if value changes or it's a device publish
+        if (isPublish || volumeState !== this.entity.volume.state) { 
             this.publishMqtt(this.entity.volume.state_topic, volumeState.toString(), true)
             this.entity.volume.state = volumeState
         }
-        if (snoozeState !== this.entity.snooze.state || republish) { 
+        if (isPublish || snoozeState !== this.entity.snooze.state) { 
             this.publishMqtt(this.entity.snooze.state_topic, snoozeState, true)
             this.entity.snooze.state = snoozeState
         }
 
         // Realtime states are published only for publish/republish
-        if (!this.subscribed || republish) {
+        if (isPublish) {
             this.publishMqtt(this.entity.snooze_minutes.state_topic, this.entity.snooze_minutes.state.toString(), true)
             this.publishMqtt(this.entity.play_ding_sound.state_topic, this.entity.play_ding_sound.state, true)
             this.publishMqtt(this.entity.play_motion_sound.state_topic, this.entity.play_motion_sound.state, true)
         }
 
+        this.publishAttributes()
     }
 
     // Publish device data to info topic
@@ -165,7 +145,6 @@ class Chime extends RingPolledDevice {
         }
     }
 
-    // Set volume level on received MQTT command message
     async setVolumeLevel(message) {
         const volume = message
         debug('Received set volume level to '+volume+' for chime: '+this.deviceId)

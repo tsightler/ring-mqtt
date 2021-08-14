@@ -53,7 +53,7 @@ class RingDevice {
             let discoveryMessage = {
                 ... entity.hasOwnProperty('name')
                     ? { name: entity.name }
-                    : entity.hasOwnProperty('unique_id')
+                    : entity.hasOwnProperty('unique_id') || this.deviceData.name.toLowerCase().match(entityName)
                         ? { name: `${this.deviceData.name}` }
                         : { name: `${this.deviceData.name} ${entityName.replace(/_/g," ").replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())}` },
                 ... entity.hasOwnProperty('unique_id') // Required for legacy entity ID compatibility

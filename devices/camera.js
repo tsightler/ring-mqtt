@@ -10,11 +10,6 @@ class Camera extends RingPolledDevice {
     constructor(deviceInfo) {
         super(deviceInfo)
 
-        // Camera sepecific properties
-        this.publishedLightState = this.device.hasLight ? 'publish' : 'none'
-        this.publishedSirenState = this.device.hasSiren ? 'publish' : 'none'
-        this.publishedMotionDetectionEnabled = 'publish'
-
         // Configure initial snapshot parameters based on device type and app settings
         this.snapshot = { 
             motion: false, 
@@ -55,6 +50,15 @@ class Camera extends RingPolledDevice {
       
         // Define all entities for this device
         this.initEntities()
+
+        this.onNewDingSubscription = this.device.onNewDing.subscribe(ding => {
+            this.processDing(ding)
+        })
+
+        if (this.snapshot.interval > 0) {
+            this.scheduleSnapshotRefresh()
+        }
+
     }
 
     // Build standard and optional entities for device
@@ -161,46 +165,34 @@ class Camera extends RingPolledDevice {
     }
 
     // Publish camera capabilities and state and subscribe to events
-    async publish() {
-        await this.publishDiscovery()
-        await this.online()
+    async publishData(isPublish) {
+        this.publishPolledState(isPublish)
 
-        if (this.subscribed) {
-            // Set states to force republish
-            this.publishedLightState = this.device.hasLight ? 'republish' : 'none'
-            this.publishedSirenState = this.device.hasSiren ? 'republish' : 'none'
-            this.publishedMotionDetectionEnabled = 'republish'
-
-            this.publishAvailabilityState()
+        if (isPublish) { 
             this.publishDingStates()
-            this.publishPolledState()
-            this.publishAttributes()
-
             if (this.snapshot.motion || this.snapshot.interval) {
-                this.publishSnapshot()
-                this.publishSnapshotInterval()
-            }     
-        } else {
-            this.onNewDingSubscription = this.device.onNewDing.subscribe(ding => {
-                this.processDing(ding)
-            })
-            this.publishDingStates()
-            this.onDataSubscription = this.device.onData.subscribe(() => {
-                this.publishPolledState()
-            })
-            this.publishAttributes()
-
-            if (this.snapshot.motion || this.snapshot.interval > 0) {
-                this.refreshSnapshot()
-                if (this.snapshot.interval > 0) {
-                    this.scheduleSnapshotRefresh()
+                this.snapshot.imageData ? this.publishSnapshot() : this.refreshSnapshot()
+                if (this.snapshot.autoInterval && this.device.data.settings.hasOwnProperty('lite_24x7')) {
+                    this.publishSnapshotInterval(isPublish)
                 }
-                this.publishSnapshotInterval()
             }
+            this.publishAttributes()
+        }
 
-            // Start monitor of availability state for camera
-            this.monitorHeartbeat()
-            this.subscribed = true
+        // Check for subscription to ding and motion events and attempt to resubscribe
+        if (!this.device.data.subscribed === true) {
+            debug('Camera Id '+this.deviceId+' lost subscription to ding events, attempting to resubscribe...')
+            this.device.subscribeToDingEvents().catch(e => { 
+                debug('Failed to resubscribe camera Id ' +this.deviceId+' to ding events. Will retry in 60 seconds.') 
+                debug(e)
+            })
+        }
+        if (!this.device.data.subscribed_motions === true) {
+            debug('Camera Id '+this.deviceId+' lost subscription to motion events, attempting to resubscribe...')
+            this.device.subscribeToMotionEvents().catch(e => {
+                debug('Failed to resubscribe camera Id '+this.deviceId+' to motion events.  Will retry in 60 seconds.')
+                debug(e)
+            })
         }
     }
     
@@ -291,47 +283,23 @@ class Camera extends RingPolledDevice {
     // Publish camera state for polled attributes (light/siren state, etc)
     // Writes state to custom property to keep from publishing state except
     // when values change from previous polling interval
-    async publishPolledState() {
-        // Reset heartbeat counter on every polled state
-        this.heartbeat = 3
-
-        // Check for subscription to ding and motion events and attempt to resubscribe
-        if (!this.device.data.subscribed === true) {
-            debug('Camera Id '+this.deviceId+' lost subscription to ding events, attempting to resubscribe...')
-            this.device.subscribeToDingEvents().catch(e => { 
-                debug('Failed to resubscribe camera Id ' +this.deviceId+' to ding events. Will retry in 60 seconds.') 
-                debug(e)
-            })
-        }
-        if (!this.device.data.subscribed_motions === true) {
-            debug('Camera Id '+this.deviceId+' lost subscription to motion events, attempting to resubscribe...')
-            this.device.subscribeToMotionEvents().catch(e => {
-                debug('Failed to resubscribe camera Id '+this.deviceId+' to motion events.  Will retry in 60 seconds.')
-                debug(e)
-            })
-        }
-
+    async publishPolledState(isPublish) {
         if (this.device.hasLight) {
-            if (this.device.data.led_status !== this.publishedLightState) {
+            if (isPublish || this.device.data.led_status !== this.publishedLightState) {
                 this.publishMqtt(this.entity.light.state_topic, (this.device.data.led_status === 'on' ? 'ON' : 'OFF'), true)
                 this.publishedLightState = this.device.data.led_status
             }
         }
         if (this.device.hasSiren) {
             const sirenStatus = this.device.data.siren_status.seconds_remaining > 0 ? 'ON' : 'OFF'
-            if (sirenStatus !== this.publishedSirenState) {
+            if (isPublish || sirenStatus !== this.publishedSirenState) {
                 this.publishMqtt(this.entity.siren.state_topic, sirenStatus, true)
                 this.publishedSirenState = sirenStatus
             }
         }
 
-        if (this.device.data.settings.motion_detection_enabled !== this.publishedMotionDetectionEnabled) {
+        if (isPublish || this.device.data.settings.motion_detection_enabled !== this.publishedMotionDetectionEnabled) {
             this.publishMotionAttributes()
-        }
-      
-        // Update snapshot frequency in case it's changed
-        if (this.snapshot.autoInterval && this.device.data.settings.hasOwnProperty('lite_24x7')) {
-            this.snapshot.interval = this.device.data.settings.lite_24x7.frequency_secs
         }
     }
 
@@ -382,8 +350,16 @@ class Camera extends RingPolledDevice {
         this.publishMqtt(this.entity.snapshot.json_attributes_topic, JSON.stringify({ timestamp: this.snapshot.timestamp }))
     }
 
-    async publishSnapshotInterval() {
-        this.publishMqtt(this.entity.snapshot_interval.state_topic, this.snapshot.interval.toString(), true)
+    async publishSnapshotInterval(isPublish) {
+        // Update snapshot frequency in case it's changed
+        if (this.snapshot.interval !== this.device.data.settings.lite_24x7.frequency_secs) {
+            this.snapshot.interval = this.device.data.settings.lite_24x7.frequency_secs
+            this.publishMqtt(this.entity.snapshot_interval.state_topic, this.snapshot.interval.toString(), true)
+            clearTimeout(this.snapshot.intervalTimerId)
+            this.scheduleSnapshotRefresh()
+        } else if (isPublish) {
+            this.publishMqtt(this.entity.snapshot_interval.state_topic, this.snapshot.interval.toString(), true)
+        }
     }
 
     // This function uses various methods to get a snapshot to work around limitations
@@ -530,8 +506,8 @@ class Camera extends RingPolledDevice {
     }
 
     // Process messages from MQTT command topic
-    processCommand(message, topic) {
-        switch (topic.split("/").slice(-2).join("/")) {
+    processCommand(message, componentCommand) {
+        switch (componentCommand) {
             case 'light/command':
                 this.setLightState(message)
                 break;

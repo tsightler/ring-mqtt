@@ -25,8 +25,8 @@ class Keypad extends RingSocketDevice {
     }
 
     // Process messages from MQTT command topic
-    processCommand(message, topic) {
-        switch (topic.split("/").slice(-2).join("/")) {
+    processCommand(message, componentCommand) {
+        switch (componentCommand) {
             case 'volume/command':
                 this.setVolumeLevel(message)
                 break;

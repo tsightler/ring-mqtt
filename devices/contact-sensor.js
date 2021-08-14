@@ -4,13 +4,14 @@ class ContactSensor extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo)
 
-         // Set Home Assistant component type and device class (appropriate icon in UI)
-        this.entityName = 'contact'
-        this.deviceData.mdl = 'Contact Sensor'
-        let device_class = (this.device.data.subCategoryId == 2) ? 'window' : 'door'
+        let device_class = 'None'
 
         // Override icons and and topics
         switch (this.device.deviceType) {
+            case 'sensor.contact':
+                this.entityName = 'contact'
+                this.deviceData.mdl = 'Contact Sensor'
+                device_class = (this.device.data.subCategoryId == 2) ? 'window' : 'door'
             case 'sensor.zone':
                 this.entityName = 'zone'
                 this.deviceData.mdl = 'Retrofit Zone'
@@ -28,6 +29,7 @@ class ContactSensor extends RingSocketDevice {
             device_class: device_class,
             unique_id: this.deviceId
         }
+
         this.initAttributeEntities()
     }
 
