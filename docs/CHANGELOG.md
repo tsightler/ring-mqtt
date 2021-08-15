@@ -1,5 +1,32 @@
 ## v4.7.0
-This release is 
+**New Device Support**
+ - Ring Chime (Volume, Snooze Mode, Snooze Minutes (must be set prior to activating snooze mode), play ding/motion sound)
+ - Temperature Sensors
+ - Thermostats (Currently only tested with Honeywell T6 Z-wave Thermostat, would be interested in success/fail reports for others)
+
+ **New Features**
+  - Alarm device battery and tamper state now have their own entities (shoutout to @rechardhopton for the concept)
+    More detailed battery status data (charging, etc) is available in battery attributes.  All device attributes are still available in the Info sensor attributes
+  - Wifi strength now has it's own entity for Cameras on wifi
+  - Battery status will now report in battery column in Home Assistant Devices UI
+ 
+ **Breaking Changes**
+  - The primary info sensor state for most devices is now commStatus instead of battery since batteries now have their own entity.  The battery status is still available as an Info sensor attribute, but this may require changes if you are currently alerting on battery level.
+
+ **Fixed Bugs**
+  - "Addressed 'dict object' has no attribute" warnings from changes in Home Assistant >=2021.4
+ 
+ **Other Changes**
+  - Improved default icons for various entities
+  - On first startup a unique system ID is generated and used for logins to Ring, hopefully avoiding the creation of mulitple entries in Ring Control Center Authorized Client Devices.  Entries from this addon now identify as "ring-mqtt-addon" or "ring-mqtt"
+  - Underneath the covers there's a lot of change with the primary goal to dramatically simplify and standardize device support to simplfy adding new devices.  The prior model was a disaster of inconsistency with different devices uses inconsistent methods for ID and name generation, etc.  While the goal is to be 100% compatible for old devices, I really wanted to make devices as standard as simple as possible so adding devices and features can be as easy as reasonably possible.  Hopefully I managed not to break too much, but it was a pretty signficant change and resulted in removing 100's of lines of code. 
+  Key changes from the previous model:
+      - Entities are now defined with a simple JSON format, sometimes requiring as little as one line to define an entity
+      - Home Assistant discovery messages are now built using a common function instead of being hand coded in each device.  I've tried to maintain bug for bug compatibility with legacy versions, but please report any issues as it's certainly possible I missed something.
+      - Topics are built automatically by the discovery function and stored in the entity object, instead of manually coded by hand
+      - All device types (alarm, camera, chimes, smart lighting), now use a common base device and common functions
+      - Command processing uses the identical processing model
+      - All the "special case" processing during device publishing/republishing is removed
 
 ## v4.6.3
  - Changes to snapshot interval now immediately cancel current interval and start new interval with the updated duration
