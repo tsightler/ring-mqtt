@@ -18,6 +18,7 @@
  
  **Other Changes**
   - Improved default icons for various entities
+  - Device names are now logged in debug output with topics for easier identification
   - On first startup a unique system ID is generated and used for logins to Ring, hopefully avoiding the creation of mulitple entries in Ring Control Center Authorized Client Devices.  Entries from this addon now identify as "ring-mqtt-addon" or "ring-mqtt"
   - Underneath the covers there's a lot of change with the primary goal to dramatically simplify and standardize device support to simplfy adding new devices.  The prior model was a disaster of inconsistency with different devices uses inconsistent methods for ID and name generation, etc.  While the goal is to be 100% compatible for old devices, I really wanted to make devices as standard as simple as possible so adding devices and features can be as easy as reasonably possible.  Hopefully I managed not to break too much, but it was a pretty signficant change and resulted in removing 100's of lines of code. 
   Key changes from the previous model:
