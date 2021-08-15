@@ -555,7 +555,7 @@ const main = async(generatedToken) => {
             ringAuth.refreshToken = CONFIG.ring_token
             try {
                 ringClient = new RingApi(ringAuth)
-                await ringClient.getLocations()
+                await ringClient.getProfile()
             } catch(error) {
                 ringClient = null
                 debug(colors.brightRed(error.message))

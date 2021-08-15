@@ -9,7 +9,7 @@ class MultiLevelSwitch extends RingSocketDevice {
         this.entity.light = {
             component: 'light',
             brightness_scale: 100,
-            unique_id: this.deviceId  // Legacy compatibility
+            isLegacyEntity: true  // Legacy compatibility
         }
     }
 

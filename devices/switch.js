@@ -9,7 +9,7 @@ class Switch extends RingSocketDevice {
         
         this.entity[this.component] = {
             component: this.component,
-            unique_id: this.deviceId  // Legacy compatibility
+            isLegacyEntity: true  // Legacy compatibility
         }
     }
 

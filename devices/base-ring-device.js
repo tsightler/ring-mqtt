@@ -56,10 +56,10 @@ class RingDevice {
             let discoveryMessage = {
                 ... entity.hasOwnProperty('name')
                     ? { name: entity.name }
-                    : entity.hasOwnProperty('unique_id') || this.deviceData.name.toLowerCase().match(entityKey)
+                    : entity.hasOwnProperty('isLegacyEntity') || this.deviceData.name.toLowerCase().match(entityKey)
                         ? { name: `${this.deviceData.name}` }
                         : { name: `${this.deviceData.name} ${entityKey.replace(/_/g," ").replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())}` },
-                ... entity.hasOwnProperty('unique_id') // Required for legacy entity ID compatibility
+                ... entity.hasOwnProperty('isLegacyEntity') || entity.hasOwnProperty('unique_id') // Required for legacy entity ID compatibility
                     ? { unique_id: entity.unique_id }
                     : { unique_id: `${this.deviceId}_${entityKey}` },
                 ... entity.component === 'camera' 

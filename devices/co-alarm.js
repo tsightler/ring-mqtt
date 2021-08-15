@@ -11,7 +11,7 @@ class CoAlarm extends RingSocketDevice {
         this.entity.co = {
             component: 'binary_sensor',
             device_class: 'gas',
-            unique_id: this.deviceId  // Legacy compatibility
+            isLegacyEntity: true  // Legacy compatibility
         }
     }
 

@@ -12,7 +12,7 @@ class SmokeCoListener extends RingSocketDevice {
         this.entity.co = {
             component: 'binary_sensor',
             device_class: 'gas',
-            name: `${this.deviceData.name} CO`, // Otherwise CO will not be capital
+            name: `${this.deviceData.name} CO`, // Legacy compatibility
             unique_id: `${this.deviceId}_gas`  // Legacy compatibility
         }
     }

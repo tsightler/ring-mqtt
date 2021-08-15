@@ -8,7 +8,7 @@ class Lock extends RingSocketDevice {
 
         this.entity.lock = {
             component: 'lock',
-            unique_id: this.deviceId  // Legacy compatibility
+            isLegacyEntity: true  // Legacy compatibility
         }
     }
 

@@ -9,7 +9,7 @@ class Fan extends RingSocketDevice {
 
         this.entity.fan = {
             component: 'fan',
-            unique_id: this.deviceId  // Legacy compatibility
+            isLegacyEntity: true  // Legacy compatibility
         }
 
         this.data = {

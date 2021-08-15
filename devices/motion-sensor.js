@@ -8,7 +8,7 @@ class MotionSensor extends RingSocketDevice {
         this.entity.motion = {
             component: 'binary_sensor',
             device_class: 'motion',
-            unique_id: this.deviceId  // Legacy compatibility
+            isLegacyEntity: true  // Legacy compatibility
         }
     }
 

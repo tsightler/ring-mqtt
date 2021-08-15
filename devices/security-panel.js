@@ -11,7 +11,7 @@ class SecurityPanel extends RingSocketDevice {
         
         this.entity.alarm = {
             component: 'alarm_control_panel',
-            unique_id: this.deviceId  // Legacy compatibility
+            isLegacyEntity: true  // Legacy compatibility
         }
         this.entity.siren = {
             component: 'switch',

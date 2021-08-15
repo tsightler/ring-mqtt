@@ -10,7 +10,7 @@ class ModesPanel extends RingPolledDevice {
 
         this.entity.mode = {
             component: 'alarm_control_panel',
-            unique_id: this.deviceId  // Legacy compatibility
+            isLegacyEntity: true  // Legacy compatibility
         }
 
         this.data = {
