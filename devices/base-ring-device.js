@@ -56,12 +56,14 @@ class RingDevice {
             let discoveryMessage = {
                 ... entity.hasOwnProperty('name')
                     ? { name: entity.name }
-                    : entity.hasOwnProperty('isLegacyEntity') || this.deviceData.name.toLowerCase().match(entityKey)
+                    : entity.hasOwnProperty('isLegacyEntity') || this.deviceData.name.toLowerCase().match(entityKey) // Use legacy name generation
                         ? { name: `${this.deviceData.name}` }
                         : { name: `${this.deviceData.name} ${entityKey.replace(/_/g," ").replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())}` },
-                ... entity.hasOwnProperty('isLegacyEntity') || entity.hasOwnProperty('unique_id') // Required for legacy entity ID compatibility
+                ... entity.hasOwnProperty('unique_id') // If device provides own unique_id use that in all cases
                     ? { unique_id: entity.unique_id }
-                    : { unique_id: `${this.deviceId}_${entityKey}` },
+                    : entity.hasOwnProperty('isLegacyEntity') // Use legacy entity ID generation
+                        ? { unique_id: `${this.deviceId}` }
+                        : { unique_id: `${this.deviceId}_${entityKey}` },
                 ... entity.component === 'camera' 
                     ? { topic: entityStateTopic }
                     : entity.component === 'climate'
