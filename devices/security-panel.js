@@ -15,7 +15,8 @@ class SecurityPanel extends RingSocketDevice {
         }
         this.entity.siren = {
             component: 'switch',
-            icon: 'mdi:alarm-light'
+            icon: 'mdi:alarm-light',
+            name: `${this.device.location.name} Siren`
         }
         this.entity.bypass = {
             component: 'switch',
