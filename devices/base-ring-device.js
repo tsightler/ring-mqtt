@@ -160,7 +160,7 @@ class RingDevice {
 
     // Publish state messages with debug
     publishMqtt(topic, message, isDebug) {
-        if (isDebug) { debug(topic, message) }
+        if (isDebug) { debug(`${this.deviceData.name} (${this.device.deviceType}): ${topic} ${message}`) }
         this.mqttClient.publish(topic, message, { qos: 1 })
     }
 
