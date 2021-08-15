@@ -16,8 +16,8 @@ class RingSocketDevice extends RingDevice {
             mdl: this.device.deviceType
         }
 
-        this.device.onData.subscribe(() => {
-            if (this.isOnline()) { this.publishData() }
+        this.device.onData.subscribe((data) => {
+            if (this.isOnline()) { this.publishData(data) }
         })
     }
 
@@ -26,7 +26,7 @@ class RingSocketDevice extends RingDevice {
         if (locationConnected) {
             await this.publishDiscovery()
             await this.online()
-            this.publishData(true)
+            this.publishData()
         }
     }
 

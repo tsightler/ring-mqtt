@@ -8,9 +8,6 @@ class BaseStation extends RingSocketDevice {
         this.deviceData.mdl = 'Alarm Base Station'
         this.deviceData.name = this.device.location.name + ' Base Station'
 
-        // Eventually remove this but for now this attempts to delete the old light component based volume control from Home Assistant
-        this.publishMqtt('homeassistant/light/'+this.locationId+'/'+this.deviceId+'_audio/config', '', false)
-
         this.initVolumeEntity()
     }
     
@@ -34,10 +31,17 @@ class BaseStation extends RingSocketDevice {
         }
     }
 
-    publishData() {
+    publishData(data) {
+        const isPublish = data === undefined ? true : false
+
         if (this.entity.hasOwnProperty('volume')) {
             const currentVolume = (this.device.data.volume && !isNaN(this.device.data.volume) ? Math.round(100 * this.device.data.volume) : 0)
             this.publishMqtt(this.entity.volume.state_topic, currentVolume.toString(), true)
+
+            // Eventually remove this but for now this attempts to delete the old light component based volume control from Home Assistant
+            if (isPublish) {
+                this.publishMqtt('homeassistant/light/'+this.locationId+'/'+this.deviceId+'_audio/config', '', false)
+            }
         }
         this.publishAttributes()
     }

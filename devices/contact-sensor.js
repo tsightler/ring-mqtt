@@ -12,6 +12,7 @@ class ContactSensor extends RingSocketDevice {
                 this.entityName = 'contact'
                 this.deviceData.mdl = 'Contact Sensor'
                 device_class = (this.device.data.subCategoryId == 2) ? 'window' : 'door'
+                break;
             case 'sensor.zone':
                 this.entityName = 'zone'
                 this.deviceData.mdl = 'Retrofit Zone'
@@ -27,7 +28,7 @@ class ContactSensor extends RingSocketDevice {
         this.entity[this.entityName] = {
             component: 'binary_sensor',
             device_class: device_class,
-            unique_id: this.deviceId
+            unique_id: this.deviceId  // Legacy compatibility
         }
     }
 

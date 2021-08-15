@@ -1,7 +1,7 @@
 const debug = require('debug')('ring-mqtt')
 const utils = require( '../lib/utils' )
 const RingPolledDevice = require('./base-polled-device')
-const clientApi = require('../node_modules/ring-client-api/lib/api/rest-client').clientApi
+const { clientApi } = require('../node_modules/ring-client-api/lib/api/rest-client')
 const P2J = require('pipe2jpeg')
 const net = require('net');
 const getPort = require('get-port')
@@ -43,7 +43,10 @@ class Camera extends RingPolledDevice {
                 active: false,
                 expires: 0,
                 updateSnapshot: false
-            }
+            },
+            lightState: null,
+            sirenState: null,
+            motionDetectionEnabled: null
         }
 
         if (this.config.snapshot_mode === "motion" || this.config.snapshot_mode === "interval" || this.config.snapshot_mode === "all" ) {
@@ -74,6 +77,7 @@ class Camera extends RingPolledDevice {
                     component: 'binary_sensor',
                     device_class: 'occupancy',
                     attributes: true,
+                    icon: 'mdi:doorbell-video'
                 }
             } : {},
             ...this.device.hasLight ? {
@@ -83,7 +87,8 @@ class Camera extends RingPolledDevice {
             } : {},
             ...this.device.hasSiren ? {
                 siren: {
-                    component: 'switch'
+                    component: 'switch',
+                    icon: 'mdi:alarm-light'
                 }
             } : {},
             ...(this.data.snapshot.motion || this.data.snapshot.interval) ? { 
@@ -162,7 +167,8 @@ class Camera extends RingPolledDevice {
     }
 
     // Publish camera capabilities and state and subscribe to events
-    async publishData(isPublish) {
+    async publishData(data) {
+        const isPublish = data === undefined ? true : false
         this.publishPolledState(isPublish)
 
         if (isPublish) { 
@@ -263,8 +269,8 @@ class Camera extends RingPolledDevice {
             personDetected: this.data.motion.is_person
         }
         if (this.device.data.settings && typeof this.device.data.settings.motion_detection_enabled !== 'undefined') {
-            attributes.motionDetectionEnabled = this.device.data.settings.motion_detection_enabled
-            this.publishedMotionDetectionEnabled = attributes.motionDetectionEnabled
+            this.data.motionDetectionEnabled = this.device.data.settings.motion_detection_enabled
+            attributes.motionDetectionEnabled = this.data.motionDetectionEnabled
         }
         this.publishMqtt(this.entity.motion.json_attributes_topic, JSON.stringify(attributes), true)
     }
@@ -282,20 +288,21 @@ class Camera extends RingPolledDevice {
     // when values change from previous polling interval
     async publishPolledState(isPublish) {
         if (this.device.hasLight) {
-            if (isPublish || this.device.data.led_status !== this.publishedLightState) {
-                this.publishMqtt(this.entity.light.state_topic, (this.device.data.led_status === 'on' ? 'ON' : 'OFF'), true)
-                this.publishedLightState = this.device.data.led_status
+            const lightState = this.device.data.led_status === 'on' ? 'ON' : 'OFF'
+            if (lightState !== this.data.lightState || isPublish) {
+                this.data.lightState = lightState
+                this.publishMqtt(this.entity.light.state_topic, this.data.lightState, true)
             }
         }
         if (this.device.hasSiren) {
-            const sirenStatus = this.device.data.siren_status.seconds_remaining > 0 ? 'ON' : 'OFF'
-            if (isPublish || sirenStatus !== this.publishedSirenState) {
-                this.publishMqtt(this.entity.siren.state_topic, sirenStatus, true)
-                this.publishedSirenState = sirenStatus
+            const sirenState = this.device.data.siren_status.seconds_remaining > 0 ? 'ON' : 'OFF'
+            if (sirenState !== this.data.sirenState || isPublish) {
+                this.data.sirenState = sirenState
+                this.publishMqtt(this.entity.siren.state_topic, this.data.sirenState, true)
             }
         }
 
-        if (isPublish || this.device.data.settings.motion_detection_enabled !== this.publishedMotionDetectionEnabled) {
+        if (this.device.data.settings.motion_detection_enabled !== this.data.motionDetectionEnabled || isPublish) {
             this.publishMotionAttributes()
         }
     }

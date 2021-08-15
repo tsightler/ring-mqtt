@@ -1,15 +1,17 @@
 const RingSocketDevice = require('./base-socket-device')
 
 class CoAlarm extends RingSocketDevice {
-    constructor(deviceInfo) {
+    constructor(deviceInfo, parentDevice) {
         super(deviceInfo)
         this.deviceData.mdl = 'CO Alarm'
-        this.deviceData.mf = 'First Alert' // Hardcode for now until refactor for relationship support
+        this.deviceData.mf = (parentDevice && parentDevice.data && parentDevice.data.manufacturerName) 
+            ? parentDevice.data.manufacturerName 
+            : 'Ring'
 
         this.entity.co = {
             component: 'binary_sensor',
             device_class: 'gas',
-            unique_id: this.deviceId
+            unique_id: this.deviceId  // Legacy compatibility
         }
     }
 

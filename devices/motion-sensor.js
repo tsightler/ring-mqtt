@@ -8,13 +8,13 @@ class MotionSensor extends RingSocketDevice {
         this.entity.motion = {
             component: 'binary_sensor',
             device_class: 'motion',
-            unique_id: this.deviceId
+            unique_id: this.deviceId  // Legacy compatibility
         }
     }
 
     publishData() {
-        const motionState = this.device.data.faulted ? 'ON' : 'OFF'
-        this.publishMqtt(this.entity.motion.state_topic, motionState, true)
+        const sensorState = this.device.data.faulted ? 'ON' : 'OFF'
+        this.publishMqtt(this.entity.motion.state_topic, sensorState, true)
         this.publishAttributes()
     }
 }

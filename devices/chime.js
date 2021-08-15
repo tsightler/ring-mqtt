@@ -6,35 +6,38 @@ class Chime extends RingPolledDevice {
     constructor(deviceInfo) {
         super(deviceInfo)
 
+        this.data = {
+            volume: null,
+            snooze: null,
+            snooze_minutes: 1440,
+            play_ding_sound: 'OFF',
+            play_motion_sound: 'OFF'
+        }
+
         // Define entities for this device
         this.entity = {
             volume: {
                 component: 'number',
-                state: null,
                 min: 0,
                 max: 11,
                 icon: 'hass:volume-high'
             },
             snooze: {
                 component: 'switch',
-                state: null,
                 icon: 'hass:bell-sleep'
             },
             snooze_minutes: {
                 component: 'number',
-                state: 1440,
                 min: 1,
                 max: 1440,
                 icon: 'hass:timer-sand'
             },
             play_ding_sound: {
                 component: 'switch',
-                state: 'OFF',
                 icon: 'hass:bell-ring'
             },
             play_motion_sound: {
                 component: 'switch',
-                state: 'OFF',
                 icon: 'hass:bell-ring'
             },
             info: {
@@ -55,25 +58,26 @@ class Chime extends RingPolledDevice {
         }
     }
 
-    publishData(isPublish) {
+    publishData(data) {
+        const isPublish = data === undefined ? true : false
         const volumeState = this.device.data.settings.volume
         const snoozeState = Boolean(this.device.data.do_not_disturb.seconds_left) ? 'ON' : 'OFF'
 
         // Polled states are published only if value changes or it's a device publish
-        if (isPublish || volumeState !== this.entity.volume.state) { 
+        if (volumeState !== this.data.volume || isPublish) { 
             this.publishMqtt(this.entity.volume.state_topic, volumeState.toString(), true)
-            this.entity.volume.state = volumeState
+            this.data.volume = volumeState
         }
-        if (isPublish || snoozeState !== this.entity.snooze.state) { 
+        if (snoozeState !== this.data.snooze || isPublish) { 
             this.publishMqtt(this.entity.snooze.state_topic, snoozeState, true)
-            this.entity.snooze.state = snoozeState
+            this.data.snooze = snoozeState
         }
 
-        // Realtime states are published only for publish/republish
+        // Local states are published only for publish/republish
         if (isPublish) {
-            this.publishMqtt(this.entity.snooze_minutes.state_topic, this.entity.snooze_minutes.state.toString(), true)
-            this.publishMqtt(this.entity.play_ding_sound.state_topic, this.entity.play_ding_sound.state, true)
-            this.publishMqtt(this.entity.play_motion_sound.state_topic, this.entity.play_motion_sound.state, true)
+            this.publishMqtt(this.entity.snooze_minutes.state_topic, this.data.snooze_minutes.toString(), true)
+            this.publishMqtt(this.entity.play_ding_sound.state_topic, this.data.play_ding_sound, true)
+            this.publishMqtt(this.entity.play_motion_sound.state_topic, this.data.play_motion_sound, true)
             this.publishAttributes()
         }
     }
@@ -121,7 +125,7 @@ class Chime extends RingPolledDevice {
 
         switch(command) {
             case 'on':
-                await this.device.snooze(this.entity.snooze_minutes.state)
+                await this.device.snooze(this.data.snooze_minutes)
                 break;
             case 'off': {
                 await this.device.clearSnooze()
@@ -142,8 +146,8 @@ class Chime extends RingPolledDevice {
         } else if (!(minutes >= 0 && minutes <= 32767)) {
             debug('Snooze minutes command received but out of range (0-1440 minutes)')
         } else {
-            this.entity.snooze_minutes.state = parseInt(minutes)
-            this.publishMqtt(this.entity.snooze_minutes.state_topic, this.entity.snooze_minutes.state.toString(), true)           
+            this.data.snooze_minutes = parseInt(minutes)
+            this.publishMqtt(this.entity.snooze_minutes.state_topic, this.data.snooze_minutes.toString(), true)           
         }
     }
 

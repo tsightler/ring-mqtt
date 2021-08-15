@@ -1,3 +1,6 @@
+## v4.7.0
+This release is 
+
 ## v4.6.3
  - Changes to snapshot interval now immediately cancel current interval and start new interval with the updated duration
  - Fix for Home Assistant with snapshot interval values > 100 seconds (valid values are now 10-3600 seconds)

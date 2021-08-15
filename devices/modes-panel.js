@@ -10,52 +10,34 @@ class ModesPanel extends RingPolledDevice {
 
         this.entity.mode = {
             component: 'alarm_control_panel',
-            unique_id: this.deviceId,
-            state: { 
-                currentMode: 'publish'
-            }
+            unique_id: this.deviceId  // Legacy compatibility
+        }
+
+        this.data = {
+            currentMode: undefined
         }
     }
     
-    async publish() {
-        await this.publishDiscovery()
-        await this.online()
-
-        if (this.subscribed) {
-            const priorMode = this.entity.mode.state.currentMode
-            this.entity.mode.state.currentMode = 'republish'
-            this.publishData(priorMode)
-        } else {
-            this.device.location.onLocationMode.subscribe((mode) => {
-                this.publishData(mode)
-            })
-            this.monitorHeartbeat()
-            this.subscribed = true
-        }
-    }
-
-    async publishData(mode) {
-        // Reset heartbeat counter on every polled state
-        this.heartbeat = 3
-
-        let mqttMode
-        switch(mode) {
-            case 'disarmed':
-                mqttMode = 'disarmed'
-                break;
-            case 'home':
-                mqttMode = 'armed_home'
-                break;
-            case 'away':
-                mqttMode = 'armed_away'
-                break;
-            default:
-                mqttMode = 'disarmed'
-        }
-
+    publishData(data) {
+        const isPublish = data === undefined ? true : false
+        const mode = (isPublish) ? this.device.location.getLocationMode() : data
         // Publish device state if it's changed from prior state
-        if (this.entity.mode.state.currentMode !== mode) {
-            this.entity.mode.state.currentMode = mode
+        if (this.data.currentMode !== mode || isPublish) {
+            this.data.currentMode = mode
+            let mqttMode
+            switch(mode) {
+                case 'disarmed':
+                    mqttMode = 'disarmed'
+                    break;
+                case 'home':
+                    mqttMode = 'armed_home'
+                    break;
+                case 'away':
+                    mqttMode = 'armed_away'
+                    break;
+                default:
+                    mqttMode = 'disarmed'
+            }
             this.publishMqtt(this.entity.mode.state_topic, mqttMode, true)
         }
     }
@@ -73,7 +55,7 @@ class ModesPanel extends RingPolledDevice {
     
     // Set Alarm Mode on received MQTT command message
     async setLocationMode(message) {
-        debug('Received command set mode '+message+' for location '+this.device.location.name+' ('+this.location+')')
+        debug('Received command set mode '+message+' for location '+this.device.location.name+' ('+this.locationId+')')
 
         // Try to set alarm mode and retry after delay if mode set fails
         // Initial attempt with no delay

@@ -31,9 +31,9 @@ class RingDevice {
         const debugMsg = (this.availabilityState === 'init') ? 'Publishing new ' : 'Republishing existing '
         debug(debugMsg+'device id: '+this.deviceId)
 
-        Object.keys(this.entity).forEach(entityName => {
-            const entity = this.entity[entityName]
-            const entityTopic = `${this.deviceTopic}/${entityName}`
+        Object.keys(this.entity).forEach(entityKey => {
+            const entity = this.entity[entityKey]
+            const entityTopic = `${this.deviceTopic}/${entityKey}`
 
             // If this entity uses state values from the attributes of a parent entity set that here,
             // otherwise use standard state topic for entity ('image' for camera, 'state' for all others)
@@ -56,12 +56,12 @@ class RingDevice {
             let discoveryMessage = {
                 ... entity.hasOwnProperty('name')
                     ? { name: entity.name }
-                    : entity.hasOwnProperty('unique_id') || this.deviceData.name.toLowerCase().match(entityName)
+                    : entity.hasOwnProperty('unique_id') || this.deviceData.name.toLowerCase().match(entityKey)
                         ? { name: `${this.deviceData.name}` }
-                        : { name: `${this.deviceData.name} ${entityName.replace(/_/g," ").replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())}` },
+                        : { name: `${this.deviceData.name} ${entityKey.replace(/_/g," ").replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())}` },
                 ... entity.hasOwnProperty('unique_id') // Required for legacy entity ID compatibility
                     ? { unique_id: entity.unique_id }
-                    : { unique_id: `${this.deviceId}_${entityName}` },
+                    : { unique_id: `${this.deviceId}_${entityKey}` },
                 ... entity.component === 'camera' 
                     ? { topic: entityStateTopic }
                     : entity.component === 'climate'
@@ -83,11 +83,11 @@ class RingDevice {
                     ? { max: entity.max } : {},
                 ... entity.hasOwnProperty('attributes')
                     ? { json_attributes_topic: `${entityTopic}/attributes` } 
-                    : entityName === "info"
+                    : entityKey === "info"
                         ? { json_attributes_topic: `${entityStateTopic}` } : {},
                 ... entity.hasOwnProperty('icon')
                     ? { icon: entity.icon } 
-                    : entityName === "info" 
+                    : entityKey === "info" 
                         ? { icon: 'mdi:information-outline' } : {},
                 ... entity.component === 'alarm_control_panel' && this.config.disarm_code
                     ? { code: this.config.disarm_code.toString(),
@@ -133,10 +133,10 @@ class RingDevice {
             this.publishMqtt(configTopic, JSON.stringify(discoveryMessage))
 
             // On first publish store generated topics in entities object and subscribe to command topics
-            if (!this.entity[entityName].hasOwnProperty('published')) {
-                this.entity[entityName].published = true
+            if (!this.entity[entityKey].hasOwnProperty('published')) {
+                this.entity[entityKey].published = true
                 Object.keys(discoveryMessage).filter(property => property.match('topic')).forEach(topic => {
-                    this.entity[entityName][topic] = discoveryMessage[topic]
+                    this.entity[entityKey][topic] = discoveryMessage[topic]
                     if (topic.match('command_topic')) {
                         this.mqttClient.subscribe(discoveryMessage[topic])
                     }
@@ -170,7 +170,7 @@ class RingDevice {
     // Set state topic online
     async online() {
         const enableDebug = (this.availabilityState === 'online') ? false : true
-        await utils.sleep(1)
+        if (this.shutdown) { return }
         this.availabilityState = 'online'
         this.publishAvailabilityState(enableDebug)
         await utils.sleep(2)

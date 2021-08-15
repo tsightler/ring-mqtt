@@ -1,5 +1,4 @@
 const debug = require('debug')('ring-mqtt')
-const utils = require('../lib/utils')
 const RingSocketDevice = require('./base-socket-device')
 
 class Thermostat extends RingSocketDevice {
@@ -17,24 +16,22 @@ class Thermostat extends RingSocketDevice {
         }
 
         this.data = {
-            get: {
-                mode: (() => { return this.device.data.mode === 'aux' ? 'heat' : this.device.data.mode }),
-                fanMode: (() => { return this.device.data.fanMode.replace(/^./, str => str.toUpperCase()) }),
-                auxMode: (() => { return this.device.data.mode === 'aux' ? 'ON' : 'OFF' }),
-                setPoint: (() => {
-                    return this.device.data.setPoint
-                        ? this.device.data.setPoint.toString()
-                        : this.temperatureSensor.data.celsius.toString() 
-                    }),
-                operatingMode: (() => { 
-                    return this.operatingStatus.data.operatingMode !== 'off'
-                        ? `${this.operatingStatus.data.operatingMode}ing`
-                        : this.device.data.mode === 'off'
-                            ? 'off'
-                            : this.device.data.fanMode === 'on' ? 'fan' : 'idle' 
-                    }),
-                temperature: (() => { return this.temperatureSensor.data.celsius.toString() })
-            }
+            mode: (() => { return this.device.data.mode === 'aux' ? 'heat' : this.device.data.mode }),
+            fanMode: (() => { return this.device.data.fanMode.replace(/^./, str => str.toUpperCase()) }),
+            auxMode: (() => { return this.device.data.mode === 'aux' ? 'ON' : 'OFF' }),
+            setPoint: (() => {
+                return this.device.data.setPoint
+                    ? this.device.data.setPoint.toString()
+                    : this.temperatureSensor.data.celsius.toString() 
+                }),
+            operatingMode: (() => { 
+                return this.operatingStatus.data.operatingMode !== 'off'
+                    ? `${this.operatingStatus.data.operatingMode}ing`
+                    : this.device.data.mode === 'off'
+                        ? 'off'
+                        : this.device.data.fanMode === 'on' ? 'fan' : 'idle' 
+                }),
+            temperature: (() => { return this.temperatureSensor.data.celsius.toString() })
         }
 
         this.operatingStatus.onData.subscribe(() => { 
@@ -52,22 +49,25 @@ class Thermostat extends RingSocketDevice {
         })
     }
 
-    async publishData(isDevicePublish) {
-        this.publishMqtt(this.entity.thermostat.mode_state_topic, this.data.get.mode(), true)
-        this.publishMqtt(this.entity.thermostat.temperature_state_topic, this.data.get.setPoint(), true)
-        this.publishMqtt(this.entity.thermostat.fan_mode_state_topic, this.data.get.fanMode(), true)
-        this.publishMqtt(this.entity.thermostat.aux_state_topic, this.data.get.auxMode(), true)
+    async publishData(data) {
+        const isPublish = data === undefined ? true : false
+
+        this.publishMqtt(this.entity.thermostat.mode_state_topic, this.data.mode(), true)
+        this.publishMqtt(this.entity.thermostat.temperature_state_topic, this.data.setPoint(), true)
+        this.publishMqtt(this.entity.thermostat.fan_mode_state_topic, this.data.fanMode(), true)
+        this.publishMqtt(this.entity.thermostat.aux_state_topic, this.data.auxMode(), true)
         this.publishOperatingMode()
-        if (isDevicePublish) { this.publishTemperature() }
+
+        if (isPublish) { this.publishTemperature() }
         this.publishAttributes()
     }
 
     publishOperatingMode() {
-        this.publishMqtt(this.entity.thermostat.action_topic, this.data.get.operatingMode(), true)
+        this.publishMqtt(this.entity.thermostat.action_topic, this.data.operatingMode(), true)
     }
 
     publishTemperature() {
-        this.publishMqtt(this.entity.thermostat.current_temperature_topic, this.data.get.temperature(), true)
+        this.publishMqtt(this.entity.thermostat.current_temperature_topic, this.data.temperature(), true)
     }
 
     // Process messages from MQTT command topic

@@ -1,7 +1,6 @@
 const debug = require('debug')('ring-mqtt')
 const utils = require( '../lib/utils' )
-const alarmStates = require('ring-client-api').allAlarmStates
-const RingDeviceType = require('ring-client-api').RingDeviceType
+const { allAlarmStates, RingDeviceType } = require('ring-client-api')
 const RingSocketDevice = require('./base-socket-device')
 
 class SecurityPanel extends RingSocketDevice {
@@ -12,25 +11,29 @@ class SecurityPanel extends RingSocketDevice {
         
         this.entity.alarm = {
             component: 'alarm_control_panel',
-            unique_id: this.deviceId
+            unique_id: this.deviceId  // Legacy compatibility
         }
         this.entity.siren = {
-            component: 'switch'
+            component: 'switch',
+            icon: 'mdi:alarm-light'
         }
         this.entity.bypass = {
             component: 'switch',
             name: `${this.device.location.name} Arming Bypass Mode`,
-            state: false
+            state: false,
+            icon: 'mdi:transit-skip'
         }
 
         if (this.config.enable_panic) {
             this.entity.police = { 
                 component: 'switch',
-                name: `${this.device.location.name} Panic - Police`
+                name: `${this.device.location.name} Panic - Police`,
+                icon: 'mdi:police-badge'
             }
             this.entity.fire = { 
                 component: 'switch',
-                name: `${this.device.location.name} Panic - Fire`
+                name: `${this.device.location.name} Panic - Fire`,
+                icon: 'mdi:fire'
             }
         }
     }
@@ -40,7 +43,7 @@ class SecurityPanel extends RingSocketDevice {
         const alarmInfo = this.device.data.alarmInfo ? this.device.data.alarmInfo : []
 
         // If alarm is active report triggered or, if entry-delay, pending
-        if (alarmStates.includes(alarmInfo.state))  {
+        if (allAlarmStates.includes(alarmInfo.state))  {
             alarmMode = alarmInfo.state === 'entry-delay' ? 'pending' : 'triggered'
         } else {
             switch(this.device.data.mode) {

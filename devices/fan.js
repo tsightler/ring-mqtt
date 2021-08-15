@@ -9,10 +9,11 @@ class Fan extends RingSocketDevice {
 
         this.entity.fan = {
             component: 'fan',
-            state: { 
-                targetFanPercent: undefined 
-            },
-            unique_id: this.deviceId
+            unique_id: this.deviceId  // Legacy compatibility
+        }
+
+        this.data = {
+            targetFanPercent: undefined
         }
     }
 
@@ -32,9 +33,9 @@ class Fan extends RingSocketDevice {
         
         // Publish device state
         // targetFanPercent is a small hack to work around Home Assistant UI behavior
-        if (this.entity.fan.state.targetFanPercent && this.entity.fan.state.targetFanPercent !== fanPercent) {
-            this.publishMqtt(this.entity.fan.percentage_state_topic, this.entity.fan.state.targetFanPercent.toString(), true)
-            this.entity.fan.state.targetFanPercent = undefined
+        if (this.data.targetFanPercent && this.data.targetFanPercent !== fanPercent) {
+            this.publishMqtt(this.entity.fan.percentage_state_topic, this.data.targetFanPercent.toString(), true)
+            this.data.targetFanPercent = undefined
         } else {
             this.publishMqtt(this.entity.fan.percentage_state_topic, fanPercent.toString(), true)
         }
@@ -99,12 +100,12 @@ class Fan extends RingSocketDevice {
             setFanPercent = 100
         }
 
-        this.targetFanPercent = setFanPercent
+        this.data.targetFanPercent = setFanPercent
 
-        debug('Seting fan speed percentage to '+this.targetFanPercent+'% for fan: '+this.deviceId)
+        debug('Seting fan speed percentage to '+this.data.targetFanPercent+'% for fan: '+this.deviceId)
         debug('Location Id: '+ this.locationId)
 
-        this.device.setInfo({ device: { v1: { level: this.targetFanPercent / 100 } } })
+        this.device.setInfo({ device: { v1: { level: this.data.targetFanPercent / 100 } } })
         // Automatically turn on fan when level is sent.
         await utils.sleep(1)
         if (!this.device.data.on) { this.setFanState('on') }
