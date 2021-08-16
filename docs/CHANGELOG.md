@@ -16,12 +16,14 @@
  **Fixed Bugs**
   - "Addressed 'dict object' has no attribute" warnings from changes in Home Assistant >=2021.4
  
- **Other Changes**
+ **Minor Enhancements**
   - Improved default icons for various entities
   - Device names are now logged in debug output with topics and state for easier identification
   - On first startup a unique system ID is generated and used for all logins to Ring, and is also stored in the state file with the updating token.  This will hopefully avoid the creation of mulitple entries in Ring Control Center Authorized Client Devices.
   - Authorized Client entries for this addon now identify as "ring-mqtt-addon" or "ring-mqtt" (based on addon or docker/standalone mode) in the Ring Control Center
-  - Underneath the covers there are a lot of changes to the engine with the primary goal to simplify and standardize device support making it easier to maintain and add new devices.  The prior model was a disaster of my own making with different devices using inconsistent methods for generating unique entity IDs and names and even inconsistency between using device class vs entity name for configuration topics and unique IDs.  This is because I never really thought much about the device model when ring-mqtt was first created as there was only alarm, motion, and contact sensors and other devices have been bolted on along the way.
+  
+  **Other Changes**
+  Underneath the covers there are a lot of changes to the engine with the primary goal to simplify and standardize device support making it easier to maintain and add new devices.  The prior model was a disaster of my own making with different devices using inconsistent methods for generating unique entity IDs and names and even inconsistency between using device class vs entity name for configuration topics and unique IDs.  This is because I never really thought much about the device model when ring-mqtt was first created as there was only alarm, motion, and contact sensors and other devices have been bolted on along the way.
   
   With this new model, device entities are defined in a consistent way and entity ID's, names, and topics are generated promgratically and consitently across all devices.  Key features of the new model:
   - Entities are now defined using a simple JSON format, sometimes requiring as little as one line to define an entity
@@ -32,9 +34,7 @@
   - All the "special case" processing during device publishing/republishing is removed
   - Entity state proerties use a more consistent naming across all devices
 
-  A primary goal of the new engine is to be 100% compatible for old devices, even with the inconsistencies, but it was very difficult to accomplish.  I think I've managed to make the update transparent, I've tested ~90% of the devices between version.  However, I don't have locks, fans, or smart lighting devices, and while I attempt to fake them for testing, I can't be 100% sure I didn't miss something.  Please feel free to report any devices or entities that either don't work or are duplicated after the upgrade.
-
-  
+  A primary goal of the new engine is to be 100% compatible for old devices, even with the inconsistencies, but this proved to be quite difficult.  I think I've managed to make the update as transparent as possible, and I've tested ~90% of the devices between version.  However, I don't own any locks, fans, or smart lighting devices, and while, I attempt to fake them for testing purposes, I can't be 100% sure I didn't miss something.  Please feel free to report any devices or entities that either don't work or are duplicated after the upgrade.
 
 ## v4.6.3
  - Changes to snapshot interval now immediately cancel current interval and start new interval with the updated duration

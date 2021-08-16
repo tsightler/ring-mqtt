@@ -46,9 +46,14 @@ process.on('SIGTERM', processExit.bind(0))
 process.on('uncaughtException', processExit.bind(1))
 process.on('unhandledRejection', function(err) {
     if (err.message.match('token is not valid')) {
-        return
+        if (ringLocations.length > 0) { 
+            processExit.bind(1)
+        } else {
+            return
+        }
+    } else {
+        debug(err);
     }
-    console.log(err.message);
 });
 
 // Set offline status on exit
@@ -575,7 +580,7 @@ const main = async(generatedToken) => {
                 process.exit(2)
             } else if (process.env.HASSADDON) {
                 debug('Could not connect with saved refresh token and no refresh token exist in config file.')
-                debug('Restart the addon to try again or use the web interface to generate a new token.')
+                debug('Please use the web interface to generate a new token or restart the addon to try the existing token again.')
             }
         }
     }
