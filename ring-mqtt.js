@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+
 // Defines
 const { RingApi, RingDeviceType, RingCamera, RingChime } = require('ring-client-api')
 const mqttApi = require ('mqtt')
