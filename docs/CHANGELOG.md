@@ -1,40 +1,50 @@
 ## v4.7.0
+***** IMPORTANT NOTE *****
+Due to changes in the way this version generates configuration topics it is HIGHLY recommended to restart you Home Assistant instance as soon as possible after the upgrade.  Without this you will see warnings/errors in the log about non-unqiue IDs.  These messages should be cosmetic only as the device IDs are actually unique, but the Home Assistant discovery process is tripped up by the fact that the new version sends the device with a slightly different configuration topic.  Restarting the Home Assistant instance should allow for a fresh discovery cycle.  Since the entity IDs did not change from previous versions there should be no changes required to existing devices, although please read the Breaking Changes section below.
+
 **New Device Support**
- - Ring Chime (Volume, Snooze Mode, Snooze Minutes (must be set prior to activating snooze mode), play ding/motion sound)
+ - Ring Chime
+     - Chime Volume
+     - Enable/Disable Snooze Mode 
+     - Set Snooze Minutes (must be set prior to enabling snooze mode)
+     - Play Ding/Motion Sound
+     - Wireless Signal Strength
  - Temperature Sensors
  - Thermostats (Currently only tested with Honeywell T6 Z-wave Thermostat, would be interested in success/fail reports for others)
 
  **New Features**
-  - Alarm device battery and tamper state now have their own entities (shoutout to @rechardhopton for the concept)
-    More detailed battery status data (charging, etc) is available in battery attributes.  All device attributes are still available in the Info sensor attributes
-  - Wifi strength now has it's own entity for Cameras on wifi
+  - Alarm devices now have individual entities for battery and tamper state (shoutout to @rechardhopton for the concept)
+    More detailed battery status data (charging, etc) is available in the battery attributes.
+    All device attributes remain available in the Info sensor attributes to keep from breaking any existing monitoring
   - Battery status will now report in battery column in Home Assistant Devices UI
+  - Wifi strength now has it's own entity for Cameras and Chimes connected via wireless
+  - Battery cameras now show battery status as a separate entity with attributes for detailed battery status
  
  **Breaking Changes**
-  - The primary info sensor state for most devices is now commStatus for most alarm devices, and last update status for cameras, since both batteries and wifi (the previous default) now have their own entity.  Any automations or scripts that monitored the primary state attribute for the info sensor will need to be updated to use the new entity sensors.
+  - Due to the introduction of seperate entities for battery, tamper, and Wifi status, the primary info sensor state for most devices has been changed to commStatus for most alarm devices (still alarmStatus for the Alarm Control Panel).  For Cameras and Chimes the Info sensor state is now the last update.  Any automations or scripts that monitored the primary info sensor state, rather than a sepcific info sensor attribute, will need to be updated to use the new entity sensors.
 
  **Fixed Bugs**
-  - "Addressed 'dict object' has no attribute" warnings from changes in Home Assistant >=2021.4
+  - "Addressed 'dict object' has no attribute" warnings due to changes in Home Assistant >=2021.4
  
  **Minor Enhancements**
   - Improved default icons for various entities
-  - Device names are now logged in debug output with topics and state for easier identification
-  - On first startup a unique system ID is generated and used for all logins to Ring, and is also stored in the state file with the updating token.  This will hopefully avoid the creation of mulitple entries in Ring Control Center Authorized Client Devices.
+  - Debug output now includes devices names along with topics and state for easier activity identification
+  - On first startup a unique system ID is generated and stored in the state file and re-used in the future for all Ring authentication.  This will hopefully avoid the creation of mulitple entries in the Authorized Client Devices of the Ring Control Center.
   - Authorized Client entries for this addon now identify as "ring-mqtt-addon" or "ring-mqtt" (based on addon or docker/standalone mode) in the Ring Control Center
   
   **Other Changes**
-  Underneath the covers there are a lot of changes to the engine with the primary goal to simplify and standardize device support making it easier to maintain and add new devices.  The prior model was a disaster of my own making with different devices using inconsistent methods for generating unique entity IDs and names and even inconsistency between using device class vs entity name for configuration topics and unique IDs.  This is because I never really thought much about the device model when ring-mqtt was first created as there was only alarm, motion, and contact sensors and other devices have been bolted on along the way.
+  Underneath the covers there are a lot of changes to the engine with the primary goal to simplify and standardize device support making it easier to maintain and add new devices.  The prior model was a disaster of my own making with different devices using inconsistent methods for generating unique entity IDs and names and even inconsistency between using device class vs entity name for configuration topics and unique IDs.  This is because I never really thought much about the device model when ring-mqtt was first created as there was only alarm, motion, and contact sensors and other devices have been bolted on along the way without much thought or consistency.
   
-  With this new model, device entities are defined in a consistent way and entity ID's, names, and topics are generated promgratically and consitently across all devices.  Key features of the new model:
+  With the new model, device entities are defined in a consistent way and entity ID's, names, and MQTT topics are generated promgratically and consitently across all devices.  Key features of the new model:
   - Entities are now defined using a simple JSON format, sometimes requiring as little as one line to define an entity
   - Home Assistant discovery messages are now built using a common function instead of being hand coded in each device.  I've tried to maintain bug for bug compatibility with legacy versions, but please report any issues as it's certainly possible I missed something.
   - Topics are built automatically by the discovery function and stored in the entity object, instead of manually coded by hand
-  - All device types (alarm, camera, chimes, smart lighting), now use a common base device and common functions
-  - Command processing uses the identical processing model
+  - All device types (alarm, camera, chimes, smart lighting), now use a common base device and common publishing and availabilities functions
+  - Command processing is now unified for all devices
   - All the "special case" processing during device publishing/republishing is removed
   - Entity state proerties use a more consistent naming across all devices
 
-  A primary goal of the new engine is to be 100% compatible for old devices, even with the inconsistencies, but this proved to be quite difficult.  I think I've managed to make the update as transparent as possible, and I've tested ~90% of the devices between version.  However, I don't own any locks, fans, or smart lighting devices, and while, I attempt to fake them for testing purposes, I can't be 100% sure I didn't miss something.  Please feel free to report any devices or entities that either don't work or are duplicated after the upgrade.
+  A primary goal of the new engine is to be 100% compatible for old devices to not break users upgrading, but this proved to be quite difficult.  I think I've managed to make the update nearly transparent, and I've tested the upgrade process on ~90% of the devices.  However, I don't own any locks, fans, or smart lighting devices, and, while I do attempt to fake them for testing purposes, I can't be 100% sure I didn't miss something.  Please feel free to report any devices or entities that either don't work or are duplicated after the upgrade.
 
 ## v4.6.3
  - Changes to snapshot interval now immediately cancel current interval and start new interval with the updated duration
