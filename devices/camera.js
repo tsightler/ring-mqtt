@@ -134,6 +134,7 @@ class Camera extends RingPolledDevice {
                 parent_state_topic: 'info/state',
                 value_template: '{{ value_json["wirelessSignal"] | default }}',
             }
+            debug(this.entity.wireless)
         }
 
         // If device is battery powered publish battery entity

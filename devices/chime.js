@@ -56,6 +56,7 @@ class Chime extends RingPolledDevice {
             parent_state_topic: 'info/state',
             value_template: '{{ value_json["wirelessSignal"] | default }}'
         }
+        debug(this.entity.wireless)
     }
 
     publishData(data) {
