@@ -1,7 +1,6 @@
 const utils = require('../lib/utils')
 const RingDevice = require('./base-ring-device')
 
-
 // Base class for devices/features that communicate via HTTP polling interface (cameras/chime/modes)
 class RingPolledDevice extends RingDevice {
     constructor(deviceInfo, primaryAttribute) {

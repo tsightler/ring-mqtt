@@ -13,7 +13,6 @@ class RingDevice {
         this.availabilityState = 'unpublished'
         this.isOnline = () => { return this.availabilityState === 'online' ? true : false }
         this.entity = {}
-        
 
         // Build device base and availability topic
         this.deviceTopic = `${this.config.ring_topic}/${this.locationId}/${deviceInfo.category}/${this.deviceId}`

@@ -1,5 +1,4 @@
 ## v4.7.0
-
 ***** IMPORTANT NOTE *****
 Due to changes in the way this version generates configuration topics it is HIGHLY recommended to restart the Home Assistant instance as soon as possible after the upgrade.  Without this Home Assistant will log warnings/errors about non-unqiue entity IDs.  While ring-mqtt does generate unique IDs for entities, version 4.7.0 has standarized the generation of configuraiton topics which results in slightly different topics for some devices.  Because of this, the Home Assistant discovery process thinks it is seeing new devices with the same IDs as existing entities.  Restarting Home Assistant will allow for a fresh discovery cycle, and, since the entity IDs did not change from previous versions, only the configuration topics, there should be no changes required to existing devices.  For more details on the underlying engine changes you can read the "Other Changes" section below.
 
