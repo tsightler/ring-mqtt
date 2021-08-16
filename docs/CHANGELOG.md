@@ -11,7 +11,7 @@
   - Battery status will now report in battery column in Home Assistant Devices UI
  
  **Breaking Changes**
-  - The primary info sensor state for most devices is now commStatus instead of battery since batteries now have their own entity.  The battery status is still available as an Info sensor attribute, but this may require changes if you are currently alerting on battery level.
+  - The primary info sensor state for most devices is now commStatus for most alarm devices, and last update status for cameras, since both batteries and wifi (the previous default) now have their own entity.  Any automations or scripts that monitored the primary state attribute for the info sensor will need to be updated to use the new entity sensors.
 
  **Fixed Bugs**
   - "Addressed 'dict object' has no attribute" warnings from changes in Home Assistant >=2021.4
@@ -19,15 +19,22 @@
  **Other Changes**
   - Improved default icons for various entities
   - Device names are now logged in debug output with topics for easier identification
-  - On first startup a unique system ID is generated and used for logins to Ring, hopefully avoiding the creation of mulitple entries in Ring Control Center Authorized Client Devices.  Entries from this addon now identify as "ring-mqtt-addon" or "ring-mqtt"
-  - Underneath the covers there's a lot of change with the primary goal to dramatically simplify and standardize device support to simplfy adding new devices.  The prior model was a disaster of inconsistency with different devices uses inconsistent methods for ID and name generation, etc.  While the goal is to be 100% compatible for old devices, I really wanted to make devices as standard as simple as possible so adding devices and features can be as easy as reasonably possible.  Hopefully I managed not to break too much, but it was a pretty signficant change and resulted in removing 100's of lines of code. 
-  Key changes from the previous model:
-      - Entities are now defined with a simple JSON format, sometimes requiring as little as one line to define an entity
+  - On first startup a unique system ID is generated and used for all logins to Ring, and is also stored in the state file with the updating token.  This will hopefully avoid the creation of mulitple entries in Ring Control Center Authorized Client Devices.
+  - Authorized Client entries for this addon now identify as "ring-mqtt-addon" or "ring-mqtt" (based on addon or docker/standalone mode) in the Ring Control Center
+  - Underneath the covers there are a lot of changes to the engine with the primary goal to simplify and standardize device support making it easier to maintain and add new devices.  The prior model was a disaster of my own making with different devices using inconsistent methods for generating unique entity IDs and names and even inconsistency between using device class vs entity name for configuration topics and unique IDs.  This is because I never really thought much about the device model when ring-mqtt was first created as there was only alarm, motion, and contact sensors and other devices have been bolted on along the way.
+  
+  With this new model, device entities are defined in a consistent way and entity ID's, names, and topics are generated promgratically and consitently across all devices.  Key features of the new model:
+      - Entities are now defined using a simple JSON format, sometimes requiring as little as one line to define an entity
       - Home Assistant discovery messages are now built using a common function instead of being hand coded in each device.  I've tried to maintain bug for bug compatibility with legacy versions, but please report any issues as it's certainly possible I missed something.
       - Topics are built automatically by the discovery function and stored in the entity object, instead of manually coded by hand
       - All device types (alarm, camera, chimes, smart lighting), now use a common base device and common functions
       - Command processing uses the identical processing model
       - All the "special case" processing during device publishing/republishing is removed
+      - Entity state proerties use a more consistent naming across all devices
+
+  A primary goal of the new engine is to be 100% compatible for old devices, even with the inconsistencies, but it was very difficult to accomplish.  I think I've managed to make the update transparent, I've tested ~90% of the devices between version.  However, I don't have locks, fans, or smart lighting devices, and while I attempt to fake them for testing, I can't be 100% sure I didn't miss something.  Please feel free to report any devices or entities that either don't work or are duplicated after the upgrade.
+
+  
 
 ## v4.6.3
  - Changes to snapshot interval now immediately cancel current interval and start new interval with the updated duration

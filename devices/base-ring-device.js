@@ -9,7 +9,7 @@ class RingDevice {
         this.config = deviceInfo.CONFIG
         this.deviceId = deviceId
         this.locationId = locationId
-        this.availabilityState = 'offline'
+        this.availabilityState = 'unpublished'
         this.isOnline = () => { return this.availabilityState === 'online' ? true : false }
         this.entity = {}
 
@@ -28,7 +28,7 @@ class RingDevice {
     // Finally it generates a Home Assistant MQTT discovery message for the entity
     // and publishes this message to the Home Assistant config topic
     async publishDiscovery() {
-        const debugMsg = (this.availabilityState === 'init') ? 'Publishing new ' : 'Republishing existing '
+        const debugMsg = (this.availabilityState === 'unpublished') ? 'Publishing new ' : 'Republishing existing '
         debug(debugMsg+'device id: '+this.deviceId)
 
         Object.keys(this.entity).forEach(entityKey => {
@@ -160,7 +160,7 @@ class RingDevice {
 
     // Publish state messages with debug
     publishMqtt(topic, message, isDebug) {
-        if (isDebug) { debug(`${this.deviceData.name} (${this.device.deviceType}): ${topic} ${message}`) }
+        if (isDebug) { debug(`${this.deviceData.name}: ${topic} ${message}`) }
         this.mqttClient.publish(topic, message, { qos: 1 })
     }
 
