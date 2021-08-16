@@ -172,9 +172,9 @@ async function updateRingData(mqttClient, ringClient) {
         debug(colors.green('-'.repeat(80)))
         // If new location, set custom properties and add to location list
         if (ringLocations.find(l => l.locationId == location.locationId)) {
-            debug(colors.green('Existing location: '+location.name+' ('+location.id+')'))
+            debug(colors.green(`Existing location: ${colors.cyan(location.name)} (${location.id})`))
         } else {
-            debug(colors.green('New location: '+location.name+' ('+location.id+')'))
+            debug(colors.green(`New location: ${colors.cyan(location.name)} (${location.id})`))
             location.isSubscribed = false
             location.isConnected = false
             ringLocations.push(location)
@@ -223,17 +223,10 @@ async function updateRingData(mqttClient, ringClient) {
                 }
             }
             if (ringDevice) {
-                debug(colors.green(`  ${foundMessage} device: ${ringDevice.deviceData.name} (${ringDevice.device.deviceType}, ${ringDevice.deviceId})`))
-                switch (ringDevice.device.deviceType) {
-                    case RingDeviceType.Thermostat:
-                        debug(colors.green(`          ├─: Thermostat Operating Status (${ringDevice.operatingStatus.deviceType}, ${ringDevice.operatingStatus.id})`))
-                        debug(colors.green(`          └─: Thermostat Temperature Sensor (${ringDevice.temperatureSensor.deviceType}, ${ringDevice.temperatureSensor.id})`))
-                        break;
-                    case RingDeviceType.SmokeAlarm:
-                        if (ringDevice.hasOwnProperty('coAlarm')) {
-                            debug(colors.green(`          └─: ${ringDevice.coAlarm.name} (${ringDevice.coAlarm.deviceType}, ${ringDevice.coAlarm.id})`))
-                        }
-                        break;
+                debug(colors.green(`  ${foundMessage} device: ${colors.cyan(ringDevice.deviceData.name)} (${ringDevice.device.deviceType}, ${ringDevice.deviceId})`))
+                if (ringDevice.device.deviceType === RingDeviceType.Thermostat) {
+                    debug(colors.green(`          ├─: ${colors.cyan('Thermostat Operating Status')} (${ringDevice.operatingStatus.deviceType}, ${ringDevice.operatingStatus.id})`))
+                    debug(colors.green(`          └─: ${colors.cyan('Thermostat Temperature Sensor')} (${ringDevice.temperatureSensor.deviceType}, ${ringDevice.temperatureSensor.id})`))
                 }
             }
         }

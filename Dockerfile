@@ -1,6 +1,8 @@
 FROM node:lts-alpine3.12
 
-ENV LANG C.UTF-8
+ENV LANG="C.UTF-8" \
+    TERM="xterm-256color"
+
 COPY . /app/ring-mqtt
 RUN apk add --no-cache tar git libcrypto1.1 libssl1.1 && \
     apk add --no-cache musl-utils musl bash curl jq tzdata && \
@@ -21,11 +23,11 @@ RUN apk add --no-cache tar git libcrypto1.1 libssl1.1 && \
     rm -f -r /tmp/*
 ENTRYPOINT [ "/app/ring-mqtt/scripts/entrypoint.sh" ]
 ARG BUILD_VERSION
+ARG BUILD_DATE
 
 LABEL \
     io.hass.name="Ring Device Integration via MQTT" \
     io.hass.description="Home Assistant Community Add-on for Ring Devices" \
-    io.hass.arch="${BUILD_ARCH}" \
     io.hass.type="addon" \
     io.hass.version=${BUILD_VERSION} \
     maintainer="Tom Sightler <tsightler@gmail.com>" \

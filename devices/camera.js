@@ -1,5 +1,6 @@
 const debug = require('debug')('ring-mqtt')
 const utils = require( '../lib/utils' )
+const colors = require('colors/safe')
 const RingPolledDevice = require('./base-polled-device')
 const { clientApi } = require('../node_modules/ring-client-api/lib/api/rest-client')
 const P2J = require('pipe2jpeg')
@@ -114,7 +115,7 @@ class Camera extends RingPolledDevice {
         }
 
         this.onNewDingSubscription = this.device.onNewDing.subscribe(ding => {
-            this.processDing(ding)
+            if (this.isOnline()) { this.processDing(ding) }
         })
 
         if (this.data.snapshot.interval > 0) {
@@ -353,7 +354,7 @@ class Camera extends RingPolledDevice {
 
     // Publish snapshot image/metadata
     async publishSnapshot() {
-        debug(`${this.deviceData.name}: ${this.entity.snapshot.topic} <binary_image_data>`)
+        debug(colors.cyan(`[${this.deviceData.name}] `)+`${this.entity.snapshot.topic} <binary_image_data>`)
         this.publishMqtt(this.entity.snapshot.topic, this.data.snapshot.currentImage)
         this.publishMqtt(this.entity.snapshot.json_attributes_topic, JSON.stringify({ timestamp: this.data.snapshot.timestamp }))
     }

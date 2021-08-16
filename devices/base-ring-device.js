@@ -1,5 +1,6 @@
 const debug = require('debug')('ring-mqtt')
 const utils = require('../lib/utils')
+const colors = require('colors/safe')
 
 // Base class with functions common to all devices
 class RingDevice {
@@ -177,7 +178,7 @@ class RingDevice {
 
     // Publish state messages with debug
     publishMqtt(topic, message, isDebug) {
-        if (isDebug) { debug(`${this.deviceData.name}: ${topic} ${message}`) }
+        if (isDebug) { debug(colors.cyan(`[${this.deviceData.name}] `)+`${topic} ${message}`) }
         this.mqttClient.publish(topic, message, { qos: 1 })
     }
 
