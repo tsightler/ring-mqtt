@@ -158,6 +158,23 @@ class RingDevice {
         this.schedulePublishAttributes()
     }
 
+    publishAttributeEntities() {
+        // Find any attribute entities and publish the matching subset of attributes
+        Object.keys(this.entity).forEach(entityKey => {
+            if (this.entity[entityKey].hasOwnProperty('attributes') && this.entity[entityKey].attributes !== true) {
+                const entityAttributes = Object.keys(attributes)
+                    .filter(key => key.match(this.entity[entityKey].attributes.toLowerCase()))
+                    .reduce((filteredAttributes, key) => {
+                        filteredAttributes[key] = attributes[key]
+                        return filteredAttributes
+                    }, {})
+                if (Object.keys(entityAttributes).length > 0) {
+                    this.publishMqtt(this.entity[entityKey].json_attributes_topic, JSON.stringify(entityAttributes), true)
+                }
+            }
+        })
+    }
+
     // Publish state messages with debug
     publishMqtt(topic, message, isDebug) {
         if (isDebug) { debug(`${this.deviceData.name}: ${topic} ${message}`) }

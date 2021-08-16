@@ -55,6 +55,7 @@ class Chime extends RingPolledDevice {
             device_class: 'signal_strength',
             unit_of_measurement: 'dBm',
             parent_state_topic: 'info/state',
+            attributes: 'wireless',
             value_template: '{{ value_json["wirelessSignal"] | default }}'
         }
     }
@@ -94,6 +95,7 @@ class Chime extends RingPolledDevice {
             attributes.lastUpdate = deviceHealth.updated_at.slice(0,-6)+"Z"
             this.publishMqtt(this.entity.info.state_topic, JSON.stringify(attributes), true)
         }
+        publishAttributeEntities()
     }
 
     // Process messages from MQTT command topic

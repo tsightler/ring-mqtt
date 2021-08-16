@@ -133,7 +133,8 @@ class Camera extends RingPolledDevice {
                 device_class: 'signal_strength',
                 unit_of_measurement: 'dBm',
                 parent_state_topic: 'info/state',
-                value_template: '{{ value_json["wirelessSignal"] | default }}',
+                attributes: 'wireless',
+                value_template: '{{ value_json["wirelessSignal"] | default }}'
             }
         }
 
@@ -145,6 +146,7 @@ class Camera extends RingPolledDevice {
                 unit_of_measurement: '%',
                 state_class: 'measurement',
                 parent_state_topic: 'info/state',
+                attributes: 'battery',
                 value_template: '{{ value_json["batteryLevel"] | default }}'
             }
         }
