@@ -1,6 +1,5 @@
 FROM node:lts-alpine3.12
 
-
 ENV LANG="C.UTF-8" \
     TERM="xterm-256color"
 

@@ -2,7 +2,6 @@ const debug = require('debug')('ring-mqtt')
 const utils = require('../lib/utils')
 const RingDevice = require('./base-ring-device')
 
-
 // Base class for devices that communicate with hubs via websocket (alarm/smart lighting)
 class RingSocketDevice extends RingDevice {
     constructor(deviceInfo, primaryAttribute) {
