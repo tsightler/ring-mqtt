@@ -217,11 +217,11 @@ MQTT topics are built consistently during each startup.  The easiest way to dete
       - Firmware Status
       - Last Update Status
   - Ring Chimes
-    - Wireless Signal in dBm (Wireless network in attributes)
     - Volume Control
     - Play ding/motion sounds
     - Enter/Exit Snooze Mode
     - Set Snooze Minute (must be set prior to entering snooze state)
+    - Wireless Signal in dBm (Wireless network in attributes)
     - Device info sensor with detailed state information such as (exact info varies by device):
       - Wireless Signal
       - Wired Network Name
