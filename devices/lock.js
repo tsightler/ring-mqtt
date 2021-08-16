@@ -1,39 +1,15 @@
 const debug = require('debug')('ring-mqtt')
-const AlarmDevice = require('./alarm-device')
+const RingSocketDevice = require('./base-socket-device')
 
-class Lock extends AlarmDevice {
+class Lock extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo)
-
-        // Home Assistant component type
-        this.component = 'lock'
-
-        // Device data for Home Assistant device registry
         this.deviceData.mdl = 'Lock'
 
-        // Build required MQTT topics
-        this.stateTopic = this.deviceTopic+'/lock/state'
-        this.commandTopic = this.deviceTopic+'/lock/command'
-        this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
-    }
-        
-    initDiscoveryData() {
-        // Build the MQTT discovery message
-        this.discoveryData.push({
-            message: {
-                name: this.device.name,
-                unique_id: this.deviceId,
-                availability_topic: this.availabilityTopic,
-                payload_available: 'online',
-                payload_not_available: 'offline',
-                state_topic: this.stateTopic,
-                command_topic: this.commandTopic,
-                device: this.deviceData
-            },
-            configTopic: this.configTopic
-        })
-        
-        this.initInfoDiscoveryData()
+        this.entity.lock = {
+            component: 'lock',
+            isLegacyEntity: true  // Legacy compatibility
+        }
     }
 
     publishData() {
@@ -48,31 +24,33 @@ class Lock extends AlarmDevice {
             default:
                 lockState = 'UNKNOWN'
         }
-        // Publish device sensor state
-        this.publishMqtt(this.stateTopic, lockState, true)
-        // Publish device attributes (batterylevel, tamper status)
+        this.publishMqtt(this.entity.lock.state_topic, lockState, true)
         this.publishAttributes()
     }
-    
+
     // Process messages from MQTT command topic
-    processCommand(message) {
-        this.setLockState(message)
+    processCommand(message, componentCommand) {
+        switch (componentCommand) {
+            case 'lock/command':
+                this.setLockState(message)
+                break;
+            default:
+                debug('Received unknown command topic '+topic+' for lock: '+this.deviceId)
+        }
     }
 
     // Set lock target state on received MQTT command message
     setLockState(message) {
         debug('Received set lock state '+message+' for lock: '+this.deviceId)
         debug('Location: '+ this.locationId)
-
         const command = message.toLowerCase()
-
         switch(command) {
             case 'lock':
             case 'unlock':
                 this.device.sendCommand(`lock.${command}`);
                 break;
             default:
-                debug('Received invalid command for lock!')
+                debug('Received invalid command for lock: '+this.deviceId)
         }
     }
 }

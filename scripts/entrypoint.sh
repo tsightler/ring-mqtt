@@ -44,10 +44,10 @@ else
     echo "-------------------------------------------------------"
     echo "Running ring-mqtt..."
     if [ "${BRANCH}" = "latest" ]; then
-        DEBUG=ring-mqtt ISDOCKER=true NODE_OPTIONS="--unhandled-rejections=warn" exec /app/ring-mqtt-latest/ring-mqtt.js
+        DEBUG=ring-mqtt ISDOCKER=true exec /app/ring-mqtt-latest/ring-mqtt.js
     elif [ "${BRANCH}" = "dev" ]; then
-        DEBUG=ring-mqtt ISDOCKER=true NODE_OPTIONS="--unhandled-rejections=warn" exec /app/ring-mqtt-dev/ring-mqtt.js
+        DEBUG=ring-mqtt ISDOCKER=true exec /app/ring-mqtt-dev/ring-mqtt.js
     else
-        DEBUG=ring-mqtt ISDOCKER=true NODE_OPTIONS="--unhandled-rejections=warn" exec /app/ring-mqtt/ring-mqtt.js
+        DEBUG=ring-mqtt ISDOCKER=true exec /app/ring-mqtt/ring-mqtt.js
     fi
 fi

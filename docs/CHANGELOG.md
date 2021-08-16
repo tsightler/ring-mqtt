@@ -1,3 +1,52 @@
+## v4.7.0
+***** IMPORTANT NOTE *****
+Due to changes in the way this version generates configuration topics it is HIGHLY recommended to restart the Home Assistant instance as soon as possible after the upgrade.  Without this Home Assistant will log warnings/errors about non-unqiue entity IDs.  While ring-mqtt does generate unique IDs for entities, version 4.7.0 has standarized the generation of configuraiton topics which results in slightly different topics for some devices.  Because of this, the Home Assistant discovery process thinks it is seeing new devices with the same IDs as existing entities.  Restarting Home Assistant will allow for a fresh discovery cycle, and, since the entity IDs did not change from previous versions, only the configuration topics, there should be no changes required to existing devices.  For more details on the underlying engine changes you can read the "Other Changes" section below.
+
+**New Device Support**
+ - Ring Chimes
+     - Chime Volume
+     - Enable/Disable Snooze Mode (and display Snooze State) 
+     - Set Snooze Minutes (must be set prior to enabling snooze mode)
+     - Play Ding/Motion Sound
+     - Wireless Signal Strength
+ - Temperature Sensors
+ - Thermostats (Currently only tested with Honeywell T6 Pro Z-wave Thermostat, would be interested in success/fail reports for others)
+
+ **New Features**
+  - Alarm devices now have individual entities for battery and tamper state (shoutout to @rechardhopton for the concept)
+    Additional battery status data (charging state, auxillary batteries, etc) is available in the battery attributes
+    All device attributes are still available in the Info sensor attributes to keep from breaking any existing monitoring
+  - Battery cameras now show battery status as a separate entity with attributes for detailed battery status
+  - Battery status will now report in battery column in Home Assistant Devices UI
+  - Wifi strength now has it's own entity for alarm Base Station, Cameras and Chimes connected via wireless networks
+    Wireless network name is available in wireless entity attributes
+
+**Minor Enhancements**
+  - Improved default icons for various entities
+  - Debug output now includes devices names along with topics and state for easier identification of activity
+  - On first startup a unique system ID is generated and stored in the state file and re-used in the future for all Ring authentication.  This will hopefully avoid the creation of mulitple entries in the Authorized Client Devices of the Ring Control Center.
+  - Authorized Client entries for this addon now identify as "ring-mqtt-addon" or "ring-mqtt" (based on addon or docker/standalone mode) in the Ring Control Center
+  
+ **Breaking Changes**
+  - Due to the introduction of seperate entities for battery, tamper, and wireless status, the primary info sensor state for most devices has been changed to commStatus for most alarm devices (still alarmState for the Alarm Control Panel, and acStatus for Base Station, Range Extender, and Keypad).  For Cameras and Chimes the Info sensor state is now the last health update time (i.e. the last time health data was updated by Ring servers, usually every 4-8 hours, but sometimes longer).  Any automations or scripts that monitored the primary info sensor state, rather than a sepcific info sensor attribute, will need to be updated to use the new entity sensors.
+
+ **Fixed Bugs**
+  - "Addressed 'dict object' has no attribute" warnings due to changes in Home Assistant >=2021.4
+  
+  **Other Changes**
+  Underneath the covers there are quite a number of changes to the engine with the primary goal to simplify and standardize device support and, in turn, make it easier to maintain and add new device support.  The prior model, if it can be called that, was a disaster of my own making with different devices using inconsistent methods for generating unique entity IDs and configuration topics.  This is primarily because I never really thought much about the device model when ring-mqtt was first created as there was only alarm, motion, and contact sensors.  Other devices have been bolted on haphazardly along the way without much thought or consistency so that needed to change and no better time than now.
+  
+  With the new model, device entities are defined in a consistent way and entity ID's, names, and MQTT topics are generated promgratically and consitently across all devices.  Key features of the new model:
+  - Entities are defined using a simple JSON format, sometimes requiring as little as one line to define a simple entity
+  - Home Assistant discovery messages are now built using a single, common function vs being hand coded for each device.  I've tried to maintain bug for bug compatibility with legacy versions, but I could have missed something so let me know if you see odd things.
+  - All MQTT topics are built automatically by the discovery function and saved to the entity object
+  - All device types (alarm, camera, chimes, smart lighting), now use a common base device and consistent functions
+  - Command processing is now unified for all devices
+  - All "special case" processing during device publishing/republishing is removed
+  - Entity topic and state properties use a more consistent naming across all devices
+
+  A primary goal of the new engine is to be 100% compatible with prior ring-mqtt to avoid breaking users during upgrades, however, this proved to be quite difficult.  I think I've managed to make the update nearly transparent, and I've tested the upgrade process on ~90% of supported devices, however, I don't own any locks, fans, or smart lighting devices, and, while I do attempt to fake them for testing purposes, I can't be 100% sure I didn't miss something.  Please feel free to report any devices or entities that either don't work or are duplicated after the upgrade.
+
 ## v4.6.3
  - Changes to snapshot interval now immediately cancel current interval and start new interval with the updated duration
  - Fix for Home Assistant with snapshot interval values > 100 seconds (valid values are now 10-3600 seconds)

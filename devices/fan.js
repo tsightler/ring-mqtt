@@ -1,53 +1,20 @@
 const debug = require('debug')('ring-mqtt')
 const utils = require( '../lib/utils' )
-const AlarmDevice = require('./alarm-device')
+const RingSocketDevice = require('./base-socket-device')
 
-class Fan extends AlarmDevice {
+class Fan extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo)
-
-        // Home Assistant component type
-        this.component = 'fan'
-
-        // Device data for Home Assistant device registry
         this.deviceData.mdl = 'Fan Control'
 
-        // Build required MQTT topics 
-        this.stateTopic_fan = this.deviceTopic+'/fan/state'
-        this.commandTopic_fan = this.deviceTopic+'/fan/command'
-        this.stateTopic_preset = this.deviceTopic+'/fan/speed_state'
-        this.commandTopic_preset = this.deviceTopic+'/fan/speed_command'
-        this.stateTopic_percent = this.deviceTopic+'/fan/percent_speed_state'
-        this.commandTopic_percent = this.deviceTopic+'/fan/percent_speed_command'
-        this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
-        this.prevFanState = undefined
-        this.targetFanPercent = undefined
-    }
-    
-    initDiscoveryData() {
-        // Build the MQTT discovery message
-        this.discoveryData.push({
-            message: {
-                name: this.device.name,
-                unique_id: this.deviceId,
-                availability_topic: this.availabilityTopic,
-                payload_available: 'online',
-                payload_not_available: 'offline',
-                state_topic: this.stateTopic_fan,
-                command_topic: this.commandTopic_fan,
-                percentage_state_topic: this.stateTopic_percent,
-                percentage_command_topic: this.commandTopic_percent,
-                preset_mode_state_topic: this.stateTopic_preset,
-                preset_mode_command_topic: this.commandTopic_preset,
-                preset_modes: [ "low", "medium", "high" ],
-                speed_range_min: 11,
-                speed_range_max: 100,
-                device: this.deviceData
-            },
-            configTopic: this.configTopic
-        })
+        this.entity.fan = {
+            component: 'fan',
+            isLegacyEntity: true  // Legacy compatibility
+        }
 
-        this.initInfoDiscoveryData('commStatus')
+        this.data = {
+            targetFanPercent: undefined
+        }
     }
 
     publishData() {
@@ -66,29 +33,33 @@ class Fan extends AlarmDevice {
         
         // Publish device state
         // targetFanPercent is a small hack to work around Home Assistant UI behavior
-        if (this.targetFanPercent && this.targetFanPercent != fanPercent) {
-            this.publishMqtt(this.stateTopic_percent, this.targetFanPercent.toString(), true)
-            this.targetFanPercent = undefined
+        if (this.data.targetFanPercent && this.data.targetFanPercent !== fanPercent) {
+            this.publishMqtt(this.entity.fan.percentage_state_topic, this.data.targetFanPercent.toString(), true)
+            this.data.targetFanPercent = undefined
         } else {
-            this.publishMqtt(this.stateTopic_percent, fanPercent.toString(), true)
+            this.publishMqtt(this.entity.fan.percentage_state_topic, fanPercent.toString(), true)
         }
-        this.publishMqtt(this.stateTopic_fan, fanState, true)
-        this.publishMqtt(this.stateTopic_preset, fanPreset, true)
+        this.publishMqtt(this.entity.fan.state_topic, fanState, true)
+        this.publishMqtt(this.entity.fan.preset_mode_state_topic, fanPreset, true)
 
         // Publish device attributes (batterylevel, tamper status)
         this.publishAttributes()
     }
     
     // Process messages from MQTT command topic
-    processCommand(message, topic) {
-        if (topic == this.commandTopic_fan) {
-            this.setFanState(message)
-        } else if (topic == this.commandTopic_percent) {
-            this.setFanPercent(message)
-        } else if (topic == this.commandTopic_preset) {
-            this.setFanPreset(message)
-        } else {
-            debug('Received unknown command topic '+topic+' for fan: '+this.deviceId)
+    processCommand(message, componentCommand) {
+        switch (componentCommand) {
+            case 'fan/command':
+                this.setFanState(message)
+                break;
+            case 'fan/percent_speed_command':
+                this.setFanPercent(message)
+                break;
+            case 'fan/speed_command':
+                this.setFanPreset(message)
+                break;
+            default:
+                debug('Received unknown command topic '+topic+' for fan: '+this.deviceId)
         }
     }
 
@@ -129,12 +100,12 @@ class Fan extends AlarmDevice {
             setFanPercent = 100
         }
 
-        this.targetFanPercent = setFanPercent
+        this.data.targetFanPercent = setFanPercent
 
-        debug('Seting fan speed percentage to '+this.targetFanPercent+'% for fan: '+this.deviceId)
+        debug('Seting fan speed percentage to '+this.data.targetFanPercent+'% for fan: '+this.deviceId)
         debug('Location Id: '+ this.locationId)
 
-        this.device.setInfo({ device: { v1: { level: this.targetFanPercent / 100 } } })
+        this.device.setInfo({ device: { v1: { level: this.data.targetFanPercent / 100 } } })
         // Automatically turn on fan when level is sent.
         await utils.sleep(1)
         if (!this.device.data.on) { this.setFanState('on') }

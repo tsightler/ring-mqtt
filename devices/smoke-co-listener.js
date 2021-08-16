@@ -1,67 +1,27 @@
-const AlarmDevice = require('./alarm-device')
+const RingSocketDevice = require('./base-socket-device')
 
-class SmokeCoListener extends AlarmDevice {
+class SmokeCoListener extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo)
-
-        // Home Assistant component type and device class (set appropriate icon)
-        this.className_smoke = 'smoke'
-        this.className_co = 'gas'
-        this.component = 'binary_sensor'
-
-        // Device data for Home Assistant device registry
         this.deviceData.mdl = 'Smoke & CO Listener'
-
-        // Build a save MQTT topics
-        this.stateTopic_smoke = this.deviceTopic+'/smoke/state'
-        this.stateTopic_co = this.deviceTopic+'/co/state'
-        this.configTopic_smoke = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'_smoke/config'
-        this.configTopic_co = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'_gas/config'
-    }
-
-    initDiscoveryData() {
-        // Build the MQTT discovery message for smoke detector
-        this.discoveryData.push({
-            message: {
-                name: this.device.name+' Smoke',
-                unique_id: this.deviceId+'_'+this.className_smoke,
-                availability_topic: this.availabilityTopic,
-                payload_available: 'online',
-                payload_not_available: 'offline',
-                state_topic: this.stateTopic_smoke,
-                device_class: this.className_smoke,
-                device: this.deviceData
-            },
-            configTopic: this.configTopic_smoke
-        })
-
-        // Build the MQTT discovery message for co detector
-        this.discoveryData.push({
-            message: {
-                name: this.device.name+' CO',
-                unique_id: this.deviceId+'_'+this.className_co,
-                availability_topic: this.availabilityTopic,
-                payload_available: 'online',
-                payload_not_available: 'offline',
-                state_topic: this.stateTopic_co,
-                device_class: this.className_co,
-                device: this.deviceData
-            },
-            configTopic: this.configTopic_co
-        })
-
-        this.initInfoDiscoveryData()
+        
+        this.entity.smoke = {
+            component: 'binary_sensor',
+            device_class: 'smoke'
+        }
+        this.entity.co = {
+            component: 'binary_sensor',
+            device_class: 'gas',
+            name: `${this.deviceData.name} CO`, // Legacy compatibility
+            unique_id: `${this.deviceId}_gas`  // Legacy compatibility
+        }
     }
 
     publishData() {
         const smokeState = this.device.data.smoke && this.device.data.smoke.alarmStatus === 'active' ? 'ON' : 'OFF'
         const coState = this.device.data.co && this.device.data.co.alarmStatus === 'active' ? 'ON' : 'OFF'
-
-        // Publish sensor states
-        this.publishMqtt(this.stateTopic_smoke, smokeState, true)
-        this.publishMqtt(this.stateTopic_co, coState, true)
-
-        // Publish device attributes (batterylevel, tamper status)
+        this.publishMqtt(this.entity.smoke.state_topic, smokeState, true)
+        this.publishMqtt(this.entity.co.state_topic, coState, true)
         this.publishAttributes()
     }
 }

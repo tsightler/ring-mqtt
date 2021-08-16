@@ -1,158 +1,191 @@
 const debug = require('debug')('ring-mqtt')
 const utils = require('../lib/utils')
+const RingPolledDevice = require('./base-polled-device')
 
-class Chime {
+class Chime extends RingPolledDevice {
     constructor(deviceInfo) {
-        // Set default properties for alarm device object model 
-        this.device = deviceInfo.device
-        this.mqttClient = deviceInfo.mqttClient
-        this.subscribed = false
-        this.availabilityState = 'init'
-        this.discoveryData = new Array()
-        this.deviceId = this.device.data.device_id
-        this.locationId = this.device.data.location_id
-        this.config = deviceInfo.CONFIG
+        super(deviceInfo)
 
-        // Set default device data for Home Assistant device registry
-        // Values may be overridden by individual devices
-        this.deviceData = { 
-            ids: [ this.deviceId ],
-            name: this.device.name,
-            mf: 'Ring',
-            mdl: this.device.deviceType
+        this.data = {
+            volume: null,
+            snooze: null,
+            snooze_minutes: 1440,
+            play_ding_sound: 'OFF',
+            play_motion_sound: 'OFF'
         }
-        
-        // Set device location and top level MQTT topics 
-        this.deviceTopic = this.config.ring_topic+'/'+this.locationId+'/chime/'+this.deviceId
-        this.availabilityTopic = this.deviceTopic+'/status'
-        
-        // Create info device topics
-        this.stateTopic_info = this.deviceTopic+'/info/state'
-        this.configTopic_info = 'homeassistant/sensor/'+this.locationId+'/'+this.deviceId+'_info/config'
-    }
 
-    // Publish device state data and subscribe to
-    // device data events and command topics as needed
-    async publish(locationConnected) {
-        if (locationConnected) {
-            // Publish discovery message
-            if (!this.discoveryData.length) { await this.initDiscoveryData() }
-            await this.publishDiscoveryData()
-            await this.online()
-
-            if (this.subscribed) {
-                this.publishData()
-            } else {
-                // Subscribe to data updates for device
-                this.device.onData.subscribe(() => { this.publishData() })
-                // this.schedulePublishAttributes()
-
-                // Subscribe to any device command topics
-                const properties = Object.getOwnPropertyNames(this)
-                const commandTopics = properties.filter(p => p.match(/^commandTopic.*/g))
-                commandTopics.forEach(commandTopic => {
-                    this.mqttClient.subscribe(this[commandTopic])
-                })
-
-                // Mark device as subscribed
-                this.subscribed = true
-            }
-        }
-    }
-
-    initDiscoveryData() {
-        // Chime Volume Level
-        this.topic = {
+        // Define entities for this device
+        this.entity = {
+            ...this.entity,
             volume: {
-                state: this.deviceTopic+'/volume/state',
-                command: this.deviceTopic+'/volume/command',
-                config: 'homeassistant/number/'+this.locationId+'/'+this.deviceId+'_volume/config',
-            }
-        }
-        this.discoveryData.push({
-            message: {
-                name: this.deviceData.name+' Volume',
-                unique_id: this.deviceId+'_volume',
-                availability_topic: this.availabilityTopic,
-                payload_available: 'online',
-                payload_not_available: 'offline',
-                state_topic: this.topic.volume.state,
-                command_topic: this.topic.volume.command,
+                component: 'number',
                 min: 0,
                 max: 11,
-                device: this.deviceData
+                icon: 'hass:volume-high'
             },
-            configTopic: this.topic.volume.config
-        })
-
-        // Snooze state
-        this.topic = {
             snooze: {
-                state: this.deviceTopic+'/snooze/state',
-                command: this.deviceTopic+'/snooze/command',
-                config: 'homeassistant/binary_sensor/'+this.locationId+'/'+this.deviceId+'_snooze/config',
+                component: 'switch',
+                icon: 'hass:bell-sleep'
+            },
+            snooze_minutes: {
+                component: 'number',
+                min: 1,
+                max: 1440,
+                icon: 'hass:timer-sand'
+            },
+            play_ding_sound: {
+                component: 'switch',
+                icon: 'hass:bell-ring'
+            },
+            play_motion_sound: {
+                component: 'switch',
+                icon: 'hass:bell-ring'
+            },
+            info: {
+                component: 'sensor',
+                device_class: 'timestamp',
+                value_template: '{{ value_json["lastUpdate"] | default }}'
             }
         }
-        this.discoveryData.push({
-            message: {
-                name: this.deviceData.name+' Snooze Active',
-                unique_id: this.deviceId+'_snooze',
-                availability_topic: this.availabilityTopic,
-                payload_available: 'online',
-                payload_not_available: 'offline',
-                state_topic: this.topic.snooze.state,
-                device_class: this.topic.snoooze.command,
-                device: this.deviceData
-            },
-            configTopic: this.topic.snooze.config
-        })
     }
 
-    // Publish all discovery data for device
-    async publishDiscoveryData() {
-        const debugMsg = (this.availabilityState == 'init') ? 'Publishing new ' : 'Republishing existing '
-        debug(debugMsg+'device id: '+this.deviceId)
-        this.discoveryData.forEach(dd => {
-            debug('HASS config topic: '+dd.configTopic)
-            debug(dd.message)
-            this.publishMqtt(dd.configTopic, JSON.stringify(dd.message))
-        })
-        // Sleep for a few seconds to give HA time to process discovery message
-        await utils.sleep(2)
+    initAttributeEntities() {
+        this.entity.wireless = {
+            component: 'sensor',
+            device_class: 'signal_strength',
+            unit_of_measurement: 'dBm',
+            parent_state_topic: 'info/state',
+            attributes: 'wireless',
+            value_template: '{{ value_json["wirelessSignal"] | default }}'
+        }
     }
 
-    publishData() {
+    publishData(data) {
+        const isPublish = data === undefined ? true : false
         const volumeState = this.device.data.settings.volume
         const snoozeState = Boolean(this.device.data.do_not_disturb.seconds_left) ? 'ON' : 'OFF'
-        // Publish sensor state
-        this.publishMqtt(this.topic.volume.state, volumeState, true)
-        this.publishMqtt(this.topic.snooze.state, snoozeState, true)
+
+        // Polled states are published only if value changes or it's a device publish
+        if (volumeState !== this.data.volume || isPublish) { 
+            this.publishMqtt(this.entity.volume.state_topic, volumeState.toString(), true)
+            this.data.volume = volumeState
+        }
+        if (snoozeState !== this.data.snooze || isPublish) { 
+            this.publishMqtt(this.entity.snooze.state_topic, snoozeState, true)
+            this.data.snooze = snoozeState
+        }
+
+        // Local states are published only for publish/republish
+        if (isPublish) {
+            this.publishMqtt(this.entity.snooze_minutes.state_topic, this.data.snooze_minutes.toString(), true)
+            this.publishMqtt(this.entity.play_ding_sound.state_topic, this.data.play_ding_sound, true)
+            this.publishMqtt(this.entity.play_motion_sound.state_topic, this.data.play_motion_sound, true)
+            this.publishAttributes()
+        }
     }
 
-    // Publish state messages with debug
-    publishMqtt(topic, message, isDebug) {
-        if (isDebug) { debug(topic, message) }
-        this.mqttClient.publish(topic, message, { qos: 1 })
+    // Publish device data to info topic
+    async publishAttributes() {
+        const deviceHealth = await this.device.getHealth()
+        if (deviceHealth) {
+            const attributes = {}
+            attributes.wirelessNetwork = deviceHealth.wifi_name
+            attributes.wirelessSignal = deviceHealth.latest_signal_strength
+            attributes.firmwareStatus = deviceHealth.firmware
+            attributes.lastUpdate = deviceHealth.updated_at.slice(0,-6)+"Z"
+            this.publishMqtt(this.entity.info.state_topic, JSON.stringify(attributes), true)
+            this.publishAttributeEntities(attributes)
+        }
     }
 
-    // Set state topic online
-    async online() {
-        // Debug output only if state changed from prior published state
-        // Prevents spamming debug log with availability events during republish
-        const enableDebug = (this.availabilityState == 'online') ? false : true
-        await utils.sleep(1)
-        this.availabilityState = 'online'
-        this.publishMqtt(this.availabilityTopic, this.availabilityState, enableDebug)
-        await utils.sleep(1)
+    // Process messages from MQTT command topic
+    processCommand(message, topic) {
+        switch (topic.split("/").slice(-2).join("/")) {
+            case 'snooze/command':
+                this.setSnoozeState(message)
+                break;
+            case 'snooze_minutes/command':
+                this.setSnoozeMinutes(message)
+                break;    
+            case 'volume/command':
+                this.setVolumeLevel(message)
+                break;
+            case 'play_ding_sound/command':
+                this.playSound(message, 'ding')
+                break;
+            case 'play_motion_sound/command':
+                this.playSound(message, 'motion')
+                break;
+            default:
+                debug('Somehow received message to unknown state topic for chime '+this.deviceId)
+        }
     }
 
-    // Set state topic offline
-    offline() {
-        // Debug log output only if state changed from prior published state
-        // Prevents spamming debug log with online/offline events during republish
-        const enableDebug = (this.availabilityState == 'offline') ? false : true
-        this.availabilityState = 'offline'
-        this.publishMqtt(this.availabilityTopic, this.availabilityState, enableDebug)
+    async setSnoozeState(message) {
+        debug('Received set snooze '+message+' for chime Id: '+this.deviceId)
+        debug('Location Id: '+ this.locationId)
+        const command = message.toLowerCase()
+
+        switch(command) {
+            case 'on':
+                await this.device.snooze(this.data.snooze_minutes)
+                break;
+            case 'off': {
+                await this.device.clearSnooze()
+                break;
+            }
+            default:
+                debug('Received invalid command for set snooze!')
+        }
+        this.device.requestUpdate()
+    }
+
+    setSnoozeMinutes(message) {
+        const minutes = message
+        debug('Received set snooze minutes to '+minutes+' minutes for chime Id: '+this.deviceId)
+        debug('Location Id: '+ this.locationId)
+        if (isNaN(minutes)) {
+                debug('Snooze minutes command received but value is not a number')
+        } else if (!(minutes >= 0 && minutes <= 32767)) {
+            debug('Snooze minutes command received but out of range (0-1440 minutes)')
+        } else {
+            this.data.snooze_minutes = parseInt(minutes)
+            this.publishMqtt(this.entity.snooze_minutes.state_topic, this.data.snooze_minutes.toString(), true)           
+        }
+    }
+
+    async setVolumeLevel(message) {
+        const volume = message
+        debug('Received set volume level to '+volume+' for chime: '+this.deviceId)
+        debug('Location Id: '+ this.locationId)
+        if (isNaN(message)) {
+                debug('Volume command received but value is not a number')
+        } else if (!(message >= 0 && message <= 11)) {
+            debug('Volume command received but out of range (0-11)')
+        } else {
+            await this.device.setVolume(volume)
+            this.device.requestUpdate()
+        }
+    }
+
+    async playSound(message, chimeType) {
+        debug('Receieved play '+chimeType+' chime sound '+message+' for chime Id: '+this.deviceId)
+        debug('Location Id: '+ this.locationId)
+        const command = message.toLowerCase()
+
+        switch(command) {
+            case 'on':
+                this.publishMqtt(this.entity[`play_${chimeType}_sound`].state_topic, 'ON', true)
+                await this.device.playSound(chimeType)
+                await utils.sleep(5)
+                this.publishMqtt(this.entity[`play_${chimeType}_sound`].state_topic, 'OFF', true)
+                break;
+            case 'off': {
+                break;
+            }
+            default:
+                debug('Received invalid command for play chime sound!')
+        }
     }
 }
 

@@ -1,16 +1,14 @@
 #!/usr/bin/env node
 
 // Defines
-const RingApi = require('ring-client-api').RingApi
-const RingDeviceType = require('ring-client-api').RingDeviceType
-const RingCamera = require('ring-client-api').RingCamera
-const RingChime = require('ring-client-api').RingChime
+const { RingApi, RingDeviceType, RingCamera, RingChime } = require('ring-client-api')
 const mqttApi = require ('mqtt')
 const isOnline = require ('is-online')
 const debug = require('debug')('ring-mqtt')
 const colors = require('colors/safe')
 const utils = require('./lib/utils.js')
 const tokenApp = require('./lib/tokenapp.js')
+const { createHash, randomBytes } = require('crypto')
 const fs = require('fs')
 const SecurityPanel = require('./devices/security-panel')
 const ContactSensor = require('./devices/contact-sensor')
@@ -31,6 +29,8 @@ const Keypad = require('./devices/keypad')
 const BaseStation = require('./devices/base-station')
 const RangeExtender = require('./devices/range-extender')
 const Siren = require('./devices/siren')
+const Thermostat = require('./devices/thermostat')
+const TemperatureSensor = require('./devices/temperature-sensor')
 
 var CONFIG
 var ringLocations = new Array()
@@ -44,11 +44,25 @@ process.on('exit', processExit.bind(0))
 process.on('SIGINT', processExit.bind(0))
 process.on('SIGTERM', processExit.bind(0))
 process.on('uncaughtException', processExit.bind(1))
+process.on('unhandledRejection', function(err) {
+    if (err.message.match('token is not valid')) {
+        if (ringLocations.length > 0) { 
+            processExit.bind(1)
+        } else {
+            return
+        }
+    } else {
+        debug(err);
+    }
+});
 
-// Set unreachable status on exit
+// Set offline status on exit
 async function processExit(exitCode) {
-    ringDevices.forEach(async ringDevice => {
-            if (ringDevice.availabilityState === 'online') { await ringDevice.offline() } 
+    await ringDevices.forEach(async ringDevice => {
+            if (ringDevice.availabilityState === 'online') { 
+                ringDevice.shutdown = true
+                await ringDevice.offline() 
+            } 
         })
     await utils.sleep(3)
     if (exitCode || exitCode === 0) debug('Exit code: '+exitCode)
@@ -56,7 +70,7 @@ async function processExit(exitCode) {
 }
 
 // Return supported device
-function getDevice(device, mqttClient) {
+async function getDevice(device, mqttClient, allDevices) {
     const deviceInfo = {
         device: device,
         category: 'alarm',
@@ -64,15 +78,18 @@ function getDevice(device, mqttClient) {
         CONFIG
     }
     if (device instanceof RingCamera) {
+        deviceInfo.category = 'camera'
         return new Camera(deviceInfo)
     } else if (device instanceof RingChime) {
-        //return new Chime(deviceInfo)
-        return null
+        deviceInfo.category = 'chime'
+        return new Chime(deviceInfo)
+    } else if (/^lock($|\.)/.test(device.deviceType)) {
+        return new Lock(deviceInfo)
     }
     switch (device.deviceType) {
         case RingDeviceType.ContactSensor:
         case RingDeviceType.RetrofitZone:
-        case 'sensor.tilt':
+        case RingDeviceType.TiltSensor:
             return new ContactSensor(deviceInfo)
         case RingDeviceType.MotionSensor:
             return new MotionSensor(deviceInfo)
@@ -83,7 +100,9 @@ function getDevice(device, mqttClient) {
         case RingDeviceType.SmokeAlarm:
             return new SmokeAlarm(deviceInfo)
         case RingDeviceType.CoAlarm:
-            return new CoAlarm(deviceInfo)
+            // If this is a child device pass in parent device as well
+            const parentDevice = allDevices.find(d => d.id === device.data.parentZid && d.deviceType === RingDeviceType.SmokeAlarm)
+            return new CoAlarm(deviceInfo, parentDevice)
         case RingDeviceType.SmokeCoListener:
             return new SmokeCoListener(deviceInfo)
         case RingDeviceType.BeamsMotionSensor:
@@ -93,7 +112,7 @@ function getDevice(device, mqttClient) {
             deviceInfo.category = 'lighting'
             return new Beam(deviceInfo)
         case RingDeviceType.MultiLevelSwitch:
-            return newDevice = (device.categoryId === 17) 
+            return newDevice = (device.categoryId === 17)
                 ? new Fan(deviceInfo)
                 : new MultiLevelSwitch(deviceInfo)
         case RingDeviceType.Switch:
@@ -112,11 +131,28 @@ function getDevice(device, mqttClient) {
             return new ModesPanel(deviceInfo)
         case 'siren.outdoor-strobe':
             return new Siren(deviceInfo)
+        case RingDeviceType.Thermostat:
+            const operatingStatus = allDevices.find(d => d.data.parentZid === device.id && d.deviceType === 'thermostat-operating-status')
+            const temperatureSensor = allDevices.find(d => d.data.parentZid === device.id && d.deviceType === RingDeviceType.TemperatureSensor)
+            if (operatingStatus && temperatureSensor) {
+                return new Thermostat(deviceInfo, operatingStatus, temperatureSensor)
+            }
+        case RingDeviceType.TemperatureSensor:
+            // If this is a thermostat component, ignore this device
+            if (allDevices.find(d => d.id === device.data.parentZid && d.deviceType === RingDeviceType.Thermostat)) {
+                return 'ignore'
+            } else {
+                return new TemperatureSensor(deviceInfo)
+            }
+        case 'thermostat-operating-status':
+        case 'access-code':
+        case 'access-code.vault':
+        case 'adapter.sidewalk':
+        case 'adapter.zigbee':
+        case 'adapter.zwave':
+            return "ignore"
     }
-    if (/^lock($|\.)/.test(device.deviceType)) {
-        return new Lock(deviceInfo)
-    }
-    return null
+    return "not-supported"
 }
 
 // Update all Ring location/device data
@@ -134,20 +170,18 @@ async function updateRingData(mqttClient, ringClient) {
         const unsupportedDevices = new Array()
 
         debug(colors.green('-'.repeat(80)))
-        let foundLocation = ringLocations.find(l => l.locationId == location.locationId)
         // If new location, set custom properties and add to location list
-        if (foundLocation) {
-            debug(colors.green('Existing location: '+location.name+' ('+location.id+')'))
+        if (ringLocations.find(l => l.locationId == location.locationId)) {
+            debug(colors.green(`Existing location: ${colors.cyan(location.name)} (${location.id})`))
         } else {
-            debug(colors.green('New location: '+location.name+' ('+location.id+')'))
+            debug(colors.green(`New location: ${colors.cyan(location.name)} (${location.id})`))
             location.isSubscribed = false
             location.isConnected = false
             ringLocations.push(location)
-            foundLocation = location
         }
 
         // Get all location devices and, if configured, cameras
-        const devices = await foundLocation.getDevices()
+        const devices = await location.getDevices()
         if (CONFIG.enable_cameras) { 
             cameras = await location.cameras
             chimes = await location.chimes
@@ -155,29 +189,44 @@ async function updateRingData(mqttClient, ringClient) {
         const allDevices = [...devices, ...cameras, ...chimes]
 
         // Add modes panel, if configured and the location supports it
-        if (CONFIG.enable_modes && (await foundLocation.supportsLocationModeSwitching())) {
+        if (CONFIG.enable_modes && (await location.supportsLocationModeSwitching())) {
             allDevices.push({
                 deviceType: 'location.mode',
                 location: location,
                 id: location.locationId + '_mode',
-                deviceId: location.locationId + '_mode'
+                onData: location.onLocationMode,
+                data: {
+                    device_id: location.locationId + '_mode',
+                    location_id: location.locationId
+                }
             })
         }
 
         // Update Ring devices for location
         for (const device of allDevices) {
             const deviceId = (device instanceof RingCamera || device instanceof RingChime) ? device.data.device_id : device.id
-            const foundDevice = ringDevices.find(d => d.deviceId == deviceId && d.locationId == location.locationId)
-            if (foundDevice) {
-                debug(colors.green('  Existing device: '+foundDevice.deviceData.name+' ('+device.deviceType+', '+deviceId+')'))
+            let foundMessage = 'New'
+            let ringDevice = ringDevices.find(d => d.deviceId === deviceId && d.locationId === location.locationId)
+            if (ringDevice) {
+                foundMessage = 'Existing'
             } else {
-                const newDevice = getDevice(device, mqttClient)
-                if (newDevice) {
-                    ringDevices.push(newDevice)
-                    debug(colors.green('  New device: '+newDevice.deviceData.name+' ('+device.deviceType+', '+deviceId+')'))
-                } else {
-                    // Save unsupported device type
-                    unsupportedDevices.push(device.deviceType)
+                ringDevice = await getDevice(device, mqttClient, allDevices)
+                switch (ringDevice) {
+                    case 'not-supported':
+                        // Save unsupported device type
+                        unsupportedDevices.push(device.deviceType)
+                    case 'ignore':
+                        ringDevice=false
+                        break
+                    default:
+                        ringDevices.push(ringDevice)
+                }
+            }
+            if (ringDevice) {
+                debug(colors.green(`  ${foundMessage} device: ${colors.cyan(ringDevice.deviceData.name)} (${ringDevice.device.deviceType}, ${ringDevice.deviceId})`))
+                if (ringDevice.device.deviceType === RingDeviceType.Thermostat) {
+                    debug(colors.green(`          ├─: ${colors.cyan('Thermostat Operating Status')} (${ringDevice.operatingStatus.deviceType}, ${ringDevice.operatingStatus.id})`))
+                    debug(colors.green(`          └─: ${colors.cyan('Thermostat Temperature Sensor')} (${ringDevice.temperatureSensor.deviceType}, ${ringDevice.temperatureSensor.id})`))
                 }
             }
         }
@@ -282,7 +331,8 @@ async function processMqttMessage(topic, message, mqttClient, ringClient) {
         const cmdDevice = ringDevices.find(d => (d.deviceId == deviceId && d.locationId == locationId))
 
         if (cmdDevice) {
-            cmdDevice.processCommand(message, topic)
+            const componentCommand = topic.split("/").slice(-2).join("/")
+            cmdDevice.processCommand(message, componentCommand)
         } else {
             debug('Received MQTT message for device Id '+deviceId+' at location Id '+locationId+' but could not find matching device')
         }
@@ -360,7 +410,7 @@ async function initConfig(configFile) {
         if (CONFIG.location_ids) { CONFIG.location_ids = CONFIG.location_ids.split(',') }
     }
     // If Home Assistant addon, try config or environment for MQTT settings
-    if (process.env.HASSADDON) {
+    if (process.env.ISADDON) {
         CONFIG.host = process.env.MQTTHOST
         CONFIG.port = process.env.MQTTPORT
         CONFIG.mqtt_user = process.env.MQTTUSER
@@ -381,10 +431,11 @@ async function initConfig(configFile) {
 }
 
 // Save updated refresh token to config or state file
-async function updateToken(newRefreshToken, oldRefreshToken, stateFile, configFile) {
+async function updateToken(newRefreshToken, oldRefreshToken, stateFile, stateData, configFile) {
     if (!oldRefreshToken) { return }
-    if (process.env.HASSADDON || process.env.ISDOCKER) {
-        fs.writeFile(stateFile, JSON.stringify({ ring_token: newRefreshToken }), (err) => {
+    if (process.env.ISADDON || process.env.ISDOCKER) {
+        stateData.ring_token = newRefreshToken
+        fs.writeFile(stateFile, JSON.stringify(stateData, null, 2), (err) => {
             if (err) throw err;
             debug('File ' + stateFile + ' saved with updated refresh token.')
         })
@@ -408,9 +459,9 @@ const main = async(generatedToken) => {
     let mqttClient
 
     // For HASSIO and DOCKER latest token is saved in /data/ring-state.json
-    if (process.env.HASSADDON || process.env.ISDOCKER) { 
+    if (process.env.ISADDON || process.env.ISDOCKER) { 
         stateFile = '/data/ring-state.json'
-        if (process.env.HASSADDON) {
+        if (process.env.ISADDON) {
             configFile = '/data/options.json'
             // For addon config is performed via Web UI
             if (!tokenApp.listener) {
@@ -446,7 +497,7 @@ const main = async(generatedToken) => {
             debug('No refresh token was found in state file and RINGTOKEN is not configured.')
             process.exit(2)
         } else {
-            if (process.env.HASSADDON) {
+            if (process.env.ISADDON) {
                 debug('No refresh token was found in saved state file or config file.')
                 debug('Use the web interface to generate a new token.')
             } else {
@@ -474,6 +525,11 @@ const main = async(generatedToken) => {
         if (!(CONFIG.location_ids === undefined || CONFIG.location_ids == 0)) {
             ringAuth.locationIds = CONFIG.location_ids
         }
+        ringAuth.controlCenterDisplayName = (process.env.ISADDON) ? 'ring-mqtt-addon' : 'ring-mqtt'
+
+        if (!stateData.hasOwnProperty('systemId')) {
+            stateData.systemId = (createHash('sha256').update(randomBytes(32)).digest('hex'))
+        }
 
         // If there is a saved or generated refresh token, try to connect using it first
         if (stateData.ring_token) {
@@ -481,8 +537,8 @@ const main = async(generatedToken) => {
             debug('Attempting connection to Ring API using '+tokenSource+' refresh token.')
             ringAuth.refreshToken = stateData.ring_token
             try {
-                ringClient = new RingApi(ringAuth)
-                await ringClient.getLocations()
+                ringClient = new RingApi(ringAuth, stateData.systemId)
+                await ringClient.getProfile()
             } catch(error) {
                 ringClient = null
                 debug(colors.brightYellow(error.message))
@@ -497,13 +553,13 @@ const main = async(generatedToken) => {
             ringAuth.refreshToken = CONFIG.ring_token
             try {
                 ringClient = new RingApi(ringAuth)
-                await ringClient.getLocations()
+                await ringClient.getProfile()
             } catch(error) {
                 ringClient = null
                 debug(colors.brightRed(error.message))
                 debug(colors.brightRed('Could not create the API instance. This could be because the Ring servers are down/unreachable'))
                 debug(colors.brightRed('or maybe all available refresh tokens are invalid.'))
-                if (process.env.HASSADDON) {
+                if (process.env.ISADDON) {
                     debug('Restart the addon to try again or use the web interface to generate a new token.')
                 } else {
                     debug('Please check the configuration and network settings, or generate a new refresh token, and try again.')
@@ -515,9 +571,9 @@ const main = async(generatedToken) => {
             if (process.env.ISDOCKER) {
                 debug('Could not connect with saved refresh token and RINGTOKEN is not configured.')    
                 process.exit(2)
-            } else if (process.env.HASSADDON) {
+            } else if (process.env.ISADDON) {
                 debug('Could not connect with saved refresh token and no refresh token exist in config file.')
-                debug('Restart the addon to try again or use the web interface to generate a new token.')
+                debug('Please use the web interface to generate a new token or restart the addon to try the existing token again.')
             }
         }
     }
@@ -530,8 +586,8 @@ const main = async(generatedToken) => {
         tokenApp.updateConnectedToken(currentAuth.refresh_token)
 
         // Subscribed to token update events and save new token
-        ringClient.onRefreshTokenUpdated.subscribe(async ({ newRefreshToken, oldRefreshToken }) => {
-            updateToken(newRefreshToken, oldRefreshToken, stateFile, configFile)
+        ringClient.onRefreshTokenUpdated.subscribe(({ newRefreshToken, oldRefreshToken }) => {
+            updateToken(newRefreshToken, oldRefreshToken, stateFile, stateData, configFile)
         })
 
         // Initiate connection to MQTT broker

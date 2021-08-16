@@ -33,7 +33,7 @@ Note that the only absolutely required parameter for initial start is **RINGTOKE
 | MQTTPORT | Port number for MQTT broker | 1883 |
 | MQTTUSER | Username for MQTT broker | blank - Use anonymous connection |
 | MQTTPASSWORD | Password for MQTT broker | blank - Use anonymous connection |
-| ENABLECAMERAS | Enable camera support, otherwise only alarm devices will be discovered | false |
+| ENABLECAMERAS | Enable camera/chime support, otherwise only alarm devices will be discovered | false |
 | SNAPSHOTMODE | Enable still snapshot image updates from camera, see [Snapshot Options](#snapshot-options) for details | 'disabled' |
 | ENABLEMODES | Enable support for Location Modes for sites without a Ring Alarm Panel | false |
 | ENABLEPANIC | Enable panic buttons on Alarm Control Panel device | false |
@@ -76,7 +76,7 @@ This will install all required dependencies.  Edit config.js to configure your R
 | port | Port number for MQTT broker | 1883 |
 | mqtt_user | Username for MQTT broker | blank |
 | mqtt_pass | Password for MQTT broker | blank |
-| enable_cameras | Enable camera support, otherwise only alarm devices will be discovered | false |
+| enable_cameras | Enable camera/chime support, otherwise only alarm devices will be discovered | false |
 | snapshot_mode | Enable still snapshot image updates from camera, see [Snapshot Options](#snapshot-options) for details | 'disabled' |
 | enable_modes | Enable support for Location Modes for sites without a Ring Alarm Panel | false |
 | enable_panic | Enable panic buttons on Alarm Control Panel device | false |
@@ -190,7 +190,10 @@ MQTT topics are built consistently during each startup.  The easiest way to dete
     - Ring Range Extender
     - Ring External Siren
     - 3rd party Z-Wave switches, dimmers, and fans
-    - 3rd party motion/contact/tilt sensors (basic support)
+    - 3rd party Z-Wave motion/contact/tilt sensors (basic support)
+    - 3rd party Z-Wave thermostats and temperature sensors
+    - Battery Level (for devices that support battery, detailed data in entity attributes)
+    - Tamper Status (for devices that support tamper)
     - Device info sensor with detailed state information such as (exact info varies by device):
       - Battery level
       - Tamper state
@@ -199,18 +202,31 @@ MQTT topics are built consistently during each startup.  The easiest way to dete
       - Serial Number
       - Firmware status
       - Device volume
-  - Camera Devices
+  - Ring Camera Devices
     - Motion Events
     - Doorbell (Ding) Events
     - Lights (for devices with lights)
     - Siren (for devices with siren support)
-    - Camera (snapshot images refresh on motion events or scheduled refresh interval).
-      **Please note that live video is NOT supported by this addon and likely will never be due to the limitations of MQTT.**
+    - Camera Snapshots (images refresh on motion events or scheduled refresh interval).
+      **Please note that live video is NOT supported by this addon and likely never will be due to the limitations of MQTT.**
+    - Battery Level (detailed battery data such as charging status and aux battery state in attributes)
+    - Wireless Signal in dBm (Wireless network in attributes)
     - Device info sensor with detailed state information such as (exact info varies by device):
-      - Wireless Signal/Info
-      - Wired network status
-      - Firmware Info
-      - Latest communications status
+      - Wireless Signal
+      - Wired Network Name
+      - Firmware Status
+      - Last Update Status
+  - Ring Chimes
+    - Volume Control
+    - Play ding/motion sounds
+    - Enter/Exit Snooze Mode
+    - Set Snooze Minute (must be set prior to entering snooze state)
+    - Wireless Signal in dBm (Wireless network in attributes)
+    - Device info sensor with detailed state information such as (exact info varies by device):
+      - Wireless Signal
+      - Wired Network Name
+      - Firmware Status
+      - Last Update Status
   - Smart Lighting
     - Lighting and motion sensor devices
     - Light groups
@@ -219,8 +235,7 @@ MQTT topics are built consistently during each startup.  The easiest way to dete
     - For locations without a Ring Alarm, can add a panel for controlling camera settings via Ring Location Modes
     - Displays as an Alarm Panel in Home Assistant for setting modes and displaying mode state
     - Must be explicitly enabled using "enabled_modes" config or ENABLEMODES envrionment variable
-- Full Home Assistant MQTT Discovery - devices appear automatically
-- Full Home Assistant Device registry support - entities appear with parent device
+- Full Home Assistant MQTT discovery and device registry support - devices appear automatically
 - Consistent topic creation based on location/device ID - easy to use with MQTT tools like Node-RED
 - Arm/Disarm commands are monitored for success and retried automatically
 - Support for mulitple locations

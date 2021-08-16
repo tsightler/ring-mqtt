@@ -1,122 +1,42 @@
 const debug = require('debug')('ring-mqtt')
 const utils = require( '../lib/utils' )
-const AlarmDevice = require('./alarm-device')
-const alarmStates = require('ring-client-api').allAlarmStates
-const RingDeviceType = require('ring-client-api').RingDeviceType
+const { allAlarmStates, RingDeviceType } = require('ring-client-api')
+const RingSocketDevice = require('./base-socket-device')
 
-class SecurityPanel extends AlarmDevice {
+class SecurityPanel extends RingSocketDevice {
     constructor(deviceInfo) {
-        super(deviceInfo)
-
-        // Home Assistant component type
-        this.component = 'alarm_control_panel'
-
-        // Device data for Home Assistant device registry
+        super(deviceInfo, 'alarmState')
         this.deviceData.mdl = 'Alarm Control Panel'
-        this.deviceData.name = this.device.location.name + ' Alarm'
-
-        // Build required MQTT topics
-        this.stateTopic = this.deviceTopic+'/alarm/state'
-        this.commandTopic = this.deviceTopic+'/alarm/command'
-        this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
+        this.deviceData.name = `${this.device.location.name} Alarm`
         
-        this.stateTopic_siren = this.deviceTopic+'/siren/state'
-        this.commandTopic_siren = this.deviceTopic+'/siren/command'
-        this.configTopic_siren = 'homeassistant/switch/'+this.locationId+'/'+this.deviceId+'_siren/config'
-
-        this.stateTopic_bypass = this.deviceTopic+'/bypass/state'
-        this.commandTopic_bypass = this.deviceTopic+'/bypass/command'
-        this.configTopic_bypass = 'homeassistant/switch/'+this.locationId+'/'+this.deviceId+'_bypass/config'
-        this.bypassEnabled = false
+        this.entity.alarm = {
+            component: 'alarm_control_panel',
+            isLegacyEntity: true  // Legacy compatibility
+        }
+        this.entity.siren = {
+            component: 'switch',
+            icon: 'mdi:alarm-light',
+            name: `${this.device.location.name} Siren`
+        }
+        this.entity.bypass = {
+            component: 'switch',
+            name: `${this.device.location.name} Arming Bypass Mode`,
+            state: false,
+            icon: 'mdi:transit-skip'
+        }
 
         if (this.config.enable_panic) {
-            // Build required MQTT topics for device
-            this.stateTopic_police = this.deviceTopic+'/police/state'
-            this.commandTopic_police = this.deviceTopic+'/police/command'
-            this.configTopic_police = 'homeassistant/switch/'+this.locationId+'/'+this.deviceId+'_police/config'
-
-            this.stateTopic_fire = this.deviceTopic+'/fire/state'
-            this.commandTopic_fire = this.deviceTopic+'/fire/command'
-            this.configTopic_fire = 'homeassistant/switch/'+this.locationId+'/'+this.deviceId+'_fire/config'
+            this.entity.police = { 
+                component: 'switch',
+                name: `${this.device.location.name} Panic - Police`,
+                icon: 'mdi:police-badge'
+            }
+            this.entity.fire = { 
+                component: 'switch',
+                name: `${this.device.location.name} Panic - Fire`,
+                icon: 'mdi:fire'
+            }
         }
-    }
-
-    initDiscoveryData() {
-        // Build the MQTT discovery messages
-        this.discoveryData.push({
-            message: {
-                name: this.deviceData.name,
-                unique_id: this.deviceId,
-                availability_topic: this.availabilityTopic,
-                payload_available: 'online',
-                payload_not_available: 'offline',
-                state_topic: this.stateTopic,
-                command_topic: this.commandTopic,
-                ... this.config.disarm_code ? { code: this.config.disarm_code.toString() } : {},
-                ... this.config.disarm_code ? { code_arm_required: false, code_disarm_required: true } : {},
-                device: this.deviceData
-            },
-            configTopic: this.configTopic
-        })
-
-        this.discoveryData.push({
-            message: {
-                name: this.device.location.name+' Siren',
-                unique_id: this.deviceId+'_siren',
-                availability_topic: this.availabilityTopic,
-                payload_available: 'online',
-                payload_not_available: 'offline',
-                state_topic: this.stateTopic_siren,
-                command_topic: this.commandTopic_siren,
-                device: this.deviceData
-            },
-            configTopic: this.configTopic_siren
-        })
-
-        this.discoveryData.push({
-            message: {
-                name: this.device.location.name+' Arming Bypass Mode',
-                unique_id: this.deviceId+'_bypass',
-                availability_topic: this.availabilityTopic,
-                payload_available: 'online',
-                payload_not_available: 'offline',
-                state_topic: this.stateTopic_bypass,
-                command_topic: this.commandTopic_bypass,
-                device: this.deviceData
-            },
-            configTopic: this.configTopic_bypass
-        })
-
-        if (this.config.enable_panic) {
-            this.discoveryData.push({
-                message: {
-                    name: this.device.location.name+' Panic - Police',
-                    unique_id: this.deviceId+'_police',
-                    availability_topic: this.availabilityTopic,
-                    payload_available: 'online',
-                    payload_not_available: 'offline',
-                    state_topic: this.stateTopic_police,
-                    command_topic: this.commandTopic_police,
-                    device: this.deviceData
-                },
-                configTopic: this.configTopic_police
-            })
-
-            this.discoveryData.push({
-                message: {
-                    name: this.device.location.name+' Panic - Fire',
-                    unique_id: this.deviceId+'_fire',
-                    availability_topic: this.availabilityTopic,
-                    payload_available: 'online',
-                    payload_not_available: 'offline',
-                    state_topic: this.stateTopic_fire,
-                    command_topic: this.commandTopic_fire,
-                    device: this.deviceData
-                },
-                configTopic: this.configTopic_fire
-            })
-        }
-        this.initInfoDiscoveryData('alarmState')
     }
 
     publishData() {
@@ -124,7 +44,7 @@ class SecurityPanel extends AlarmDevice {
         const alarmInfo = this.device.data.alarmInfo ? this.device.data.alarmInfo : []
 
         // If alarm is active report triggered or, if entry-delay, pending
-        if (alarmStates.includes(alarmInfo.state))  {
+        if (allAlarmStates.includes(alarmInfo.state))  {
             alarmMode = alarmInfo.state === 'entry-delay' ? 'pending' : 'triggered'
         } else {
             switch(this.device.data.mode) {
@@ -147,16 +67,13 @@ class SecurityPanel extends AlarmDevice {
                     alarmMode = 'unknown'
             }
         }
-        // Publish device sensor state
-        this.publishMqtt(this.stateTopic, alarmMode, true)
+        this.publishMqtt(this.entity.alarm.state_topic, alarmMode, true)
 
-        // Publish siren state
         const sirenState = (this.device.data.siren && this.device.data.siren.state === 'on') ? 'ON' : 'OFF'
-        this.publishMqtt(this.stateTopic_siren, sirenState, true)
+        this.publishMqtt(this.entity.siren.state_topic, sirenState, true)
 
-        // Publish bypass state
-        const bypassState = this.bypassEnabled ? 'ON' : 'OFF'
-        this.publishMqtt(this.stateTopic_bypass, bypassState, true)
+        const bypassState = this.entity.bypass.state ? 'ON' : 'OFF'
+        this.publishMqtt(this.entity.bypass.state_topic, bypassState, true)
 
         if (this.config.enable_panic) {
             let policeState = 'OFF'
@@ -175,11 +92,10 @@ class SecurityPanel extends AlarmDevice {
                     fireState = 'ON'
                     debug('Fire alarm is active for '+this.device.location.name)
             }
-            this.publishMqtt(this.stateTopic_police, policeState, true)
-            this.publishMqtt(this.stateTopic_fire, fireState, true)
+            this.publishMqtt(this.entity.police.state_topic, policeState, true)
+            this.publishMqtt(this.entity.fire.state_topic, fireState, true)
         }
 
-        // Publish device attributes (batterylevel, tamper status)
         this.publishAttributes()
     }
     
@@ -189,25 +105,31 @@ class SecurityPanel extends AlarmDevice {
             exitDelayMs = this.device.data.transitionDelayEndTimestamp - Date.now()
             if (exitDelayMs <= 0) {
                 // Publish device sensor state
-                this.publishMqtt(this.stateTopic, 'armed_away', true)
+                this.publishMqtt(this.entity.alarm.state_topic, 'armed_away', true)
             }
         }
     }
 
     // Process messages from MQTT command topic
-    processCommand(message, topic) {
-        if (topic == this.commandTopic) {
-            this.setAlarmMode(message)
-        } else if (topic == this.commandTopic_siren) {
-            this.setSirenMode(message)
-        } else if (topic == this.commandTopic_bypass) {
-            this.setBypassMode(message)
-        } else if (topic == this.commandTopic_police) {
-            this.setPoliceMode(message)
-        } else if (topic == this.commandTopic_fire) {
-            this.setFireMode(message)
-        } else {
-            debug('Received unknown command topic '+topic+' for switch: '+this.deviceId)
+    processCommand(message, componentCommand) {
+        switch (componentCommand) {
+            case 'alarm/command':
+                this.setAlarmMode(message)
+                break;
+            case 'siren/command':
+                this.setSirenMode(message)
+                break;
+            case 'bypass/command':
+                this.setBypassMode(message)
+                break;
+            case 'police/command':
+                this.setPoliceMode(message)
+                break;
+            case 'fire/command':
+                this.setFireMode(message)
+                break;
+            default:
+                debug('Received unknown command topic '+topic+' for switch: '+this.deviceId)
         }
     }
 
@@ -223,7 +145,7 @@ class SecurityPanel extends AlarmDevice {
             let bypassDeviceIds = []
 
             // If arming bypass arming mode is enabled, get device ids requiring bypass
-            if (message.toLowerCase() !== 'disarm' && this.bypassEnabled) {
+            if (message.toLowerCase() !== 'disarm' && this.entity.bypass.state) {
                 const bypassDevices = (await this.device.location.getDevices()).filter((device) => {
                     return (
                         (device.deviceType === RingDeviceType.ContactSensor && device.data.faulted) ||
@@ -244,7 +166,7 @@ class SecurityPanel extends AlarmDevice {
             if (!setAlarmSuccess) { await utils.sleep(10) }
         }
         // Check the return status and print some debugging for failed states
-        if (setAlarmSuccess == false ) {
+        if (!setAlarmSuccess) {
             debug('Alarm could not enter proper arming mode after all retries...Giving up!')
         } else if (setAlarmSuccess == 'unknown') {
             debug('Unknown alarm arming mode requested.')
@@ -287,11 +209,11 @@ class SecurityPanel extends AlarmDevice {
         switch(message.toLowerCase()) {
             case 'on':
                 debug('Enabling arming bypass mode for '+this.device.location.name)
-                this.bypassEnabled = true
+                this.entity.bypass.state = true
                 break;
             case 'off': {
                 debug('Disabling arming bypass mode for '+this.device.location.name)
-                this.bypassEnabled = false
+                this.entity.bypass.state = false
                 break;
             }
             default:

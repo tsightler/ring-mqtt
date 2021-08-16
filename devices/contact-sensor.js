@@ -1,57 +1,40 @@
-const AlarmDevice = require('./alarm-device')
+const RingSocketDevice = require('./base-socket-device')
 
-class ContactSensor extends AlarmDevice {
+class ContactSensor extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo)
 
-         // Set Home Assistant component type and device class (appropriate icon in UI)
+        let device_class = 'None'
+
+        // Override icons and and topics
         switch (this.device.deviceType) {
+            case 'sensor.contact':
+                this.entityName = 'contact'
+                this.deviceData.mdl = 'Contact Sensor'
+                device_class = (this.device.data.subCategoryId == 2) ? 'window' : 'door'
+                break;
             case 'sensor.zone':
-                this.className = 'safety'
-                this.sensorType = 'zone'
+                this.entityName = 'zone'
                 this.deviceData.mdl = 'Retrofit Zone'
+                device_class = 'safety'
                 break;
             case 'sensor.tilt':
-                this.className = 'garage_door'
-                this.sensorType = 'tilt'
+                this.entityName = 'tilt'
                 this.deviceData.mdl = 'Tilt Sensor'
+                device_class = 'garage_door'
                 break;
-            default:
-                this.className = (this.device.data.subCategoryId == 2) ? 'window' : 'door'
-                this.sensorType = 'contact'
-                this.deviceData.mdl = 'Contact Sensor'
         }
-        this.component = 'binary_sensor'
 
-        // Build required MQTT topics
-        this.stateTopic = this.deviceTopic+'/'+this.sensorType+'/state'
-        this.configTopic = 'homeassistant/'+this.component+'/'+this.locationId+'/'+this.deviceId+'/config'
-    }
-
-    initDiscoveryData() {
-        // Build the MQTT discovery message
-        this.discoveryData.push({
-            message: {
-                name: this.device.name,
-                unique_id: this.deviceId,
-                availability_topic: this.availabilityTopic,
-                payload_available: 'online',
-                payload_not_available: 'offline',
-                state_topic: this.stateTopic,
-                device_class: this.className,
-                device: this.deviceData
-            },
-            configTopic: this.configTopic
-        })
-
-        this.initInfoDiscoveryData()
+        this.entity[this.entityName] = {
+            component: 'binary_sensor',
+            device_class: device_class,
+            isLegacyEntity: true  // Legacy compatibility
+        }
     }
 
     publishData() {
         const contactState = this.device.data.faulted ? 'ON' : 'OFF'
-        // Publish sensor state
-        this.publishMqtt(this.stateTopic, contactState, true)
-        // Publish attributes (batterylevel, tamper status)
+        this.publishMqtt(this.entity[this.entityName].state_topic, contactState, true)
         this.publishAttributes()
     }
 }
