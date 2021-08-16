@@ -67,6 +67,7 @@ class Camera extends RingPolledDevice {
         }
       
         this.entity = {
+            ...this.entity,
             motion: {
                 component: 'binary_sensor',
                 device_class: 'motion',
