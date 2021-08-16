@@ -417,7 +417,7 @@ async function initConfig(configFile) {
         if (CONFIG.location_ids) { CONFIG.location_ids = CONFIG.location_ids.split(',') }
     }
     // If Home Assistant addon, try config or environment for MQTT settings
-    if (process.env.HASSADDON) {
+    if (process.env.ISADDON) {
         CONFIG.host = process.env.MQTTHOST
         CONFIG.port = process.env.MQTTPORT
         CONFIG.mqtt_user = process.env.MQTTUSER
@@ -440,7 +440,7 @@ async function initConfig(configFile) {
 // Save updated refresh token to config or state file
 async function updateToken(newRefreshToken, oldRefreshToken, stateFile, stateData, configFile) {
     if (!oldRefreshToken) { return }
-    if (process.env.HASSADDON || process.env.ISDOCKER) {
+    if (process.env.ISADDON || process.env.ISDOCKER) {
         stateData.ring_token = newRefreshToken
         fs.writeFile(stateFile, JSON.stringify(stateData, null, 2), (err) => {
             if (err) throw err;
@@ -466,9 +466,9 @@ const main = async(generatedToken) => {
     let mqttClient
 
     // For HASSIO and DOCKER latest token is saved in /data/ring-state.json
-    if (process.env.HASSADDON || process.env.ISDOCKER) { 
+    if (process.env.ISADDON || process.env.ISDOCKER) { 
         stateFile = '/data/ring-state.json'
-        if (process.env.HASSADDON) {
+        if (process.env.ISADDON) {
             configFile = '/data/options.json'
             // For addon config is performed via Web UI
             if (!tokenApp.listener) {
@@ -504,7 +504,7 @@ const main = async(generatedToken) => {
             debug('No refresh token was found in state file and RINGTOKEN is not configured.')
             process.exit(2)
         } else {
-            if (process.env.HASSADDON) {
+            if (process.env.ISADDON) {
                 debug('No refresh token was found in saved state file or config file.')
                 debug('Use the web interface to generate a new token.')
             } else {
@@ -532,7 +532,7 @@ const main = async(generatedToken) => {
         if (!(CONFIG.location_ids === undefined || CONFIG.location_ids == 0)) {
             ringAuth.locationIds = CONFIG.location_ids
         }
-        ringAuth.controlCenterDisplayName = (process.env.HASSADDON) ? 'ring-mqtt-addon' : 'ring-mqtt'
+        ringAuth.controlCenterDisplayName = (process.env.ISADDON) ? 'ring-mqtt-addon' : 'ring-mqtt'
 
         if (!stateData.hasOwnProperty('systemId')) {
             stateData.systemId = (createHash('sha256').update(randomBytes(32)).digest('hex'))
@@ -566,7 +566,7 @@ const main = async(generatedToken) => {
                 debug(colors.brightRed(error.message))
                 debug(colors.brightRed('Could not create the API instance. This could be because the Ring servers are down/unreachable'))
                 debug(colors.brightRed('or maybe all available refresh tokens are invalid.'))
-                if (process.env.HASSADDON) {
+                if (process.env.ISADDON) {
                     debug('Restart the addon to try again or use the web interface to generate a new token.')
                 } else {
                     debug('Please check the configuration and network settings, or generate a new refresh token, and try again.')
@@ -578,7 +578,7 @@ const main = async(generatedToken) => {
             if (process.env.ISDOCKER) {
                 debug('Could not connect with saved refresh token and RINGTOKEN is not configured.')    
                 process.exit(2)
-            } else if (process.env.HASSADDON) {
+            } else if (process.env.ISADDON) {
                 debug('Could not connect with saved refresh token and no refresh token exist in config file.')
                 debug('Please use the web interface to generate a new token or restart the addon to try the existing token again.')
             }
