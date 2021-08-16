@@ -328,7 +328,7 @@ class Camera extends RingPolledDevice {
                 attributes.wirelessSignal = deviceHealth.latest_signal_strength
             }            
             this.publishMqtt(this.entity.info.state_topic, JSON.stringify(attributes), true)
-            this.publishAttributeEntities()
+            this.publishAttributeEntities(attributes)
         }
     }
 

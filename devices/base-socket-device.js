@@ -95,7 +95,7 @@ class RingSocketDevice extends RingDevice {
             ... this.device.data.hasOwnProperty('maxVolume') ? {maxVolume: this.device.data.maxVolume } : {},
         }
         this.publishMqtt(this.entity.info.state_topic, JSON.stringify(attributes), true)
-        this.publishAttributeEntities()
+        this.publishAttributeEntities(attributes)
     }
 }
 

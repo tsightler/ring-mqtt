@@ -158,7 +158,7 @@ class RingDevice {
         this.schedulePublishAttributes()
     }
 
-    publishAttributeEntities() {
+    publishAttributeEntities(attributes) {
         // Find any attribute entities and publish the matching subset of attributes
         Object.keys(this.entity).forEach(entityKey => {
             if (this.entity[entityKey].hasOwnProperty('attributes') && this.entity[entityKey].attributes !== true) {

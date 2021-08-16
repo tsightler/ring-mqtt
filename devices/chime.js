@@ -94,7 +94,7 @@ class Chime extends RingPolledDevice {
             attributes.firmwareStatus = deviceHealth.firmware
             attributes.lastUpdate = deviceHealth.updated_at.slice(0,-6)+"Z"
             this.publishMqtt(this.entity.info.state_topic, JSON.stringify(attributes), true)
-            this.publishAttributeEntities()
+            this.publishAttributeEntities(attributes)
         }
     }
 
