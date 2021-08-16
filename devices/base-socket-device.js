@@ -41,7 +41,7 @@ class RingSocketDevice extends RingDevice {
                     unit_of_measurement: '%',
                     state_class: 'measurement',
                     parent_state_topic: 'info/state',
-                    attributes: true,
+                    attributes: 'battery',
                     value_template: '{{ value_json["batteryLevel"] | default }}'
                 }
             } : {},
@@ -71,37 +71,45 @@ class RingSocketDevice extends RingDevice {
 
         // Get full set of device data and publish to info topic
         const attributes = {
-            battery: {
-                ... this.device.data.hasOwnProperty('batteryLevel')
-                    ? { batteryLevel: this.device.data.batteryLevel === 99 ? 100 : this.device.data.batteryLevel } : {},
-                ... this.device.data.batteryStatus && this.device.data.batteryStatus !== 'none'
-                    ? { batteryStatus: this.device.data.batteryStatus } : {},
-                ... (this.device.data.hasOwnProperty('auxBattery') && this.device.data.auxBattery.hasOwnProperty('level'))
-                    ? { auxBatteryLevel: this.device.data.auxBattery.level === 99 ? 100 : this.device.data.auxBattery.level } : {},
-                ... (this.device.data.hasOwnProperty('auxBattery') && this.device.data.auxBattery.hasOwnProperty('status'))
-                    ? { auxBatteryStatus: this.device.data.auxBattery.status } : {}
-            },
-            misc: {
-                ... this.device.data.acStatus ? { acStatus: this.device.data.acStatus } : {},
-                ... alarmState ? { alarmState: alarmState } : {},
-                ... this.device.data.hasOwnProperty('brightness') ? { brightness: this.device.data.brightness } : {},
-                ... this.device.data.chirps && this.device.deviceType == 'security-keypad' ? {chirps: this.device.data.chirps } : {},
-                ... this.device.data.commStatus ? { commStatus: this.device.data.commStatus } : {},
-                ... this.device.data.firmwareUpdate ? { firmwareStatus: this.device.data.firmwareUpdate.state } : {},
-                ... this.device.data.lastCommTime ? { lastCommTime: utils.getISOTime(this.device.data.lastUpdate) } : {},
-                ... this.device.data.lastUpdate ? { lastUpdate: utils.getISOTime(this.device.data.lastUpdate) } : {},
-                ... this.device.data.linkQuality ? { linkQuality: this.device.data.linkQuality } : {},
-                ... this.device.data.powerSave ? { powerSave: this.device.data.powerSave } : {},
-                ... this.device.data.serialNumber ? { serialNumber: this.device.data.serialNumber } : {},
-                ... this.device.data.tamperStatus ? { tamperStatus: this.device.data.tamperStatus } : {},
-                ... this.device.data.hasOwnProperty('volume') ? {volume: this.device.data.volume } : {},
-                ... this.device.data.hasOwnProperty('maxVolume') ? {maxVolume: this.device.data.maxVolume } : {},
+            ... this.device.data.hasOwnProperty('batteryLevel')
+                ? { batteryLevel: this.device.data.batteryLevel === 99 ? 100 : this.device.data.batteryLevel } : {},
+            ... this.device.data.batteryStatus && this.device.data.batteryStatus !== 'none'
+                ? { batteryStatus: this.device.data.batteryStatus } : {},
+            ... (this.device.data.hasOwnProperty('auxBattery') && this.device.data.auxBattery.hasOwnProperty('level'))
+                ? { auxBatteryLevel: this.device.data.auxBattery.level === 99 ? 100 : this.device.data.auxBattery.level } : {},
+            ... (this.device.data.hasOwnProperty('auxBattery') && this.device.data.auxBattery.hasOwnProperty('status'))
+                ? { auxBatteryStatus: this.device.data.auxBattery.status } : {},
+            ... this.device.data.acStatus ? { acStatus: this.device.data.acStatus } : {},
+            ... alarmState ? { alarmState: alarmState } : {},
+            ... this.device.data.hasOwnProperty('brightness') ? { brightness: this.device.data.brightness } : {},
+            ... this.device.data.chirps && this.device.deviceType == 'security-keypad' ? {chirps: this.device.data.chirps } : {},
+            ... this.device.data.commStatus ? { commStatus: this.device.data.commStatus } : {},
+            ... this.device.data.firmwareUpdate ? { firmwareStatus: this.device.data.firmwareUpdate.state } : {},
+            ... this.device.data.lastCommTime ? { lastCommTime: utils.getISOTime(this.device.data.lastUpdate) } : {},
+            ... this.device.data.lastUpdate ? { lastUpdate: utils.getISOTime(this.device.data.lastUpdate) } : {},
+            ... this.device.data.linkQuality ? { linkQuality: this.device.data.linkQuality } : {},
+            ... this.device.data.powerSave ? { powerSave: this.device.data.powerSave } : {},
+            ... this.device.data.serialNumber ? { serialNumber: this.device.data.serialNumber } : {},
+            ... this.device.data.tamperStatus ? { tamperStatus: this.device.data.tamperStatus } : {},
+            ... this.device.data.hasOwnProperty('volume') ? {volume: this.device.data.volume } : {},
+            ... this.device.data.hasOwnProperty('maxVolume') ? {maxVolume: this.device.data.maxVolume } : {},
+        }
+        this.publishMqtt(this.entity.info.state_topic, JSON.stringify(attributes), true)
+
+        // Find any attribute entities and publish the matching subset of attributes
+        Object.keys(this.entity).forEach(entityKey => {
+            if (this.entity[entityKey].hasOwnProperty('attributes') && this.entity[entityKey].attributes !== true) {
+                const entityAttributes = Object.keys(attributes)
+                    .filter(key => key.match(this.entity[entityKey].attributes.toLowerCase()))
+                    .reduce((filteredAttributes, key) => {
+                        filteredAttributes[key] = attributes[key]
+                        return filteredAttributes
+                    }, {})
+                if (Object.keys(entityAttributes).length > 0) {
+                    this.publishMqtt(this.entity[entityKey].json_attributes_topic, JSON.stringify(entityAttributes), true)
+                }
             }
-        }
-        this.publishMqtt(this.entity.info.state_topic, JSON.stringify({...attributes.battery,...attributes.misc}), true)
-        if (this.entity.hasOwnProperty('battery')) {
-            this.publishMqtt(this.entity.battery.json_attributes_topic, JSON.stringify(attributes.battery), true)
-        }
+        })
     }
 }
 

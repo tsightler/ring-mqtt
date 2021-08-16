@@ -209,7 +209,7 @@ MQTT topics are built consistently during each startup.  The easiest way to dete
     - Siren (for devices with siren support)
     - Camera Snapshots (images refresh on motion events or scheduled refresh interval).
       **Please note that live video is NOT supported by this addon and likely never will be due to the limitations of MQTT.**
-    - Battery Level (detailed battery data such as charging status and aux battery in attributes)
+    - Battery Level (detailed battery data such as charging status and aux battery state in attributes)
     - Wireless Signal in dBm (Wireless network in attributes)
     - Device info sensor with detailed state information such as (exact info varies by device):
       - Wireless Signal
