@@ -30,11 +30,11 @@ class Camera extends RingPolledDevice {
                 } 
             } : {},
             snapshot: {
-                motion: false, 
-                interval: false,
-                intervalTimerId: null,
                 autoInterval: false,
                 currentImage: null,
+                interval: false,
+                intervalTimerId: null,
+                motion: false, 
                 timestamp: null
             },
             livestream: {
@@ -50,10 +50,10 @@ class Camera extends RingPolledDevice {
             motionDetectionEnabled: null
         }
 
-        if (this.config.snapshot_mode === "motion" || this.config.snapshot_mode === "interval" || this.config.snapshot_mode === "all" ) {
-            this.data.snapshot.motion = (this.config.snapshot_mode === "motion" || this.config.snapshot_mode === "all") ? true : false
+        if (this.config.snapshot_mode.match(/^(motion|interval|all)$/)) {
+            this.data.snapshot.motion = (this.config.snapshot_mode.match(/^(motion|all)$/)) ? true : false
 
-            if (this.config.snapshot_mode === "interval" || this.config.snapshot_mode === "all") {
+            if (this.config.snapshot_mode.match(/^(interval|all)$/)) {
                 this.data.snapshot.autoInterval = true
                 if (this.device.operatingOnBattery) {
                     if (this.device.data.settings.hasOwnProperty('lite_24x7') && this.device.data.settings.lite_24x7.enabled) {
@@ -179,7 +179,7 @@ class Camera extends RingPolledDevice {
             this.publishDingStates()
             if (this.data.snapshot.motion || this.data.snapshot.interval) {
                 this.data.snapshot.currentImage ? this.publishSnapshot() : this.refreshSnapshot()
-                if (this.data.snapshot.autoInterval && this.device.data.settings.hasOwnProperty('lite_24x7')) {
+                if (this.data.snapshot.interval) {
                     this.publishSnapshotInterval(isPublish)
                 }
             }
@@ -360,13 +360,15 @@ class Camera extends RingPolledDevice {
     }
 
     async publishSnapshotInterval(isPublish) {
-        // Update snapshot frequency in case it's changed
-        if (this.data.snapshot.interval !== this.device.data.settings.lite_24x7.frequency_secs) {
-            this.data.snapshot.interval = this.device.data.settings.lite_24x7.frequency_secs
+        if (isPublish) {
             this.publishMqtt(this.entity.snapshot_interval.state_topic, this.data.snapshot.interval.toString(), true)
-            clearTimeout(this.data.snapshot.intervalTimerId)
-            this.scheduleSnapshotRefresh()
-        } else if (isPublish) {
+        } else {
+            // Update snapshot frequency in case it's changed
+            if (this.data.snapshot.autoInterval && this.data.snapshot.interval !== this.device.data.settings.lite_24x7.frequency_secs) {
+                this.data.snapshot.interval = this.device.data.settings.lite_24x7.frequency_secs
+                clearTimeout(this.data.snapshot.intervalTimerId)
+                this.scheduleSnapshotRefresh()
+            }
             this.publishMqtt(this.entity.snapshot_interval.state_topic, this.data.snapshot.interval.toString(), true)
         }
     }
@@ -585,10 +587,10 @@ class Camera extends RingPolledDevice {
         } else {
             this.data.snapshot.interval = Math.round(message)
             this.data.snapshot.autoInterval = false
-            debug ('Snapshot refresh interval as been set to '+this.data.snapshot.interval+' seconds')
-            this.publishSnapshotInterval()
             clearTimeout(this.data.snapshot.intervalTimerId)
             this.scheduleSnapshotRefresh()
+            this.publishSnapshotInterval()
+            debug ('Snapshot refresh interval has been set to '+this.data.snapshot.interval+' seconds')
         }
     }
 }
