@@ -48,9 +48,12 @@ class BaseStation extends RingSocketDevice {
 
     // Process messages from MQTT command topic
     processCommand(message, componentCommand) {
+        const entityKey = componentCommand.split('/')[0]
         switch (componentCommand) {
             case 'volume/command':
-                this.setVolumeLevel(message)
+                if (this.entity.hasOwnProperty(entityKey)) {
+                    this.setVolumeLevel(message)
+                }
                 break;
             default:
                 debug('Received unknown command topic '+topic+' for keypad: '+this.deviceId)

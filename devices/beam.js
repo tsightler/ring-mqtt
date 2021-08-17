@@ -80,15 +80,22 @@ class Beam extends RingSocketDevice {
 
     // Process messages from MQTT command topic
     processCommand(message, componentCommand) {
+        const entityKey = componentCommand.split('/')[0]
         switch (componentCommand) {
             case 'light/command':
-                this.setLightState(message)
+                if (this.entity.hasOwnProperty(entityKey)) {
+                    this.setLightState(message)
+                }
                 break;
             case 'light/brightness_command':
-                this.setLightLevel(message)
+                if (this.entity.hasOwnProperty(entityKey)) {
+                    this.setLightLevel(message)
+                }
                 break;
             case 'beam_duration/command':
-                this.setLightDuration(message)
+                if (this.entity.hasOwnProperty(entityKey)) {
+                    this.setLightDuration(message)
+                }
                 break;
             default:
                 debug('Received unknown command topic '+topic+' for beams light: '+this.deviceId)

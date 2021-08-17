@@ -518,18 +518,27 @@ class Camera extends RingPolledDevice {
 
     // Process messages from MQTT command topic
     processCommand(message, componentCommand) {
+        const entityKey = componentCommand.split('/')[0]
         switch (componentCommand) {
             case 'light/command':
-                this.setLightState(message)
+                if (this.entity.hasOwnProperty(entityKey)) {
+                    this.setLightState(message)
+                }
                 break;
             case 'siren/command':
-                this.setSirenState(message)
+                if (this.entity.hasOwnProperty(entityKey)) {
+                    this.setSirenState(message)
+                }
                 break;
             case 'snapshot/command':
-                this.setSnapshotInterval(message)
+                if (this.entity.hasOwnProperty(entityKey)) {
+                    this.setSnapshotInterval(message)
+                }
                 break;
             case 'snapshot_interval/command':
-                this.setSnapshotInterval(message)
+                if (this.entity.hasOwnProperty(entityKey)) {
+                    this.setSnapshotInterval(message)
+                }
                 break;
             default:
                 debug('Somehow received message to unknown state topic for camera '+this.deviceId)
