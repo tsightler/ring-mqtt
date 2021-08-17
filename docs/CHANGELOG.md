@@ -1,3 +1,12 @@
+## v4.7.1
+***** IMPORTANT NOTE *****  
+
+If upgrading from version 4.6.x or earlier, please read the 4.7.0 change notes as well!
+
+ **Fixed Bugs**
+ - Smart Lighting support caused crashes in 4.7.0
+ - Proper use of systemId with Ring authentication (addon only for now, hopefully eliminates spamming Authorized Client Devices in Account Control Center)
+
 ## v4.7.0
 ***** IMPORTANT NOTE *****
 
