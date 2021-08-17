@@ -172,9 +172,9 @@ async function updateRingData(mqttClient, ringClient) {
         debug(colors.green('-'.repeat(80)))
         // If new location, set custom properties and add to location list
         if (ringLocations.find(l => l.locationId == location.locationId)) {
-            debug(colors.green(`Existing location: ${colors.cyan(location.name)} (${location.id})`))
+            debug(colors.green(`Existing location: ${colors.cyan(location.name)} `)+colors.white(`(${location.id})`))
         } else {
-            debug(colors.green(`New location: ${colors.cyan(location.name)} (${location.id})`))
+            debug(colors.green(`New location: ${colors.cyan(location.name)} `)+colors.white(`(${location.id})`))
             location.isSubscribed = false
             location.isConnected = false
             ringLocations.push(location)
@@ -205,10 +205,10 @@ async function updateRingData(mqttClient, ringClient) {
         // Update Ring devices for location
         for (const device of allDevices) {
             const deviceId = (device instanceof RingCamera || device instanceof RingChime) ? device.data.device_id : device.id
-            let foundMessage = 'New'
+            let foundMessage = '  New device: '
             let ringDevice = ringDevices.find(d => d.deviceId === deviceId && d.locationId === location.locationId)
             if (ringDevice) {
-                foundMessage = 'Existing'
+                foundMessage = '  Existing device: '
             } else {
                 ringDevice = await getDevice(device, mqttClient, allDevices)
                 switch (ringDevice) {
@@ -223,10 +223,15 @@ async function updateRingData(mqttClient, ringClient) {
                 }
             }
             if (ringDevice) {
-                debug(colors.green(`  ${foundMessage} device: ${colors.cyan(ringDevice.deviceData.name)} (${ringDevice.device.deviceType}, ${ringDevice.deviceId})`))
+                debug(colors.green(foundMessage+colors.cyan(ringDevice.deviceData.name)+colors.white(' ('+ringDevice.device.deviceType+')')))
                 if (ringDevice.device.deviceType === RingDeviceType.Thermostat) {
-                    debug(colors.green(`          ├─: ${colors.cyan('Thermostat Operating Status')} (${ringDevice.operatingStatus.deviceType}, ${ringDevice.operatingStatus.id})`))
-                    debug(colors.green(`          └─: ${colors.cyan('Thermostat Temperature Sensor')} (${ringDevice.temperatureSensor.deviceType}, ${ringDevice.temperatureSensor.id})`))
+                    debug(colors.green(`${' '.repeat(foundMessage.length-4)}│   `)+colors.white(ringDevice.deviceId))
+                    debug(colors.green(`          ├─: ${colors.cyan('Operating Status')}`)+colors.white(` (${ringDevice.operatingStatus.deviceType})`))
+                    debug(colors.green(`${' '.repeat(foundMessage.length-4)}│   `)+colors.white(ringDevice.operatingStatus.id))
+                    debug(colors.green(`          └─: ${colors.cyan('Temperature Sensor')}`)+colors.white(` (${ringDevice.temperatureSensor.deviceType})`))
+                    debug(colors.green(`${' '.repeat(foundMessage.length)}`)+colors.white(ringDevice.temperatureSensor.id))
+                } else {
+                    debug(colors.white(`${' '.repeat(foundMessage.length)}${ringDevice.deviceId}`))
                 }
             }
         }
