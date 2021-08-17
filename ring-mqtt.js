@@ -46,11 +46,7 @@ process.on('SIGTERM', processExit.bind(0))
 process.on('uncaughtException', processExit.bind(1))
 process.on('unhandledRejection', function(err) {
     if (err.message.match('token is not valid')) {
-        if (ringLocations.length > 0) { 
-            processExit.bind(1)
-        } else {
-            return
-        }
+        debug(err.message);
     } else {
         debug(err);
     }
