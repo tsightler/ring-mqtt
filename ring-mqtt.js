@@ -220,7 +220,7 @@ async function updateRingData(mqttClient, ringClient) {
             }
             
             if (ringDevice) {
-                debug(colors.green(foundMessage+colors.brightWhite.bgBlue(ringDevice.deviceData.name)+colors.brightWhite(' ('+ringDevice.device.deviceType+')')))
+                debug(colors.green(`${foundMessage} `)+colors.brightWhite.bgBlue(ringDevice.deviceData.name)+colors.brightWhite(' ('+ringDevice.device.deviceType+')'))
                 if (ringDevice.device.deviceType === RingDeviceType.Thermostat) {
                     debug(colors.green(`${' '.repeat(foundMessage.length-4)}│   `)+colors.brightWhite(ringDevice.deviceId))
                     debug(colors.green(`          ├─: ${colors.brightWhite.bgBlue('Operating Status')}`)+colors.brightWhite(` (${ringDevice.operatingStatus.deviceType})`))
