@@ -30,14 +30,14 @@ class Beam extends RingSocketDevice {
         }
     }
     
-    initMotion() {
+    initMotionEntity() {
         this.entity.motion = {
             component: 'binary_sensor',
             device_class: 'motion'
         }
     }
 
-    initLight() {
+    initLightEntity() {
         this.entity.light = {
             component: 'light',
             ...this.device.data.deviceType === 'switch.multilevel.beams' ? { brightness_scale: 100 } : {}
