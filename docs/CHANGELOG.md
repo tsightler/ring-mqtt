@@ -1,6 +1,6 @@
 ## v4.7.0
 ***** IMPORTANT NOTE *****
-Due to changes in the way this version generates configuration topics it is HIGHLY recommended to restart the Home Assistant instance as soon as possible after the upgrade.  Without this Home Assistant will log warnings/errors about non-unqiue entity IDs.  While ring-mqtt does generate unique IDs for entities, version 4.7.0 has standarized the generation of configuraiton topics which results in slightly different topics for some devices.  Because of this, the Home Assistant discovery process thinks it is seeing new devices with the same IDs as existing entities.  Restarting Home Assistant will allow for a fresh discovery cycle, and, since the entity IDs did not change from previous versions, only the configuration topics, there should be no changes required to existing devices.  For more details on the underlying engine changes you can read the "Other Changes" section below.
+Due to changes in the way ring-mqtt generates configuration topics it is HIGHLY recommended to restart the Home Assistant instance as soon as possible after the upgrade of this addon.  Without this Home Assistant will log warnings/errors about non-unqiue entity IDs.  While ring-mqtt does generate unique IDs for entities, version 4.7.0 has standarized the generation of configuraiton topics which results in slightly different topics for some devices.  Because of this, the Home Assistant discovery process thinks it is seeing new devices with the same IDs as existing entities.  Restarting Home Assistant will allow for a fresh discovery cycle, and, since the entity IDs did not change from previous versions, only the configuration topics, there should be no changes required to existing devices.  For more details on the underlying engine changes you can read the "Other Changes" section below.
 
 **New Device Support**
  - Ring Chimes
@@ -24,7 +24,7 @@ Due to changes in the way this version generates configuration topics it is HIGH
 **Minor Enhancements**
   - Improved default icons for various entities
   - Debug output now includes devices names along with topics and state for easier identification of activity
-  - On first startup a unique system ID is generated and stored in the state file and re-used in the future for all Ring authentication.  This will hopefully avoid the creation of mulitple entries in the Authorized Client Devices of the Ring Control Center.
+  - On first startup a unique system ID is generated and stored in the state file.
   - Authorized Client entries for this addon now identify as "ring-mqtt-addon" or "ring-mqtt" (based on addon or docker/standalone mode) in the Ring Control Center
   
  **Breaking Changes**
