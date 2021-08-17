@@ -480,15 +480,20 @@ const main = async(generatedToken) => {
     await initConfig(configFile)
 
     // If refresh token was generated via web UI, use it, otherwise attempt to get latest token from state file
-    if (generatedToken) {
-        debug('Using refresh token generated via web UI.')
-        stateData.ring_token = generatedToken
-    } else if (stateFile) {
+    if (stateFile) {
         if (fs.existsSync(stateFile)) {
             debug('Reading latest data from state file: '+stateFile)
             stateData = require(stateFile)
+            if (generatedToken) {
+                debug('Updating state data with token generated via web UI.')
+                stateData.ring_token = generatedToken
+            }
         } else {
             debug('File '+stateFile+' not found. No saved state data available.')
+            if (generatedToken) {
+                debug('Using refresh token generated via web UI.')
+                stateData.ring_token = generatedToken
+            }
         }
     }
     
@@ -537,8 +542,9 @@ const main = async(generatedToken) => {
             const tokenSource = generatedToken ? "generated" : "saved"
             debug('Attempting connection to Ring API using '+tokenSource+' refresh token.')
             ringAuth.refreshToken = stateData.ring_token
+            ringAuth.systemId = stateData.systemId
             try {
-                ringClient = new RingApi(ringAuth, stateData.systemId)
+                ringClient = new RingApi(ringAuth)
                 await ringClient.getProfile()
             } catch(error) {
                 ringClient = null
