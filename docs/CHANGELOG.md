@@ -1,5 +1,6 @@
 ## v4.7.0
 ***** IMPORTANT NOTE *****
+
 Due to changes in the way ring-mqtt generates configuration topics it is HIGHLY recommended to restart the Home Assistant instance as soon as possible after the upgrade of this addon.  Without this Home Assistant will log warnings/errors about non-unqiue entity IDs.  While ring-mqtt does generate unique IDs for entities, version 4.7.0 has standarized the generation of configuraiton topics which results in slightly different topics for some devices.  Because of this, the Home Assistant discovery process thinks it is seeing new devices with the same IDs as existing entities.  Restarting Home Assistant will allow for a fresh discovery cycle, and, since the entity IDs did not change from previous versions, only the configuration topics, there should be no changes required to existing devices.  For more details on the underlying engine changes you can read the "Other Changes" section below.
 
 **New Device Support**
@@ -27,13 +28,14 @@ Due to changes in the way ring-mqtt generates configuration topics it is HIGHLY 
   - On first startup a unique system ID is generated and stored in the state file.
   - Authorized Client entries for this addon now identify as "ring-mqtt-addon" or "ring-mqtt" (based on addon or docker/standalone mode) in the Ring Control Center
   
- **Breaking Changes**
+**Breaking Changes**
   - Due to the introduction of seperate entities for battery, tamper, and wireless status, the primary info sensor state for most devices has been changed to commStatus for most alarm devices (still alarmState for the Alarm Control Panel, and acStatus for Base Station, Range Extender, and Keypad).  For Cameras and Chimes the Info sensor state is now the last health update time (i.e. the last time health data was updated by Ring servers, usually every 4-8 hours, but sometimes longer).  Any automations or scripts that monitored the primary info sensor state, rather than a sepcific info sensor attribute, will need to be updated to use the new entity sensors.
 
- **Fixed Bugs**
+**Fixed Bugs**
   - "Addressed 'dict object' has no attribute" warnings due to changes in Home Assistant >=2021.4
   
-  **Other Changes**
+**Other Changes**
+
   Underneath the covers there are quite a number of changes to the engine with the primary goal to simplify and standardize device support and, in turn, make it easier to maintain and add new device support.  The prior model, if it can be called that, was a disaster of my own making with different devices using inconsistent methods for generating unique entity IDs and configuration topics.  This is primarily because I never really thought much about the device model when ring-mqtt was first created as there was only alarm, motion, and contact sensors.  Other devices have been bolted on haphazardly along the way without much thought or consistency so that needed to change and no better time than now.
   
   With the new model, device entities are defined in a consistent way and entity ID's, names, and MQTT topics are generated promgratically and consitently across all devices.  Key features of the new model:
