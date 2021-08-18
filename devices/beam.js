@@ -60,11 +60,11 @@ class Beam extends RingSocketDevice {
     }
 
     publishData() {
-        if (this.entity.motion.hasOwnProperty('state_topic')) {
+        if (this.entity.hasOwnProperty('motion') && this.entity.motion.hasOwnProperty('state_topic')) {
             const motionState = this.device.data.motionStatus === 'faulted' ? 'ON' : 'OFF'
             this.publishMqtt(this.entity.motion.state_topic, motionState, true)
         }
-        if (this.entity.light.hasOwnProperty('state_topic')) {
+        if (this.entity.hasOwnProperty('light') && this.entity.light.hasOwnProperty('state_topic')) {
             const switchState = this.device.data.on ? 'ON' : 'OFF'
             this.publishMqtt(this.entity.light.state_topic, switchState, true)
             if (this.entity.light.hasOwnProperty('brightness_state_topic')) {
