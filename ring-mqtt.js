@@ -46,11 +46,11 @@ process.on('SIGTERM', processExit.bind(null, 0))
 process.on('uncaughtException', processExit.bind(null, 2))
 process.on('unhandledRejection', function(err) {
     if (err.message.match('token is not valid')) {
+        // Really need to put some kind of retry handler here
         debug(colors.yellow(err.message))
     } else {
         debug(colors.yellow('WARNING - Unhandled Promise Rejection:'))
         debug(colors.yellow(err))
-        processExit(1)
     }
 })
 
