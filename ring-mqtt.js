@@ -40,28 +40,36 @@ var republishCount = 6 // Republish config/state this many times after startup o
 var republishDelay = 30 // Seconds
 
 // Setup Exit Handwlers
-process.on('exit', processExit.bind(0))
-process.on('SIGINT', processExit.bind(0))
-process.on('SIGTERM', processExit.bind(0))
-process.on('uncaughtException', processExit.bind(1))
+process.on('exit', processExit.bind(null, 0))
+process.on('SIGINT', processExit.bind(null, 0))
+process.on('SIGTERM', processExit.bind(null, 0))
+process.on('uncaughtException', processExit.bind(null, 2))
 process.on('unhandledRejection', function(err) {
     if (err.message.match('token is not valid')) {
-        debug(err.message);
+        debug(colors.yellow(err.message))
     } else {
-        debug(err);
+        debug(colors.yellow('WARNING - Unhandled Promise Rejection:'))
+        debug(colors.yellow(err))
+        processExit(1)
     }
-});
+})
 
 // Set offline status on exit
 async function processExit(exitCode) {
-    await ringDevices.forEach(async ringDevice => {
+    await utils.sleep(1)
+    debug('The ring-mqtt process is shutting down...')
+    if (ringDevices.length > 0) {
+        debug('Setting all devices offline...')
+        await utils.sleep(1)
+        ringDevices.forEach(ringDevice => {
             if (ringDevice.availabilityState === 'online') { 
                 ringDevice.shutdown = true
-                await ringDevice.offline() 
-            } 
+                ringDevice.offline() 
+            }
         })
-    await utils.sleep(3)
-    if (exitCode || exitCode === 0) debug('Exit code: '+exitCode)
+    }
+    await utils.sleep(2)
+    if (exitCode || exitCode === 0) debug(`Exit code: ${exitCode}`);
     process.exit()
 }
 
