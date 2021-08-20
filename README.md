@@ -33,7 +33,7 @@ Note that the only absolutely required parameter for initial start is **RINGTOKE
 | MQTTPORT | Port number for MQTT broker | 1883 |
 | MQTTUSER | Username for MQTT broker | blank - Use anonymous connection |
 | MQTTPASSWORD | Password for MQTT broker | blank - Use anonymous connection |
-| ENABLECAMERAS | Enable camera/chime support, otherwise only alarm devices will be discovered | false |
+| ENABLECAMERAS | Enable camera/chime support, otherwise only alarm devices will be discovered. Note that, unlike cameras, access to Chimes cannot be granted to shared users so Chime support requires use of the primary Ring account. | false |
 | SNAPSHOTMODE | Enable still snapshot image updates from camera, see [Snapshot Options](#snapshot-options) for details | 'disabled' |
 | ENABLEMODES | Enable support for Location Modes for sites without a Ring Alarm Panel | false |
 | ENABLEPANIC | Enable panic buttons on Alarm Control Panel device | false |
@@ -76,7 +76,7 @@ This will install all required dependencies.  Edit config.js to configure your R
 | port | Port number for MQTT broker | 1883 |
 | mqtt_user | Username for MQTT broker | blank |
 | mqtt_pass | Password for MQTT broker | blank |
-| enable_cameras | Enable camera/chime support, otherwise only alarm devices will be discovered | false |
+| enable_cameras | Enable camera/chime support, otherwise only alarm devices will be discovered.  Note that, unlike cameras, access to Chimes cannot be granted to shared users so Chime support requires use of the primary Ring account. | false |
 | snapshot_mode | Enable still snapshot image updates from camera, see [Snapshot Options](#snapshot-options) for details | 'disabled' |
 | enable_modes | Enable support for Location Modes for sites without a Ring Alarm Panel | false |
 | enable_panic | Enable panic buttons on Alarm Control Panel device | false |
@@ -122,7 +122,7 @@ For more details please check the [Refresh Tokens](https://github.com/dgreif/rin
 **!!! Important Note regarding the security of your refresh token !!!**\
 Using 2FA authentication opens up the possibility that, if the environment runinng ring-mqtt is comporomised, an attacker can acquire the refresh token and use this to authenticate to your Ring account without knowing your username/password and completely bypassing any 2FA protections.  Please secure your environment carefully.
 
-Because of this added risk, it's a good idea to create a second account dedicated to use with ring-mqtt.  This allows actions performed by this script to be easily audited since they will show up in activity logs with their own name instead of that of the primary account.  Also, you can control what devices the script has access to and easily disable access if nafarious activity is detected.
+Because of this added risk, it's a good idea to create a second account dedicated to use with ring-mqtt and provide access to the devices you would like that account to be able to control.  This allows actions performed by this script to be easily audited since they will show up in activity logs with their own name instead of that of the primary account.  However, if do choose to use a secondary, shared account there are some limitations as Ring does not allow certain devices and functions to be granted access to shared accounts.  Because of this, support for Chimes, Smart Lighting groups, and Base Station volume control require the use of the primary Ring account.
 
 ### Arming Bypass
 By default, attempts to arm the alarm when any contact sensors are in faulted state will fail with an audible message from the base station that sensors require bypass. Arming will retry 5 times evern 10 seconds giving time for doors/windows to be closed, however, if sensors still require bypass after this time, arming will fail.
@@ -176,7 +176,7 @@ MQTT topics are built consistently during each startup.  The easiest way to dete
     - Base Station
       - Panic Switches (same as panic sliders in Ring app, Ring Protect Plan is required)
       - Siren Swich
-      - Volume Control (if account has access to change volume and enabled)
+      - Volume Control (if enabled and using Ring primary account)
     - Keypad
       - Volume Control
       - Battery level
@@ -216,7 +216,7 @@ MQTT topics are built consistently during each startup.  The easiest way to dete
       - Wired Network Name
       - Firmware Status
       - Last Update Status
-  - Ring Chimes
+  - Ring Chimes (requires using Ring primary account)
     - Volume Control
     - Play ding/motion sounds
     - Enter/Exit Snooze Mode
@@ -229,7 +229,7 @@ MQTT topics are built consistently during each startup.  The easiest way to dete
       - Last Update Status
   - Smart Lighting
     - Lighting and motion sensor devices
-    - Light groups
+    - Light groups (requires using Ring primary account)
     - Device info sensor with detailed state information (exact info varies by device)
   - Location Modes
     - For locations without a Ring Alarm, can add a panel for controlling camera settings via Ring Location Modes
