@@ -6,6 +6,7 @@ const { clientApi } = require('../node_modules/ring-client-api/lib/api/rest-clie
 const P2J = require('pipe2jpeg')
 const net = require('net');
 const getPort = require('get-port')
+const { cpuUsage } = require('process')
 
 class Camera extends RingPolledDevice {
     constructor(deviceInfo) {
@@ -354,7 +355,7 @@ class Camera extends RingPolledDevice {
 
     // Publish snapshot image/metadata
     async publishSnapshot() {
-        debug(colors.bgBlue.brightWhite(this.deviceData.name)+colors.white(` ${this.entity.snapshot.topic} <binary_image_data>`))
+        debug(colors.bgBlue.brightWhite(this.deviceData.name)+' '+colors.brightBlue(`${this.entity.snapshot.topic}`)+' '+colors.cyan('<binary_image_data>'))
         this.publishMqtt(this.entity.snapshot.topic, this.data.snapshot.currentImage)
         this.publishMqtt(this.entity.snapshot.json_attributes_topic, JSON.stringify({ timestamp: this.data.snapshot.timestamp }))
     }
