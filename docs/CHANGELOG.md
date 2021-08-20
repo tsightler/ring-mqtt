@@ -8,7 +8,7 @@ If upgrading from version 4.6.x or earlier, please read the 4.7.0 change notes a
 - Fix broken exit handler
 
 **Minor Enhancements**
-- Tweak color scheme for logging to improve readability.
+- Tweak color scheme for logging to improve event readability.
 
 ## v4.7.1
 **Fixed Bugs**
