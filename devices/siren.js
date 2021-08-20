@@ -7,6 +7,7 @@ class Siren extends RingSocketDevice {
         
         this.entity.siren = {
             component: 'binary_sensor',
+            icon: 'mdi:alarm-light',
             isLegacyEntity: true  // Legacy compatibility
         }
     }

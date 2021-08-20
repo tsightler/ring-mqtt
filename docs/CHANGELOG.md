@@ -1,11 +1,19 @@
-## v4.7.1
+## v4.7.2
 ***** IMPORTANT NOTE *****  
 
 If upgrading from version 4.6.x or earlier, please read the 4.7.0 change notes as well!
 
- **Fixed Bugs**
- - Smart Lighting support caused crashes in 4.7.0
- - Proper use of systemId with Ring authentication (addon only for now, hopefully eliminates spamming Authorized Client Devices in Account Control Center)
+**Fixed Bugs**
+- Add check for optional entities in publish and command processing to avoid crashes (most commonly an issue for Smart Lighting support where different devices have varying capabilities)
+- Fix broken exit handler
+
+**Minor Enhancements**
+- Tweak color scheme for logging to improve event readability.
+
+## v4.7.1
+**Fixed Bugs**
+- Smart Lighting support caused crashes in 4.7.0
+- Proper use of systemId with Ring authentication (addon only for now, hopefully eliminates spamming Authorized Client Devices in Account Control Center)
 
 ## v4.7.0
 ***** IMPORTANT NOTE *****

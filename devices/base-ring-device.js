@@ -178,7 +178,7 @@ class RingDevice {
 
     // Publish state messages with debug
     publishMqtt(topic, message, isDebug) {
-        if (isDebug) { debug(colors.cyan(`[${this.deviceData.name}] `)+`${topic} ${message}`) }
+        if (isDebug) { debug(colors.bgBlue.brightWhite(`${this.deviceData.name}`)+' '+colors.blue(`${topic}`)+' '+colors.cyan(`${message}`)) }
         this.mqttClient.publish(topic, message, { qos: 1 })
     }
 

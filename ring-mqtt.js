@@ -40,28 +40,36 @@ var republishCount = 6 // Republish config/state this many times after startup o
 var republishDelay = 30 // Seconds
 
 // Setup Exit Handwlers
-process.on('exit', processExit.bind(0))
-process.on('SIGINT', processExit.bind(0))
-process.on('SIGTERM', processExit.bind(0))
-process.on('uncaughtException', processExit.bind(1))
+process.on('exit', processExit.bind(null, 0))
+process.on('SIGINT', processExit.bind(null, 0))
+process.on('SIGTERM', processExit.bind(null, 0))
+process.on('uncaughtException', processExit.bind(null, 2))
 process.on('unhandledRejection', function(err) {
     if (err.message.match('token is not valid')) {
-        debug(err.message);
+        // Really need to put some kind of retry handler here
+        debug(colors.yellow(err.message))
     } else {
-        debug(err);
+        debug(colors.yellow('WARNING - Unhandled Promise Rejection:'))
+        debug(colors.yellow(err))
     }
-});
+})
 
 // Set offline status on exit
 async function processExit(exitCode) {
-    await ringDevices.forEach(async ringDevice => {
+    await utils.sleep(1)
+    debug('The ring-mqtt process is shutting down...')
+    if (ringDevices.length > 0) {
+        debug('Setting all devices offline...')
+        await utils.sleep(1)
+        ringDevices.forEach(ringDevice => {
             if (ringDevice.availabilityState === 'online') { 
                 ringDevice.shutdown = true
-                await ringDevice.offline() 
-            } 
+                ringDevice.offline() 
+            }
         })
-    await utils.sleep(3)
-    if (exitCode || exitCode === 0) debug('Exit code: '+exitCode)
+    }
+    await utils.sleep(2)
+    if (exitCode || exitCode === 0) debug(`Exit code: ${exitCode}`);
     process.exit()
 }
 
@@ -168,9 +176,9 @@ async function updateRingData(mqttClient, ringClient) {
         debug(colors.green('-'.repeat(80)))
         // If new location, set custom properties and add to location list
         if (ringLocations.find(l => l.locationId == location.locationId)) {
-            debug(colors.green(`Existing location: ${colors.cyan(location.name)} `)+colors.white(`(${location.id})`))
+            debug(colors.green('Existing location: ')+colors.bgBlue.brightWhite(location.name)+colors.brightWhite(` (${location.id})`))
         } else {
-            debug(colors.green(`New location: ${colors.cyan(location.name)} `)+colors.white(`(${location.id})`))
+            debug(colors.green('New location: ')+colors.bgBlue.brightWhite(location.name)+colors.brightWhite(` (${location.id})`))
             location.isSubscribed = false
             location.isConnected = false
             ringLocations.push(location)
@@ -218,16 +226,19 @@ async function updateRingData(mqttClient, ringClient) {
                         ringDevices.push(ringDevice)
                 }
             }
+            
             if (ringDevice) {
-                debug(colors.green(foundMessage+colors.cyan(ringDevice.deviceData.name)+colors.white(' ('+ringDevice.device.deviceType+')')))
+                debug(colors.green(foundMessage)+colors.bgBlue.brightWhite(ringDevice.deviceData.name)+colors.brightWhite(' ('+ringDevice.device.deviceType+')'))
                 if (ringDevice.device.deviceType === RingDeviceType.Thermostat) {
-                    debug(colors.green(`${' '.repeat(foundMessage.length-4)}│   `)+colors.white(ringDevice.deviceId))
-                    debug(colors.green(`          ├─: ${colors.cyan('Operating Status')}`)+colors.white(` (${ringDevice.operatingStatus.deviceType})`))
-                    debug(colors.green(`${' '.repeat(foundMessage.length-4)}│   `)+colors.white(ringDevice.operatingStatus.id))
-                    debug(colors.green(`          └─: ${colors.cyan('Temperature Sensor')}`)+colors.white(` (${ringDevice.temperatureSensor.deviceType})`))
-                    debug(colors.green(`${' '.repeat(foundMessage.length)}`)+colors.white(ringDevice.temperatureSensor.id))
+                    const spacing = ' '.repeat(foundMessage.length-4)
+                    debug(colors.green(`${spacing}│   `)+colors.brightWhite(ringDevice.deviceId))
+                    debug(colors.green(`${spacing}├─: `)+colors.bgBlue.brightWhite('Operating Status')+colors.brightWhite(` (${ringDevice.operatingStatus.deviceType})`))
+                    debug(colors.green(`${spacing}│   `)+colors.brightWhite(ringDevice.operatingStatus.id))
+                    debug(colors.green(`${spacing}└─: `)+colors.bgBlue.brightWhite('Temperature Sensor')+colors.brightWhite(` (${ringDevice.temperatureSensor.deviceType})`))
+                    debug(colors.brightWhite(`${spacing}    `+ringDevice.temperatureSensor.id))
                 } else {
-                    debug(colors.white(`${' '.repeat(foundMessage.length)}${ringDevice.deviceId}`))
+                    const spacing = ' '.repeat(foundMessage.length)
+                    debug(colors.brightWhite(`${spacing}${ringDevice.deviceId}`))
                 }
             }
         }

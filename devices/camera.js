@@ -6,6 +6,7 @@ const { clientApi } = require('../node_modules/ring-client-api/lib/api/rest-clie
 const P2J = require('pipe2jpeg')
 const net = require('net');
 const getPort = require('get-port')
+const { cpuUsage } = require('process')
 
 class Camera extends RingPolledDevice {
     constructor(deviceInfo) {
@@ -354,7 +355,7 @@ class Camera extends RingPolledDevice {
 
     // Publish snapshot image/metadata
     async publishSnapshot() {
-        debug(colors.cyan(`[${this.deviceData.name}] `)+`${this.entity.snapshot.topic} <binary_image_data>`)
+        debug(colors.bgBlue.brightWhite(this.deviceData.name)+' '+colors.blue(`${this.entity.snapshot.topic}`)+' '+colors.cyan('<binary_image_data>'))
         this.publishMqtt(this.entity.snapshot.topic, this.data.snapshot.currentImage)
         this.publishMqtt(this.entity.snapshot.json_attributes_topic, JSON.stringify({ timestamp: this.data.snapshot.timestamp }))
     }
@@ -518,18 +519,27 @@ class Camera extends RingPolledDevice {
 
     // Process messages from MQTT command topic
     processCommand(message, componentCommand) {
+        const entityKey = componentCommand.split('/')[0]
         switch (componentCommand) {
             case 'light/command':
-                this.setLightState(message)
+                if (this.entity.hasOwnProperty(entityKey)) {
+                    this.setLightState(message)
+                }
                 break;
             case 'siren/command':
-                this.setSirenState(message)
+                if (this.entity.hasOwnProperty(entityKey)) {
+                    this.setSirenState(message)
+                }
                 break;
             case 'snapshot/command':
-                this.setSnapshotInterval(message)
+                if (this.entity.hasOwnProperty(entityKey)) {
+                    this.setSnapshotInterval(message)
+                }
                 break;
             case 'snapshot_interval/command':
-                this.setSnapshotInterval(message)
+                if (this.entity.hasOwnProperty(entityKey)) {
+                    this.setSnapshotInterval(message)
+                }
                 break;
             default:
                 debug('Somehow received message to unknown state topic for camera '+this.deviceId)
