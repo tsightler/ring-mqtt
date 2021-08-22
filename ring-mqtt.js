@@ -43,7 +43,11 @@ var republishDelay = 30 // Seconds
 process.on('exit', processExit.bind(null, 0))
 process.on('SIGINT', processExit.bind(null, 0))
 process.on('SIGTERM', processExit.bind(null, 0))
-process.on('uncaughtException', processExit.bind(null, 2))
+process.on('uncaughtException', function(err) {
+    debug(colors.red('ERROR - Uncaught Exception:'))
+    debug(colors.red(err))
+    processExit(2)
+})
 process.on('unhandledRejection', function(err) {
     if (err.message.match('token is not valid')) {
         // Really need to put some kind of retry handler here
