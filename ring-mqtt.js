@@ -180,9 +180,9 @@ async function updateRingData(mqttClient, ringClient) {
         debug(colors.green('-'.repeat(80)))
         // If new location, set custom properties and add to location list
         if (ringLocations.find(l => l.locationId == location.locationId)) {
-            debug(colors.green('Existing location: ')+colors.brightBlue(location.name)+colors.white(` (${location.id})`))
+            debug(colors.green('Existing location: ')+colors.blue(location.name)+colors.white(` (${location.id})`))
         } else {
-            debug(colors.green('New location: ')+colors.brightBlue(location.name)+colors.white(` (${location.id})`))
+            debug(colors.green('New location: ')+colors.blue(location.name)+colors.white(` (${location.id})`))
             location.isSubscribed = false
             location.isConnected = false
             ringLocations.push(location)
