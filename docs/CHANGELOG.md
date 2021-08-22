@@ -5,7 +5,10 @@ If upgrading from version 4.6.x or earlier, please read the 4.7.0 change notes a
 
 **Minor Enhancements**
 - Documentation updates no note that Chimes only work with primary Ring account, not shared accounts
-- Tweak color scheme for logging to improve event readability.
+- Tweak logging color scheme to improve event readability.
+
+**Other Changes**
+- Switch Docker base image to Node LTS-Alpine 3.14 (previously Alpine 3.12)
 
 ## v4.7.2
 **Fixed Bugs**
