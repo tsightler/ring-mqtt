@@ -44,8 +44,8 @@ process.on('exit', processExit.bind(null, 0))
 process.on('SIGINT', processExit.bind(null, 0))
 process.on('SIGTERM', processExit.bind(null, 0))
 process.on('uncaughtException', function(err) {
-    debug(colors.red('ERROR - Uncaught Exception:'))
-    debug(colors.red(err))
+    debug(colors.red('ERROR - Uncaught Exception'))
+    console.log(colors.red(err))
     processExit(2)
 })
 process.on('unhandledRejection', function(err) {
@@ -53,8 +53,8 @@ process.on('unhandledRejection', function(err) {
         // Really need to put some kind of retry handler here
         debug(colors.yellow(err.message))
     } else {
-        debug(colors.yellow('WARNING - Unhandled Promise Rejection:'))
-        debug(colors.yellow(err))
+        debug(colors.yellow('WARNING - Unhandled Promise Rejection'))
+        console.log(colors.yellow(err))
     }
 })
 
