@@ -33,7 +33,7 @@ Note that the only absolutely required parameter for initial start is **RINGTOKE
 | MQTTPORT | Port number for MQTT broker | 1883 |
 | MQTTUSER | Username for MQTT broker | blank - Use anonymous connection |
 | MQTTPASSWORD | Password for MQTT broker | blank - Use anonymous connection |
-| ENABLECAMERAS | Enable camera/chime support, otherwise only alarm devices will be discovered. Note that, unlike cameras, access to Chimes cannot be granted to shared users so Chime support requires use of the primary Ring account. | false |
+| ENABLECAMERAS | Default false since the native Ring component for Home Assistant supports cameras, set to true to enable camera/chime support in this add-on.  Access to Chimes cannot be granted to shared users so Chime support requires use of the primary Ring account. Also, this addon does **NOT** support live video, only snapshot images will be sent via the MQTT camera component) | false |
 | SNAPSHOTMODE | Enable still snapshot image updates from camera, see [Snapshot Options](#snapshot-options) for details | 'disabled' |
 | ENABLEMODES | Enable support for Location Modes for sites without a Ring Alarm Panel | false |
 | ENABLEPANIC | Enable panic buttons on Alarm Control Panel device | false |
@@ -76,7 +76,7 @@ This will install all required dependencies.  Edit config.js to configure your R
 | port | Port number for MQTT broker | 1883 |
 | mqtt_user | Username for MQTT broker | blank |
 | mqtt_pass | Password for MQTT broker | blank |
-| enable_cameras | Enable camera/chime support, otherwise only alarm devices will be discovered.  Note that, unlike cameras, access to Chimes cannot be granted to shared users so Chime support requires use of the primary Ring account. | false |
+| enable_cameras | Default false since the native Ring component for Home Assistant supports cameras, set to true to enable camera/chime support in this add-on.  Access to Chimes cannot be granted to shared users so Chime support requires use of the primary Ring account. Also, this addon does **NOT** support live video, only snapshot images will be sent via the MQTT camera component) | false |
 | snapshot_mode | Enable still snapshot image updates from camera, see [Snapshot Options](#snapshot-options) for details | 'disabled' |
 | enable_modes | Enable support for Location Modes for sites without a Ring Alarm Panel | false |
 | enable_panic | Enable panic buttons on Alarm Control Panel device | false |
