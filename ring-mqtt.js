@@ -232,13 +232,13 @@ async function updateRingData(mqttClient, ringClient) {
             }
             
             if (ringDevice) {
-                debug(colors.green(foundMessage)+colors.brightBlue(`${ringDevice.deviceData.name}`)+colors.white(' ('+ringDevice.deviceId+')'))
+                debug(colors.green(foundMessage)+colors.blue(`${ringDevice.deviceData.name}`)+colors.white(' ('+ringDevice.deviceId+')'))
                 if (ringDevice.device.deviceType === RingDeviceType.Thermostat) {
                     const spacing = ' '.repeat(foundMessage.length-4)
                     debug(colors.green(`${spacing}│   `)+colors.gray(ringDevice.device.deviceType))
-                    debug(colors.green(`${spacing}├─: `)+colors.brightBlue('Operating Status')+colors.white(` (${ringDevice.operatingStatus.id})`))
+                    debug(colors.green(`${spacing}├─: `)+colors.blue('Operating Status')+colors.white(` (${ringDevice.operatingStatus.id})`))
                     debug(colors.green(`${spacing}│   `)+colors.gray(ringDevice.operatingStatus.deviceType))
-                    debug(colors.green(`${spacing}└─: `)+colors.brightBlue('Temperature Sensor')+colors.white(` (${ringDevice.temperatureSensor.id})`))
+                    debug(colors.green(`${spacing}└─: `)+colors.blue('Temperature Sensor')+colors.white(` (${ringDevice.temperatureSensor.id})`))
                     debug(colors.gray(`${spacing}    `+ringDevice.temperatureSensor.deviceType))
                 } else {
                     const spacing = ' '.repeat(foundMessage.length)
