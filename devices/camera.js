@@ -6,7 +6,6 @@ const { clientApi } = require('../node_modules/ring-client-api/lib/api/rest-clie
 const P2J = require('pipe2jpeg')
 const net = require('net');
 const getPort = require('get-port')
-const { cpuUsage } = require('process')
 
 class Camera extends RingPolledDevice {
     constructor(deviceInfo) {
