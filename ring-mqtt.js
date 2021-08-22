@@ -176,9 +176,9 @@ async function updateRingData(mqttClient, ringClient) {
         debug(colors.green('-'.repeat(80)))
         // If new location, set custom properties and add to location list
         if (ringLocations.find(l => l.locationId == location.locationId)) {
-            debug(colors.green('Existing location: ')+colors.bgBlue.brightWhite(location.name)+colors.brightWhite(` (${location.id})`))
+            debug(colors.green('Existing location: ')+colors.brightBlue(location.name)+colors.white(` (${location.id})`))
         } else {
-            debug(colors.green('New location: ')+colors.bgBlue.brightWhite(location.name)+colors.brightWhite(` (${location.id})`))
+            debug(colors.green('New location: ')+colors.brightBlue(location.name)+colors.white(` (${location.id})`))
             location.isSubscribed = false
             location.isConnected = false
             ringLocations.push(location)
@@ -228,17 +228,17 @@ async function updateRingData(mqttClient, ringClient) {
             }
             
             if (ringDevice) {
-                debug(colors.green(foundMessage)+colors.bgBlue.brightWhite(ringDevice.deviceData.name)+colors.brightWhite(' ('+ringDevice.device.deviceType+')'))
+                debug(colors.green(foundMessage)+colors.brightBlue(`${ringDevice.deviceData.name}`)+colors.white(' ('+ringDevice.deviceId+')'))
                 if (ringDevice.device.deviceType === RingDeviceType.Thermostat) {
                     const spacing = ' '.repeat(foundMessage.length-4)
-                    debug(colors.green(`${spacing}│   `)+colors.brightWhite(ringDevice.deviceId))
-                    debug(colors.green(`${spacing}├─: `)+colors.bgBlue.brightWhite('Operating Status')+colors.brightWhite(` (${ringDevice.operatingStatus.deviceType})`))
-                    debug(colors.green(`${spacing}│   `)+colors.brightWhite(ringDevice.operatingStatus.id))
-                    debug(colors.green(`${spacing}└─: `)+colors.bgBlue.brightWhite('Temperature Sensor')+colors.brightWhite(` (${ringDevice.temperatureSensor.deviceType})`))
-                    debug(colors.brightWhite(`${spacing}    `+ringDevice.temperatureSensor.id))
+                    debug(colors.green(`${spacing}│   `)+colors.gray(ringDevice.device.deviceType))
+                    debug(colors.green(`${spacing}├─: `)+colors.brightBlue('Operating Status')+colors.white(` (${ringDevice.operatingStatus.id})`))
+                    debug(colors.green(`${spacing}│   `)+colors.gray(ringDevice.operatingStatus.deviceType))
+                    debug(colors.green(`${spacing}└─: `)+colors.brightBlue('Temperature Sensor')+colors.white(` (${ringDevice.temperatureSensor.id})`))
+                    debug(colors.gray(`${spacing}    `+ringDevice.temperatureSensor.deviceType))
                 } else {
                     const spacing = ' '.repeat(foundMessage.length)
-                    debug(colors.brightWhite(`${spacing}${ringDevice.deviceId}`))
+                    debug(colors.gray(`${spacing}${ringDevice.device.deviceType}`))
                 }
             }
         }
