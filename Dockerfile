@@ -1,4 +1,4 @@
-FROM node:lts-alpine3.12
+FROM node:lts-alpine3.14
 
 ENV LANG="C.UTF-8" \
     TERM="xterm-256color"
