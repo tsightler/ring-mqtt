@@ -180,9 +180,9 @@ async function updateRingData(mqttClient, ringClient) {
         debug(colors.green('-'.repeat(80)))
         // If new location, set custom properties and add to location list
         if (ringLocations.find(l => l.locationId == location.locationId)) {
-            debug(colors.green('Existing location: ')+colors.blue(location.name)+colors.white(` (${location.id})`))
+            debug(colors.white('Existing location: ')+colors.green(location.name)+colors.cyan(` (${location.id})`))
         } else {
-            debug(colors.green('New location: ')+colors.blue(location.name)+colors.white(` (${location.id})`))
+            debug(colors.white('New location: ')+colors.green(location.name)+colors.cyan(` (${location.id})`))
             location.isSubscribed = false
             location.isConnected = false
             ringLocations.push(location)
@@ -232,13 +232,13 @@ async function updateRingData(mqttClient, ringClient) {
             }
             
             if (ringDevice) {
-                debug(colors.green(foundMessage)+colors.blue(`${ringDevice.deviceData.name}`)+colors.white(' ('+ringDevice.deviceId+')'))
+                debug(colors.white(foundMessage)+colors.green(`${ringDevice.deviceData.name}`)+colors.cyan(' ('+ringDevice.deviceId+')'))
                 if (ringDevice.device.deviceType === RingDeviceType.Thermostat) {
                     const spacing = ' '.repeat(foundMessage.length-4)
-                    debug(colors.green(`${spacing}│   `)+colors.gray(ringDevice.device.deviceType))
-                    debug(colors.green(`${spacing}├─: `)+colors.blue('Operating Status')+colors.white(` (${ringDevice.operatingStatus.id})`))
-                    debug(colors.green(`${spacing}│   `)+colors.gray(ringDevice.operatingStatus.deviceType))
-                    debug(colors.green(`${spacing}└─: `)+colors.blue('Temperature Sensor')+colors.white(` (${ringDevice.temperatureSensor.id})`))
+                    debug(colors.white(`${spacing}│   `)+colors.gray(ringDevice.device.deviceType))
+                    debug(colors.white(`${spacing}├─: `)+colors.green('Operating Status')+colors.cyan(` (${ringDevice.operatingStatus.id})`))
+                    debug(colors.white(`${spacing}│   `)+colors.gray(ringDevice.operatingStatus.deviceType))
+                    debug(colors.white(`${spacing}└─: `)+colors.green('Temperature Sensor')+colors.cyan(` (${ringDevice.temperatureSensor.id})`))
                     debug(colors.gray(`${spacing}    `+ringDevice.temperatureSensor.deviceType))
                 } else {
                     const spacing = ' '.repeat(foundMessage.length)
