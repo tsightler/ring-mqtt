@@ -1,0 +1,22 @@
+rtspDisable: no
+protocols: [tcp]
+rtspAddress: 0.0.0.0:8554
+
+rtmpDisable: yes
+
+hlsDisable: no
+hlsAddress: 0.0.0.0:8888
+hlsSegmentCount: 4
+hlsSegmentDuration: 2s
+
+paths:
+  all:
+    fallback:
+    disablePublisherOverride: no
+
+  camera1:
+    source: publisher
+    runOnDemand: mosquitto_pub -u ${MQTTUSER} -P ${MQTTPASSWORD} -h ${MQTTHOST} -p ${MQTTPORT} -t "ring/stream/camera1" -m 'start'
+    runOnDemandRestart: yes
+    runOnDemandStartTimeout: 20s
+    runOnDemandCloseAfter: 5s
