@@ -92,6 +92,7 @@ fi
 echo "-------------------------------------------------------"
 echo "Running rtsp-simple-server..."
 /app/ring-mqtt-dev/rtsp-simple-server /app/ring-mqtt-dev/rss-ring-mqtt.yml &
+sleep 1
 echo "-------------------------------------------------------"
 echo "Running ring-mqtt..."
 if [ "${BRANCH}" = "latest" ]; then
