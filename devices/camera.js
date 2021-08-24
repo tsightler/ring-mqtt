@@ -180,7 +180,7 @@ class Camera extends RingPolledDevice {
     addRtspPath() {
         const rtspPathConfig = JSON.stringify({
             source: 'publisher',
-            runOnDemand: 'mosquitto_pub -u ${MQTTUSER} -P ${MQTTPASSWORD} -h ${MQTTHOST} -p ${MQTTPORT} -t '+this.deviceTopic+'/stream/command -m start',
+            runOnDemand: 'mosquitto_pub -u "${MQTTUSER}" -P "${MQTTPASSWORD}" -h "${MQTTHOST}" -p "${MQTTPORT}" -t "'+this.deviceTopic+'/stream/command" -m "ON"',
             runOnDemandRestart: true,
             runOnDemandStartTimeout: 20,
             runOnDemandCloseAfter: 5
@@ -560,6 +560,42 @@ class Camera extends RingPolledDevice {
         }
     }
 
+    async startRtspStream() {
+        if (this.data.livestream.active === true) return
+        this.data.livestream.active === true
+        
+        // Start livestream with MJPEG output directed to P2J server with one frame every 2 seconds 
+        debug('Establishing connection to video stream for camera '+this.deviceId)
+        try {
+            const sipSession = await this.device.streamVideo({
+                audio: [], video: [],
+                output: [ '-acodec', 'aac', '-vcodec', 'copy', '-f', 'rtsp', `rtsp://localhost:5554/${this.deviceId}_stream` ]
+            })
+
+            // If stream starts, set expire time, may be extended by new events
+            this.data.livestream.expires = Math.floor(Date.now()/1000) + this.data.livestream.duration
+
+            sipSession.onCallEnded.subscribe(() => {
+                debug('Video stream ended for camera '+this.deviceId)
+                this.data.livestream.active = false
+            })
+
+            // Don't stop SIP session until current time > expire time
+            // Expire time may be extedned by new motion events
+            while (Math.floor(Date.now()/1000) < this.data.livestream.expires) {
+                const sleeptime = (this.data.livestream.expires - Math.floor(Date.now()/1000)) + 1
+                await utils.sleep(sleeptime)
+            }
+
+            // Stream time has expired, stop the current SIP session
+            sipSession.stop()
+
+        } catch(e) {
+            debug(e)
+            this.data.livestream.active = false
+        }
+    }
+
     // Process messages from MQTT command topic
     processCommand(message, componentCommand) {
         const entityKey = componentCommand.split('/')[0]
@@ -582,6 +618,11 @@ class Camera extends RingPolledDevice {
             case 'snapshot_interval/command':
                 if (this.entity.hasOwnProperty(entityKey)) {
                     this.setSnapshotInterval(message)
+                }
+                break;
+            case 'stream/command':
+                if (this.entity.hasOwnProperty(entityKey)) {
+                    this.startRtspStream(message)
                 }
                 break;
             default:

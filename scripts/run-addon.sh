@@ -3,8 +3,9 @@ if [ "${BRANCH}" = "latest" ]; then
     cd /app/ring-mqtt-latest
 elif [ "${BRANCH}" = "dev" ]; then
     cd /app/ring-mqtt-dev
-    echo "Downloading and installing rtsp-simple-server"
+    echo "Adding mostquitto-clients..."
     apk add --no-cache mosquitto-clients
+    echo "Downloading and installing rtsp-simple-server..."
     APKARCH="$(apk --print-arch)"
     mkdir bin; cd bin
     case "${APKARCH}" in
