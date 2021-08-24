@@ -76,7 +76,7 @@ class Camera extends RingPolledDevice {
                 attributes: true,
             },
             stream: {
-                component: 'swtich',
+                component: 'switch',
                 attributes: true
             },
             ...this.device.isDoorbot ? {
