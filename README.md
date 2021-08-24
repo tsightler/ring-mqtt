@@ -186,9 +186,9 @@ MQTT topics are built consistently during each startup.  The easiest way to dete
     - Ring Smoke/CO Listener
     - First Alert Z-Wave Smoke/CO Detector
     - Ring Retro Kit Zones
-    - Ring integrated door locks (status and lock control)
     - Ring Range Extender
     - Ring External Siren
+    - 3rd party Z-wave door locks (Wifi based locks integrated via Amazon Key are **NOT** supported)
     - 3rd party Z-Wave switches, dimmers, and fans
     - 3rd party Z-Wave motion/contact/tilt sensors (basic support)
     - 3rd party Z-Wave thermostats and temperature sensors
