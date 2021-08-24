@@ -569,7 +569,7 @@ class Camera extends RingPolledDevice {
         try {
             const sipSession = await this.device.streamVideo({
                 audio: [], video: [],
-                output: [ '-acodec', 'aac', '-vcodec', 'copy', '-f', 'rtsp', `rtsp://localhost:5554/${this.deviceId}_stream` ]
+                output: [ '-acodec', 'aac', '-vcodec', 'copy', '-f', 'rtsp', `rtsp://localhost:8554/${this.deviceId}_stream` ]
             })
 
             // If stream starts, set expire time, may be extended by new events
