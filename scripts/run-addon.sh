@@ -7,7 +7,7 @@ elif [ "${BRANCH}" = "dev" ]; then
     apk add --no-cache mosquitto-clients
     echo "Downloading and installing rtsp-simple-server..."
     APKARCH="$(apk --print-arch)"
-    mkdir bin; cd bin
+    cd bin
     case "${APKARCH}" in
         'x86_64')
             wget -O rtsp-simple-server.tar.gz https://github.com/aler9/rtsp-simple-server/releases/download/v0.17.2/rtsp-simple-server_v0.17.2_linux_amd64.tar.gz
