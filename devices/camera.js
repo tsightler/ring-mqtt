@@ -6,6 +6,7 @@ const { clientApi } = require('../node_modules/ring-client-api/lib/api/rest-clie
 const P2J = require('pipe2jpeg')
 const net = require('net');
 const getPort = require('get-port')
+const http = require('http')
 
 class Camera extends RingPolledDevice {
     constructor(deviceInfo) {
@@ -74,6 +75,10 @@ class Camera extends RingPolledDevice {
                 device_class: 'motion',
                 attributes: true,
             },
+            stream: {
+                component: 'swtich',
+                attributes: true
+            },
             ...this.device.isDoorbot ? {
                 ding: {
                     component: 'binary_sensor',
@@ -113,6 +118,8 @@ class Camera extends RingPolledDevice {
                 value_template: '{{ value_json["lastUpdate"] | default }}'
             }
         }
+
+        this.addRtspPath()        
 
         this.onNewDingSubscription = this.device.onNewDing.subscribe(ding => {
             if (this.isOnline()) { this.processDing(ding) }
@@ -168,6 +175,42 @@ class Camera extends RingPolledDevice {
             this.data.ding.last_ding = lastDingDate ? Math.floor(lastDingDate/1000) : 0
             this.data.ding.last_ding_time = lastDingDate ? utils.getISOTime(lastDingDate) : ''
         }
+    }
+
+    addRtspPath() {
+        const rtspPathConfig = JSON.stringify({
+            source: publisher,
+            runOnDemand: 'mosquitto_pub -u ${MQTTUSER} -P ${MQTTPASSWORD} -h ${MQTTHOST} -p ${MQTTPORT} -t "'+this.entity.stream.command_topic+'" -m "start"',
+            runOnDemandRestart: 'yes',
+            runOnDemandStartTimeout: '20s',
+            runOnDemandCloseAfter: '5s'
+        })
+
+        const httpOptions = {
+            hostname: localhost,
+            port: 55456,
+            path: `/v1/config/paths/add/${this.deviceTopic}/stream`,
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': rtspPathConfig.length
+            }
+        }
+
+        const req = http.request(httpOptions, res => {
+            debug(`statusCode: ${res.statusCode}`)
+          
+            res.on('data', d => {
+                process.stdout.write(d)
+            })
+        })
+          
+        req.on('error', error => {
+            debug(error)
+        })
+        
+        req.write(rtspPathConfig)
+        req.end()
     }
 
     // Publish camera capabilities and state and subscribe to events

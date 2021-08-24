@@ -19,7 +19,7 @@ paths:
 
   ring/a9ce28cb-fafb-421c-4508-29d54f48cbd3/camera/3ce1a15e2437/stream:
     source: publisher
-    runOnDemand: mosquitto_pub -u ${MQTTUSER} -P ${MQTTPASSWORD} -h ${MQTTHOST} -p ${MQTTPORT} -t "ring/a9ce28cb-fafb-421c-4508-29d54f48cbd3/camera/3ce1a15e2437/stream" -m 'start'
+    runOnDemand: mosquitto_pub -u ${MQTTUSER} -P ${MQTTPASSWORD} -h ${MQTTHOST} -p ${MQTTPORT} -t "ring/a9ce28cb-fafb-421c-4508-29d54f48cbd3/camera/3ce1a15e2437/stream/command" -m 'start'
     runOnDemandRestart: yes
     runOnDemandStartTimeout: 20s
     runOnDemandCloseAfter: 5s
