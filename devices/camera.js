@@ -119,7 +119,7 @@ class Camera extends RingPolledDevice {
             }
         }
 
-        //this.addRtspPath()        
+        this.addRtspPath()        
 
         this.onNewDingSubscription = this.device.onNewDing.subscribe(ding => {
             if (this.isOnline()) { this.processDing(ding) }
@@ -180,10 +180,10 @@ class Camera extends RingPolledDevice {
     addRtspPath() {
         const rtspPathConfig = JSON.stringify({
             source: 'publisher',
-            runOnDemand: '/usr/bin/mosquitto_pub -u $MQTTUSER -P $MQTTPASSWORD -h $MQTTHOST -p $MQTTPORT -t '+this.deviceTopic+'/stream/command -m ON',
+            runOnDemand: `../scripts/start-stream.sh ${this.deviceId}_stream ${this.entity.stream.state_topic} ${this.entity.stream.state_topic}`,
             runOnDemandRestart: true,
-            runOnDemandStartTimeout: 20,
-            runOnDemandCloseAfter: 5
+            runOnDemandStartTimeout: 20000000000,
+            runOnDemandCloseAfter: 5000000000
         })
 
         const httpOptions = {
@@ -582,13 +582,13 @@ class Camera extends RingPolledDevice {
 
             // Don't stop SIP session until current time > expire time
             // Expire time may be extedned by new motion events
-            //while (Math.floor(Date.now()/1000) < this.data.livestream.expires) {
-            //    const sleeptime = (this.data.livestream.expires - Math.floor(Date.now()/1000)) + 1
-            //    await utils.sleep(sleeptime)
-            //}
+            while (Math.floor(Date.now()/1000) < this.data.livestream.expires) {
+                const sleeptime = (this.data.livestream.expires - Math.floor(Date.now()/1000)) + 1
+                await utils.sleep(sleeptime)
+            }
 
             // Stream time has expired, stop the current SIP session
-            //sipSession.stop()
+            sipSession.stop()
 
         } catch(e) {
             debug(e)
