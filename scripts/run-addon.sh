@@ -6,22 +6,28 @@ elif [ "${BRANCH}" = "dev" ]; then
     echo "Downloading and installing rtsp-simple-server"
     apk add --no-cache mosquitto-clients
     APKARCH="$(apk --print-arch)"
+    cd bin
     case "${APKARCH}" in
         'x86_64')
-            wget -O rtsp-simple-server_binary.tar.gz https://github.com/aler9/rtsp-simple-server/releases/download/v0.17.2/rtsp-simple-server_v0.17.2_linux_amd64.tar.gz
+            wget -O rtsp-simple-server.tar.gz https://github.com/aler9/rtsp-simple-server/releases/download/v0.17.2/rtsp-simple-server_v0.17.2_linux_amd64.tar.gz
             ;;
         'aarch64')
-            wget -O rtsp-simple-server_binary.tar.gz https://github.com/aler9/rtsp-simple-server/releases/download/v0.17.2/rtsp-simple-server_v0.17.2_linux_arm64v8.tar.gz
+            wget -O rtsp-simple-server.tar.gz https://github.com/aler9/rtsp-simple-server/releases/download/v0.17.2/rtsp-simple-server_v0.17.2_linux_arm64v8.tar.gz
             ;;
         'armv7')
-            wget -O rtsp-simple-server_binary.tar.gz https://github.com/aler9/rtsp-simple-server/releases/download/v0.17.2/rtsp-simple-server_v0.17.2_linux_armv7.tar.gz
+            wget -O rtsp-simple-server.tar.gz https://github.com/aler9/rtsp-simple-server/releases/download/v0.17.2/rtsp-simple-server_v0.17.2_linux_armv7.tar.gz
             ;;
         'armhf')
-            wget -O rtsp-simple-server_binary.tar.gz https://github.com/aler9/rtsp-simple-server/releases/download/v0.17.2/rtsp-simple-server_v0.17.2_linux_armv6.tar.gz
+            wget -O rtsp-simple-server.tar.gz https://github.com/aler9/rtsp-simple-server/releases/download/v0.17.2/rtsp-simple-server_v0.17.2_linux_armv6.tar.gz
             ;;
-        *) echo >&2 "error: unsupported architecture '$dpkgArch' (likely packaging update needed)"; exit 1 ;;
+        *) 
+            echo >&2 "ERROR: Unsupported architecture '$APKARCH' (likely packaging update needed)"; 
+            exit 1 
+            ;;
     esac
-    tar zxvfp rtsp-simple-server_binary.tar.gz
+    tar zxvfp rtsp-simple-server.tar.gz rtsp-simple-server
+    rm rtsp-simple-server.tar.gz
+    cd ..
     echo "-------------------------------------------------------"
 else
     cd /app/ring-mqtt
@@ -91,7 +97,7 @@ else
 fi
 echo "-------------------------------------------------------"
 echo "Running rtsp-simple-server..."
-/app/ring-mqtt-dev/rtsp-simple-server /app/ring-mqtt-dev/rss-ring-mqtt.yml &
+/app/ring-mqtt-dev/bin/rtsp-simple-server /app/ring-mqtt-dev/config/rtsp-simple-server.yml &
 sleep 1
 echo "-------------------------------------------------------"
 echo "Running ring-mqtt..."
