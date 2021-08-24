@@ -582,13 +582,13 @@ class Camera extends RingPolledDevice {
 
             // Don't stop SIP session until current time > expire time
             // Expire time may be extedned by new motion events
-            while (Math.floor(Date.now()/1000) < this.data.livestream.expires) {
-                const sleeptime = (this.data.livestream.expires - Math.floor(Date.now()/1000)) + 1
-                await utils.sleep(sleeptime)
-            }
+            //while (Math.floor(Date.now()/1000) < this.data.livestream.expires) {
+            //    const sleeptime = (this.data.livestream.expires - Math.floor(Date.now()/1000)) + 1
+            //    await utils.sleep(sleeptime)
+            //}
 
             // Stream time has expired, stop the current SIP session
-            sipSession.stop()
+            //sipSession.stop()
 
         } catch(e) {
             debug(e)
