@@ -179,7 +179,7 @@ class Camera extends RingPolledDevice {
 
     addRtspPath() {
         const rtspPathConfig = JSON.stringify({
-            source: publisher,
+            source: 'publisher',
             runOnDemand: 'mosquitto_pub -u ${MQTTUSER} -P ${MQTTPASSWORD} -h ${MQTTHOST} -p ${MQTTPORT} -t "'+this.entity.stream.command_topic+'" -m "start"',
             runOnDemandRestart: 'yes',
             runOnDemandStartTimeout: '20s',
