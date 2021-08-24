@@ -119,7 +119,7 @@ class Camera extends RingPolledDevice {
             }
         }
 
-        this.addRtspPath()        
+        //this.addRtspPath()        
 
         this.onNewDingSubscription = this.device.onNewDing.subscribe(ding => {
             if (this.isOnline()) { this.processDing(ding) }
