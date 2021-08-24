@@ -189,7 +189,7 @@ class Camera extends RingPolledDevice {
         const httpOptions = {
             hostname: 'localhost',
             port: 55456,
-            path: `/v1/config/paths/add/${this.deviceId}`,
+            path: `/v1/config/paths/add/ring/${this.locationId}/${this.deviceId}`,
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
