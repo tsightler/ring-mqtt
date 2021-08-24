@@ -9,6 +9,9 @@ hlsAddress: 0.0.0.0:8888
 hlsSegmentCount: 4
 hlsSegmentDuration: 2s
 
+api: yes
+apiAddress: 127.0.0.1:55456
+
 paths:
   all:
     fallback:

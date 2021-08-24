@@ -3,7 +3,6 @@ if [ "${BRANCH}" = "latest" ]; then
     cd /app/ring-mqtt-latest
 elif [ "${BRANCH}" = "dev" ]; then
     cd /app/ring-mqtt-dev
-    echo "-------------------------------------------------------"
     echo "Downloading and installing rtsp-simple-server"
     apk add --no-cache mosquitto-clients
     APKARCH="$(apk --print-arch)"
@@ -92,7 +91,7 @@ else
 fi
 echo "-------------------------------------------------------"
 echo "Running rtsp-simple-server..."
-/app/ring-mqtt-dev/rtsp-simple-server /app/ring-mqtt-dev/rss-ring-mqtt.yml
+/app/ring-mqtt-dev/rtsp-simple-server /app/ring-mqtt-dev/rss-ring-mqtt.yml &
 echo "-------------------------------------------------------"
 echo "Running ring-mqtt..."
 if [ "${BRANCH}" = "latest" ]; then
