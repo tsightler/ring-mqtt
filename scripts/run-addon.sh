@@ -6,7 +6,7 @@ elif [ "${BRANCH}" = "dev" ]; then
     echo "Downloading and installing rtsp-simple-server"
     apk add --no-cache mosquitto-clients
     APKARCH="$(apk --print-arch)"
-    cd bin
+    mkdir bin; cd bin
     case "${APKARCH}" in
         'x86_64')
             wget -O rtsp-simple-server.tar.gz https://github.com/aler9/rtsp-simple-server/releases/download/v0.17.2/rtsp-simple-server_v0.17.2_linux_amd64.tar.gz
@@ -21,7 +21,7 @@ elif [ "${BRANCH}" = "dev" ]; then
             wget -O rtsp-simple-server.tar.gz https://github.com/aler9/rtsp-simple-server/releases/download/v0.17.2/rtsp-simple-server_v0.17.2_linux_armv6.tar.gz
             ;;
         *) 
-            echo >&2 "ERROR: Unsupported architecture '$APKARCH' (likely packaging update needed)"; 
+            echo >&2 "ERROR: Unsupported architecture '$APKARCH'"; 
             exit 1 
             ;;
     esac
