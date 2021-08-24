@@ -1,7 +1,7 @@
 {
   "name": "ring-mqtt",
-  "version": "4.7.3",
-  "description": "Ring to MQTT Bridge",
+  "version": "4.8.0",
+  "description": "Ring Devices via MQTT",
   "main": "ring-mqtt.js",
   "dependencies": {
     "body-parser": "^1.19.0",
