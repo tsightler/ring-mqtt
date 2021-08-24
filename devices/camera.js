@@ -210,6 +210,7 @@ class Camera extends RingPolledDevice {
         })
         
         req.write(rtspPathConfig)
+        debug(rtspPathConfig)
         req.end()
     }
 
