@@ -187,9 +187,9 @@ class Camera extends RingPolledDevice {
         })
 
         const httpOptions = {
-            hostname: '127.0.0.1',
+            hostname: 'localhost',
             port: 55456,
-            path: `/v1/config/paths/add/${this.deviceTopic}/stream`,
+            path: `/v1/config/paths/add/${this.deviceId}`,
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
