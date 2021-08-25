@@ -42,7 +42,7 @@ class Camera extends RingPolledDevice {
                 duration: (this.device.data.settings.video_settings.hasOwnProperty('clip_length_max') && this.device.data.settings.video_settings.clip_length_max) 
                     ? this.device.data.settings.video_settings.clip_length_max
                     : 60,
-                active: false,
+                active: true,
                 expires: 0,
                 updateSnapshot: false
             },
