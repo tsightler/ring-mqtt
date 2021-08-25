@@ -180,7 +180,7 @@ class Camera extends RingPolledDevice {
     addRtspPath() {
         const rtspPathConfig = JSON.stringify({
             source: 'publisher',
-            runOnDemand: `../scripts/start-stream.sh ${this.deviceId}_stream ${this.deviceTopic}/stream/state ${this.deviceTopic}/stream/command`,
+            runOnDemand: `./scripts/start-stream.sh ${this.deviceId}_stream ${this.deviceTopic}/stream/state ${this.deviceTopic}/stream/command`,
             runOnDemandRestart: true,
             runOnDemandStartTimeout: 20000000000,
             runOnDemandCloseAfter: 5000000000
@@ -219,7 +219,10 @@ class Camera extends RingPolledDevice {
         const isPublish = data === undefined ? true : false
         this.publishPolledState(isPublish)
 
-        if (isPublish) { 
+        if (isPublish) {
+            // Publish livestream state
+            this.publishMqtt(this.entity.stream.state_topic, this.data.livestream.active ? 'ON' : 'OFF', true)
+ 
             this.publishDingStates()
             if (this.data.snapshot.motion || this.data.snapshot.interval) {
                 this.data.snapshot.currentImage ? this.publishSnapshot() : this.refreshSnapshot()
@@ -561,7 +564,10 @@ class Camera extends RingPolledDevice {
     }
 
     async startRtspStream() {
-        if (this.data.livestream.active === true) return
+        if (this.data.livestream.active === true) {
+            this.publishMqtt(this.entity.stream.state_topic, this.data.livestream.active ? 'ON' : 'OFF', true)
+            return
+        }
         this.data.livestream.active === true
         
         // Start livestream with MJPEG output directed to P2J server with one frame every 2 seconds 
@@ -571,6 +577,7 @@ class Camera extends RingPolledDevice {
                 audio: [], video: [],
                 output: [ '-acodec', 'aac', '-vcodec', 'copy', '-f', 'rtsp', `rtsp://localhost:8554/${this.deviceId}_stream` ]
             })
+            this.publishMqtt(this.entity.stream.state_topic, this.data.livestream.active ? 'ON' : 'OFF', true)
 
             // If stream starts, set expire time, may be extended by new events
             this.data.livestream.expires = Math.floor(Date.now()/1000) + this.data.livestream.duration
@@ -578,6 +585,7 @@ class Camera extends RingPolledDevice {
             sipSession.onCallEnded.subscribe(() => {
                 debug('Video stream ended for camera '+this.deviceId)
                 this.data.livestream.active = false
+                this.publishMqtt(this.entity.stream.state_topic, this.data.livestream.active ? 'ON' : 'OFF', true)
             })
 
             // Don't stop SIP session until current time > expire time
@@ -593,6 +601,7 @@ class Camera extends RingPolledDevice {
         } catch(e) {
             debug(e)
             this.data.livestream.active = false
+            this.publishMqtt(this.entity.stream.state_topic, this.data.livestream.active ? 'ON' : 'OFF', true)
         }
     }
 
