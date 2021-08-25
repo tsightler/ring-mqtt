@@ -10,6 +10,7 @@ const utils = require('./lib/utils.js')
 const tokenApp = require('./lib/tokenapp.js')
 const { createHash, randomBytes } = require('crypto')
 const fs = require('fs')
+const respawn = require('respawn')
 const SecurityPanel = require('./devices/security-panel')
 const ContactSensor = require('./devices/contact-sensor')
 const MotionSensor = require('./devices/motion-sensor')
@@ -31,6 +32,28 @@ const RangeExtender = require('./devices/range-extender')
 const Siren = require('./devices/siren')
 const Thermostat = require('./devices/thermostat')
 const TemperatureSensor = require('./devices/temperature-sensor')
+
+var rss = respawn(['./bin/rtsp-simple-server', './config/rtsp-simple-server.yml'], {
+    name: 'rss',          // set monitor name
+    env: process.env, // set env vars
+    cwd: '.',              // set cwd
+    maxRestarts:10,        // how many restarts are allowed within 60s
+                           // or -1 for infinite restarts
+    sleep:1000,            // time to sleep between restarts,
+    kill:30000,            // wait 30s before force killing after stopping
+    stdio: 'pipe',        // forward stdio options
+    fork: false            // fork instead of spawn
+})
+
+rss.on('stdout', (data) => {
+    debug(data)
+})
+  
+rss.on('stderr', (data) => {
+    debug(data)
+})
+  
+rss.start()
 
 var CONFIG
 var ringLocations = new Array()

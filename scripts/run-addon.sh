@@ -97,10 +97,6 @@ else
     echo "Using configured MQTT password: <hidden>"
 fi
 echo "-------------------------------------------------------"
-echo "Running rtsp-simple-server..."
-/app/ring-mqtt-dev/bin/rtsp-simple-server /app/ring-mqtt-dev/config/rtsp-simple-server.yml &
-sleep 1
-echo "-------------------------------------------------------"
 echo "Running ring-mqtt..."
 if [ "${BRANCH}" = "latest" ]; then
     DEBUG=ring-mqtt ISADDON=true exec /app/ring-mqtt-latest/ring-mqtt.js

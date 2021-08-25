@@ -19,3 +19,4 @@ echo "We're out of the loop, killing everything..."
 mosquitto_pid=`ps -ef | grep mosquitto_sub | grep "${CLIENT_NAME}" | tr -s ' ' | cut -d ' ' -f2`
 echo "${mosquitto_pid}"
 kill ${mosquitto_pid}
+echo "Exiting the stream command..."
