@@ -10,13 +10,13 @@ mosquitto_sub -c -q 1 -i "${CLIENT_NAME}" -u "${MQTTUSER}" -P "${MQTTPASSWORD}" 
 do
    echo "This is a great message: ${message}"
    if [ "${message}" = "OFF" ]; then
-       echo "We really should exit...."
-       break
+       echo "We really should exit, killing everything...."
+       mosquitto_pid=`ps -ef | grep mosquitto_sub | grep "${CLIENT_NAME}" | tr -s ' ' | cut -d ' ' -f2`
+       echo "${mosquitto_pid}"
+       kill ${mosquitto_pid}
+       exit
    fi
 done
 
-echo "We're out of the loop, killing everything..."
-mosquitto_pid=`ps -ef | grep mosquitto_sub | grep "${CLIENT_NAME}" | tr -s ' ' | cut -d ' ' -f2`
-echo "${mosquitto_pid}"
-kill ${mosquitto_pid}
-echo "Exiting the stream command..."
+echo "We're out of the loop, exiting the stream script..."
+exit
