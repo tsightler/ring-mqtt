@@ -46,11 +46,11 @@ var rss = respawn(['./bin/rtsp-simple-server', './config/rtsp-simple-server.yml'
 })
 
 rss.on('stdout', (data) => {
-    debug(data)
+    debug(process.stdout.write(data))
 })
   
 rss.on('stderr', (data) => {
-    debug(data)
+    debug(process.stderr.write(data))
 })
   
 rss.start()
