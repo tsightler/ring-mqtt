@@ -180,7 +180,7 @@ class Camera extends RingPolledDevice {
     addRtspPath() {
         const rtspPathConfig = JSON.stringify({
             source: 'publisher',
-            runOnDemand: `./scripts/start-stream.sh ${this.deviceId}_stream ${this.deviceTopic}/stream/state ${this.deviceTopic}/stream/command`,
+            runOnDemand: `node ./lib/start-stream.js ${this.deviceId}_stream ${this.deviceTopic}/stream/state ${this.deviceTopic}/stream/command`,
             runOnDemandRestart: true,
             runOnDemandStartTimeout: 20000000000,
             runOnDemandCloseAfter: 5000000000
