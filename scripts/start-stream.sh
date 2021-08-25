@@ -6,12 +6,17 @@ COMMAND_TOPIC=${3}
 
 mosquitto_pub -i "${CLIENT_NAME}" -u "${MQTTUSER}" -P "${MQTTPASSWORD}" -h "${MQTTHOST}" -p "${MQTTPORT}" -t "${COMMAND_TOPIC}" -m "ON"
 
-while true  # Keep an infinite loop to reconnect when connection lost/broker unavailable
+mosquitto_sub -c -q 1 -i "${CLIENT_NAME}" -u "${MQTTUSER}" -P "${MQTTPASSWORD}" -h "${MQTTHOST}" -p "${MQTTPORT}" -t "${STATE_TOPIC}" | while read -r message
 do
-    mosquitto_sub -c -q 1 -i "${CLIENT_NAME}" -u "${MQTTUSER}" -P "${MQTTPASSWORD}" -h "${MQTTHOST}" -p "${MQTTPORT}" -t "${STATE_TOPIC}" | while read -r message
-    do
-        if [ "${message}" = "OFF"]; then
-            break
-        fi
-    done
+   echo "This is a great message: ${message}"
+   if [ "${message}" = "OFF" ]; then
+       echo "We really should exit...."
+       $mosquitto_pid=`ps -ef | grep mosquitto_sub | grep "${CLIENT_NAME}" | tr -s ' ' | cut -d ' ' -f2`
+       echo "${mosquitto_pid}"
+       kill `ps -ef | grep mosquitto_sub | grep "${CLIENT_NAME}" | tr -s ' ' | cut -d ' ' -f2`
+       break
+   fi
 done
+
+echo "We're out of the loop!"
+exit
