@@ -11,9 +11,9 @@ do
    echo "This is a great message: ${message}"
    if [ "${message}" = "OFF" ]; then
        echo "We really should exit...."
-       $mosquitto_pid=`ps -ef | grep mosquitto_sub | grep "${CLIENT_NAME}" | tr -s ' ' | cut -d ' ' -f2`
+       mosquitto_pid=`ps -ef | grep mosquitto_sub | grep "${CLIENT_NAME}" | tr -s ' ' | cut -d ' ' -f2`
        echo "${mosquitto_pid}"
-       kill `ps -ef | grep mosquitto_sub | grep "${CLIENT_NAME}" | tr -s ' ' | cut -d ' ' -f2`
+       kill ${mosquitto_pid}
        break
    fi
 done
