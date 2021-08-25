@@ -50,7 +50,7 @@ rss.on('stdout', (data) => {
 })
   
 rss.on('stderr', (data) => {
-    debug(process.stderr.write(data))
+    // debug(process.stderr.write(data))
 })
   
 rss.start()
