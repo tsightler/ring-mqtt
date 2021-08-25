@@ -10,7 +10,8 @@ while true  # Keep an infinite loop to reconnect when connection lost/broker una
 do
     mosquitto_sub -c -q 1 -i "${CLIENT_NAME}" -u "${MQTTUSER}" -P "${MQTTPASSWORD}" -h "${MQTTHOST}" -p "${MQTTPORT}" -t "${STATE_TOPIC}" | while read -r message
     do
-        # Here is the callback to execute whenever you receive a message:
-        echo "Rx MQTT: ${message}"
+        if [ "${message}" = "OFF"]; then
+            break
+        fi
     done
 done

@@ -42,7 +42,7 @@ class Camera extends RingPolledDevice {
                 duration: (this.device.data.settings.video_settings.hasOwnProperty('clip_length_max') && this.device.data.settings.video_settings.clip_length_max) 
                     ? this.device.data.settings.video_settings.clip_length_max
                     : 60,
-                active: true,
+                active: false,
                 expires: 0,
                 updateSnapshot: false
             },
@@ -568,8 +568,7 @@ class Camera extends RingPolledDevice {
             this.publishMqtt(this.entity.stream.state_topic, this.data.livestream.active ? 'ON' : 'OFF', true)
             return
         }
-        this.data.livestream.active === true
-        this.publishMqtt(this.entity.stream.state_topic, this.data.livestream.active ? 'ON' : 'OFF', true)
+        this.data.livestream.active = true
         
         // Start livestream with MJPEG output directed to P2J server with one frame every 2 seconds 
         debug('Establishing connection to video stream for camera '+this.deviceId)
