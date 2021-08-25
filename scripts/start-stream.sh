@@ -18,5 +18,5 @@ do
    fi
 done
 
-echo "We're out of the loop, exiting the stream script..."
+echo "We're outta here! Exiting the stream script..."
 exit
