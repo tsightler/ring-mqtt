@@ -505,17 +505,17 @@ class Camera extends RingPolledDevice {
             debug(`The MJPEG snapshot stream snapshots for camera ${this.deviceId} has started`)
         })
 
-        fmpegProcess.on('close', async (code) => {
+        ffmpegProcess.on('close', async (code) => {
             debug(`The MJPEG snapshot stream snapshots for camera ${this.deviceId} has stopped`)
         })
 
-        fmpegProcess.stdout.on('data', (data) => {
+        ffmpegProcess.stdout.on('data', (data) => {
             if (data.toString()) {
                 debug(data.toString().replace(/(\r\n|\n|\r)/gm, ""))
             }
         })
             
-        fmpegProcess.stderr.on('data', (data) => {
+        ffmpegProcess.stderr.on('data', (data) => {
             if (data.toString()) {
                 debug(data.toString().replace(/(\r\n|\n|\r)/gm, ""))
             }
