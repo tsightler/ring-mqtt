@@ -501,21 +501,21 @@ class Camera extends RingPolledDevice {
             `tcp://localhost:+${p2jPort}`
         ])
 
-        this.ffmpegProcess.on('spawn', async () => {
+        ffmpegProcess.on('spawn', async () => {
             debug(`The MJPEG snapshot stream snapshots for camera ${this.deviceId} has started`)
         })
 
-        this.fmpegProcess.on('close', async (code) => {
+        fmpegProcess.on('close', async (code) => {
             debug(`The MJPEG snapshot stream snapshots for camera ${this.deviceId} has stopped`)
         })
 
-        this.fmpegProcess.stdout.on('data', (data) => {
+        fmpegProcess.stdout.on('data', (data) => {
             if (data.toString()) {
                 debug(data.toString().replace(/(\r\n|\n|\r)/gm, ""))
             }
         })
             
-        this.fmpegProcess.stderr.on('data', (data) => {
+        fmpegProcess.stderr.on('data', (data) => {
             if (data.toString()) {
                 debug(data.toString().replace(/(\r\n|\n|\r)/gm, ""))
             }
@@ -533,7 +533,7 @@ class Camera extends RingPolledDevice {
             await utils.sleep(sleeptime)
         }
 
-        this.ffmpegProcess.kill()
+        ffmpegProcess.kill()
         this.data.stream.updateSnapshot = false
     }
 
