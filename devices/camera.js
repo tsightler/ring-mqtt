@@ -6,6 +6,8 @@ const { clientApi } = require('../node_modules/ring-client-api/lib/api/rest-clie
 const P2J = require('pipe2jpeg')
 const net = require('net');
 const getPort = require('get-port')
+var pathToFfmpeg = require('ffmpeg-for-homebridge');
+const { spawn } = require('child_process');
 
 class Camera extends RingPolledDevice {
     constructor(deviceInfo) {
@@ -391,7 +393,7 @@ class Camera extends RingPolledDevice {
         }
 
         if (this.data.motion.active_ding) {
-            if (this.device.operatingOnBattery) {
+            if (!this.device.operatingOnBattery) {
                 // Battery powered cameras can't take snapshots while recording, try to get image from video stream instead
                 debug('Motion event detected on battery powered camera '+this.deviceId+' snapshot will be updated from live stream')
                 this.getSnapshotFromStream()
@@ -435,7 +437,7 @@ class Camera extends RingPolledDevice {
 
         // If there's no active live stream, start it, otherwise, extend live stream timeout
         if (!this.data.stream.active) {
-            this.startStream()
+            this.startSnapshotStream()
         } else {
             this.data.stream.expires = Math.floor(Date.now()/1000) + this.data.stream.duration
         }
@@ -464,7 +466,6 @@ class Camera extends RingPolledDevice {
                 this.data.snapshot.currentImage = jpegFrame
                 this.data.snapshot.timestamp = Math.round(Date.now()/1000)
                 this.publishSnapshot()
-                this.data.stream.updateSnapshot = false
             }
         })
 
@@ -473,59 +474,70 @@ class Camera extends RingPolledDevice {
     }
 
     // Start a live stream and send mjpeg stream to p2j server
-    async startStream() {
+    async startSnapshotStream() {
         this.data.stream.active = true
 
         // Start a P2J pipeline and server and get the listening TCP port
         const p2jPort = await this.startP2J()
         
         // Start stream with MJPEG output directed to P2J server with one frame every 2 seconds 
-        debug('Establishing connection to video stream for camera '+this.deviceId)
-        try {
-            const sipSession = await this.device.streamVideo({
-                output: [
-                    '-y',
-                    '-c:v',
-                    'mjpeg',
-                    '-pix_fmt',
-                    'yuvj422p',
-                    '-f',
-                    'image2pipe',
-                    '-s',
-                    '640:360',
-                    '-r',
-                    '.5',
-                    '-q:v',
-                    '2',
-                    'tcp://localhost:'+p2jPort
-                  ]
-            })
+        debug('Starting the MJPEG snapshot stream for camera '+this.deviceId)
 
-            // If stream starts, set expire time, may be extended by new events
-            this.data.stream.expires = Math.floor(Date.now()/1000) + this.data.stream.duration
+        const ffmpegProcess = spawn(pathToFfmpeg, [
+            '-i',
+            `rtsp://localhost:8554/${this.deviceId}_stream`,
+            '-c:v',
+            'mjpeg',
+            '-pix_fmt',
+            'yuvj422p',
+            '-f',
+            'image2pipe',
+            '-s',
+            '640:360',
+            '-r',
+            '.1',
+            '-q:v',
+            '2',
+            `tcp://localhost:+${p2jPort}`
+        ])
 
-            sipSession.onCallEnded.subscribe(() => {
-                debug('Video stream ended for camera '+this.deviceId)
-                this.data.stream.active = false
-            })
+        this.ffmpegProcess.on('spawn', async () => {
+            debug(`The MJPEG snapshot stream snapshots for camera ${this.deviceId} has started`)
+        })
 
-            // Don't stop SIP session until current tyime > expire time
-            // Expire time may be extedned by new motion events
-            while (Math.floor(Date.now()/1000) < this.data.stream.expires) {
-                const sleeptime = (this.data.stream.expires - Math.floor(Date.now()/1000)) + 1
-                await utils.sleep(sleeptime)
+        this.fmpegProcess.on('close', async (code) => {
+            debug(`The MJPEG snapshot stream snapshots for camera ${this.deviceId} has stopped`)
+        })
+
+        this.fmpegProcess.stdout.on('data', (data) => {
+            if (data.toString()) {
+                debug(data.toString().replace(/(\r\n|\n|\r)/gm, ""))
             }
+        })
+            
+        this.fmpegProcess.stderr.on('data', (data) => {
+            if (data.toString()) {
+                debug(data.toString().replace(/(\r\n|\n|\r)/gm, ""))
+            }
+        })
 
-            // Stream time has expired, stop the current SIP session
-            sipSession.stop()
+        // If stream starts, set expire time, may be extended by new events
+        this.data.stream.expires = Math.floor(Date.now()/1000) + this.data.stream.duration
 
-        } catch(e) {
-            debug(e)
-            this.data.stream.active = false
+        // Don't stop MJPEG session until current time > expire time
+        // Expire time could be extended by additional motion events, except 
+        // Ring devices don't send motion events while a stream is active so
+        // it won't ever happen!
+        while (Math.floor(Date.now()/1000) < this.data.stream.expires) {
+            const sleeptime = (this.data.stream.expires - Math.floor(Date.now()/1000)) + 1
+            await utils.sleep(sleeptime)
         }
+
+        this.ffmpegProcess.kill()
+        this.data.stream.updateSnapshot = false
     }
 
-    async setRtspStream(message) {
+    async setStreamState(message) {
         debug('Received set stream state '+message+' for camera '+this.deviceId)
         debug('Location Id: '+ this.locationId)
         const command = message.toLowerCase()
@@ -597,7 +609,7 @@ class Camera extends RingPolledDevice {
                 break;
             case 'stream/command':
                 if (this.entity.hasOwnProperty(entityKey)) {
-                    this.setRtspStream(message)
+                    this.setStreamState(message)
                 }
                 break;
             default:
