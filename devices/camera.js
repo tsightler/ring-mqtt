@@ -6,7 +6,6 @@ const { clientApi } = require('../node_modules/ring-client-api/lib/api/rest-clie
 const P2J = require('pipe2jpeg')
 const net = require('net');
 const getPort = require('get-port')
-const http = require('http')
 
 class Camera extends RingPolledDevice {
     constructor(deviceInfo) {
@@ -38,13 +37,14 @@ class Camera extends RingPolledDevice {
                 motion: false, 
                 timestamp: null
             },
-            livestream: {
+            stream: {
                 duration: (this.device.data.settings.video_settings.hasOwnProperty('clip_length_max') && this.device.data.settings.video_settings.clip_length_max) 
                     ? this.device.data.settings.video_settings.clip_length_max
                     : 60,
                 active: false,
                 expires: 0,
-                updateSnapshot: false
+                updateSnapshot: false,
+                sipSession: null
             },
             lightState: null,
             sirenState: null,
@@ -119,8 +119,6 @@ class Camera extends RingPolledDevice {
             }
         }
 
-        this.addRtspPath()        
-
         this.onNewDingSubscription = this.device.onNewDing.subscribe(ding => {
             if (this.isOnline()) { this.processDing(ding) }
         })
@@ -177,52 +175,14 @@ class Camera extends RingPolledDevice {
         }
     }
 
-    addRtspPath() {
-        const rtspPathConfig = JSON.stringify({
-            source: 'publisher',
-            runOnDemand: `node ./lib/start-stream.js ${this.deviceId}_stream ${this.deviceTopic}/stream/state ${this.deviceTopic}/stream/command`,
-            runOnReadRestart: false,
-            runOnDemandStartTimeout: 10000000000,
-            runOnDemandCloseAfter: 10000000000
-        })
-
-        const httpOptions = {
-            hostname: 'localhost',
-            port: 55456,
-            path: `/v1/config/paths/add/${this.deviceId}_stream`,
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Content-Length': rtspPathConfig.length
-            }
-        }
-
-        const req = http.request(httpOptions, res => {
-            //debug(`statusCode: ${res.statusCode}`)
-          
-            res.on('data', d => {
-                if (d.toString()) {
-                    debug(d.toString())
-                }
-            })
-        })
-          
-        req.on('error', error => {
-            debug(error)
-        })
-        
-        req.write(rtspPathConfig)
-        req.end()
-    }
-
     // Publish camera capabilities and state and subscribe to events
     async publishData(data) {
         const isPublish = data === undefined ? true : false
         this.publishPolledState(isPublish)
 
         if (isPublish) {
-            // Publish livestream state
-            this.publishMqtt(this.entity.stream.state_topic, this.data.livestream.active ? 'ON' : 'OFF', true)
+            // Publish stream state
+            this.publishMqtt(this.entity.stream.state_topic, this.data.stream.active ? 'ON' : 'OFF', true)
  
             this.publishDingStates()
             if (this.data.snapshot.motion || this.data.snapshot.interval) {
@@ -389,7 +349,7 @@ class Camera extends RingPolledDevice {
             debug(e.message)
         }
         if (newSnapshot && newSnapshot === 'SnapFromStream') {
-            // Livestream snapshots publish automatically from the stream so just return
+            // Snapshots from active stream publish automatically so just return
             return
         } else if (newSnapshot) {
             this.data.snapshot.currentImage = newSnapshot
@@ -470,17 +430,17 @@ class Camera extends RingPolledDevice {
 
     async getSnapshotFromStream() {
         // This will trigger P2J to publish one new snapshot from the live stream
-        this.data.livestream.updateSnapshot = true
+        this.data.stream.updateSnapshot = true
 
         // If there's no active live stream, start it, otherwise, extend live stream timeout
-        if (!this.data.livestream.active) {
-            this.startLiveStream()
+        if (!this.data.stream.active) {
+            this.startStream()
         } else {
-            this.data.livestream.expires = Math.floor(Date.now()/1000) + this.data.livestream.duration
+            this.data.stream.expires = Math.floor(Date.now()/1000) + this.data.stream.duration
         }
     }
 
-    // Start P2J server to emit complete JPEG images from livestream
+    // Start P2J server to extract and publish JPEG images from stream
     async startP2J() {
         const p2j = new P2J()
         const p2jPort = await getPort()
@@ -499,11 +459,11 @@ class Camera extends RingPolledDevice {
       
         p2j.on('jpeg', (jpegFrame) => {
             // If updateSnapshot = true then publish the next full JPEG frame as new snapshot
-            if (this.data.livestream.updateSnapshot) {
+            if (this.data.stream.updateSnapshot) {
                 this.data.snapshot.currentImage = jpegFrame
                 this.data.snapshot.timestamp = Math.round(Date.now()/1000)
                 this.publishSnapshot()
-                this.data.livestream.updateSnapshot = false
+                this.data.stream.updateSnapshot = false
             }
         })
 
@@ -512,13 +472,13 @@ class Camera extends RingPolledDevice {
     }
 
     // Start a live stream and send mjpeg stream to p2j server
-    async startLiveStream() {
-        this.data.livestream.active = true
+    async startStream() {
+        this.data.stream.active = true
 
         // Start a P2J pipeline and server and get the listening TCP port
         const p2jPort = await this.startP2J()
         
-        // Start livestream with MJPEG output directed to P2J server with one frame every 2 seconds 
+        // Start stream with MJPEG output directed to P2J server with one frame every 2 seconds 
         debug('Establishing connection to video stream for camera '+this.deviceId)
         try {
             const sipSession = await this.device.streamVideo({
@@ -541,17 +501,17 @@ class Camera extends RingPolledDevice {
             })
 
             // If stream starts, set expire time, may be extended by new events
-            this.data.livestream.expires = Math.floor(Date.now()/1000) + this.data.livestream.duration
+            this.data.stream.expires = Math.floor(Date.now()/1000) + this.data.stream.duration
 
             sipSession.onCallEnded.subscribe(() => {
                 debug('Video stream ended for camera '+this.deviceId)
-                this.data.livestream.active = false
+                this.data.stream.active = false
             })
 
             // Don't stop SIP session until current tyime > expire time
             // Expire time may be extedned by new motion events
-            while (Math.floor(Date.now()/1000) < this.data.livestream.expires) {
-                const sleeptime = (this.data.livestream.expires - Math.floor(Date.now()/1000)) + 1
+            while (Math.floor(Date.now()/1000) < this.data.stream.expires) {
+                const sleeptime = (this.data.stream.expires - Math.floor(Date.now()/1000)) + 1
                 await utils.sleep(sleeptime)
             }
 
@@ -560,35 +520,51 @@ class Camera extends RingPolledDevice {
 
         } catch(e) {
             debug(e)
-            this.data.livestream.active = false
+            this.data.stream.active = false
         }
     }
 
-    async startRtspStream() {
-        if (this.data.livestream.active === true) {
-            this.publishMqtt(this.entity.stream.state_topic, this.data.livestream.active ? 'ON' : 'OFF', true)
-            return
-        }
-        this.data.livestream.active = true
-        
-        // Start livestream with MJPEG output directed to P2J server with one frame every 2 seconds 
-        debug('Establishing connection to video stream for camera '+this.deviceId)
-        try {
-            const sipSession = await this.device.streamVideo({
-                audio: [], video: [],
-                output: [ '-acodec', 'aac', '-vcodec', 'copy', '-f', 'rtsp', `rtsp://localhost:8554/${this.deviceId}_stream` ]
-            })
-            this.publishMqtt(this.entity.stream.state_topic, this.data.livestream.active ? 'ON' : 'OFF', true)
+    async setRtspStream(message) {
+        debug('Received set stream state '+message+' for camera '+this.deviceId)
+        debug('Location Id: '+ this.locationId)
+        const command = message.toLowerCase()
 
-            sipSession.onCallEnded.subscribe(() => {
-                debug('Video stream ended for camera '+this.deviceId)
-                this.data.livestream.active = false
-                this.publishMqtt(this.entity.stream.state_topic, this.data.livestream.active ? 'ON' : 'OFF', true)
-            })  
-        } catch(e) {
-            debug(e)
-            this.data.livestream.active = false
-            this.publishMqtt(this.entity.stream.state_topic, this.data.livestream.active ? 'ON' : 'OFF', true)
+        switch (command) {
+            case 'on':
+                if (this.data.stream.active === true) {
+                    this.publishMqtt(this.entity.stream.state_topic, this.data.stream.active ? 'ON' : 'OFF', true)
+                    return
+                }
+                this.data.stream.active = true
+                
+                // Start stream with MJPEG output directed to P2J server with one frame every 2 seconds 
+                debug('Establishing connection to video stream for camera '+this.deviceId)
+                try {
+                    this.data.stream.sipSession = await this.device.streamVideo({
+                        audio: [], video: [],
+                        output: [ '-acodec', 'aac', '-vcodec', 'copy', '-f', 'rtsp', `rtsp://localhost:8554/${this.deviceId}_stream` ]
+                    })
+                    this.publishMqtt(this.entity.stream.state_topic, this.data.stream.active ? 'ON' : 'OFF', true)
+
+                    this.data.stream.sipSession.onCallEnded.subscribe(() => {
+                        debug('Video stream ended for camera '+this.deviceId)
+                        this.data.stream.active = false
+                        this.publishMqtt(this.entity.stream.state_topic, this.data.stream.active ? 'ON' : 'OFF', true)
+                        this.data.stream.sipSession = false
+                    })
+                } catch(e) {
+                    debug(e)
+                    this.data.stream.active = false
+                    this.publishMqtt(this.entity.stream.state_topic, this.data.stream.active ? 'ON' : 'OFF', true)
+                }
+            case 'off':
+                if (this.data.stream.sipSession) {
+                    this.data.stream.sipSession.stop()
+                } else {
+                    this.publishMqtt(this.entity.stream.state_topic, this.data.stream.active ? 'ON' : 'OFF', true)
+                }
+            default:
+                debug('Received unknown command for stream on camera '+this.deviceId)
         }
     }
 
@@ -618,7 +594,7 @@ class Camera extends RingPolledDevice {
                 break;
             case 'stream/command':
                 if (this.entity.hasOwnProperty(entityKey)) {
-                    this.startRtspStream(message)
+                    this.setRtspStream(message)
                 }
                 break;
             default:

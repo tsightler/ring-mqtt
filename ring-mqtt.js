@@ -8,9 +8,9 @@ const debug = require('debug')('ring-mqtt')
 const colors = require('colors/safe')
 const utils = require('./lib/utils.js')
 const tokenApp = require('./lib/tokenapp.js')
+const rss = require('./lib/rtsp-simple-server.js')
 const { createHash, randomBytes } = require('crypto')
 const fs = require('fs')
-const respawn = require('respawn')
 const SecurityPanel = require('./devices/security-panel')
 const ContactSensor = require('./devices/contact-sensor')
 const MotionSensor = require('./devices/motion-sensor')
@@ -32,31 +32,7 @@ const RangeExtender = require('./devices/range-extender')
 const Siren = require('./devices/siren')
 const Thermostat = require('./devices/thermostat')
 const TemperatureSensor = require('./devices/temperature-sensor')
-
-let rss = respawn(['./bin/rtsp-simple-server', './config/rtsp-simple-server.yml'], {
-    name: 'rss',        // set monitor name
-    env: process.env,   // set env vars
-    cwd: '.',           // set cwd
-    maxRestarts:-1,     // how many restarts are allowed within 60s or -1 for infinite restarts
-    sleep:1000,         // time to sleep between restarts,
-    kill:30000,         // wait 30s before force killing after stopping
-    stdio: 'pipe',      // forward stdio options
-    fork: false         // fork instead of spawn
-})
-
-rss.on('stdout', (data) => {
-    if (data.toString()) {
-        console.log(data.toString())
-    }
-})
-  
-rss.on('stderr', (data) => {
-    if (data.toString()) {
-         console.log(data.toString())
-    }
-})
-  
-rss.start()
+const { sleep } = require('./lib/utils.js')
 
 var CONFIG
 var ringLocations = new Array()
@@ -86,6 +62,7 @@ process.on('unhandledRejection', function(err) {
 
 // Set offline status on exit
 async function processExit(exitCode) {
+    rss.shutdown()
     await utils.sleep(1)
     debug('The ring-mqtt process is shutting down...')
     if (ringDevices.length > 0) {
@@ -98,7 +75,6 @@ async function processExit(exitCode) {
             }
         })
     }
-    rss.stop()
     await utils.sleep(2)
     if (exitCode || exitCode === 0) debug(`Exit code: ${exitCode}`);
     process.exit()
@@ -113,7 +89,6 @@ async function getDevice(device, mqttClient, allDevices) {
         CONFIG
     }
     if (device instanceof RingCamera) {
-        await utils.msleep(100)
         deviceInfo.category = 'camera'
         return new Camera(deviceInfo)
     } else if (device instanceof RingChime) {
@@ -281,7 +256,12 @@ async function updateRingData(mqttClient, ringClient) {
     }
     debug(colors.green('-'.repeat(80)))
     debug('Ring location/device data updated, sleeping for 5 seconds.')
-    await utils.sleep(5)
+    await utils.sleep(2)
+    const cameras = await ringDevices.filter(d => d.device instanceof RingCamera)
+    if (cameras.length > 0 && !rss.started) {
+        await rss.start(cameras)
+    }
+    await utils.sleep(3)
 }
 
 // Publish devices/cameras for given location

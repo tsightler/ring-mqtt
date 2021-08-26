@@ -7,10 +7,7 @@ rtspAddress: 0.0.0.0:8554
 
 rtmpDisable: yes
 
-hlsDisable: no
-hlsAddress: 0.0.0.0:8888
-hlsSegmentCount: 4
-hlsSegmentDuration: 2s
+hlsDisable: yes
 
 api: yes
 apiAddress: 127.0.0.1:55456
