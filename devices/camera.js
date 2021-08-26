@@ -77,7 +77,8 @@ class Camera extends RingPolledDevice {
             },
             stream: {
                 component: 'switch',
-                attributes: true
+                attributes: true,
+                icon: 'mdi:cctv'
             },
             ...this.device.isDoorbot ? {
                 ding: {
@@ -557,12 +558,14 @@ class Camera extends RingPolledDevice {
                     this.data.stream.active = false
                     this.publishMqtt(this.entity.stream.state_topic, this.data.stream.active ? 'ON' : 'OFF', true)
                 }
+                break;
             case 'off':
                 if (this.data.stream.sipSession) {
                     this.data.stream.sipSession.stop()
                 } else {
                     this.publishMqtt(this.entity.stream.state_topic, this.data.stream.active ? 'ON' : 'OFF', true)
                 }
+                break;
             default:
                 debug('Received unknown command for stream on camera '+this.deviceId)
         }
