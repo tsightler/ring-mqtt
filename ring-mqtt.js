@@ -33,24 +33,27 @@ const Siren = require('./devices/siren')
 const Thermostat = require('./devices/thermostat')
 const TemperatureSensor = require('./devices/temperature-sensor')
 
-var rss = respawn(['./bin/rtsp-simple-server', './config/rtsp-simple-server.yml'], {
-    name: 'rss',          // set monitor name
-    env: process.env, // set env vars
-    cwd: '.',              // set cwd
-    maxRestarts:10,        // how many restarts are allowed within 60s
-                           // or -1 for infinite restarts
-    sleep:1000,            // time to sleep between restarts,
-    kill:30000,            // wait 30s before force killing after stopping
-    stdio: 'pipe',        // forward stdio options
-    fork: false            // fork instead of spawn
+let rss = respawn(['./bin/rtsp-simple-server', './config/rtsp-simple-server.yml'], {
+    name: 'rss',        // set monitor name
+    env: process.env,   // set env vars
+    cwd: '.',           // set cwd
+    maxRestarts:-1,     // how many restarts are allowed within 60s or -1 for infinite restarts
+    sleep:1000,         // time to sleep between restarts,
+    kill:30000,         // wait 30s before force killing after stopping
+    stdio: 'pipe',      // forward stdio options
+    fork: false         // fork instead of spawn
 })
 
 rss.on('stdout', (data) => {
-    console.log(data.toString())
+    if (data.toString()) {
+        console.log(data.toString())
+    }
 })
   
 rss.on('stderr', (data) => {
-    console.log(data.toString())
+    if (data.toString()) {
+         console.log(data.toString())
+    }
 })
   
 rss.start()
@@ -95,6 +98,7 @@ async function processExit(exitCode) {
             }
         })
     }
+    rss.stop()
     await utils.sleep(2)
     if (exitCode || exitCode === 0) debug(`Exit code: ${exitCode}`);
     process.exit()
@@ -109,6 +113,7 @@ async function getDevice(device, mqttClient, allDevices) {
         CONFIG
     }
     if (device instanceof RingCamera) {
+        await utils.msleep(100)
         deviceInfo.category = 'camera'
         return new Camera(deviceInfo)
     } else if (device instanceof RingChime) {

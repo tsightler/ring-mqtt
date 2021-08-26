@@ -1,3 +1,6 @@
+readTimeout: 1s
+readBufferCount: 512
+
 rtspDisable: no
 protocols: [tcp]
 rtspAddress: 0.0.0.0:8554

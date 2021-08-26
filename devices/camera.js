@@ -181,9 +181,9 @@ class Camera extends RingPolledDevice {
         const rtspPathConfig = JSON.stringify({
             source: 'publisher',
             runOnDemand: `node ./lib/start-stream.js ${this.deviceId}_stream ${this.deviceTopic}/stream/state ${this.deviceTopic}/stream/command`,
-            runOnDemandRestart: true,
-            runOnDemandStartTimeout: 20000000000,
-            runOnDemandCloseAfter: 5000000000
+            runOnReadRestart: false,
+            runOnDemandStartTimeout: 10000000000,
+            runOnDemandCloseAfter: 10000000000
         })
 
         const httpOptions = {
@@ -198,10 +198,12 @@ class Camera extends RingPolledDevice {
         }
 
         const req = http.request(httpOptions, res => {
-            debug(`statusCode: ${res.statusCode}`)
+            //debug(`statusCode: ${res.statusCode}`)
           
             res.on('data', d => {
-                process.stdout.write(d)
+                if (d.toString()) {
+                    debug(d.toString())
+                }
             })
         })
           
@@ -210,7 +212,6 @@ class Camera extends RingPolledDevice {
         })
         
         req.write(rtspPathConfig)
-        debug(rtspPathConfig)
         req.end()
     }
 
@@ -579,25 +580,11 @@ class Camera extends RingPolledDevice {
             })
             this.publishMqtt(this.entity.stream.state_topic, this.data.livestream.active ? 'ON' : 'OFF', true)
 
-            // If stream starts, set expire time, may be extended by new events
-            this.data.livestream.expires = Math.floor(Date.now()/1000) + this.data.livestream.duration
-
             sipSession.onCallEnded.subscribe(() => {
                 debug('Video stream ended for camera '+this.deviceId)
                 this.data.livestream.active = false
                 this.publishMqtt(this.entity.stream.state_topic, this.data.livestream.active ? 'ON' : 'OFF', true)
-            })
-
-            // Don't stop SIP session until current time > expire time
-            // Expire time may be extedned by new motion events
-            while (Math.floor(Date.now()/1000) < this.data.livestream.expires) {
-                const sleeptime = (this.data.livestream.expires - Math.floor(Date.now()/1000)) + 1
-                await utils.sleep(sleeptime)
-            }
-
-            // Stream time has expired, stop the current SIP session
-            sipSession.stop()
-
+            })  
         } catch(e) {
             debug(e)
             this.data.livestream.active = false
