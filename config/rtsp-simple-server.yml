@@ -6,12 +6,12 @@ protocols: [tcp]
 rtspAddress: 0.0.0.0:8554
 
 rtmpDisable: no
-rtmpAddress: 0.0.0.0:8553
+rtmpAddress: 0.0.0.0:8935
 
 hlsDisable: yes
 
 api: yes
-apiAddress: 127.0.0.1:55456
+apiAddress: 127.0.0.1:8443
 
 paths:
   all:
