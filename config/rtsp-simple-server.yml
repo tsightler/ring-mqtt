@@ -5,7 +5,7 @@ rtspDisable: no
 protocols: [tcp]
 rtspAddress: 0.0.0.0:8554
 
-rtmpDisable: yes
+rtmpDisable: no
 
 hlsDisable: yes
 
