@@ -8,6 +8,7 @@ const net = require('net');
 const getPort = require('get-port')
 const pathToFfmpeg = require('ffmpeg-for-homebridge')
 const { spawn } = require('child_process')
+const ip = require("ip");
 
 class Camera extends RingPolledDevice {
     constructor(deviceInfo) {
@@ -46,7 +47,9 @@ class Camera extends RingPolledDevice {
                 active: false,
                 expires: 0,
                 updateSnapshot: false,
-                sipSession: null
+                sipSession: null,
+                still_image_url: `http://localhost:8123{{ states.camera.${this.device.name.toLowerCase().replace(" ","_")}_snapshot.attribute.entity_picture }}`,
+                stream_source: `rtsp://${ip.address()}:8554/${this.deviceId}_live`
             },
             lightState: null,
             sirenState: null,
@@ -338,7 +341,9 @@ class Camera extends RingPolledDevice {
             } else {
                 attributes.wirelessNetwork = deviceHealth.wifi_name
                 attributes.wirelessSignal = deviceHealth.latest_signal_strength
-            }            
+            }
+            attributes.still_image_url = this.data.stream.still_image_url
+            attributes.stream_source = this.data.stream.stream_source
             this.publishMqtt(this.entity.info.state_topic, JSON.stringify(attributes), true)
             this.publishAttributeEntities(attributes)
         }
