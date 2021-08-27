@@ -506,18 +506,6 @@ class Camera extends RingPolledDevice {
             debug(`The MJPEG snapshot stream snapshots for camera ${this.deviceId} has stopped`)
         })
 
-        ffmpegProcess.stdout.on('data', (data) => {
-            if (data.toString()) {
-                debug(data.toString().replace(/(\r\n|\n|\r)/gm, ""))
-            }
-        })
-            
-        ffmpegProcess.stderr.on('data', (data) => {
-            if (data.toString()) {
-                debug(data.toString().replace(/(\r\n|\n|\r)/gm, ""))
-            }
-        })
-
         // If stream starts, set expire time, may be extended by new events
         this.data.stream.expires = Math.floor(Date.now()/1000) + this.data.stream.duration
 
