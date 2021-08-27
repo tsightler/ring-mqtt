@@ -48,7 +48,7 @@ class Camera extends RingPolledDevice {
                 expires: 0,
                 updateSnapshot: false,
                 sipSession: null,
-                stillImageUrl: `http://localhost:8123{{ states.camera.${this.device.name.toLowerCase().replace(" ","_")}_snapshot.attribute.entity_picture }}`,
+                stillImageURL: `http://localhost:8123{{ states.camera.${this.device.name.toLowerCase().replace(" ","_")}_snapshot.attribute.entity_picture }}`,
                 streamSource: `rtsp://${ip.address()}:8554/${this.deviceId}_live`
             },
             lightState: null,
@@ -342,8 +342,8 @@ class Camera extends RingPolledDevice {
                 attributes.wirelessNetwork = deviceHealth.wifi_name
                 attributes.wirelessSignal = deviceHealth.latest_signal_strength
             }
-            attributes.stillImageURL = this.data.stream.still_image_url
-            attributes.streamSource = this.data.stream.stream_source
+            attributes.still_Image_URL = this.data.stream.stillImageURL
+            attributes.stream_Source = this.data.stream.streamSource
             this.publishMqtt(this.entity.info.state_topic, JSON.stringify(attributes), true)
             this.publishAttributeEntities(attributes)
         }
