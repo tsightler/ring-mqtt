@@ -485,7 +485,7 @@ class Camera extends RingPolledDevice {
 
         const ffmpegProcess = spawn(pathToFfmpeg, [
             '-i',
-            `rtsp://localhost:8554/${this.deviceId}_stream`,
+            `rtsp://localhost:8554/${this.deviceId}_live`,
             '-c:v',
             'mjpeg',
             '-pix_fmt',
@@ -555,7 +555,7 @@ class Camera extends RingPolledDevice {
                 try {
                     this.data.stream.sipSession = await this.device.streamVideo({
                         audio: [], video: [],
-                        output: [ '-acodec', 'aac', '-vcodec', 'copy', '-f', 'rtsp', `rtsp://localhost:8554/${this.deviceId}_stream` ]
+                        output: [ '-acodec', 'aac', '-vcodec', 'copy', '-f', 'rtsp', `rtmp://localhost:8554/${this.deviceId}_live` ]
                     })
                     this.publishMqtt(this.entity.stream.state_topic, this.data.stream.active ? 'ON' : 'OFF', true)
 
