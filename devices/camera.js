@@ -6,8 +6,8 @@ const { clientApi } = require('../node_modules/ring-client-api/lib/api/rest-clie
 const P2J = require('pipe2jpeg')
 const net = require('net');
 const getPort = require('get-port')
-var pathToFfmpeg = require('ffmpeg-for-homebridge');
-const { spawn } = require('child_process');
+const pathToFfmpeg = require('ffmpeg-for-homebridge')
+const { spawn } = require('child_process')
 
 class Camera extends RingPolledDevice {
     constructor(deviceInfo) {
@@ -473,10 +473,7 @@ class Camera extends RingPolledDevice {
         return p2jPort
     }
 
-    // Start a live stream and send mjpeg stream to p2j server
     async startSnapshotStream() {
-        this.data.stream.active = true
-
         // Start a P2J pipeline and server and get the listening TCP port
         const p2jPort = await this.startP2J()
         
@@ -550,7 +547,7 @@ class Camera extends RingPolledDevice {
                 }
                 this.data.stream.active = true
                 
-                // Start stream with MJPEG output directed to P2J server with one frame every 2 seconds 
+                // Start and publish stream to rtsp-simple-server 
                 debug('Establishing connection to video stream for camera '+this.deviceId)
                 try {
                     this.data.stream.sipSession = await this.device.streamVideo({
