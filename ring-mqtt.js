@@ -335,14 +335,17 @@ async function processMqttMessage(topic, message, mqttClient, ringClient) {
     if (topic === CONFIG.hass_topic || topic === 'hass/status') {
         debug('Home Assistant state topic '+topic+' received message: '+message)
         if (message == 'online') {
-            // Republish devices and state after 60 seconds if restart of HA is detected
-            debug('Resending device config/state in 30 seconds')
-            // Make sure any existing republish dies
-            republishCount = 0 
-            await utils.sleep(republishDelay+5)
-            // Reset republish counter and start publishing config/state
-            republishCount = 10
-            processLocations(mqttClient, ringClient)
+            // Republish devices and state if restart of HA is detected
+            if (republishCount > 0) {
+                debug('Home Assisntat restart detected during existing republish cycle')
+                debug('Resetting device config/state republish count')
+                republishCount = 6
+            } else {
+                debug('Home Assistant restart detected, resending device config/state in 5 seconds')
+                await utils.sleep(5)
+                republishCount = 6
+                processLocations(mqttClient, ringClient)
+            }
         }
     } else {
         // Parse topic to get location/device ID
