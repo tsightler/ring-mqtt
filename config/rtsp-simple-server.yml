@@ -2,12 +2,18 @@ readTimeout: 2s
 readBufferCount: 1024
 
 rtspDisable: no
-protocols: [tcp]
+protocols: [udp]
 rtspAddress: 0.0.0.0:8554
+rtpAddress: 127.0.0.1:8000
 
 rtmpDisable: yes
 
-hlsDisable: yes
+hlsDisable: no
+hlsAddress: :8888
+hlsAlwaysRemux: no
+hlsSegmentCount: 3
+hlsSegmentDuration: 1s
+hlsAllowOrigin: '*'
 
 api: yes
 apiAddress: 127.0.0.1:8443
