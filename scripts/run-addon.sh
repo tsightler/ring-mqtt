@@ -99,7 +99,7 @@ echo "Running ring-mqtt..."
 if [ "${BRANCH}" = "latest" ]; then
     DEBUG=ring-mqtt ISADDON=true exec /app/ring-mqtt-latest/ring-mqtt.js
 elif [ "${BRANCH}" = "dev" ]; then
-    DEBUG=ring-mqtt,start-stream ISADDON=true exec /app/ring-mqtt-dev/ring-mqtt.js
+    DEBUG=ring-* ISADDON=true exec /app/ring-mqtt-dev/ring-mqtt.js
 else
     DEBUG=ring-mqtt ISADDON=true exec /app/ring-mqtt/ring-mqtt.js
 fi
