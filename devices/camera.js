@@ -430,7 +430,7 @@ class Camera extends RingPolledDevice {
     // Refresh snapshot on scheduled interval
     async scheduleSnapshotRefresh() {
             this.data.snapshot.intervalTimerId = setInterval(() => {
-                if (this.isOnline() && this.data.snapshot.motion && !this.data.motion.active_ding) {
+                if (this.isOnline() && this.data.snapshot.interval && !(this.data.snapshot.motion && this.data.motion.active_ding)) {
                     this.refreshSnapshot()
                 }
             }, this.data.snapshot.interval * 1000)
@@ -545,7 +545,7 @@ class Camera extends RingPolledDevice {
                 try {
                     this.data.stream.sipSession = await this.device.streamVideo({
                         audio: [], video: [],
-                        output: [ '-acodec', 'aac', '-vcodec', 'copy', '-f', 'flv', `rtmp://localhost:8935/${this.deviceId}_live` ]
+                        output: [ '-acodec', 'aac', '-vcodec', 'copy', '-f', 'rtsp', `rtsp://localhost:8554/${this.deviceId}_live` ]
                     })
                     this.publishMqtt(this.entity.stream.state_topic, this.data.stream.active ? 'ON' : 'OFF', true)
 
