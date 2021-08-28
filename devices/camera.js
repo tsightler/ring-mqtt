@@ -545,7 +545,7 @@ class Camera extends RingPolledDevice {
                 try {
                     this.data.stream.sipSession = await this.device.streamVideo({
                         audio: [], video: [],
-                        output: [ '-acodec', 'aac', '-vcodec', 'copy', '-f', 'rtsp', '-rtsp_transport', 'udp', `rtsp://localhost:8554/${this.deviceId}_live` ]
+                        output: [ '-acodec', 'aac', '-vcodec', 'copy', '-f', 'rtsp', '-rtsp_transport', 'udp', `rtsp://localhost:8000/${this.deviceId}_live` ]
                     })
                     this.publishMqtt(this.entity.stream.state_topic, this.data.stream.active ? 'ON' : 'OFF', true)
 
