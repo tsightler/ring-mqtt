@@ -5,15 +5,9 @@ rtspDisable: no
 protocols: [tcp]
 rtspAddress: 0.0.0.0:8554
 
-rtmpDisable: no
-rtmpAddress: :1935
+rtmpDisable: yes
 
-hlsDisable: no
-hlsAddress: :8888
-hlsAlwaysRemux: no
-hlsSegmentCount: 3
-hlsSegmentDuration: 1s
-hlsAllowOrigin: '*'
+hlsDisable: yes
 
 api: yes
 apiAddress: 127.0.0.1:8880
