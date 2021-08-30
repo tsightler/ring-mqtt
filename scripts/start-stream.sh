@@ -23,7 +23,7 @@ ctrl_c() {
 
 trap ctrl_c INT TERM QUIT
 
-echo "Activating live stream for camera ${green}${client_name%:}${reset} via topic ${blue}${command_topic}${reset}"
+echo -e "Activating live stream for camera ${green}${client_name%:}${reset} via topic ${blue}${command_topic}${reset}"
 mosquitto_pub -i "${client_id}" -u "${MQTTUSER}" -P "${MQTTPASSWORD}" -h "${MQTTHOST}" -p "${MQTTPORT}" -t "${command_topic}" -m "ON"
 
 while read -u 10 message
