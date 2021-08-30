@@ -4,7 +4,7 @@ ENV LANG="C.UTF-8" \
     TERM="xterm-256color"
 
 COPY . /app/ring-mqtt
-RUN apk add --no-cache tar git libcrypto1.1 libssl1.1 musl-utils musl bash curl jq tzdata mosquitto-clients && \
+RUN apk add --no-cache tar git libcrypto1.1 libssl1.1 musl-utils musl bash curl jq tzdata mosquitto-clients ncurses && \
     curl -J -L -o /tmp/bashio.tar.gz "https://github.com/hassio-addons/bashio/archive/v0.13.1.tar.gz" && \
     mkdir /tmp/bashio && \
     tar zxvf /tmp/bashio.tar.gz --strip 1 -C /tmp/bashio && \
