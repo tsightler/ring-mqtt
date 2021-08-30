@@ -46,7 +46,7 @@ else
     if [ "${BRANCH}" = "latest" ]; then
         DEBUG=ring-mqtt ISDOCKER=true exec /app/ring-mqtt-latest/ring-mqtt.js
     elif [ "${BRANCH}" = "dev" ]; then
-        DEBUG=ring-* ISDOCKER=true exec /app/ring-mqtt-dev/ring-mqtt.js
+        DEBUG=ring-mqtt ISDOCKER=true exec /app/ring-mqtt-dev/ring-mqtt.js
     else
         DEBUG=ring-mqtt ISDOCKER=true exec /app/ring-mqtt/ring-mqtt.js
     fi
