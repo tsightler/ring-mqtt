@@ -44,7 +44,7 @@ class Camera extends RingPolledDevice {
                 duration: (this.device.data.settings.video_settings.hasOwnProperty('clip_length_max') && this.device.data.settings.video_settings.clip_length_max) 
                     ? this.device.data.settings.video_settings.clip_length_max
                     : 60,
-                active: false,
+                state: 'inactive',
                 expires: 0,
                 updateSnapshot: false,
                 sipSession: null,
@@ -188,7 +188,7 @@ class Camera extends RingPolledDevice {
 
         if (isPublish) {
             // Publish stream state
-            this.publishMqtt(this.entity.stream.state_topic, this.data.stream.active ? 'ON' : 'OFF', true)
+            this.publishStreamState()
  
             this.publishDingStates()
             if (this.data.snapshot.motion || this.data.snapshot.interval) {
@@ -389,6 +389,12 @@ class Camera extends RingPolledDevice {
         }
     }
 
+    publishStreamState() {
+        this.publishMqtt(this.entity.stream.state_topic, this.data.stream.state === 'active' ? 'ON' : 'OFF', true)
+        const attributes = { streamState: this.data.stream.state }
+        this.publishMqtt(this.entity.stream.json_attributes_topic, JSON.stringify(attributes), true)
+    }
+
     // This function uses various methods to get a snapshot to work around limitations
     // of Ring API, ring-client-api snapshot caching, battery cameras, etc.
     async getRefreshedSnapshot() {
@@ -441,7 +447,7 @@ class Camera extends RingPolledDevice {
         this.data.stream.updateSnapshot = true
 
         // If there's no active live stream, start it, otherwise, extend live stream timeout
-        if (!this.data.stream.active) {
+        if (this.data.stream.state === 'inactive' || this.data.stream.state === 'failed') {
             this.startSnapshotStream()
         } else {
             this.data.stream.expires = Math.floor(Date.now()/1000) + this.data.stream.duration
@@ -534,11 +540,13 @@ class Camera extends RingPolledDevice {
 
         switch (command) {
             case 'on':
-                if (this.data.stream.active === true) {
-                    this.publishMqtt(this.entity.stream.state_topic, this.data.stream.active ? 'ON' : 'OFF', true)
+                if (this.data.stream.state === 'active' || this.data.stream.state === 'activating') {
+                    this.publishStreamState()
                     return
+                } else {
+                    this.data.stream.state = 'activating'
+                    this.publishStreamState()
                 }
-                this.data.stream.active = true
                 
                 // Start and publish stream to rtsp-simple-server 
                 debug('Establishing connection to video stream for camera '+this.deviceId)
@@ -547,25 +555,26 @@ class Camera extends RingPolledDevice {
                         audio: [], video: [],
                         output: [ '-acodec', 'aac', '-vcodec', 'copy', '-f', 'rtsp', `rtsp://localhost:8554/${this.deviceId}_live` ]
                     })
-                    this.publishMqtt(this.entity.stream.state_topic, this.data.stream.active ? 'ON' : 'OFF', true)
+                    this.data.stream.state = 'active'
+                    this.publishStreamState()
 
                     this.data.stream.sipSession.onCallEnded.subscribe(() => {
                         debug('Video stream ended for camera '+this.deviceId)
-                        this.data.stream.active = false
-                        this.publishMqtt(this.entity.stream.state_topic, this.data.stream.active ? 'ON' : 'OFF', true)
+                        this.data.stream.state = 'inactive'
                         this.data.stream.sipSession = false
+                        this.publishStreamState()
                     })
                 } catch(e) {
                     debug(e)
-                    this.data.stream.active = false
-                    this.publishMqtt(this.entity.stream.state_topic, this.data.stream.active ? 'ON' : 'OFF', true)
+                    this.data.stream.state = 'failed'
+                    this.publishStreamState()
                 }
                 break;
             case 'off':
                 if (this.data.stream.sipSession) {
                     this.data.stream.sipSession.stop()
                 } else {
-                    this.publishMqtt(this.entity.stream.state_topic, this.data.stream.active ? 'ON' : 'OFF', true)
+                    this.publishStreamState()
                 }
                 break;
             default:
