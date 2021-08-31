@@ -24,7 +24,7 @@ elif [ "${BRANCH}" = "dev" ]; then
     esac
     mkdir -p /etc/fix-attrs.d
     mkdir -p /etc/services.d
-    cp -a /app/ring-mqtt-dev/s6-etc/* /
+    cp -a /app/ring-mqtt-dev/s6-etc/. /etc/.
     echo "-------------------------------------------------------"
     exec /init
 else
