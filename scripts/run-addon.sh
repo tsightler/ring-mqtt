@@ -26,7 +26,7 @@ elif [ "${BRANCH}" = "dev" ]; then
     mkdir -p /etc/services.d
     cp -a /app/ring-mqtt-dev/s6-etc/. /etc/.
     echo "-------------------------------------------------------"
-    S6_BEHAVIOUR_IF_STAGE2_FAILS=2 S6_LOGGING=1 exec /init
+    S6_BEHAVIOUR_IF_STAGE2_FAILS=2 exec /init
 else
     cd /app/ring-mqtt
 fi
