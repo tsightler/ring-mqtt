@@ -8,8 +8,32 @@ if [ ! -d /app/ring-mqtt-dev ]; then
     echo "Installing node module dependencies, please wait..."
     npm install --no-progress > /dev/null 2>&1
     chmod +x ring-mqtt.js scripts/*.sh
-    exec /app/ring-mqtt-dev/scripts/update2dev.sh
 
+    echo "-------------------------------------------------------"
+    echo "Downloading and installing s6-overlay..."
+        case "${APKARCH}" in
+        'x86_64')
+            curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/v2.2.0.3/s6-overlay-amd64.tar.gz" | tar zxf - -C /
+            ;;
+        'aarch64')
+            curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/v2.2.0.3/s6-overlay-aarch64.tar.gz" | tar zxf - -C /
+            ;;
+        'armv7')
+            curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/v2.2.0.3/s6-overlay-arm.tar.gz" | tar zxf - -C /
+            ;;
+        'armhf')
+            curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/v2.2.0.3/s6-overlay-armhf.tar.gz" | tar zxf - -C /
+            ;;
+        *) 
+            echo >&2 "ERROR: Unsupported architecture '$APKARCH'"; 
+            exit 1 
+            ;;
+    esac
+    mkdir -p /etc/fix-attrs.d
+    mkdir -p /etc/services.d
+    cp -a /app/ring-mqtt-dev/s6-etc/* /
+    echo "-------------------------------------------------------"
+else
     cd /app/ring-mqtt-dev
     echo "Adding mostquitto-clients..."
     apk add --no-cache mosquitto-clients
@@ -35,28 +59,5 @@ if [ ! -d /app/ring-mqtt-dev ]; then
             ;;
     esac
     cd ..
-    echo "-------------------------------------------------------"
-    echo "Downloading and installing s6-overlay..."
-        case "${APKARCH}" in
-        'x86_64')
-            curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/v2.2.0.3/s6-overlay-amd64.tar.gz" | tar zxf - -C /
-            ;;
-        'aarch64')
-            curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/v2.2.0.3/s6-overlay-aarch64.tar.gz" | tar zxf - -C /
-            ;;
-        'armv7')
-            curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/v2.2.0.3/s6-overlay-arm.tar.gz" | tar zxf - -C /
-            ;;
-        'armhf')
-            curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/v2.2.0.3/s6-overlay-armhf.tar.gz" | tar zxf - -C /
-            ;;
-        *) 
-            echo >&2 "ERROR: Unsupported architecture '$APKARCH'"; 
-            exit 1 
-            ;;
-    esac
-    mkdir -p /etc/fix-attrs.d
-    mkdir -p /etc/services.d
-    cp -a /app/ring-mqtt-dev/s6-etc/* /
     echo "-------------------------------------------------------"
 fi
