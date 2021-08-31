@@ -564,9 +564,9 @@ class Camera extends RingPolledDevice {
                             '-c:v',
                             'copy',
                             '-c:a:0',
-                            'copy',
-                            '-c:a:1',
                             'aac',
+                            '-c:a:1',
+                            'copy',
                             '-f',
                             'rtsp',
                             `rtsp://localhost:8554/${this.deviceId}_live`
