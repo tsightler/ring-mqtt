@@ -553,7 +553,7 @@ class Camera extends RingPolledDevice {
                 try {
                     this.data.stream.sipSession = await this.device.streamVideo({
                         audio: [], video: [],
-                        output: [ '-acodec', 'aac', '-vcodec', 'copy', '-f', 'rtsp', `rtsp://localhost:8554/${this.deviceId}_live` ]
+                        output: [ '-acodec', 'copy', '-vcodec', 'copy', '-f', 'rtsp', `rtsp://localhost:8554/${this.deviceId}_live` ]
                     })
                     this.data.stream.state = 'active'
                     this.publishStreamState()
