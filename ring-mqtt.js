@@ -32,7 +32,6 @@ const RangeExtender = require('./devices/range-extender')
 const Siren = require('./devices/siren')
 const Thermostat = require('./devices/thermostat')
 const TemperatureSensor = require('./devices/temperature-sensor')
-const { sleep } = require('./lib/utils.js')
 
 var CONFIG
 var ringLocations = new Array()
