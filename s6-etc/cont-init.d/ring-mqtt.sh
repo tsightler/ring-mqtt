@@ -13,7 +13,7 @@ if [ -f /data/options.json ]; then
     if [ "${BRANCH}" = "latest" ]; then
         /app/ring-mqtt/scripts/update2latest.sh
     elif [ "${BRANCH}" = "dev" ]; then
-        /app/ring-mqtt/scripts/update2dev.sh
+        /app/ring-mqtt-dev/scripts/update2dev.sh
     fi
 else
     # No options.json found, assume we are in running in standard Docker
