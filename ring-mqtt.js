@@ -61,9 +61,9 @@ process.on('unhandledRejection', function(err) {
 
 // Set offline status on exit
 async function processExit(exitCode) {
-    rss.shutdown()
     await utils.sleep(1)
     debug('The ring-mqtt process is shutting down...')
+    rss.shutdown()
     if (ringDevices.length > 0) {
         debug('Setting all devices offline...')
         await utils.sleep(1)
