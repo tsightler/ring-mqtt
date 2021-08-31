@@ -1,5 +1,7 @@
 #!/usr/bin/with-contenv bashio
 
+cd /app/ring-mqtt${BRANCH:+-$BRANCH}
+
 if [ -f /data/options.json ]; then
     echo ring-mqtt.js version $(cat package.json | grep version | cut -f4 -d'"')
     echo Node version $(node -v)
@@ -67,13 +69,10 @@ if [ -f /data/options.json ]; then
     echo "-------------------------------------------------------"
     echo "Running ring-mqtt..."
     if [ "${BRANCH}" = "latest" ]; then
-        cd /app/ring-mqtt-latest
         DEBUG=ring-* RUNMODE=addon exec node /app/ring-mqtt-latest/ring-mqtt.js
     elif [ "${BRANCH}" = "dev" ]; then
-        cd /app/ring-mqtt-dev
         DEBUG=ring-* RUNMODE=addon exec node /app/ring-mqtt-dev/ring-mqtt.js
     else
-        cd /app/ring-mqtt
         DEBUG=ring-* RUNMODE=addon exec node /app/ring-mqtt/ring-mqtt.js
     fi
 else
