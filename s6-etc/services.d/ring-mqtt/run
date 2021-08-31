@@ -77,7 +77,7 @@ if [ -f /data/options.json ]; then
     fi
 else
     echo -n "ring-mqtt.js version: "
-    echo $(cat /app/ring-mqtt/package.json | grep version | cut -f4 -d'"')
+    echo $(cat ./package.json | grep version | cut -f4 -d'"')
     echo Node version $(node -v)
     echo NPM version $(npm -v)
     git --version
