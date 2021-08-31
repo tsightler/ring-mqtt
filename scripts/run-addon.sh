@@ -2,58 +2,11 @@
 if [ "${BRANCH}" = "latest" ]; then
     cd /app/ring-mqtt-latest
 elif [ "${BRANCH}" = "dev" ]; then
-    cd /app/ring-mqtt-dev
-    echo "Adding mostquitto-clients..."
-    apk add --no-cache mosquitto-clients
-    echo "Downloading and installing rtsp-simple-server..."
-    APKARCH="$(apk --print-arch)"
-    mkdir -p bin; cd bin
-    case "${APKARCH}" in
-        'x86_64')
-            wget -O rtsp-simple-server.tar.gz https://raw.githubusercontent.com/tsightler/rtsp-simple-server/main/release-custom/rtsp-simple-server_v0.17.2-21-g43b10dc_linux_amd64.tar.gz
-            ;;
-        'aarch64')
-            wget -O rtsp-simple-server.tar.gz https://raw.githubusercontent.com/tsightler/rtsp-simple-server/main/release-custom/rtsp-simple-server_v0.17.2-21-g43b10dc_linux_arm64v8.tar.gz
-            ;;
-        'armv7')
-            wget -O rtsp-simple-server.tar.gz https://raw.githubusercontent.com/tsightler/rtsp-simple-server/main/release-custom/rtsp-simple-server_v0.17.2-21-g43b10dc_linux_armv7.tar.gz
-            ;;
-        'armhf')
-            wget -O rtsp-simple-server.tar.gz https://raw.githubusercontent.com/tsightler/rtsp-simple-server/main/release-custom/rtsp-simple-server_v0.17.2-21-g43b10dc_linux_armv6.tar.gz
-            ;;
-        *) 
-            echo >&2 "ERROR: Unsupported architecture '$APKARCH'"; 
-            exit 1 
-            ;;
-    esac
-    tar zxvfp rtsp-simple-server.tar.gz rtsp-simple-server
-    rm rtsp-simple-server.tar.gz
-    cd ..
-    echo "-------------------------------------------------------"
-    echo "Downloading and installing s6-overlay..."
-        case "${APKARCH}" in
-        'x86_64')
-            curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/v2.2.0.3/s6-overlay-amd64.tar.gz" | tar zxvf - -C /
-            ;;
-        'aarch64')
-            curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/v2.2.0.3/s6-overlay-aarch64.tar.gz" | tar zxvf - -C /
-            ;;
-        'armv7')
-            curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/v2.2.0.3/s6-overlay-arm.tar.gz" | tar zxvf - -C /
-            ;;
-        'armhf')
-            curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/v2.2.0.3/s6-overlay-armhf.tar.gz" | tar zxvf - -C /
-            ;;
-        *) 
-            echo >&2 "ERROR: Unsupported architecture '$APKARCH'"; 
-            exit 1 
-            ;;
-    esac
-    mkdir -p /etc/fix-attrs.d
-    mkdir -p /etc/services.d
+    exec /init
 else
     cd /app/ring-mqtt
 fi
+
 echo ring-mqtt.js version $(cat package.json | grep version | cut -f4 -d'"')
 echo Node version $(node -v)
 echo NPM version $(npm -v)
@@ -120,9 +73,9 @@ fi
 echo "-------------------------------------------------------"
 echo "Running ring-mqtt..."
 if [ "${BRANCH}" = "latest" ]; then
-    DEBUG=ring-mqtt ISADDON=true exec /app/ring-mqtt-latest/ring-mqtt.js
+    DEBUG=ring-* RUNMODE=addon exec /app/ring-mqtt-latest/ring-mqtt.js
 elif [ "${BRANCH}" = "dev" ]; then
-    DEBUG=ring-* ISADDON=true exec /app/ring-mqtt-dev/ring-mqtt.js
+    DEBUG=ring-* RUNMODE=addon exec /app/ring-mqtt-dev/ring-mqtt.js
 else
-    DEBUG=ring-mqtt ISADDON=true exec /app/ring-mqtt/ring-mqtt.js
+    DEBUG=ring-* RUNMODE=addon exec /app/ring-mqtt/ring-mqtt.js
 fi

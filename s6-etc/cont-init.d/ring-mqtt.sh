@@ -1,5 +1,4 @@
-#!/usr/bin/env bashio
-
+#!/usr/bin/with-contenv bashio
 # If options.json exist we are running as addon
 if [ -f /data/options.json ]; then
     echo "-------------------------------------------------------"
@@ -13,12 +12,8 @@ if [ -f /data/options.json ]; then
     export BRANCH=$(bashio::config "branch")
     if [ "${BRANCH}" = "latest" ]; then
         /app/ring-mqtt/scripts/update2latest.sh
-        exec /app/ring-mqtt-latest/scripts/run-addon.sh
     elif [ "${BRANCH}" = "dev" ]; then
         /app/ring-mqtt/scripts/update2dev.sh
-        exec /app/ring-mqtt-dev/scripts/run-addon.sh
-    else
-        exec /app/ring-mqtt/scripts/run-addon.sh
     fi
 else
     # No options.json found, assume we are in running in standard Docker
@@ -34,20 +29,5 @@ else
         /app/ring-mqtt/scripts/update2latest.sh
     elif [ "${BRANCH}" = "dev" ]; then
         /app/ring-mqtt/scripts/update2dev.sh
-    fi
-
-    echo -n "ring-mqtt.js version: "
-    echo $(cat /app/ring-mqtt/package.json | grep version | cut -f4 -d'"')
-    echo Node version $(node -v)
-    echo NPM version $(npm -v)
-    git --version
-    echo "-------------------------------------------------------"
-    echo "Running ring-mqtt..."
-    if [ "${BRANCH}" = "latest" ]; then
-        DEBUG=ring-mqtt RUNMODE=docker exec /app/ring-mqtt-latest/ring-mqtt.js
-    elif [ "${BRANCH}" = "dev" ]; then
-        DEBUG=ring-mqtt RUNMODE=docker exec /app/ring-mqtt-dev/ring-mqtt.js
-    else
-        DEBUG=ring-mqtt RUNMODE=docker exec /app/ring-mqtt/ring-mqtt.js
     fi
 fi
