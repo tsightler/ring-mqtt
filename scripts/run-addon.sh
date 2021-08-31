@@ -2,6 +2,7 @@
 if [ "${BRANCH}" = "latest" ]; then
     cd /app/ring-mqtt-latest
 elif [ "${BRANCH}" = "dev" ]; then
+    APKARCH="$(apk --print-arch)"
     echo "Downloading and installing s6-overlay..."
         case "${APKARCH}" in
         'x86_64')
