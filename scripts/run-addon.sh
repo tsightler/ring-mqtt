@@ -2,6 +2,29 @@
 if [ "${BRANCH}" = "latest" ]; then
     cd /app/ring-mqtt-latest
 elif [ "${BRANCH}" = "dev" ]; then
+    echo "Downloading and installing s6-overlay..."
+        case "${APKARCH}" in
+        'x86_64')
+            curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/v2.2.0.3/s6-overlay-amd64.tar.gz" | tar zxvf - -C /
+            ;;
+        'aarch64')
+            curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/v2.2.0.3/s6-overlay-aarch64.tar.gz" | tar zxvf - -C /
+            ;;
+        'armv7')
+            curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/v2.2.0.3/s6-overlay-arm.tar.gz" | tar zxvf - -C /
+            ;;
+        'armhf')
+            curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/v2.2.0.3/s6-overlay-armhf.tar.gz" | tar zxvf - -C /
+            ;;
+        *) 
+            echo >&2 "ERROR: Unsupported architecture '$APKARCH'"; 
+            exit 1 
+            ;;
+    esac
+    mkdir -p /etc/fix-attrs.d
+    mkdir -p /etc/services.d
+    cp -a /app/ring-mqtt-dev/s6-etc/* /
+    echo "-------------------------------------------------------"
     exec /init
 else
     cd /app/ring-mqtt
