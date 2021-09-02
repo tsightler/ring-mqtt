@@ -25,7 +25,7 @@ RUN apk add --no-cache tar git libcrypto1.1 libssl1.1 musl-utils musl bash curl 
     curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/v2.2.0.3/s6-overlay-${S6ARCH}.tar.gz" | tar zxf - -C / && \
     mkdir -p /etc/fix-attrs.d && \
     mkdir -p /etc/services.d && \
-    cp -a /app/ring-mqtt/s6-etc/* / && \
+    cp -a /app/ring-mqtt/s6-etc/* /etc/. && \
     rm -Rf /app/ring-mqtt/s6-etc && \ 
     mkdir -p /app/ring-mqtt/bin && \
     case "${APKARCH}" in \
