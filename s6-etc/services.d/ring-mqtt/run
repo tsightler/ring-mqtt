@@ -9,13 +9,15 @@
 # ==============================================================================
 
 cd /app/ring-mqtt${BRANCH:+-$BRANCH}
+echo "-------------------------------------------------------"
+echo -n "ring-mqtt.js version: "
+echo $(cat package.json | grep version | cut -f4 -d'"')
+echo Node version $(node -v)
+echo NPM version $(npm -v)
+git --version
+echo "-------------------------------------------------------"
 
 if [ -f /data/options.json ]; then
-    echo ring-mqtt.js version $(cat package.json | grep version | cut -f4 -d'"')
-    echo Node version $(node -v)
-    echo NPM version $(npm -v)
-    git --version
-    echo "-------------------------------------------------------"
     # Setup the MQTT environment options based on addon configuration settings
     export MQTTHOST=$(bashio::config "mqtt_host")
     export MQTTPORT=$(bashio::config "mqtt_port")
@@ -84,13 +86,6 @@ if [ -f /data/options.json ]; then
         DEBUG=ring-* RUNMODE=addon exec node /app/ring-mqtt/ring-mqtt.js
     fi
 else
-    echo "-------------------------------------------------------"
-    echo -n "ring-mqtt.js version: "
-    echo $(cat package.json | grep version | cut -f4 -d'"')
-    echo Node version $(node -v)
-    echo NPM version $(npm -v)
-    git --version
-    echo "-------------------------------------------------------"
     echo "Running ring-mqtt..."
     set +o nounset
     if [ "${BRANCH}" = "latest" ]; then
