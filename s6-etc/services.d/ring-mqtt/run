@@ -16,6 +16,7 @@ echo Node version $(node -v)
 echo NPM version $(npm -v)
 git --version
 echo "-------------------------------------------------------"
+set +o nounset
 
 if [ -f /data/options.json ]; then
     # Setup the MQTT environment options based on addon configuration settings
@@ -87,7 +88,6 @@ if [ -f /data/options.json ]; then
     fi
 else
     echo "Running ring-mqtt..."
-    set +o nounset
     if [ "${BRANCH}" = "latest" ]; then
         DEBUG=ring-mqtt RUNMODE=docker exec node /app/ring-mqtt-latest/ring-mqtt.js
     elif [ "${BRANCH}" = "dev" ]; then

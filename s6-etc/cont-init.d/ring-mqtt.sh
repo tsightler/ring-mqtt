@@ -8,6 +8,8 @@
 # for the detected environment.
 # ==============================================================================
 
+set +o nounset
+
 # If options.json exist we are running as addon
 if [ -f /data/options.json ]; then
     echo "-------------------------------------------------------"
@@ -33,7 +35,6 @@ else
     echo "| https://github.com/tsightler/ring-mqtt              |"
     echo "-------------------------------------------------------"
 
-    set +o nounset
     if [ "${BRANCH}" = "latest" ]; then
         /app/ring-mqtt/scripts/update2latest.sh
     elif [ "${BRANCH}" = "dev" ]; then
