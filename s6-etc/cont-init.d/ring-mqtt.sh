@@ -22,7 +22,6 @@ if [ -f /data/options.json ]; then
     echo "-------------------------------------------------------"
     # Use bashio to get configured branch
     export BRANCH=$(bashio::config "branch")
-    export RUNMODE=addon
 else
     # No options.json found, assume we are in running in standard Docker
     echo "-------------------------------------------------------"
@@ -31,7 +30,6 @@ else
     echo "| Report issues at:                                   |"
     echo "| https://github.com/tsightler/ring-mqtt              |"
     echo "-------------------------------------------------------"
-    export RUNMODE=docker
 fi
 
 if [ $BRANCH = "latest" ] || [ $BRANCH = "dev" ]; then
