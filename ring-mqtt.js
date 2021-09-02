@@ -53,6 +53,8 @@ process.on('unhandledRejection', function(err) {
     if (err.message.match('token is not valid')) {
         // Really need to put some kind of retry handler here
         debug(colors.yellow(err.message))
+    } else if (err.message.match('https://github.com/dgreif/ring/wiki/Refresh-Tokens')) {
+        debug(colors.yellow(err.message))
     } else {
         debug(colors.yellow('WARNING - Unhandled Promise Rejection'))
         console.log(colors.yellow(err))
@@ -523,7 +525,7 @@ const main = async(generatedToken) => {
                 stateData.ring_token = generatedToken
             }
         } else {
-            debug('File '+stateFile+' not found. No saved state data available.')
+            debug(colors.brightYellow('File '+stateFile+' not found. No saved state data available.'))
             if (generatedToken) {
                 debug('Using refresh token generated via web UI.')
                 stateData.ring_token = generatedToken
@@ -534,14 +536,14 @@ const main = async(generatedToken) => {
     // If no refresh tokens were found, either exit or start Web UI for token generator
     if (!CONFIG.ring_token && !stateData.ring_token) {
         if (process.env.RUNMODE === 'docker') {
-            debug('No refresh token was found in state file and RINGTOKEN is not configured.')
+            debug(colors.brightRed('No refresh token was found in state file and RINGTOKEN is not configured.'))
             process.exit(2)
         } else {
             if (process.env.RUNMODE === 'addon') {
-                debug('No refresh token was found in saved state file or config file.')
-                debug('Use the web interface to generate a new token.')
+                debug(colors.brightRed('No refresh token was found in saved state file or config file.'))
+                debug(colors.brightRed('Use the web interface to generate a new token.'))
             } else {
-                debug('No refresh token was found in config file.')
+                debug(colors.brightRed('Use the web interface to generate a new token.'))
                 tokenApp.start()
             }
         }
@@ -549,7 +551,7 @@ const main = async(generatedToken) => {
         // There is at least one token in state file or config
         // Check if network is up before attempting to connect to Ring, wait if network is not ready
         while (!(await isOnline())) {
-            debug('Network is offline, waiting 10 seconds to check again...')
+            debug(colors.brightYellow('Network is offline, waiting 10 seconds to check again...'))
             await utils.sleep(10)
         }
 
@@ -610,11 +612,11 @@ const main = async(generatedToken) => {
         } else if (!ringClient && !CONFIG.ring_token) {
             // No connection with Ring API using saved token and no configured token to try
             if (process.env.RUNMODE === 'docker') {
-                debug('Could not connect with saved refresh token and RINGTOKEN is not configured.')    
+                debug(colors.brightRed('Could not connect with saved refresh token and RINGTOKEN is not configured.'))
                 process.exit(2)
             } else if (process.env.RUNMODE === 'addon') {
-                debug('Could not connect with saved refresh token and no refresh token exist in config file.')
-                debug('Please use the web interface to generate a new token or restart the addon to try the existing token again.')
+                debug(colors.brightRed('Could not connect with saved refresh token and no refresh token exist in config file.'))
+                debug(colors.brightRed('Please use the web interface to generate a new token or restart the addon to try the existing token again.'))
             }
         }
     }
