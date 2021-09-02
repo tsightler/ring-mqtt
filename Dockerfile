@@ -1,4 +1,4 @@
-FROM node:lts-alpine3.14
+FROM alpine:3.14.2
 
 ENV LANG="C.UTF-8" \
     PS1="$(whoami)@$(hostname):$(pwd)$ " \
@@ -7,7 +7,7 @@ ENV LANG="C.UTF-8" \
     TERM="xterm-256color"
     
 COPY . /app/ring-mqtt
-RUN apk add --no-cache tar git libcrypto1.1 libssl1.1 musl-utils musl bash curl jq tzdata mosquitto-clients && \
+RUN apk add --no-cache tar git libcrypto1.1 libssl1.1 musl-utils musl bash curl jq tzdata nodejs npm mosquitto-clients && \
     APKARCH="$(apk --print-arch)" && \
     case "${APKARCH}" in \
         x86_64) \
