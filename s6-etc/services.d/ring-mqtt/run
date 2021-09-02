@@ -91,6 +91,7 @@ else
     git --version
     echo "-------------------------------------------------------"
     echo "Running ring-mqtt..."
+    set +o nounset
     if [ "${BRANCH}" = "latest" ]; then
         DEBUG=ring-mqtt RUNMODE=docker exec node /app/ring-mqtt-latest/ring-mqtt.js
     elif [ "${BRANCH}" = "dev" ]; then
