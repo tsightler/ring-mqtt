@@ -12,8 +12,8 @@ set +o nounset
 sleep .5
 
 export RUNMODE=docker
-if [ $BRANCH = "latest" ] || [ $BRANCH = "dev" ]; then
-    cd /app/ring-mqtt-$BRANCH
+if [ "${BRANCH}" = "latest" ] || [ "${BRANCH}" = "dev" ]; then
+    cd "/app/ring-mqtt-${BRANCH}"
 else
     cd /app/ring-mqtt
 fi

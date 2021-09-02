@@ -32,6 +32,6 @@ else
     echo "-------------------------------------------------------"
 fi
 
-if [ $BRANCH = "latest" ] || [ $BRANCH = "dev" ]; then
+if [ "${BRANCH}" = "latest" ] || [ "${BRANCH}" = "dev" ]; then
     /app/ring-mqtt/scripts/update2branch.sh
 fi
