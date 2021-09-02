@@ -51,8 +51,8 @@ class Camera extends RingPolledDevice {
                 sipSession: null,
                 stillImageURL: `http://localhost:8123{{ states.camera.${this.device.name.toLowerCase().replace(" ","_")}_snapshot.attribute.entity_picture }}`,
                 streamSource: (this.config.livestream_user && this.config.livestream_pass)
-                    ? `rtsp://${this.config.livestream_user}:${this.config.livestream_pass}@${ip.address()}:8554/${this.deviceId}_live`
-                    : `rtsp://${ip.address()}:8554/${this.deviceId}_live`,
+                    ? `rtsp://${this.config.livestream_user}:${this.config.livestream_pass}@${process.env.HOSTNAME}:8554/${this.deviceId}_live`
+                    : `rtsp://${process.env.HOSTNAME}:8554/${this.deviceId}_live`,
                 rtspPublishURL: (this.config.livestream_user && this.config.livestream_pass)
                     ? `rtsp://${this.config.livestream_user}:${this.config.livestream_pass}@localhost:8554/${this.deviceId}_live`
                     : `rtsp://localhost:8554/${this.deviceId}_live`
@@ -581,9 +581,7 @@ class Camera extends RingPolledDevice {
                             'copy',
                             '-f',
                             'rtsp',
-                            (this.config.livestream_user && this.config.livestream_pass)
-                                ? `rtsp://${this.config.livestream_user}:${this.config.livestream_pass}@localhost:8554/${this.deviceId}_live`
-                                : `rtsp://localhost:8554/${this.deviceId}_live`
+                            this.data.stream.rtspPublishURL
                         ]
                     })
                     this.data.stream.state = 'active'

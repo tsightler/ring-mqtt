@@ -8,8 +8,6 @@
 # appropriate for the detected environment.
 # ==============================================================================
 
-set +o nounset
-
 # Delay to keep logs messages from overlapping with s6 logs
 sleep .5
 
@@ -20,6 +18,7 @@ else
     export RUNMODE=docker
 fi
 
+set +o nounset
 if [ "${BRANCH}" = "latest" ] || [ "${BRANCH}" = "dev" ]; then
     cd "/app/ring-mqtt-${BRANCH}"
 else

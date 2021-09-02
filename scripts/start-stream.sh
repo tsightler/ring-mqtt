@@ -1,11 +1,15 @@
 #!/bin/bash
-# Simple script to use RING-MQTT to activate a cameras live stream using rtsp-simple-server onDemeand feature 
+# Script to activate live stream on Ring cameras via ring-mqtt
+# Requires mosquitto MQTT clients package to be installed
+# Provides status updates and termintates stream on exit or if stream 
+# ends unexpectedly.  Primarily inteded for use with rtsp-simple-server
+# to start and end stream on-demand.
 
 # Required command line arguments
-client_id=${1}
-client_name=${2}
+client_id=${1}            # This is the id used to connect to the MQTT broker. Can be anything but typically camera ID
+client_name=${2}          # Friendly name of camera (used for logging)
 json_attribute_topic=${3} # JSON attribute topic for Camera entity
-command_topic=${4} # Command topic for Camera entity
+command_topic=${4}        # Command topic for Camera entity
 
 # Set some colors for debug output
 red='\033[0;31m'

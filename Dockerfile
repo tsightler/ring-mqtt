@@ -10,14 +10,12 @@ COPY . /app/ring-mqtt
 RUN apk add --no-cache tar git libcrypto1.1 libssl1.1 musl-utils musl bash curl jq tzdata nodejs npm mosquitto-clients && \
     APKARCH="$(apk --print-arch)" && \
     case "${APKARCH}" in \
+        aarch64|armhf) \
+            S6ARCH="${APKARCH}";; \
         x86_64) \
             S6ARCH="amd64";; \
-        aarch64) \
-            S6ARCH="aarch64";; \
         armv7) \
             S6ARCH="arm";; \
-        armhf) \
-            S6ARCH="armhf";; \
         *) \
             echo >&2 "ERROR: Unsupported architecture '$APKARCH'" \
             exit 1;; \
@@ -25,9 +23,8 @@ RUN apk add --no-cache tar git libcrypto1.1 libssl1.1 musl-utils musl bash curl 
     curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/v2.2.0.3/s6-overlay-${S6ARCH}.tar.gz" | tar zxf - -C / && \
     mkdir -p /etc/fix-attrs.d && \
     mkdir -p /etc/services.d && \
-    cp -a /app/ring-mqtt/s6-etc/* /etc/. && \
-    rm -Rf /app/ring-mqtt/s6-etc && \ 
-    mkdir -p /app/ring-mqtt/bin && \
+    cp -a /app/ring-mqtt/init/s6/* /etc/. && \
+    rm -Rf /app/ring-mqtt/init && \ 
     case "${APKARCH}" in \
         x86_64) \
             RSSARCH="amd64";; \
@@ -51,9 +48,9 @@ RUN apk add --no-cache tar git libcrypto1.1 libssl1.1 musl-utils musl bash curl 
     mkdir /data && \
     chmod 777 /data /app && \
     cd /app/ring-mqtt && \
+    chmod +x ring-mqtt.js && \
     npm install && \
     rm -Rf /root/.npm && \
-    chmod +x ring-mqtt.js && \
     rm -f -r /tmp/*
 ENTRYPOINT [ "/init" ]
 

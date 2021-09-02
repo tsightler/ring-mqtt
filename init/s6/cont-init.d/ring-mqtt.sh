@@ -8,8 +8,6 @@
 # for the detected environment.
 # ==============================================================================
 
-set +o nounset
-
 # Delay to keep logs messages from overlapping with s6 logs
 sleep .5
 
@@ -35,6 +33,7 @@ else
     echo "-------------------------------------------------------"
 fi
 
+set +o nounset
 if [ "${BRANCH}" = "latest" ] || [ "${BRANCH}" = "dev" ]; then
     /app/ring-mqtt/scripts/update2branch.sh
 fi
