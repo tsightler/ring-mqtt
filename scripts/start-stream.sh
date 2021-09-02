@@ -26,16 +26,18 @@ ctrl_c() {
     exit 0
 }
 
+# Trap signals so that the MQTT command to stop the stream can be published on exit
 trap ctrl_c INT TERM QUIT
 
-# This loop starts mosquitto_sub and listens for messages on the file descriptor. It then waits 100ms to publish
-# the "ON" command to the stream command topic.  After that, all stream state messages received are processed
-# based on the detailed states:
+# This loop starts mosquitto_sub with a subscription on the camera stream topic that sends all received
+# messages to a file descriptor which is read continously. On initial startup the script waits 100ms to
+# publish the stream 'ON' command to the command topic.  All stream state messages received are processed
+# based on the detailed states from the json_attributes_topic:
 #
 # "inactive" = There is no active live stream and none currently requested
 # "activating" = A live stream has been requested and is in the process of starting
 # "active" = The live stream started successfully and is currently in progress
-# "failed" = A live stream was requested but failed to start for some reason. 
+# "failed" = A live stream was requested but failed to start
 while read -u 10 message
 do
     # If start message received, publish the command to start stream

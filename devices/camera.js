@@ -9,6 +9,7 @@ const getPort = require('get-port')
 const pathToFfmpeg = require('ffmpeg-for-homebridge')
 const { spawn } = require('child_process')
 const ip = require("ip");
+const { cameras } = require('../lib/rtsp-simple-server')
 
 class Camera extends RingPolledDevice {
     constructor(deviceInfo) {
@@ -49,7 +50,12 @@ class Camera extends RingPolledDevice {
                 updateSnapshot: false,
                 sipSession: null,
                 stillImageURL: `http://localhost:8123{{ states.camera.${this.device.name.toLowerCase().replace(" ","_")}_snapshot.attribute.entity_picture }}`,
-                streamSource: `rtsp://${ip.address()}:8554/${this.deviceId}_live`
+                streamSource: (this.config.livestream_user && this.config.livestream_pass)
+                    ? `rtsp://${this.config.livestream_user}:${this.config.livestream_pass}@${ip.address()}:8554/${this.deviceId}_live`
+                    : `rtsp://${ip.address()}:8554/${this.deviceId}_live`,
+                rtspPublishURL: (this.config.livestream_user && this.config.livestream_pass)
+                    ? `rtsp://${this.config.livestream_user}:${this.config.livestream_pass}@localhost:8554/${this.deviceId}_live`
+                    : `rtsp://localhost:8554/${this.deviceId}_live`
             },
             lightState: null,
             sirenState: null,
@@ -553,7 +559,13 @@ class Camera extends RingPolledDevice {
                 try {
                     this.data.stream.sipSession = await this.device.streamVideo({
                         audio: [], video: [],
-                        //output: [ '-acodec', 'copy', '-vcodec', 'copy', '-f', 'rtsp', `rtsp://localhost:8554/${this.deviceId}_live` ]
+                        // The below takes the native AVC video stream from Rings servers and just 
+                        // copies the video stream to the RTPS server unmodified.  However, for
+                        // audio it splits the G.711 μ-law stream into two output streams one
+                        // being converted to AAC audio, and the other just the raw G.711 stream.
+                        // This allows support for playback methods that either don't support AAC
+                        // (e.g. native browser based WebRTC) and provides stong compatibility across
+                        // the various playback technolgies with minimal processing overhead. 
                         output: [
                             '-map',
                             '0:v:0',
@@ -569,7 +581,9 @@ class Camera extends RingPolledDevice {
                             'copy',
                             '-f',
                             'rtsp',
-                            `rtsp://localhost:8554/${this.deviceId}_live`
+                            (this.config.livestream_user && this.config.livestream_pass)
+                                ? `rtsp://${this.config.livestream_user}:${this.config.livestream_pass}@localhost:8554/${this.deviceId}_live`
+                                : `rtsp://localhost:8554/${this.deviceId}_live`
                         ]
                     })
                     this.data.stream.state = 'active'

@@ -2,6 +2,7 @@
 HOME=/app
 echo "Updating ring-mqtt to the development version..."
 cd /app
+APKARCH="$(apk --print-arch)"
 if [ ! -d /app/ring-mqtt-dev ]; then
     git clone -b dev https://github.com/tsightler/ring-mqtt ring-mqtt-dev
     cd /app/ring-mqtt-dev
@@ -38,7 +39,6 @@ else
     echo "Adding mostquitto-clients..."
     apk add --no-cache mosquitto-clients
     echo "Downloading and installing rtsp-simple-server..."
-    APKARCH="$(apk --print-arch)"
     mkdir -p bin; cd bin
     case "${APKARCH}" in
         'x86_64')

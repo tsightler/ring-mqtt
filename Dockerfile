@@ -1,10 +1,47 @@
 FROM node:lts-alpine3.14
 
 ENV LANG="C.UTF-8" \
+    PS1="$(whoami)@$(hostname):$(pwd)$ " \
+    S6_BEHAVIOUR_IF_STAGE2_FAILS=2 \
+    S6_CMD_WAIT_FOR_SERVICES=1 \
     TERM="xterm-256color"
-
+    
 COPY . /app/ring-mqtt
 RUN apk add --no-cache tar git libcrypto1.1 libssl1.1 musl-utils musl bash curl jq tzdata mosquitto-clients && \
+    APKARCH="$(apk --print-arch)" && \
+    case "${APKARCH}" in \
+        x86_64) \
+            S6ARCH="amd64";; \
+        aarch64) \
+            S6ARCH="aarch64";; \
+        armv7) \
+            S6ARCH="arm";; \
+        armhf) \
+            S6ARCH="armhf";; \
+        *) \
+            echo >&2 "ERROR: Unsupported architecture '$APKARCH'" \
+            exit 1;; \
+    esac && \
+    curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/v2.2.0.3/s6-overlay-${S6ARCH}.tar.gz" | tar zxf - -C / && \
+    mkdir -p /etc/fix-attrs.d && \
+    mkdir -p /etc/services.d && \
+    cp -a /app/ring-mqtt/s6-etc/* / && \
+    rm -Rf /app/ring-mqtt/s6-etc && \ 
+    mkdir -p /app/ring-mqtt/bin && \
+    case "${APKARCH}" in \
+        x86_64) \
+            RSSARCH="amd64";; \
+        aarch64) \
+            RSSARCH="arm64v8";; \
+        armv7) \
+            RSSARCH="armv7";; \
+        armhf) \
+            RSSARCH="armv6";; \
+        *) \
+            echo >&2 "ERROR: Unsupported architecture '$APKARCH'" \
+            exit 1;; \
+    esac && \
+    curl -L -s "https://raw.githubusercontent.com/tsightler/rtsp-simple-server/main/release-custom/rtsp-simple-server_v0.17.2-21-g43b10dc_linux_${RSSARCH}.tar.gz" | tar zxf - -C /app/ring-mqtt/bin rtsp-simple-server && \
     curl -J -L -o /tmp/bashio.tar.gz "https://github.com/hassio-addons/bashio/archive/v0.13.1.tar.gz" && \
     mkdir /tmp/bashio && \
     tar zxvf /tmp/bashio.tar.gz --strip 1 -C /tmp/bashio && \
@@ -20,7 +57,10 @@ RUN apk add --no-cache tar git libcrypto1.1 libssl1.1 musl-utils musl bash curl 
     rm -Rf /root/.npm && \
     chmod +x ring-mqtt.js && \
     rm -f -r /tmp/*
-ENTRYPOINT [ "/app/ring-mqtt/scripts/entrypoint.sh" ]
+ENTRYPOINT [ "/init" ]
+
+EXPOSE 8554/tcp
+
 ARG BUILD_VERSION
 ARG BUILD_DATE
 

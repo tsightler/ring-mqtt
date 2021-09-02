@@ -1,17 +1,19 @@
 {
     "host": "localhost",
     "port": 1883,
-    "ring_topic": "ring",
-    "hass_topic": "homeassistant/status",
     "mqtt_user": "",
     "mqtt_pass": "",
     "ring_token": "",
-    "beams_duration": 0,
     "disarm_code": "",
+    "beam_duration": 0,
     "enable_cameras": false,
+    "snapshot_mode": "none",
+    "livestream_user": "",
+    "livestream_pass": "",
     "enable_modes": false,
     "enable_panic": false,
-    "snapshot_mode": "none",
+    "hass_topic": "homeassistant/status",
+    "ring_topic": "ring",
     "location_ids": [
         ""
     ]

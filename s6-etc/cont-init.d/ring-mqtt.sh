@@ -1,4 +1,13 @@
 #!/usr/bin/with-contenv bashio
+
+# =============================================================================
+# ring-mqtt run script for s6-init               #
+#
+# This script automatically detects if it is running as the Home Assistant 
+# addon or a standard docker environment and takes actions as appropriate 
+# for the detected environment.
+# ==============================================================================
+
 # If options.json exist we are running as addon
 if [ -f /data/options.json ]; then
     echo "-------------------------------------------------------"

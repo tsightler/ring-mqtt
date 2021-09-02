@@ -424,18 +424,20 @@ async function initConfig(configFile) {
             "mqtt_user": process.env.MQTTUSER,
             "mqtt_pass": process.env.MQTTPASSWORD,
             "ring_token": process.env.RINGTOKEN,
+            "disarm_code": process.env.DISARMCODE,
+            "beam_duration": process.env.BEAMDURATION,
             "enable_cameras": process.env.ENABLECAMERAS,
             "snapshot_mode": process.env.SNAPSHOTMODE,
+            "livestream_user": process.env.LIVESTREAMUSER,
+            "livestream_pass": process.env.LIVESTREAMPASSWORD,
             "enable_modes": process.env.ENABLEMODES,
             "enable_panic": process.env.ENABLEPANIC,
-            "beam_duration": process.env.BEAMDURATION,
-            "disarm_code": process.env.DISARMCODE,
             "location_ids": process.env.RINGLOCATIONIDS
         }
         if (CONFIG.enable_cameras && CONFIG.enable_cameras != 'true') { CONFIG.enable_cameras = false}
         if (CONFIG.location_ids) { CONFIG.location_ids = CONFIG.location_ids.split(',') }
     }
-    // If Home Assistant addon, try config or environment for MQTT settings
+    // If Home Assistant addon, always get MQTT settings from environment (set by startup script)
     if (process.env.RUNMODE === 'addon') {
         CONFIG.host = process.env.MQTTHOST
         CONFIG.port = process.env.MQTTPORT
@@ -454,6 +456,13 @@ async function initConfig(configFile) {
     if (!CONFIG.enable_panic) { CONFIG.enable_panic = false }
     if (!CONFIG.beam_duration) { CONFIG.beams_duration = 0 }
     if (!CONFIG.disarm_code) { CONFIG.disarm_code = '' }
+
+    // Make sure MQTT environment variables are set even if only using config file (standalone install)
+    // (these are needed fo start_stream.sh to be able to connect to MQTT broker)
+    process.env.MQTTHOST = CONFIG.host
+    process.env.MQTTPORT = CONFIG.port
+    process.env.MQTTUSER = CONFIG.mqtt_user
+    process.env.MQTTPASSWORD = CONFIG.mqtt_pass
 }
 
 // Save updated refresh token to config or state file
