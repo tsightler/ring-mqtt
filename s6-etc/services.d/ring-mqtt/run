@@ -84,6 +84,7 @@ if [ -f /data/options.json ]; then
         DEBUG=ring-* RUNMODE=addon exec node /app/ring-mqtt/ring-mqtt.js
     fi
 else
+    echo "-------------------------------------------------------"
     echo -n "ring-mqtt.js version: "
     echo $(cat package.json | grep version | cut -f4 -d'"')
     echo Node version $(node -v)
