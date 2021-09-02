@@ -9,6 +9,7 @@
 # ==============================================================================
 
 set +o nounset
+sleep .5
 
 # If options.json exist we are running as addon
 if [ -f /data/options.json ]; then
@@ -21,11 +22,7 @@ if [ -f /data/options.json ]; then
     echo "-------------------------------------------------------"
     # Use bashio to get configured branch
     export BRANCH=$(bashio::config "branch")
-    if [ "${BRANCH}" = "latest" ]; then
-        /app/ring-mqtt/scripts/update2latest.sh
-    elif [ "${BRANCH}" = "dev" ]; then
-        /app/ring-mqtt-dev/scripts/update2dev.sh
-    fi
+    export RUNMODE=addon
 else
     # No options.json found, assume we are in running in standard Docker
     echo "-------------------------------------------------------"
@@ -34,10 +31,9 @@ else
     echo "| Report issues at:                                   |"
     echo "| https://github.com/tsightler/ring-mqtt              |"
     echo "-------------------------------------------------------"
+    export RUNMODE=docker
+fi
 
-    if [ "${BRANCH}" = "latest" ]; then
-        /app/ring-mqtt/scripts/update2latest.sh
-    elif [ "${BRANCH}" = "dev" ]; then
-        /app/ring-mqtt/scripts/update2dev.sh
-    fi
+if [ "${BRANCH}" = "latest" ] [ "${BRANCH}" = "dev" ] || ; then
+    /app/ring-mqtt/scripts/update2branch.sh
 fi

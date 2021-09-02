@@ -8,6 +8,9 @@
 # appropriate for the detected environment.
 # ==============================================================================
 
+set +o nounset
+sleep .5
+
 cd /app/ring-mqtt${BRANCH:+-$BRANCH}
 echo "-------------------------------------------------------"
 echo -n "ring-mqtt.js version: "
@@ -16,9 +19,8 @@ echo Node version $(node -v)
 echo NPM version $(npm -v)
 git --version
 echo "-------------------------------------------------------"
-set +o nounset
 
-if [ -f /data/options.json ]; then
+if [ ${RUNMODE} = "addon" ]; then
     # Setup the MQTT environment options based on addon configuration settings
     export MQTTHOST=$(bashio::config "mqtt_host")
     export MQTTPORT=$(bashio::config "mqtt_port")
@@ -78,21 +80,13 @@ if [ -f /data/options.json ]; then
         echo "Using configured MQTT password: <hidden>"
     fi
     echo "-------------------------------------------------------"
-    echo "Running ring-mqtt..."
-    if [ "${BRANCH}" = "latest" ]; then
-        DEBUG=ring-* RUNMODE=addon exec node /app/ring-mqtt-latest/ring-mqtt.js
-    elif [ "${BRANCH}" = "dev" ]; then
-        DEBUG=ring-* RUNMODE=addon exec node /app/ring-mqtt-dev/ring-mqtt.js
-    else
-        DEBUG=ring-* RUNMODE=addon exec node /app/ring-mqtt/ring-mqtt.js
-    fi
+fi
+
+echo "Running ring-mqtt..."
+if [ "${BRANCH}" = "latest" ]; then
+    DEBUG=ring-* exec node /app/ring-mqtt-latest/ring-mqtt.js
+elif [ "${BRANCH}" = "dev" ]; then
+    DEBUG=ring-* exec node /app/ring-mqtt-dev/ring-mqtt.js
 else
-    echo "Running ring-mqtt..."
-    if [ "${BRANCH}" = "latest" ]; then
-        DEBUG=ring-mqtt RUNMODE=docker exec node /app/ring-mqtt-latest/ring-mqtt.js
-    elif [ "${BRANCH}" = "dev" ]; then
-        DEBUG=ring-mqtt RUNMODE=docker exec node /app/ring-mqtt-dev/ring-mqtt.js
-    else
-        DEBUG=ring-mqtt RUNMODE=docker exec node /app/ring-mqtt/ring-mqtt.js
-    fi
+    DEBUG=ring-* exec node /app/ring-mqtt/ring-mqtt.js
 fi
