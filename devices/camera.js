@@ -120,7 +120,7 @@ class Camera extends RingPolledDevice {
                 snapshot_interval: {
                     component: 'number',
                     min: 10,
-                    max: 3600,
+                    max: 604800,
                     icon: 'hass:timer'
                 }
             } : {},
@@ -693,8 +693,8 @@ class Camera extends RingPolledDevice {
         debug('Location Id: '+ this.locationId)
         if (isNaN(message)) {
             debug ('Snapshot interval value received but not a number')
-        } else if (!(message >= 10 && message <= 3600)) {
-            debug('Snapshot interval value received but out of range (10-3600)')
+        } else if (!(message >= 10 && message <= 604800)) {
+            debug('Snapshot interval value received but out of range (10-604800)')
         } else {
             this.data.snapshot.interval = Math.round(message)
             this.data.snapshot.autoInterval = false
