@@ -11,7 +11,6 @@
 set +o nounset
 sleep .5
 
-cd /app/ring-mqtt${BRANCH:+-$BRANCH}
 echo "-------------------------------------------------------"
 echo -n "ring-mqtt.js version: "
 echo $(cat package.json | grep version | cut -f4 -d'"')
@@ -83,10 +82,5 @@ if [ ${RUNMODE} = "addon" ]; then
 fi
 
 echo "Running ring-mqtt..."
-if [ "${BRANCH}" = "latest" ]; then
-    DEBUG=ring-* exec node /app/ring-mqtt-latest/ring-mqtt.js
-elif [ "${BRANCH}" = "dev" ]; then
-    DEBUG=ring-* exec node /app/ring-mqtt-dev/ring-mqtt.js
-else
-    DEBUG=ring-* exec node /app/ring-mqtt/ring-mqtt.js
-fi
+cd /app/ring-mqtt${BRANCH:+-$BRANCH}
+DEBUG=ring-* exec ring-mqtt.js
