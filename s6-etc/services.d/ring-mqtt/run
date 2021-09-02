@@ -9,6 +9,8 @@
 # ==============================================================================
 
 set +o nounset
+
+# Delay to keep logs messages from overlapping with s6 logs
 sleep .5
 
 if [ -f /data/options.json ]; then

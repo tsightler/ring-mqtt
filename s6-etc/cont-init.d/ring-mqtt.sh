@@ -9,6 +9,8 @@
 # ==============================================================================
 
 set +o nounset
+
+# Delay to keep logs messages from overlapping with s6 logs
 sleep .5
 
 # If options.json exist we are running as addon
@@ -26,6 +28,7 @@ else
     # No options.json found, assume we are in running in standard Docker
     echo "-------------------------------------------------------"
     echo "| Ring Devices via MQTT                               |"
+    echo "| Docker Edition                                      |"
     echo "|                                                     |"
     echo "| Report issues at:                                   |"
     echo "| https://github.com/tsightler/ring-mqtt              |"
