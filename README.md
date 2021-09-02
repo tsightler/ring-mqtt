@@ -146,7 +146,9 @@ When snapshot support is enabled, the script always attempts to grab a snapshot 
 
 When interval mode is selected, snapshots of cameras with wired power supply are taken every 30 seconds by default, for battery powered cameras taking a snapshot every 30 seconds leads to signifcant power drain so snapshots are taken every 10 minutes, however, if the Ring Snapshot Capture feature is enabled, snapshots are instead taken at the frequency selected in the Ring app for this feature (minium 5 minutes for battery powere cameras).
 
-It is also possible to manually override the snapshot interval, although the minimum time is 10 seconds.  Simply send the value in seconds to the ring/<location_id>/camera/<device_id>/snapshot/interval topic for the specific camera to override the default refresh interval.
+It is also possible to manually override the snapshot interval, although the minimum time is 10 seconds.  Simply set the value in seconds to override the default refresh interval.
+ring/<location_id>/camera/<device_id>/snapshot_interval/command <-- Set snapshot refresh interval
+ring/<location_id>/camera/<device_id>/snapshot_interval/state <-- Get snapshot refresh interval
 
 ### Volume Control
 Volume Control is supported for Ring Keypads and Base Stations.  Note that Ring shared users do not have access to control the Base Station volume so, if you want to control the Base Station volume using this integration, you must generate the refresh token using the primary Ring account.  During startup the system attempts to detect if the account can control the base station volume and only shows the volume control if it determines the accout has access.  This is a limitation of the Ring API as even the offical Ring App does not offer volume control to shared users.
