@@ -11,14 +11,18 @@
 set +o nounset
 sleep .5
 
-export RUNMODE=docker
+if [ -f /data/options.json ]; then
+    export RUNMODE=addon
+    export BRANCH=$(bashio::config "branch")
+else
+    export RUNMODE=docker
+fi
+
 if [ "${BRANCH}" = "latest" ] || [ "${BRANCH}" = "dev" ]; then
     cd "/app/ring-mqtt-${BRANCH}"
 else
     cd /app/ring-mqtt
 fi
-
-
 
 echo "-------------------------------------------------------"
 echo -n "ring-mqtt.js version: "
@@ -28,8 +32,7 @@ echo NPM version $(npm -v)
 git --version
 echo "-------------------------------------------------------"
 
-if [ -f /data/options.json ]; then
-    export RUNMODE=addon
+if [ "${RUNMODE}" = "addon" ]; then
     # Setup the MQTT environment options based on addon configuration settings
     export MQTTHOST=$(bashio::config "mqtt_host")
     export MQTTPORT=$(bashio::config "mqtt_port")
