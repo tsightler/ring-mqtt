@@ -58,13 +58,13 @@ To allow streaming to external media clients you'll need to open the port for th
 **Q)** Why does my stream stop after no more than 10 minutes?  
 **A)** Ring limits active streams and terminates them on their side, typically at approximately 10 minutes, although sometimes significantly less and sometimes a little more.  Currently, you'll need to refresh to manually start the stream again but it is NOT recommended to attempt to stream 24 hours.  I say currently because Ring has hinted that continuous live streaming is something they are working on, but currently, I'm honoring their limits as otherwise they may block access.
 
-**Q)** Why do I not receive motion events while I am live streaming  
-**A)** This is a limitaiton of Ring cameras, they do not detect/send motion events while streaming
-
 **Q)** Why is the stream delayed/lagged?  
 **A)** Likely this is due to the streaming technology used by Home Assistant that fully streams over HTTP/HTTPS.  While the technology is extremely reliable and widely compatible with various web browsers and network setups, it typically adds betwee 4-6 seconds of delay and sometimes as many as 10-15 seconds.  The best solution for Home Assistant is to use a card like the excellent [WebRTC Camera](https://github.com/AlexxIT/WebRTC) which will allow you to use your browser native stream player capabilities, although this technology will like require special configuration if you want to play back while outside of your network without using a VPN.  However, it provides typically 1 second or less delay (can be as little as .5 seconds) so it's the best option when available.
 
-**Q)** Why do I have so many recording on my Ring App?  
+**Q)** Why do I not receive motion events while I am live streaming  
+**A)** This is a limitaiton of Ring cameras, they do not detect/send motion events while streaming
+
+**Q)** Why do I have so many recordings on my Ring App?  
 **A)** Ring "live streams" are actually recording sessions as well, so every time you start a live view of your camera you will get a recording on Ring.  
 
 **Q)** Can I manually start the stream?  
