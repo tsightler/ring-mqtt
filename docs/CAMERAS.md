@@ -53,24 +53,24 @@ camera:
 ### External RTSP Access
 To allow streaming to external media clients you'll need to open the port for the RTSP server either via the addon configuration settings or via the Docker -p port forwarding option.  It's recommended to use TCP port 8554, but you can actually forward any external TCP port to the 8554 on the RTSP server in the container.  Note that streams will start automatically on-demand, and end ~5-10 seconds after the last client disconnects.  Multiple clients can connect to the same stream concurrently.  No MQTT access is needed for this to work, simply enter the RTSP URL into your media player.  If you defined a livestream username and password this will need to be included as well, most player will prompt for a username/password, but some require them to be included in the URL, for example:
 
-rtsp://streaming_user:let_me_stream!@3ba32cf2-ring-mqtt-dev:8554/3452b19184fa_live
+`rtsp://streaming_user:let_me_stream!@3ba32cf2-ring-mqtt-dev:8554/3452b19184fa_live`
 
 ### FAQ
 
-Q) Why does my stream stop after no more than 10 minutes?  
-A) Ring limits active streams and terminates them on their side, typically at approximately 10 minutes, although sometimes significantly less and sometimes a little more.  Currently, you'll need to refresh to manually start the stream again but it is NOT recommended to attempt to stream 24 hours.  I say currently because Ring has hinted that continuous live streaming is something they are working on, but currently, I'm honoring their limits as otherwise they may block access.
+**Q)** Why does my stream stop after no more than 10 minutes?  
+**A)** Ring limits active streams and terminates them on their side, typically at approximately 10 minutes, although sometimes significantly less and sometimes a little more.  Currently, you'll need to refresh to manually start the stream again but it is NOT recommended to attempt to stream 24 hours.  I say currently because Ring has hinted that continuous live streaming is something they are working on, but currently, I'm honoring their limits as otherwise they may block access.
 
-Q) Why do I not receive motion events while I am live streaming  
-A) This is a limitaiton of Ring cameras, they do not send events while streaming
+**Q)** Why do I not receive motion events while I am live streaming  
+**A)** This is a limitaiton of Ring cameras, they do not send events while streaming
 
-Q) Why is the stream delayed/lagged?  
-A) Likely this is due to the streaming technology used by Home Assistant that fully streams over HTTP/HTTPS.  While the technology is extremely reliable and widely compatible with various web browsers and network setups, it typically adds betwee 4-6 seconds of delay and sometimes as many as 10-15 seconds.  The best solution for Home Assistant is to use a card like the excellent [WebRTC Camera](https://github.com/AlexxIT/WebRTC) which will allow you to use your browser native stream player capabilities, although this technology will like require special configuration if you want to play back while outside of your network without using a VPN.  However, it provides typically 1 second or less delay (can be as little as .5 seconds) so it's the best option when available.
+**Q)** Why is the stream delayed/lagged?  
+**A)** Likely this is due to the streaming technology used by Home Assistant that fully streams over HTTP/HTTPS.  While the technology is extremely reliable and widely compatible with various web browsers and network setups, it typically adds betwee 4-6 seconds of delay and sometimes as many as 10-15 seconds.  The best solution for Home Assistant is to use a card like the excellent [WebRTC Camera](https://github.com/AlexxIT/WebRTC) which will allow you to use your browser native stream player capabilities, although this technology will like require special configuration if you want to play back while outside of your network without using a VPN.  However, it provides typically 1 second or less delay (can be as little as .5 seconds) so it's the best option when available.
 
-Q) Why do I have so many recording on my Ring App?  
-A) Ring "live streams" are actually recording sessions as well, so every time you start a live view of your camera you will get a recording on Ring.  
+**Q)** Why do I have so many recording on my Ring App?  
+**A)** Ring "live streams" are actually recording sessions as well, so every time you start a live view of your camera you will get a recording on Ring.  
 
-Q) Can I manually start the stream?  
-A) Yes, you can manually start the live stream using the stream switch in Home Assistant or by using the MQTT commands.  Since all live streams in Ring are recorded, this allows cool things like starting a recording based on other events.
+**Q)** Can I manually start the stream?  
+**A)** Yes, you can manually start the live stream using the stream switch in Home Assistant or by using the MQTT commands.  Since all live streams in Ring are recorded, this allows cool things like starting a recording based on other events.
 
-Q) Can I manually stop the stream?  
-A) Streaming should end automatically 5-10 seconds after the last client stops viewing, however, you can manually cancel the stream with the stream switch or by using the MQTT command.
+**Q)** Can I manually stop the stream?  
+**A)** Streaming should end automatically 5-10 seconds after the last client stops viewing, however, you can manually cancel the stream with the stream switch or by using the MQTT command.
