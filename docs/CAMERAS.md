@@ -19,8 +19,8 @@ Name is the name you want your camera to appear as in the Home Assistant UI.  Th
 
 In my example I'm setting up a live stream camera for my front porch, which has a Home Assistant entity ID of **camera.front_porch_snapshot** and the camera device ID is **3452b19184fa** so the attributes in the info sensor are as follows:  
 ```
-Still Image URL:  http://localhost:8123{{ states.camera.front_porch_snapshot.attributes.entity_picture }}  
-Stream Source:  rtsp://3ba32cf2-ring-mqtt-dev:8554/3452b19184fa_live
+Still Image URL: http://localhost:8123{{ states.camera.front_porch_snapshot.attributes.entity_picture }}  
+Stream Source:   rtsp://3ba32cf2-ring-mqtt-dev:8554/3452b19184fa_live
 ```
 To create my generic IP camera in configuration.yaml I just need these lines:
 ```
