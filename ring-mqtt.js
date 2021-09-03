@@ -52,9 +52,9 @@ process.on('uncaughtException', function(err) {
 process.on('unhandledRejection', function(err) {
     switch(true) {
         // For these strings suppress the stack trace and only print the message
-        case /token is not valid/.test(err.message.match):
-        case /https:\/\/github.com\/dgreif\/ring\/wiki\/Refresh-Tokens/.test(err.message.match):
-        case /error: access_denied/.test(err.message.match):
+        case /token is not valid/.test(err.message):
+        case /https:\/\/github.com\/dgreif\/ring\/wiki\/Refresh-Tokens/.test(err.message):
+        case /error: access_denied/.test(err.message):
             debug(colors.yellow(err.message))
             break;
         default:
