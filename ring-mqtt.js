@@ -50,14 +50,17 @@ process.on('uncaughtException', function(err) {
     processExit(2)
 })
 process.on('unhandledRejection', function(err) {
-    if (err.message.match('token is not valid')) {
-        // Really need to put some kind of retry handler here
-        debug(colors.yellow(err.message))
-    } else if (err.message.match('https://github.com/dgreif/ring/wiki/Refresh-Tokens')) {
-        debug(colors.yellow(err.message))
-    } else {
-        debug(colors.yellow('WARNING - Unhandled Promise Rejection'))
-        console.log(colors.yellow(err))
+    switch(true) {
+        // For these strings suppress the stack trace and only print the message
+        case /token is not valid/.test(err.message.match):
+        case /https:\/\/github.com\/dgreif\/ring\/wiki\/Refresh-Tokens/.test(err.message.match):
+        case /error: access_denied/.test(err.message.match):
+            debug(colors.yellow(err.message))
+            break;
+        default:
+            debug(colors.yellow('WARNING - Unhandled Promise Rejection'))
+            console.log(colors.yellow(err))
+            break;
     }
 })
 
