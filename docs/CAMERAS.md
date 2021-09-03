@@ -72,3 +72,17 @@ To allow streaming to external media clients you'll need to open the port for th
 
 **Q)** Can I manually stop the stream?  
 **A)** Streaming should end automatically 5-10 seconds after the last client stops viewing, however, you can manually cancel the stream with the stream switch or by using the MQTT command.
+
+### How it works - the gory details
+The concept for streaming is actually very simple and credit for the original idea must go to gilliginsisland and his post on the [ring-hassio project](https://github.com/jeroenterheerdt/ring-hassio/issues/51).  While I was already working on a concept implementation for ring-mqtt, when I saw that post I realized that there actually was a way to marry ring-mqtt with livestreaming.  In his case he was using rtsp-simple-server and it's ability to run a script on demand to directly run a node instance that connect to Ring and starts the stream.  However, with ring-mqtt we already have an instance connected so, instead of having to start an instance each time, I could instead write a script so that rtsp-simple-server could use MQTT to start the stream on demand.  This same path could also be used so that addon and MQTT users could start a stream on demand.
+
+Digging more into rtsp-simple-server I found out it not only had the ability to run a script on demand, as noted above, but it also included a simple API that meant I could easily configure and control it dynamically from the exiting ring-mqtt node instance.  Here's how the workflow goes:
+
+1) During startup, ring-mqtt checks to see if camera support is enabled and, if so, spawns and monitors an rtsp-simple-server process
+2) After device discovery ring-mqtt uses the REST API of rtsp-simple-server to register a path and an on-demand script handler with the specific MQTT topic information for each camera
+3) A user starts a stream by connecting to the RTSP path as a reader (path is typically rtsp://hostname:8554/<camera_id>_live)
+4a) If a stream is already publishing to that path, the client simply connects to the existing stream
+4b) If a stream is not currently publshing to the path, rtsp-simple-server runs a simple shell script which uses mosquitto_pub/sub to send commands and monitor the progress as ring-mqtt starts the stream.  Since this is just a simple shell script sending a single MQTT command, the startup process is extremely lightweight on memory resources and it's quite quick since ring-mqtt already has a connection to the Ring API and the communication channel with MQTT is local and takes only a few ms.  Usually the live stream starts in <1 second although the Home Assistant buffering takes a few seconds longer for the stream to actually appear in the UI.
+5) The rtsp-simple-server continues to stream to the clients, once the stream times out on the Ring side, or the last client disconnects, rtsp-simple-server stops the on-demand script, which sends the MQTT command to stop the stream and exits.
+
+The overall process isn't too heaving on CPU because the ffmpeg process that is receiving the stream is only copying the existing AVC video stream to the RTSP server although it does create a second stream of AAC based audio for maximum playback comptibility with all browsers.  It's all quite efficient and seeminly reliable and fits well within the MQTT story of ring-mqtt even though the stream itself is handled by the RTSP server as, even internally, ring-mqtt uses the same method to start it's live stream for battery cameras when there is a motion events.   

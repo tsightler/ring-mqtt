@@ -1,8 +1,25 @@
+## v4.8.0
+**New Features**
+Live Video Streaming is here!  This single most requested feature, which I sometimes answered will "never be in ring-mqtt" is now here!  I guess this is why you should never say never!  A real shoutout must go to [gilliginsisland](https://github.com/jeroenterheerdt/ring-hassio/issues/51) for his idea on the ring-hassio Github issues.  While the final result here uses a slightly different approach to trigger the livestream (it's ring-mqtt after all, so using MQTT made sense) it was still his conceptual idea that made this possible.
+
+I have some additional features planned for the coming weeks, but I wanted to get something out there now for people to play with and see how it work.  Features included in the release:
+- Easy(-ish) integration with Home Assistant, although note that it is not automatic.  Live streaming cameras must be manually added to Home Assistant configuration.yaml.  Read the docs for details.
+- Support for on-demand live streams as all streams are started automatically when viewed in Home Assistant and ended 5-10 seconds after the last viewer disconnects
+- Support for external medial player by exposing the RTSP port on the addon any tool that supports RTSP streaming can consume the stream.
+- Manual stream start via an exposed switch entity, allows for cool things like triggering a recording using automation  
+
+**Minor Enhancments**
+- Increased maximum time between snapshots from 3600 seconds (1 hour) to 604800 (7 days)
+- Repopulate entities and states much faster after Home Assistant restart detected
+
+**Fixed Bugs**
+- Fix interval snapshots when using only "interval" setting vs "all"
+
+**Other Changes**
+- Image now uses S6 init system for supervising node process
+- Massive startup script cleanup and simplification
+
 ## v4.7.3
-***** IMPORTANT NOTE *****  
-
-If upgrading from version 4.6.x or earlier, please read the 4.7.0 change notes as well!
-
 **Minor Enhancements**
 - Documentation updates no note that Chimes only work with primary Ring account, not shared accounts
 - Tweak logging color scheme to improve event readability
@@ -22,8 +39,7 @@ If upgrading from version 4.6.x or earlier, please read the 4.7.0 change notes a
 - Proper use of systemId with Ring authentication (addon only for now, hopefully eliminates spamming Authorized Client Devices in Account Control Center)
 
 ## v4.7.0
-***** IMPORTANT NOTE *****
-
+***** IMPORTANT NOTE *****  
 Due to changes in the way ring-mqtt generates configuration topics it is HIGHLY recommended to restart the Home Assistant instance as soon as possible after the upgrade of this addon.  Without this Home Assistant will log warnings/errors about non-unqiue entity IDs.  While ring-mqtt does generate unique IDs for entities, version 4.7.0 has standarized the generation of configuraiton topics which results in slightly different topics for some devices.  Because of this, the Home Assistant discovery process thinks it is seeing new devices with the same IDs as existing entities.  Restarting Home Assistant will allow for a fresh discovery cycle, and, since the entity IDs did not change from previous versions, only the configuration topics, there should be no changes required to existing devices.  For more details on the underlying engine changes you can read the "Other Changes" section below.
 
 **New Device Support**
@@ -57,8 +73,7 @@ Due to changes in the way ring-mqtt generates configuration topics it is HIGHLY 
 **Fixed Bugs**
   - "Addressed 'dict object' has no attribute" warnings due to changes in Home Assistant >=2021.4
   
-**Other Changes**
-
+**Other Changes**  
   Underneath the covers there are quite a number of changes to the engine with the primary goal to simplify and standardize device support and, in turn, make it easier to maintain and add new device support.  The prior model, if it can be called that, was a disaster of my own making with different devices using inconsistent methods for generating unique entity IDs and configuration topics.  This is primarily because I never really thought much about the device model when ring-mqtt was first created as there was only alarm, motion, and contact sensors.  Other devices have been bolted on haphazardly along the way without much thought or consistency so that needed to change and no better time than now.
   
   With the new model, device entities are defined in a consistent way and entity ID's, names, and MQTT topics are generated promgratically and consitently across all devices.  Key features of the new model:
