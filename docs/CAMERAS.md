@@ -17,11 +17,11 @@ camera:
 
 Name is the name you want your camera to appear as in the Home Assistant UI.  The still_image_url can be a changing image, so in the configuration below we will use a template to pull the current snapshot image delivered via MQTT.  The stream_source is the URL required to play the video.  To make the setup of this as easy as possible ring-mqtt attempts to guess the required entries and send them as attributes in the camera info sensor.  Find the camera device in Home Assistant, select the Info sensor entity, and the open the attributes and there will be a stream source and still image URL entry that you can copy and paste to create your config.
 
-In my example I'm setting up a live stream camera for my front porch, which has a Home Assistant entity ID of ```camera.front_porch_snapshot``` and the camera device ID is 3452b19184fa so the attributes in the info sensor are as follows:  
-
+In my example I'm setting up a live stream camera for my front porch, which has a Home Assistant entity ID of **camera.front_porch_snapshot** and the camera device ID is **3452b19184fa** so the attributes in the info sensor are as follows:  
+```
 Still Image URL:  http://localhost:8123{{ states.camera.front_porch_snapshot.attributes.entity_picture }}  
 Stream Source:  rtsp://3ba32cf2-ring-mqtt-dev:8554/3452b19184fa_live
-
+```
 To create my generic IP camera in configuration.yaml I just need these lines:
 ```
 camera:
@@ -38,8 +38,7 @@ I usually like to add the other camera entities to this card as well, like the m
 ### Authentication
 By default, the addon does not expose the RTSP server to external devices so only Home Assistant can actually access the streams, thus using a non-authenticated stream isn't too bad since the stream stays completely internal to the Home Assistant server, however, if you want to access the stream via other media clients (like VLC for example) or your simple feel better with a username and password, you can set one in the configuration using the **livestream_user/livestream_pass** configuraiton options (**LIVESTREAMUSER/LIVESTREAMPASSWORD** environment variables for standard Docker installs).  If the RTSP port is exposed setting a username/password is HIGHLY recommended.  Note that currently, even with a username and password, the stream is not encrypted, so using the stream over an untrusted network without a VPN is probably not a good idea.
 
-If you set a username and password both publishers and streamers will use this password.  Note that this is handled automatically for the stream publihsing, but for your camera entities in Home Assistant, you will need to add the approriate settings to configuraiton.yaml.  A sample is as follows:
-
+If you set a username and password both publishers and streamers will use this password.  Note that this is handled automatically for the stream publihsing, but for your camera entities in Home Assistant, you will need to add the approriate settings to **configuraiton.yaml**.  A sample is as follows:
 ```
 camera:
   - platform: generic
@@ -49,7 +48,6 @@ camera:
     username: "streaming_user"
     password: "let_me_stream!"
 ```
-
 ### External RTSP Access
 To allow streaming to external media clients you'll need to open the port for the RTSP server either via the addon configuration settings or via the Docker -p port forwarding option.  It's recommended to use TCP port 8554, but you can actually forward any external TCP port to the 8554 on the RTSP server in the container.  Note that streams will start automatically on-demand, and end ~5-10 seconds after the last client disconnects.  Multiple clients can connect to the same stream concurrently.  No MQTT access is needed for this to work, simply enter the RTSP URL into your media player.  If you defined a livestream username and password this will need to be included as well, most player will prompt for a username/password, but some require them to be included in the URL, for example:
 
