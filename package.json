@@ -12,6 +12,7 @@
     "is-online": "^9.0.1",
     "mqtt": "^4.2.8",
     "pipe2jpeg": "^0.3.1",
+    "got": "^11.8.2",
     "ring-client-api": "^9.21.0"
   },
   "devDependencies": {

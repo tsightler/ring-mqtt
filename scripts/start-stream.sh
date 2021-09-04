@@ -50,7 +50,7 @@ do
         mosquitto_pub -i "${client_id}_pub" -u "${MQTTUSER}" -P "${MQTTPASSWORD}" -h "${MQTTHOST}" -p "${MQTTPORT}" -t "${command_topic}" -m "ON"
     else
         # Otherwise it should be a JSON message from the stream state attribute topic so extract the detailed stream state
-        stream_state=`echo ${message} | jq -r '.streamState'`
+        stream_state=`echo ${message} | jq -r '.status'`
         case ${stream_state,,} in
             activating)
                 echo -e "${green}[${client_name}]${reset} Camera live stream is activating..."

@@ -8,8 +8,6 @@ const net = require('net');
 const getPort = require('get-port')
 const pathToFfmpeg = require('ffmpeg-for-homebridge')
 const { spawn } = require('child_process')
-const ip = require("ip");
-const { cameras } = require('../lib/rtsp-simple-server')
 
 class Camera extends RingPolledDevice {
     constructor(deviceInfo) {
@@ -45,17 +43,11 @@ class Camera extends RingPolledDevice {
                 duration: (this.device.data.settings.video_settings.hasOwnProperty('clip_length_max') && this.device.data.settings.video_settings.clip_length_max) 
                     ? this.device.data.settings.video_settings.clip_length_max
                     : 60,
-                state: 'inactive',
+                state: 'OFF',
+                status: 'inactive',
                 expires: 0,
                 updateSnapshot: false,
-                sipSession: null,
-                stillImageURL: `http://localhost:8123{{ states.camera.${this.device.name.toLowerCase().replace(" ","_")}_snapshot.attribute.entity_picture }}`,
-                streamSource: (this.config.livestream_user && this.config.livestream_pass)
-                    ? `rtsp://${this.config.livestream_user}:${this.config.livestream_pass}@${process.env.HOSTNAME}:8554/${this.deviceId}_live`
-                    : `rtsp://${process.env.HOSTNAME}:8554/${this.deviceId}_live`,
-                rtspPublishURL: (this.config.livestream_user && this.config.livestream_pass)
-                    ? `rtsp://${this.config.livestream_user}:${this.config.livestream_pass}@localhost:8554/${this.deviceId}_live`
-                    : `rtsp://localhost:8554/${this.deviceId}_live`
+                sipSession: null
             },
             lightState: null,
             sirenState: null,
@@ -185,6 +177,15 @@ class Camera extends RingPolledDevice {
             this.data.ding.last_ding = lastDingDate ? Math.floor(lastDingDate/1000) : 0
             this.data.ding.last_ding_time = lastDingDate ? utils.getISOTime(lastDingDate) : ''
         }
+
+        // Set some helper attributes for streaming
+        this.data.stream.stillImageURL = `http://localhost:8123{{ states.camera.${this.device.name.toLowerCase().replace(" ","_")}_snapshot.attribute.entity_picture }}`,
+        this.data.stream.streamSource = (this.config.livestream_user && this.config.livestream_pass)
+            ? `rtsp://${this.config.livestream_user}:${this.config.livestream_pass}@${await utils.getHostFqdn()}:8554/${this.deviceId}_live`
+            : `rtsp://${await utils.getHostFqdn()}:8554/${this.deviceId}_live`,
+        this.data.stream.rtspPublishURL = (this.config.livestream_user && this.config.livestream_pass)
+            ? `rtsp://${this.config.livestream_user}:${this.config.livestream_pass}@localhost:8554/${this.deviceId}_live`
+            : `rtsp://localhost:8554/${this.deviceId}_live`
     }
 
     // Publish camera capabilities and state and subscribe to events
@@ -395,9 +396,14 @@ class Camera extends RingPolledDevice {
         }
     }
 
-    publishStreamState() {
-        this.publishMqtt(this.entity.stream.state_topic, this.data.stream.state === 'active' ? 'ON' : 'OFF', true)
-        const attributes = { streamState: this.data.stream.state }
+    publishStreamState(isPublish) {
+        const streamState = this.data.stream.status === 'active' ? 'ON' : 'OFF'
+        if (streamState !== this.data.stream.state || isPublish) {
+            this.data.stream.state = streamState
+            this.publishMqtt(this.entity.stream.state_topic, this.data.stream.state, true)
+        }
+
+        const attributes = { status: this.data.stream.status }
         this.publishMqtt(this.entity.stream.json_attributes_topic, JSON.stringify(attributes), true)
     }
 
@@ -453,7 +459,7 @@ class Camera extends RingPolledDevice {
         this.data.stream.updateSnapshot = true
 
         // If there's no active live stream, start it, otherwise, extend live stream timeout
-        if (this.data.stream.state === 'inactive' || this.data.stream.state === 'failed') {
+        if (this.data.stream.status === 'inactive' || this.data.stream.status === 'failed') {
             this.startSnapshotStream()
         } else {
             this.data.stream.expires = Math.floor(Date.now()/1000) + this.data.stream.duration
@@ -546,11 +552,11 @@ class Camera extends RingPolledDevice {
 
         switch (command) {
             case 'on':
-                if (this.data.stream.state === 'active' || this.data.stream.state === 'activating') {
+                if (this.data.stream.status === 'active') {
                     this.publishStreamState()
                     return
                 } else {
-                    this.data.stream.state = 'activating'
+                    this.data.stream.status = 'activating'
                     this.publishStreamState()
                 }
                 
@@ -584,18 +590,18 @@ class Camera extends RingPolledDevice {
                             this.data.stream.rtspPublishURL
                         ]
                     })
-                    this.data.stream.state = 'active'
+                    this.data.stream.status = 'active'
                     this.publishStreamState()
 
                     this.data.stream.sipSession.onCallEnded.subscribe(() => {
                         debug('Video stream ended for camera '+this.deviceId)
-                        this.data.stream.state = 'inactive'
+                        this.data.stream.status = 'inactive'
                         this.data.stream.sipSession = false
                         this.publishStreamState()
                     })
                 } catch(e) {
                     debug(e)
-                    this.data.stream.state = 'failed'
+                    this.data.stream.status = 'failed'
                     this.publishStreamState()
                 }
                 break;
