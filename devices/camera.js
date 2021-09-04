@@ -8,6 +8,7 @@ const net = require('net');
 const getPort = require('get-port')
 const pathToFfmpeg = require('ffmpeg-for-homebridge')
 const { spawn } = require('child_process')
+const rss = require('../lib/rtsp-simple-server')
 
 class Camera extends RingPolledDevice {
     constructor(deviceInfo) {
@@ -47,6 +48,7 @@ class Camera extends RingPolledDevice {
                 status: 'inactive',
                 expires: 0,
                 updateSnapshot: false,
+                snapshotStreamActive: true,
                 sipSession: null
             },
             lightState: null,
@@ -460,7 +462,7 @@ class Camera extends RingPolledDevice {
 
         // If there's no active live stream, start it, otherwise, extend live stream timeout
         if (this.data.stream.status === 'inactive' || this.data.stream.status === 'failed') {
-            this.startSnapshotStream()
+            this.startSnapshotStream(this.data.stream.duration)
         } else {
             this.data.stream.expires = Math.floor(Date.now()/1000) + this.data.stream.duration
         }
@@ -496,7 +498,9 @@ class Camera extends RingPolledDevice {
         return p2jPort
     }
 
-    async startSnapshotStream() {
+    async startSnapshotStream(timeout) {
+        if (this.data.stream.snapshotStreamActive) { return }
+        this.data.stream.snapshotStreamActive = true
         // Start a P2J pipeline and server and get the listening TCP port
         const p2jPort = await this.startP2J()
         
@@ -522,15 +526,17 @@ class Camera extends RingPolledDevice {
         ])
 
         ffmpegProcess.on('spawn', async () => {
-            debug(`The MJPEG snapshot stream snapshots for camera ${this.deviceId} has started`)
+            debug(`The MJPEG snapshot stream for camera ${this.deviceId} has started`)
         })
 
-        ffmpegProcess.on('close', async (code) => {
-            debug(`The MJPEG snapshot stream snapshots for camera ${this.deviceId} has stopped`)
+        ffmpegProcess.on('close', async () => {
+            this.data.stream.snapshotStreamActive = true
+            debug(`The MJPEG snapshot stream for camera ${this.deviceId} has stopped`)
         })
 
         // If stream starts, set expire time, may be extended by new events
-        this.data.stream.expires = Math.floor(Date.now()/1000) + this.data.stream.duration
+        // (if only Ring sent events while streaming)
+        this.data.stream.expires = Math.floor(Date.now()/1000) + timeout
 
         // Don't stop MJPEG session until current time > expire time
         // Expire time could be extended by additional motion events, except 
@@ -543,6 +549,7 @@ class Camera extends RingPolledDevice {
 
         ffmpegProcess.kill()
         this.data.stream.updateSnapshot = false
+        this.data.stream.snapshotStreamActive = true
     }
 
     async setStreamState(message) {
@@ -559,7 +566,7 @@ class Camera extends RingPolledDevice {
                     this.data.stream.status = 'activating'
                     this.publishStreamState()
                 }
-                
+
                 // Start and publish stream to rtsp-simple-server 
                 debug('Establishing connection to video stream for camera '+this.deviceId)
                 try {
@@ -590,8 +597,10 @@ class Camera extends RingPolledDevice {
                             this.data.stream.rtspPublishURL
                         ]
                     })
+
                     this.data.stream.status = 'active'
                     this.publishStreamState()
+                    this.startSnapshotStream(86400) // 24 hours, but Ring will kill stream before then
 
                     this.data.stream.sipSession.onCallEnded.subscribe(() => {
                         debug('Video stream ended for camera '+this.deviceId)
