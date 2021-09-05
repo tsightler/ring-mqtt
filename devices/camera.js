@@ -548,6 +548,7 @@ class Camera extends RingPolledDevice {
 
         ffmpegProcess.on('close', async () => {
             this.data.stream[type] = false
+            this.data.stream.updateSnapshot = false
             debug(`The ${type} stream for camera ${this.deviceId} has stopped`)
         })
 
