@@ -48,7 +48,7 @@ class Camera extends RingPolledDevice {
                 status: 'inactive',
                 expires: 0,
                 updateSnapshot: false,
-                snapshotStreamActive: true,
+                mjpegStarted: false,
                 sipSession: null
             },
             lightState: null,
@@ -399,7 +399,7 @@ class Camera extends RingPolledDevice {
     }
 
     publishStreamState(isPublish) {
-        const streamState = this.data.stream.status === 'active' ? 'ON' : 'OFF'
+        const streamState = (this.data.stream.status === 'active' || this.data.stream.status === 'activating') ? 'ON' : 'OFF'
         if (streamState !== this.data.stream.state || isPublish) {
             this.data.stream.state = streamState
             this.publishMqtt(this.entity.stream.state_topic, this.data.stream.state, true)
@@ -462,7 +462,7 @@ class Camera extends RingPolledDevice {
 
         // If there's no active live stream, start it, otherwise, extend live stream timeout
         if (this.data.stream.status === 'inactive' || this.data.stream.status === 'failed') {
-            this.startSnapshotStream(this.data.stream.duration)
+            this.startMjpegStream(this.data.stream.duration)
         } else {
             this.data.stream.expires = Math.floor(Date.now()/1000) + this.data.stream.duration
         }
@@ -498,9 +498,9 @@ class Camera extends RingPolledDevice {
         return p2jPort
     }
 
-    async startSnapshotStream(timeout) {
-        if (this.data.stream.snapshotStreamActive) { return }
-        this.data.stream.snapshotStreamActive = true
+    async startMjpegStream(duration) {
+        if (this.data.stream.mjpegStarted) { return }
+        this.data.stream.mjpegStarted = true
         // Start a P2J pipeline and server and get the listening TCP port
         const p2jPort = await this.startP2J()
         
@@ -530,13 +530,13 @@ class Camera extends RingPolledDevice {
         })
 
         ffmpegProcess.on('close', async () => {
-            this.data.stream.snapshotStreamActive = true
+            this.data.stream.mjpegStarted = false
             debug(`The MJPEG snapshot stream for camera ${this.deviceId} has stopped`)
         })
 
         // If stream starts, set expire time, may be extended by new events
         // (if only Ring sent events while streaming)
-        this.data.stream.expires = Math.floor(Date.now()/1000) + timeout
+        this.data.stream.expires = Math.floor(Date.now()/1000) + duration
 
         // Don't stop MJPEG session until current time > expire time
         // Expire time could be extended by additional motion events, except 
@@ -549,7 +549,7 @@ class Camera extends RingPolledDevice {
 
         ffmpegProcess.kill()
         this.data.stream.updateSnapshot = false
-        this.data.stream.snapshotStreamActive = true
+        this.data.stream.mjpegStarted = false
     }
 
     async setStreamState(message) {
@@ -600,7 +600,7 @@ class Camera extends RingPolledDevice {
 
                     this.data.stream.status = 'active'
                     this.publishStreamState()
-                    this.startSnapshotStream(86400) // 24 hours, but Ring will kill stream before then
+                    this.startMjpegStream(86400) // 24 hours, but Ring will kill stream before then
 
                     this.data.stream.sipSession.onCallEnded.subscribe(() => {
                         debug('Video stream ended for camera '+this.deviceId)
