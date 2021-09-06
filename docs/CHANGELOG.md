@@ -2,9 +2,11 @@
 **New Features**  
 Live Video Streaming is here!  
 
-Since this plugin supported cameras the single most requested feature, which I usually answered will "never be supported", is live streaming.  I guess this is why you should never say never!  A real shout-out must go to [gilliginsisland](https://github.com/jeroenterheerdt/ring-hassio/issues/51) for a post on the ring-hassio Github issues page.  While the final result here uses a somewhat different approach to trigger the livestream (it's ring-mqtt after all, so using MQTT made sense) it was still this concept that provided the imputus to finally do the work in a way that integrated easily with ring-mqtt.
+Since this plugin introduced support for cameras over 2 years ago the single most requested feature, which I usually answered will "never be supported", is live streaming, simply because it just didn't seem to fit withing the defined purpose of this tool, which was to integrate Ring devices with MQTT, which simply isn't a platform that can support streaming.  I always though the snapshot feature would be as close as it would get.
 
-I have some additional features planned for the coming weeks, but I wanted to get something out there now for people to play with and see how it work.  Features included in the release:
+However, because of continued demand for this feature, I was reasearching and prototyping possible methods for integrating live streams when I saw a post from [gilliginsisland](https://github.com/jeroenterheerdt/ring-hassio/issues/51) on the ring-hassio Github issues page.  While the final result uses rtsp-simple-server with an on-demand script that triggers the livestream via MQTT, it was still this concept that provided the imputus to finally do the work in a way that felt like a proper fit within the project.
+
+I have some additional features planned for the coming weeks, but I wanted to get something out there now for people to play with and see how it works in a wider range of environments.  Features included in this release:
 - Easy(-ish) integration with Home Assistant, although note that it is not automatic.  Live streaming cameras must be manually added to Home Assistant configuration.yaml.  Read [the camera docs](CAMERAS.md) for more details.
 - Support for on-demand live streams.  Streams are started automatically when viewed in Home Assistant and ended 5-10 seconds after the last viewer disconnects
 - Support for external medial player by exposing the RTSP port on the addon any tool that supports RTSP streaming can consume the stream.
