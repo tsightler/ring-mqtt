@@ -252,13 +252,15 @@ class Camera extends RingPolledDevice {
         if (ding.kind === 'motion') {
             this.data[ding.kind].is_person = (ding.detection_type === 'human') ? true : false
             if (this.data.snapshot.motion) {
-                // If there's not a current stream, start one now
-                if (this.data.stream.status === 'inactive' || this.data.stream.status === 'failed') {
-                    this.startRtspReadStream('snapshot', this.data.stream.duration)
-                } else {
-                    // Received a motion ding while a stream is active, extend the expire time for stream
-                    // Wouldn't it be cool if Ring cameras actually allowed this?
-                    this.data.stream.snapshot.expires = Math.floor(Date.now()/1000) + this.data.stream.duration
+                if (!this.device.operatingOnBattery) {
+                    // If there's not a current snapshot stream, start one now
+                    if (this.data.stream.status === 'inactive' || this.data.stream.status === 'failed') {
+                        this.startRtspReadStream('snapshot', this.data.stream.duration)
+                    } else {
+                        // Received a motion ding while a stream is active, extend the expire 
+                        // time for stream. Wouldn't it be cool if Ring cameras could actually do this?
+                        this.data.stream.snapshot.expires = Math.floor(Date.now()/1000) + this.data.stream.duration
+                    }
                 }
                 this.refreshSnapshot()
             }
