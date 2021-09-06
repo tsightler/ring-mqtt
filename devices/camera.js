@@ -208,7 +208,7 @@ class Camera extends RingPolledDevice {
  
             this.publishDingStates()
             if (this.data.snapshot.motion || this.data.snapshot.interval) {
-                this.data.snapshot.currentImage ? this.publishSnapshot() : this.refreshSnapshot()
+                this.data.snapshot.currentImage ? this.publishSnapshot() : this.refreshSnapshot('interval')
                 if (this.data.snapshot.interval) {
                     this.publishSnapshotInterval(isPublish)
                 }
@@ -253,7 +253,7 @@ class Camera extends RingPolledDevice {
         if (ding.kind === 'motion') {
             this.data[ding.kind].is_person = (ding.detection_type === 'human') ? true : false
             if (this.data.snapshot.motion) {
-                this.refreshSnapshot()
+                this.refreshSnapshot('motion')
             }
         }
 
@@ -365,32 +365,6 @@ class Camera extends RingPolledDevice {
         }
     }
 
-    async refreshSnapshot() {
-        let newSnapshot
-        try {
-            newSnapshot = await this.getRefreshedSnapshot()
-        } catch(e) {
-            debug(e.message)
-        }
-        if (newSnapshot && newSnapshot === 'SnapFromStream') {
-            // Snapshots from active stream publish automatically so just return
-            return
-        } else if (newSnapshot) {
-            this.data.snapshot.currentImage = newSnapshot
-            this.data.snapshot.timestamp = Math.round(Date.now()/1000)
-            this.publishSnapshot()
-        } else {
-            debug('Could not retrieve updated snapshot for camera '+this.deviceId)
-        }
-    }
-
-    // Publish snapshot image/metadata
-    async publishSnapshot() {
-        debug(colors.green(`[${this.deviceData.name}]`)+' '+colors.blue(`${this.entity.snapshot.topic}`)+' '+colors.cyan('<binary_image_data>'))
-        this.publishMqtt(this.entity.snapshot.topic, this.data.snapshot.currentImage)
-        this.publishMqtt(this.entity.snapshot.json_attributes_topic, JSON.stringify({ timestamp: this.data.snapshot.timestamp }))
-    }
-
     async publishSnapshotInterval(isPublish) {
         if (isPublish) {
             this.publishMqtt(this.entity.snapshot_interval.state_topic, this.data.snapshot.interval.toString(), true)
@@ -416,9 +390,44 @@ class Camera extends RingPolledDevice {
         this.publishMqtt(this.entity.stream.json_attributes_topic, JSON.stringify(attributes), true)
     }
 
+    // Publish snapshot image/metadata
+    async publishSnapshot() {
+        debug(colors.green(`[${this.deviceData.name}]`)+' '+colors.blue(`${this.entity.snapshot.topic}`)+' '+colors.cyan('<binary_image_data>'))
+        this.publishMqtt(this.entity.snapshot.topic, this.data.snapshot.currentImage)
+        this.publishMqtt(this.entity.snapshot.json_attributes_topic, JSON.stringify({ timestamp: this.data.snapshot.timestamp }))
+    }
+
+    // Refresh snapshot on scheduled interval
+    async scheduleSnapshotRefresh() {
+        this.data.snapshot.intervalTimerId = setInterval(() => {
+            if (this.isOnline() && this.data.snapshot.interval && !(this.data.snapshot.motion && this.data.motion.active_ding)) {
+                this.refreshSnapshot('interval')
+            }
+        }, this.data.snapshot.interval * 1000)
+    }
+    
+    async refreshSnapshot(type) {
+        let newSnapshot
+        try {
+            newSnapshot = await this.getRefreshedSnapshot(type)
+        } catch(e) {
+            debug(e.message)
+        }
+        if (newSnapshot && newSnapshot === 'SnapFromStream') {
+            // Snapshots from active stream publish automatically so just return
+            return
+        } else if (newSnapshot) {
+            this.data.snapshot.currentImage = newSnapshot
+            this.data.snapshot.timestamp = Math.round(Date.now()/1000)
+            this.publishSnapshot()
+        } else {
+            debug('Could not retrieve updated snapshot for camera '+this.deviceId)
+        }
+    }
+
     // This function uses various methods to get a snapshot to work around limitations
     // of Ring API, ring-client-api snapshot caching, battery cameras, etc.
-    async getRefreshedSnapshot() {
+    async getRefreshedSnapshot(type) {
         if (this.device.snapshotsAreBlocked) {
             debug('Snapshots are unavailable for camera '+this.deviceId+', check if motion capture is disabled manually or via modes settings')
             return false
@@ -428,7 +437,7 @@ class Camera extends RingPolledDevice {
             if (!this.device.operatingOnBattery) {
                 // Battery powered cameras can't take snapshots while recording, try to get image from video stream instead
                 debug('Motion event detected on battery powered camera '+this.deviceId+' snapshot will be updated from live stream')
-                this.getSnapshotFromStream()
+                this.getSnapshotFromStream(type)
                 return 'SnapFromStream'
             } else {
                 // Line powered cameras can take a snapshot while recording, but ring-client-api will return a cached
@@ -454,27 +463,22 @@ class Camera extends RingPolledDevice {
         return newSnapshot
     }
 
-    // Refresh snapshot on scheduled interval
-    async scheduleSnapshotRefresh() {
-            this.data.snapshot.intervalTimerId = setInterval(() => {
-                if (this.isOnline() && this.data.snapshot.interval && !(this.data.snapshot.motion && this.data.motion.active_ding)) {
-                    this.refreshSnapshot()
-                }
-            }, this.data.snapshot.interval * 1000)
-    }
-
-    async getSnapshotFromStream() {
-        // This will trigger P2J to publish one new snapshot from the live stream
-        this.data.stream.updateSnapshot = true
+    async getSnapshotFromStream(type) {
+        if (type === 'interval') {
+            // This will trigger P2J to publish one new snapshot from the live stream
+            this.data.stream.updateSnapshot = true
+        }
 
         // If there's no active live stream, start it, otherwise, extend live stream timeout
         if (this.data.stream.status === 'inactive' || this.data.stream.status === 'failed') {
             this.startRtspReadStream('snapshot', this.data.stream.duration)
-        } else {
-            this.data.stream.expires = Math.floor(Date.now()/1000) + this.data.stream.duration
+        } else if (type === 'motion') {
+            // Received a motion event while a stream is active, extend the expire time
+            // (If only this were possible with Ring devices) 
+            this.data.stream.expires = Math.floor(Date.now()/1000) + this.data.stream.duratio
         }
     }
-
+    
     // Start P2J server to extract and publish JPEG images from stream
     async startP2J() {
         const p2j = new P2J()
@@ -494,10 +498,11 @@ class Camera extends RingPolledDevice {
       
         p2j.on('jpeg', (jpegFrame) => {
             // If updateSnapshot = true then publish the next full JPEG frame as new snapshot
-            if (this.data.stream.updateSnapshot) {
+            if (this.data.stream.updateSnapshot || this.data.snapshot.motion) {
                 this.data.snapshot.currentImage = jpegFrame
                 this.data.snapshot.timestamp = Math.round(Date.now()/1000)
                 this.publishSnapshot()
+                this.data.stream.updateSnapshot = false
             }
         })
 
