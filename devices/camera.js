@@ -48,8 +48,14 @@ class Camera extends RingPolledDevice {
                 status: 'inactive',
                 expires: 0,
                 updateSnapshot: false,
-                snapshot: false,  // True when snapshot live stream is active
-                keepalive: false, // True when keep alive live stream is active 
+                snapshot: { 
+                    active: false,
+                    expires: 0 
+                },
+                keepalive:{ 
+                    active: false, 
+                    expires: 0
+                }, 
                 sipSession: null
             },
             lightState: null,
@@ -500,8 +506,8 @@ class Camera extends RingPolledDevice {
     }
 
     async startRtspReadStream(type, duration) {
-        if (this.data.stream[type]) { return }
-        this.data.stream[type] = true
+        if (this.data.stream[type].active) { return }
+        this.data.stream[type].active = true
         let p2jPort
         let ffmpegProcess
         
@@ -538,38 +544,38 @@ class Camera extends RingPolledDevice {
                 '0:a:0',
                 '-c:a',
                 'copy',
-                '-f null',
+                '-f',
+                'null',
                 '-'
             ])
         }
 
         ffmpegProcess.on('spawn', async () => {
-            console.log(ffmpegProcess)
             debug(`The ${type} stream for camera ${this.deviceId} has started`)
         })
 
         ffmpegProcess.on('close', async () => {
-            this.data.stream[type] = false
+            this.data.stream[type].active = false
             this.data.stream.updateSnapshot = false
             debug(`The ${type} stream for camera ${this.deviceId} has stopped`)
         })
 
         // If stream starts, set expire time, may be extended by new events
         // (if only Ring sent events while streaming)
-        this.data.stream.expires = Math.floor(Date.now()/1000) + duration
+        this.data.stream[type].expires = Math.floor(Date.now()/1000) + duration
 
-        // Don't stop MJPEG session until current time > expire time
+        // Don't stop stream session until current time > expire time
         // Expire time could be extended by additional motion events, except 
         // Ring devices don't send motion events while a stream is active so
         // it won't ever happen!
-        while (Math.floor(Date.now()/1000) < this.data.stream.expires) {
-            const sleeptime = (this.data.stream.expires - Math.floor(Date.now()/1000)) + 1
+        while (Math.floor(Date.now()/1000) < this.data.stream[type].expires) {
+            const sleeptime = (this.data.stream[type].expires - Math.floor(Date.now()/1000)) + 1
             await utils.sleep(sleeptime)
         }
 
         ffmpegProcess.kill()
         this.data.stream.updateSnapshot = false
-        this.data.stream[type] = false
+        this.data.stream[type].active = false
     }
 
     async setStreamState(message) {
