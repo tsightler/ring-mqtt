@@ -252,7 +252,15 @@ class Camera extends RingPolledDevice {
         if (ding.kind === 'motion') {
             this.data[ding.kind].is_person = (ding.detection_type === 'human') ? true : false
             if (this.data.snapshot.motion) {
-                this.refreshSnapshot('motion')
+                // If there's not a current stream, start one now
+                if (this.data.stream.status === 'inactive' || this.data.stream.status === 'failed') {
+                    this.startRtspReadStream('snapshot', this.data.stream.duration)
+                } else {
+                    // Received a motion ding while a stream is active, extend the expire time for stream
+                    // Wouldn't it be cool if Ring cameras actually allowed this?
+                    this.data.stream.snapshot.expires = Math.floor(Date.now()/1000) + this.data.stream.duration
+                }
+                this.refreshSnapshot()
             }
         }
 
@@ -412,6 +420,7 @@ class Camera extends RingPolledDevice {
         } catch(e) {
             debug(e.message)
         }
+
         if (newSnapshot && newSnapshot === 'SnapFromStream') {
             // Snapshots from active stream publish automatically so just return
             return
@@ -433,10 +442,9 @@ class Camera extends RingPolledDevice {
         }
 
         if (this.data.snapshot.motion && this.data.motion.active_ding) {
-            if (!this.device.operatingOnBattery) {
+            if (!this.device.operatingOnBattery && this.data.stream.active) {
                 // Battery powered cameras can't take snapshots while recording, try to get image from video stream instead
                 debug('Motion event detected on battery powered camera '+this.deviceId+' snapshot will be updated from live stream')
-                this.getSnapshotFromStream()
                 return 'SnapFromStream'
             } else {
                 // Line powered cameras can take a snapshot while recording, but ring-client-api will return a cached
@@ -454,17 +462,6 @@ class Camera extends RingPolledDevice {
         } else {
             // If not an active ding it's a scheduled refresh, just call device getSnapshot()
             return await this.device.getSnapshot()
-        }
-    }
-
-    async getSnapshotFromStream() {
-        // If there's no active live stream, start it, otherwise, extend live stream timeout
-        if (this.data.stream.status === 'inactive' || this.data.stream.status === 'failed') {
-            this.startRtspReadStream('snapshot', this.data.stream.duration)
-        } else {
-            // Received a motion event while a stream is active, extend the expire time for stream
-            // Wouldn't it be cool if Ring cameras actually allowed this?
-            this.data.stream.snapshot.expires = Math.floor(Date.now()/1000) + this.data.stream.duration
         }
     }
 
