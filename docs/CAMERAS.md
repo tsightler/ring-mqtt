@@ -64,6 +64,12 @@ Note that turning the stream off ALWAYS stops the live stream immediately, no ma
 
 ### FAQ
 
+**Q)** Why do streams keep running for 5+ minutes after viewing them in Home Assistant
+**A)** Home Assistant keeps streams running in the background for ~5 minutes even when they are no longer viewed.  It's always possible to stop streams manually using the stream switch.
+
+**Q)** Streams keep starting all the time even when I'm not viewing
+**A)** In Home Assistant, do not use the "Preload Stream" option and make server Camera View is set to "auto" instead of "live" in the picture glance card.  These other options attempt to start streams in the background for faster startup.  Because Ring cameras do not send motion events during streams, having streams running all the time will cause motion events to be missed.
+
 **Q)** Why does the live stream stop after ~10 minutes?  
 **A)** Ring enforces a time limit on active live streams and terminates them, typically at approximately 10 minutes, although sometimes significantly less and sometimes a little more.  Currently, you'll need to refresh to manually start the stream again but it is NOT recommended to attempt to stream 24 hours.  I say currently because Ring has hinted that continuous live streaming is something they are working on, but, for now, the code honors the exiting limits and does not just immediately retry as, otherwise, they may block access to their API completely.
 
@@ -77,7 +83,7 @@ Note that turning the stream off ALWAYS stops the live stream immediately, no ma
 **A)** Support for live streaming uses rtsp-simple-server, which is a binary process running in additional to the normal node process used by ring-mqtt.  When idle, this process uses very minimal memory (typically <20MB).  Also, every stream has at least one FFmpeg process to process the incoming stream and publish it to the server.  Total memory usage is typically about 25-30MB per each active stream on top of the base memory usage of the addon.  Also, when using Home Assistant, the Home Assistant memory usage will also increase for each stream.
 
 **Q)** Why are there no motion events while live streaming?  
-**A)** This is a limitaiton of Ring cameras, they do not detect/send motion events while a stream/recording is active.  The code itself has no limitations in this regard.
+**A)** This is a limitaiton of Ring cameras as they do not detect/send motion events while a stream/recording is active.  The code itself has no limitations in this regard.
 
 **Q)** Why do I have so many recordings on my Ring App?  
 **A)** Ring "live streams" are actually recording sessions as well, so every time you start a live view of your camera you will get a recording on the Ring app.
