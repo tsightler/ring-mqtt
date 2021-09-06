@@ -401,15 +401,15 @@ class Camera extends RingPolledDevice {
     async scheduleSnapshotRefresh() {
         this.data.snapshot.intervalTimerId = setInterval(() => {
             if (this.isOnline() && this.data.snapshot.interval && !(this.data.snapshot.motion && this.data.motion.active_ding)) {
-                this.refreshSnapshot('interval')
+                this.refreshSnapshot()
             }
         }, this.data.snapshot.interval * 1000)
     }
     
-    async refreshSnapshot(type) {
+    async refreshSnapshot() {
         let newSnapshot
         try {
-            newSnapshot = await this.getRefreshedSnapshot(type)
+            newSnapshot = await this.getRefreshedSnapshot()
         } catch(e) {
             debug(e.message)
         }
@@ -427,17 +427,17 @@ class Camera extends RingPolledDevice {
 
     // This function uses various methods to get a snapshot to work around limitations
     // of Ring API, ring-client-api snapshot caching, battery cameras, etc.
-    async getRefreshedSnapshot(type) {
+    async getRefreshedSnapshot() {
         if (this.device.snapshotsAreBlocked) {
             debug('Snapshots are unavailable for camera '+this.deviceId+', check if motion capture is disabled manually or via modes settings')
             return false
         }
 
-        if (this.data.motion.active_ding) {
+        if (this.data.snapshot.motion && this.data.motion.active_ding) {
             if (!this.device.operatingOnBattery) {
                 // Battery powered cameras can't take snapshots while recording, try to get image from video stream instead
                 debug('Motion event detected on battery powered camera '+this.deviceId+' snapshot will be updated from live stream')
-                this.getSnapshotFromStream(type)
+                this.getSnapshotFromStream()
                 return 'SnapFromStream'
             } else {
                 // Line powered cameras can take a snapshot while recording, but ring-client-api will return a cached
@@ -463,22 +463,17 @@ class Camera extends RingPolledDevice {
         return newSnapshot
     }
 
-    async getSnapshotFromStream(type) {
-        if (type === 'interval') {
-            // This will trigger P2J to publish one new snapshot from the live stream
-            this.data.stream.updateSnapshot = true
-        }
-
+    async getSnapshotFromStream() {
         // If there's no active live stream, start it, otherwise, extend live stream timeout
         if (this.data.stream.status === 'inactive' || this.data.stream.status === 'failed') {
             this.startRtspReadStream('snapshot', this.data.stream.duration)
-        } else if (type === 'motion') {
-            // Received a motion event while a stream is active, extend the expire time
-            // (If only this were possible with Ring devices) 
-            this.data.stream.expires = Math.floor(Date.now()/1000) + this.data.stream.duratio
+        } else {
+            // Received a motion event while a stream is active, extend the expire time for stream
+            // Wouldn't it be cool if Ring cameras actually allowed this?
+            this.data.stream.snapshot.expires = Math.floor(Date.now()/1000) + this.data.stream.duration
         }
     }
-    
+
     // Start P2J server to extract and publish JPEG images from stream
     async startP2J() {
         const p2j = new P2J()
