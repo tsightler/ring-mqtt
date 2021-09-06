@@ -1,23 +1,24 @@
 ## v4.8.0
 **New Features**
-Live Video Streaming is here!  This single most requested feature, which I sometimes answered will "never be in ring-mqtt" is now here!  I guess this is why you should never say never!  A real shoutout must go to [gilliginsisland](https://github.com/jeroenterheerdt/ring-hassio/issues/51) for his idea on the ring-hassio Github issues.  While the final result here uses a slightly different approach to trigger the livestream (it's ring-mqtt after all, so using MQTT made sense) it was still his conceptual idea that made this possible.
+Live Video Streaming is here!  Since this pluging supported cameras the single most requested feature, which I usually answered will "never be supported", is live streaming.  I guess this is why you should never say never!  A real shout-out must go to [gilliginsisland](https://github.com/jeroenterheerdt/ring-hassio/issues/51) for a post on the ring-hassio Github issues page.  While the final result here uses a somewhat different approach to trigger the livestream (it's ring-mqtt after all, so using MQTT made sense) it was still this concept that provided the imputus to finally do the work in a way that integrated easily with ring-mqtt.
 
 I have some additional features planned for the coming weeks, but I wanted to get something out there now for people to play with and see how it work.  Features included in the release:
-- Easy(-ish) integration with Home Assistant, although note that it is not automatic.  Live streaming cameras must be manually added to Home Assistant configuration.yaml.  Read the docs for details.
-- Support for on-demand live streams as all streams are started automatically when viewed in Home Assistant and ended 5-10 seconds after the last viewer disconnects
+- Easy(-ish) integration with Home Assistant, although note that it is not automatic.  Live streaming cameras must be manually added to Home Assistant configuration.yaml.  Read [the camera docs](CAMERAS.md) for more details.
+- Support for on-demand live streams.  Streams are started automatically when viewed in Home Assistant and ended 5-10 seconds after the last viewer disconnects
 - Support for external medial player by exposing the RTSP port on the addon any tool that supports RTSP streaming can consume the stream.
-- Manual stream start via an exposed switch entity, allows for cool things like triggering a recording using automation  
+- Support for defining a username and password for authenticating the stream.
+- Manual stream start via the "stream" switch entity or via MQTT command.  Allows for cool things like triggering a recording using automation.
 
 **Minor Enhancments**
-- Increased maximum time between snapshots from 3600 seconds (1 hour) to 604800 (7 days)
-- Repopulate entities and states much faster after Home Assistant restart detected
+- Increased maximum allowed time between snapshots from 3600 seconds (1 hour) to 604800 (7 days)
+- Repopulate entities and states much sooner after Home Assistant restart is detected
 
 **Fixed Bugs**
 - Fix interval snapshots when using only "interval" setting vs "all"
 
 **Other Changes**
-- Image now uses S6 init system for supervising node process
-- Massive startup script cleanup and simplification
+- Docker image now uses S6 init system for supervising node process
+- Massive startup script cleanup and standardization
 
 ## v4.7.3
 **Minor Enhancements**

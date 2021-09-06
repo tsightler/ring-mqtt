@@ -197,9 +197,14 @@ ring/<location_id>/camera/<device_id>/info/state                <-- Device info 
 ring/<location_id>/camera/<device_id>/snapshot/image            <-- Snapshot images (JPEG binary data)
 ring/<location_id>/camera/<device_id>/snapshot/attributes       <-- JSON attributes for image (timestamp)
 ring/<location_id>/camera/<device_id>/snapshot_interval/state   <-- Get snapshot refresh interval
-ring/<location_id>/camera/<device_id>/snapshot_interval/command <-- Set snapshot refresh interval
-ring/<location_id>/camera/<device_id>/stream/state              <-- Set live stream ON/OFF
-ring/<location_id>/camera/<device_id>/stream/command            <-- Get live stream ON/OFF
+ring/<location_id>/camera/<device_id>/snapshot_interval/command <-- Set snapshot refresh interval (10-604800)
+ring/<location_id>/camera/<device_id>/stream/state              <-- Get live stream ON/OFF
+ring/<location_id>/camera/<device_id>/stream/command            <-- Set live stream ON/OFF
+ring/<location_id>/camera/<device_id>/stream/attributes         <-- Detailed stream state:
+                                                                    - inactive
+                                                                    - activating
+                                                                    - active
+                                                                    - failed
 ```
 
 ```
