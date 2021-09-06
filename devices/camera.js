@@ -186,7 +186,7 @@ class Camera extends RingPolledDevice {
         this.data.stream.streamSource = (this.config.livestream_user && this.config.livestream_pass)
             ? `rtsp://${this.config.livestream_user}:${this.config.livestream_pass}@${await utils.getHostFqdn()}:8554/${this.deviceId}_live`
             : `rtsp://${await utils.getHostFqdn()}:8554/${this.deviceId}_live`,
-        this.data.stream.rtspPublishURL = (this.config.livestream_user && this.config.livestream_pass)
+        this.data.stream.rtspLocalUrl = (this.config.livestream_user && this.config.livestream_pass)
             ? `rtsp://${this.config.livestream_user}:${this.config.livestream_pass}@localhost:8554/${this.deviceId}_live`
             : `rtsp://localhost:8554/${this.deviceId}_live`
     }
@@ -502,17 +502,18 @@ class Camera extends RingPolledDevice {
     async startRtspReadStream(type, duration) {
         if (this.data.stream[type]) { return }
         this.data.stream[type] = true
-        // Start a P2J pipeline and server and get the listening TCP port
-        const p2jPort = await this.startP2J()
+        let p2jPort
+        let ffmpegProcess
         
         // Start stream with MJPEG output directed to P2J server with one frame every 2 seconds 
         debug(`Starting a ${type} stream for camera `+this.deviceId)
 
-        let ffmpegProcess
         if (type === 'snapshot') {
+            // Start a P2J pipeline and server and get the listening TCP port
+            p2jPort = await this.startP2J()
             ffmpegProcess = spawn(pathToFfmpeg, [
                 '-i',
-                `rtsp://localhost:8554/${this.deviceId}_live`,
+                this.data.stream.rtspLocalUrl,
                 '-c:v',
                 'mjpeg',
                 '-pix_fmt',
@@ -530,7 +531,7 @@ class Camera extends RingPolledDevice {
         } else {
             ffmpegProcess = spawn(pathToFfmpeg, [
                 '-i',
-                `rtsp://localhost:8554/${this.deviceId}_live`,
+                this.data.stream.rtspLocalUrl,
                 '-timeout',
                 '5000000',
                 '-map',
@@ -543,6 +544,7 @@ class Camera extends RingPolledDevice {
         }
 
         ffmpegProcess.on('spawn', async () => {
+            console.log(ffmpegProcess)
             debug(`The ${type} stream for camera ${this.deviceId} has started`)
         })
 
@@ -612,7 +614,7 @@ class Camera extends RingPolledDevice {
                             'copy',
                             '-f',
                             'rtsp',
-                            this.data.stream.rtspPublishURL
+                            this.data.stream.rtspLocalUrl
                         ]
                     })
 
