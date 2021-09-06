@@ -50,7 +50,7 @@ class Camera extends RingPolledDevice {
                 updateSnapshot: false,
                 snapshot: { 
                     active: false,
-                    expires: 0 
+                    expires: 0
                 },
                 keepalive:{ 
                     active: false, 
@@ -204,7 +204,7 @@ class Camera extends RingPolledDevice {
 
         if (isPublish) {
             // Publish stream state
-            this.publishStreamState()
+            this.publishStreamState(isPublish)
  
             this.publishDingStates()
             if (this.data.snapshot.motion || this.data.snapshot.interval) {
@@ -508,7 +508,6 @@ class Camera extends RingPolledDevice {
     async startRtspReadStream(type, duration) {
         if (this.data.stream[type].active) { return }
         this.data.stream[type].active = true
-        let p2jPort
         let ffmpegProcess
         
         // Start stream with MJPEG output directed to P2J server with one frame every 2 seconds 
@@ -516,7 +515,8 @@ class Camera extends RingPolledDevice {
 
         if (type === 'snapshot') {
             // Start a P2J pipeline and server and get the listening TCP port
-            p2jPort = await this.startP2J()
+            const p2jPort = await this.startP2J()
+            // Create a low frame-rate MJPEG stream to publish motion snapshots
             ffmpegProcess = spawn(pathToFfmpeg, [
                 '-i',
                 this.data.stream.rtspLocalUrl,
@@ -535,11 +535,13 @@ class Camera extends RingPolledDevice {
                 `tcp://localhost:+${p2jPort}`
             ])
         } else {
+            // Keepalive stream is used only when the live stream is started 
+            // manually. It copies only the audio stream to null output just to
+            // trigger rtsp-simple-server to start the on-demand stream and 
+            // keep it running when there are no other RTSP readers.
             ffmpegProcess = spawn(pathToFfmpeg, [
                 '-i',
                 this.data.stream.rtspLocalUrl,
-                '-timeout',
-                '5000000',
                 '-map',
                 '0:a:0',
                 '-c:a',
@@ -555,8 +557,10 @@ class Camera extends RingPolledDevice {
         })
 
         ffmpegProcess.on('close', async () => {
+            if (type === 'snapshot') {
+                this.data.stream.updateSnapshot = false
+            }
             this.data.stream[type].active = false
-            this.data.stream.updateSnapshot = false
             debug(`The ${type} stream for camera ${this.deviceId} has stopped`)
         })
 
@@ -569,23 +573,40 @@ class Camera extends RingPolledDevice {
         // Ring devices don't send motion events while a stream is active so
         // it won't ever happen!
         while (Math.floor(Date.now()/1000) < this.data.stream[type].expires) {
-            const sleeptime = (this.data.stream[type].expires - Math.floor(Date.now()/1000)) + 1
-            await utils.sleep(sleeptime)
+            if (type === 'snapshot') {
+                const sleeptime = (this.data.stream[type].expires - Math.floor(Date.now()/1000)) + 1
+                await utils.sleep(sleeptime)
+            } else {
+                await utils.sleep(5)
+                const pathDetails = await rss.getPathDetails(`${this.deviceId}_live`)
+                debug(pathDetails)
+                if (!pathDetails.sourceReady) {
+                    // If the source stream stops (due to manual cancel or Ring timeout)
+                    // force the keepalive stream to expire
+                    this.data.stream[type].expires = 0
+                }
+            }
         }
 
         ffmpegProcess.kill()
-        this.data.stream.updateSnapshot = false
+        if (type === 'snapshot') {
+            this.data.stream.updateSnapshot = false
+        }
         this.data.stream[type].active = false
     }
 
     async setStreamState(message) {
-        debug('Received set stream state '+message+' for camera '+this.deviceId)
-        debug('Location Id: '+ this.locationId)
         const command = message.toLowerCase()
-
         switch (command) {
             case 'on':
-                if (this.data.stream.status === 'active') {
+                // Stream was manually started, create a dummy, audio only
+                // RTSP source stream to trigger stream startup and keep it active
+                this.startRtspReadStream('keepalive', 86400)
+                break;
+            case 'on-demand':
+                debug('Received set stream state ON for camera '+this.deviceId)
+                debug('Location Id: '+ this.locationId)        
+                if (this.data.stream.status === 'active' || this.data.stream.status === 'activating') {
                     this.publishStreamState()
                     return
                 } else {
@@ -594,7 +615,7 @@ class Camera extends RingPolledDevice {
                 }
 
                 // Start and publish stream to rtsp-simple-server 
-                debug('Establishing connection to video stream for camera '+this.deviceId)
+                debug('Establishing connection to live stream for camera '+this.deviceId)
                 try {
                     this.data.stream.sipSession = await this.device.streamVideo({
                         audio: [], video: [],
@@ -626,7 +647,6 @@ class Camera extends RingPolledDevice {
 
                     this.data.stream.status = 'active'
                     this.publishStreamState()
-                    this.startRtspReadStream('keepalive', 86400) // 24 hours, but Ring will kill stream before then
 
                     this.data.stream.sipSession.onCallEnded.subscribe(() => {
                         debug('Video stream ended for camera '+this.deviceId)
@@ -641,6 +661,8 @@ class Camera extends RingPolledDevice {
                 }
                 break;
             case 'off':
+                debug('Received set stream state OFF for camera '+this.deviceId)
+                debug('Location Id: '+ this.locationId)        
                 if (this.data.stream.sipSession) {
                     this.data.stream.sipSession.stop()
                 } else {

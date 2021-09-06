@@ -47,7 +47,7 @@ do
     # If start message received, publish the command to start stream
     if [ ${message} = "START" ]; then
         echo -e "${green}[${client_name}]${reset} Activating live stream via topic ${blue}${command_topic}${reset}"
-        mosquitto_pub -i "${client_id}_pub" -u "${MQTTUSER}" -P "${MQTTPASSWORD}" -h "${MQTTHOST}" -p "${MQTTPORT}" -t "${command_topic}" -m "ON"
+        mosquitto_pub -i "${client_id}_pub" -u "${MQTTUSER}" -P "${MQTTPASSWORD}" -h "${MQTTHOST}" -p "${MQTTPORT}" -t "${command_topic}" -m "ON-DEMAND"
     else
         # Otherwise it should be a JSON message from the stream state attribute topic so extract the detailed stream state
         stream_state=`echo ${message} | jq -r '.status'`
