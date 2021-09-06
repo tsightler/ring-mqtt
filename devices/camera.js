@@ -442,7 +442,7 @@ class Camera extends RingPolledDevice {
         }
 
         if (this.data.snapshot.motion && this.data.motion.active_ding) {
-            if (!this.device.operatingOnBattery && this.data.stream.active) {
+            if (!this.device.operatingOnBattery && this.data.stream.snapshot.active) {
                 // Battery powered cameras can't take snapshots while recording, try to get image from video stream instead
                 debug('Motion event detected on battery powered camera '+this.deviceId+' snapshot will be updated from live stream')
                 return 'SnapFromStream'
