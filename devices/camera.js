@@ -47,7 +47,6 @@ class Camera extends RingPolledDevice {
                 state: 'OFF',
                 status: 'inactive',
                 expires: 0,
-                updateSnapshot: false,
                 snapshot: { 
                     active: false,
                     expires: 0
@@ -444,23 +443,18 @@ class Camera extends RingPolledDevice {
                 // snapshot if a previous snapshot was taken within 10 seconds. If a motion event occurs during this time
                 // a stale image would be returned so, instead, we call our local function to force an uncached snapshot.
                 debug('Motion event detected for line powered camera '+this.deviceId+', forcing a non-cached snapshot update')
-                return await this.getUncachedSnapshot()
+                await this.device.requestSnapshotUpdate()
+                await utils.sleep(1)
+                const newSnapshot = await this.device.restClient.request({
+                    url: clientApi(`snapshots/image/${this.device.id}`),
+                    responseType: 'buffer'
+                })
+                return newSnapshot
             }
         } else {
-            // If not an active ding it's a scheduled refresh, just call getSnapshot()
+            // If not an active ding it's a scheduled refresh, just call device getSnapshot()
             return await this.device.getSnapshot()
         }
-    }
-
-    // Bypass ring-client-api cached snapshot behavior by calling refresh snapshot API directly
-    async getUncachedSnapshot() {
-        await this.device.requestSnapshotUpdate()
-        await utils.sleep(1)
-        const newSnapshot = await this.device.restClient.request({
-            url: clientApi(`snapshots/image/${this.device.id}`),
-            responseType: 'buffer',
-        })
-        return newSnapshot
     }
 
     async getSnapshotFromStream() {
@@ -492,13 +486,9 @@ class Camera extends RingPolledDevice {
         p2jServer.listen(p2jPort, 'localhost')
       
         p2j.on('jpeg', (jpegFrame) => {
-            // If updateSnapshot = true then publish the next full JPEG frame as new snapshot
-            if (this.data.stream.updateSnapshot || this.data.snapshot.motion) {
-                this.data.snapshot.currentImage = jpegFrame
-                this.data.snapshot.timestamp = Math.round(Date.now()/1000)
-                this.publishSnapshot()
-                this.data.stream.updateSnapshot = false
-            }
+            this.data.snapshot.currentImage = jpegFrame
+            this.data.snapshot.timestamp = Math.round(Date.now()/1000)
+            this.publishSnapshot()
         })
 
         // Return TCP port for SIP stream to send stream
@@ -557,9 +547,6 @@ class Camera extends RingPolledDevice {
         })
 
         ffmpegProcess.on('close', async () => {
-            if (type === 'snapshot') {
-                this.data.stream.updateSnapshot = false
-            }
             this.data.stream[type].active = false
             debug(`The ${type} stream for camera ${this.deviceId} has stopped`)
         })
@@ -588,9 +575,6 @@ class Camera extends RingPolledDevice {
         }
 
         ffmpegProcess.kill()
-        if (type === 'snapshot') {
-            this.data.stream.updateSnapshot = false
-        }
         this.data.stream[type].active = false
     }
 
