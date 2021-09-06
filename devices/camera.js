@@ -506,6 +506,7 @@ class Camera extends RingPolledDevice {
             // Start a P2J pipeline and server and get the listening TCP port
             const p2jPort = await this.startP2J()
             // Create a low frame-rate MJPEG stream to publish motion snapshots
+            /*
             ffmpegProcess = spawn(pathToFfmpeg, [
                 '-i',
                 this.data.stream.rtspLocalUrl,
@@ -513,6 +514,26 @@ class Camera extends RingPolledDevice {
                 'mjpeg',
                 '-pix_fmt',
                 'yuvj422p',
+                '-f',
+                'image2pipe',
+                '-s',
+                '640:360',
+                '-r',
+                '.1',
+                '-q:v',
+                '2',
+                `tcp://localhost:+${p2jPort}`
+            ])
+            */
+            ffmpegProcess = spawn(pathToFfmpeg, [
+                '-skip_frame',
+                'nokey',
+                '-i',
+                this.data.stream.rtspLocalUrl,
+                '-pix_fmt',
+                'yuvj422p',
+                '-vsync',
+                '0',
                 '-f',
                 'image2pipe',
                 '-s',
