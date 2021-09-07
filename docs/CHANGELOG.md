@@ -18,6 +18,7 @@ Features included in this release:
 **Minor Enhancments**  
 - Increased maximum allowed time between snapshots from 3600 seconds (1 hour) to 604800 (7 days)
 - Repopulate entities and states much sooner after Home Assistant restart is detected
+- New algorithm for pulling motion snapshots from battery cameras.  Uses less CPU and should generate a more reliable image with less artifacts, but will be a little slower.
 
 **Fixed Bugs**  
 - Fix interval snapshots when using only "interval" setting vs "all"
