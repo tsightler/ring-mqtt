@@ -26,11 +26,6 @@ You can use any directory on the host for this persistent store, but it must be 
 docker run --rm --mount type=bind,source=/etc/ring-mqtt,target=/data -e "MQTTHOST=host_name" -e "MQTTUSER=mqtt_user" -e "MQTTPASSWORD=mqtt_pw" -e "RINGTOKEN=ring_refreshToken" tsightler/ring-mqtt
 ```
 
-#### External RTSP Server Access
-When using the camera support for live streams the Docker container will also run a local instance of rtsp-simple-server.  If your streaming platform runs on the same host you can usually just access directly via the Docker network, however, if you want to access the stream from other host on the network you can expose the RTSP port during startup as well.  Note that, if you choose to export the port, it is HIGHLY recommended to set a live stream user and password using the appropriate configuration options.
-
-To export the RTSP port externally simple add the standard Docker port options to your run command, something like "-p 8554:8554" would allow external media player clients to access the RTSP server on TCP port 8554.
-
 #### Environment Variables
 Note that the only absolutely required parameter for initial start is **RINGTOKEN** but, in practice, at least **MQTTHOST** will likely be required as well, and **MQTTUSER/MQTTPASSWORD** will be required if the MQTT broker does not accept anonymous connections.  Default values for the environment values if they are not defined are as follows:
 
@@ -140,6 +135,11 @@ Because of this added risk, it's a good idea to create a second account dedicate
 
 ### Camera live stream support
 Please read the detailed [camera documentation](docs/CAMERAS.md) for more details on configuring live streaming.
+
+#### External RTSP Server Access
+When using the camera support for live streams the Docker container will also run a local instance of rtsp-simple-server.  If your streaming platform runs on the same host you can usually just access directly via the Docker network, however, if you want to access the stream from other host on the network you can expose the RTSP port during startup as well.  Note that, if you choose to export the port, it is HIGHLY recommended to set a live stream user and password using the appropriate configuration options.
+
+To export the RTSP port externally simple add the standard Docker port options to your run command, something like "-p 8554:8554" would allow external media player clients to access the RTSP server on TCP port 8554.
 
 ### Arming Bypass
 By default, attempts to arm the alarm when any contact sensors are in faulted state will fail with an audible message from the base station that sensors require bypass. Arming will retry 5 times evern 10 seconds giving time for doors/windows to be closed, however, if sensors still require bypass after this time, arming will fail.
