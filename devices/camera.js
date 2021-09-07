@@ -38,7 +38,8 @@ class Camera extends RingPolledDevice {
                 interval: false,
                 intervalTimerId: null,
                 motion: false, 
-                timestamp: null
+                timestamp: null,
+                update: false
             },
             stream: {
                 duration: (this.device.data.settings.video_settings.hasOwnProperty('clip_length_max') && this.device.data.settings.video_settings.clip_length_max) 
@@ -252,7 +253,8 @@ class Camera extends RingPolledDevice {
         if (ding.kind === 'motion') {
             this.data[ding.kind].is_person = (ding.detection_type === 'human') ? true : false
             if (this.data.snapshot.motion) {
-                if (!this.device.operatingOnBattery) {
+                if (this.device.operatingOnBattery) {
+                    this.data.snapshot.update = true
                     // If there's not a current snapshot stream, start one now
                     if (this.data.stream.status === 'inactive' || this.data.stream.status === 'failed') {
                         this.startRtspReadStream('snapshot', this.data.stream.duration)
@@ -444,9 +446,10 @@ class Camera extends RingPolledDevice {
         }
 
         if (this.data.snapshot.motion && this.data.motion.active_ding) {
-            if (!this.device.operatingOnBattery && this.data.stream.snapshot.active) {
+            if (this.device.operatingOnBattery && this.data.stream.snapshot.active) {
                 // Battery powered cameras can't take snapshots while recording, try to get image from video stream instead
                 debug('Motion event detected on battery powered camera '+this.deviceId+' snapshot will be updated from live stream')
+                this.data.snapshot.update = true
                 return 'SnapFromStream'
             } else {
                 // Line powered cameras can take a snapshot while recording, but ring-client-api will return a cached
@@ -485,9 +488,12 @@ class Camera extends RingPolledDevice {
         p2jServer.listen(p2jPort, 'localhost')
       
         p2j.on('jpeg', (jpegFrame) => {
-            this.data.snapshot.currentImage = jpegFrame
-            this.data.snapshot.timestamp = Math.round(Date.now()/1000)
-            this.publishSnapshot()
+            if (this.data.snapshot.update) {
+                this.data.snapshot.currentImage = jpegFrame
+                this.data.snapshot.timestamp = Math.round(Date.now()/1000)
+                this.publishSnapshot()
+                this.data.snapshot.update = false
+            }
         })
 
         // Return TCP port for SIP stream to send stream
@@ -506,25 +512,7 @@ class Camera extends RingPolledDevice {
             // Start a P2J pipeline and server and get the listening TCP port
             const p2jPort = await this.startP2J()
             // Create a low frame-rate MJPEG stream to publish motion snapshots
-            /*
-            ffmpegProcess = spawn(pathToFfmpeg, [
-                '-i',
-                this.data.stream.rtspLocalUrl,
-                '-c:v',
-                'mjpeg',
-                '-pix_fmt',
-                'yuvj422p',
-                '-f',
-                'image2pipe',
-                '-s',
-                '640:360',
-                '-r',
-                '.1',
-                '-q:v',
-                '2',
-                `tcp://localhost:+${p2jPort}`
-            ])
-            */
+            // Process only key frames to keep CPU usage low
             ffmpegProcess = spawn(pathToFfmpeg, [
                 '-skip_frame',
                 'nokey',
@@ -534,8 +522,8 @@ class Camera extends RingPolledDevice {
                 'image2pipe',
                 '-s',
                 '640:360',
-                '-r',
-                '.1',
+                '-vsync',
+                '0',
                 '-q:v',
                 '2',
                 `tcp://localhost:+${p2jPort}`
