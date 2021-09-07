@@ -188,7 +188,7 @@ class Camera extends RingPolledDevice {
         }
 
         // Set some helper attributes for streaming
-        this.data.stream.stillImageURL = `http://localhost:8123{{ states.camera.${this.device.name.toLowerCase().replace(" ","_")}_snapshot.attribute.entity_picture }}`,
+        this.data.stream.stillImageURL = `http://localhost:8123{{ states.camera.${this.device.name.toLowerCase().replace(" ","_")}_snapshot.attributes.entity_picture }}`,
         this.data.stream.streamSource = (this.config.livestream_user && this.config.livestream_pass)
             ? `rtsp://${this.config.livestream_user}:${this.config.livestream_pass}@${await utils.getHostFqdn()}:8554/${this.deviceId}_live`
             : `rtsp://${await utils.getHostFqdn()}:8554/${this.deviceId}_live`,
