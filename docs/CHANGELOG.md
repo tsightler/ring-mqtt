@@ -1,8 +1,33 @@
+## v4.8.0
+**New Features**  
+Live Video Streaming is here!  
+
+Since this plugin introduced support for cameras over 2 years ago, the single most requested feature, which I usually answered will "never be supported", is live streaming.  I didn't believe this feature would ever fit within this project simply because this script used MQTT for integration, which simply isn't a platform that can support streaming, other than the limited capabilities used for the snapshot feature.
+
+However, because of continued demand for live streaming, I was reasearching and prototyping possible methods for integrating live streams when I saw a post from [gilliginsisland](https://github.com/jeroenterheerdt/ring-hassio/issues/51) on the ring-hassio Github issues page.  The final result uses rtsp-simple-server with an on-demand script that triggers the livestream via MQTT, and it was the concept in that post that provided the imputus to finally do the work in a way that felt like a proper fit within this project.
+
+I have some additional features planned for the coming weeks, mainly the ability to play the last X recorded events, but I wanted to get something out there now for people to play with and see how it works in a wider range of environments than my test setup.  
+
+Features included in this release:
+- Easy(-ish) integration with Home Assistant, although note that it is not automatic.  Live streaming cameras must be manually added to Home Assistant configuration.yaml.  Please Rrad [the camera docs](CAMERAS.md) for more details.
+- Support for on-demand live streams.  Streams are started automatically when viewed in Home Assistant and ended 5-10 seconds after the last viewer disconnects
+- Support for external medial player by exposing the RTSP port on the addon any tool that supports RTSP streaming can consume the stream.
+- Support for defining a username and password for authenticating the stream.
+- Manual stream start via the "stream" switch entity or via MQTT command.  Allows for cool things like triggering a recording using automation.
+
+**Minor Enhancments**  
+- Increased maximum allowed time between snapshots from 3600 seconds (1 hour) to 604800 (7 days)
+- Repopulate entities and states much sooner after Home Assistant restart is detected
+- New algorithm for pulling motion snapshots from battery cameras.  Uses less CPU and should generate a more reliable image with less artifacts, but will be a little slower.
+
+**Fixed Bugs**  
+- Fix interval snapshots when using only "interval" setting vs "all"
+
+**Other Changes**  
+- Docker image now uses S6 init system for supervising node process
+- Massive startup script cleanup and standardization
+
 ## v4.7.3
-***** IMPORTANT NOTE *****  
-
-If upgrading from version 4.6.x or earlier, please read the 4.7.0 change notes as well!
-
 **Minor Enhancements**
 - Documentation updates no note that Chimes only work with primary Ring account, not shared accounts
 - Tweak logging color scheme to improve event readability
@@ -22,8 +47,7 @@ If upgrading from version 4.6.x or earlier, please read the 4.7.0 change notes a
 - Proper use of systemId with Ring authentication (addon only for now, hopefully eliminates spamming Authorized Client Devices in Account Control Center)
 
 ## v4.7.0
-***** IMPORTANT NOTE *****
-
+***** IMPORTANT NOTE *****  
 Due to changes in the way ring-mqtt generates configuration topics it is HIGHLY recommended to restart the Home Assistant instance as soon as possible after the upgrade of this addon.  Without this Home Assistant will log warnings/errors about non-unqiue entity IDs.  While ring-mqtt does generate unique IDs for entities, version 4.7.0 has standarized the generation of configuraiton topics which results in slightly different topics for some devices.  Because of this, the Home Assistant discovery process thinks it is seeing new devices with the same IDs as existing entities.  Restarting Home Assistant will allow for a fresh discovery cycle, and, since the entity IDs did not change from previous versions, only the configuration topics, there should be no changes required to existing devices.  For more details on the underlying engine changes you can read the "Other Changes" section below.
 
 **New Device Support**
@@ -57,8 +81,7 @@ Due to changes in the way ring-mqtt generates configuration topics it is HIGHLY 
 **Fixed Bugs**
   - "Addressed 'dict object' has no attribute" warnings due to changes in Home Assistant >=2021.4
   
-**Other Changes**
-
+**Other Changes**  
   Underneath the covers there are quite a number of changes to the engine with the primary goal to simplify and standardize device support and, in turn, make it easier to maintain and add new device support.  The prior model, if it can be called that, was a disaster of my own making with different devices using inconsistent methods for generating unique entity IDs and configuration topics.  This is primarily because I never really thought much about the device model when ring-mqtt was first created as there was only alarm, motion, and contact sensors.  Other devices have been bolted on haphazardly along the way without much thought or consistency so that needed to change and no better time than now.
   
   With the new model, device entities are defined in a consistent way and entity ID's, names, and MQTT topics are generated promgratically and consitently across all devices.  Key features of the new model:

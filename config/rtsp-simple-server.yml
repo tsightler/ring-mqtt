@@ -1,0 +1,18 @@
+readTimeout: 5s
+readBufferCount: 1024
+
+rtspDisable: no
+protocols: [tcp]
+rtspAddress: 0.0.0.0:8554
+
+rtmpDisable: yes
+
+hlsDisable: yes
+
+api: yes
+apiAddress: 127.0.0.1:8880
+
+paths:
+  all:
+    fallback:
+    disablePublisherOverride: no

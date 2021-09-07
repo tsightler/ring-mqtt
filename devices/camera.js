@@ -6,7 +6,9 @@ const { clientApi } = require('../node_modules/ring-client-api/lib/api/rest-clie
 const P2J = require('pipe2jpeg')
 const net = require('net');
 const getPort = require('get-port')
-const { cpuUsage } = require('process')
+const pathToFfmpeg = require('ffmpeg-for-homebridge')
+const { spawn } = require('child_process')
+const rss = require('../lib/rtsp-simple-server')
 
 class Camera extends RingPolledDevice {
     constructor(deviceInfo) {
@@ -36,15 +38,25 @@ class Camera extends RingPolledDevice {
                 interval: false,
                 intervalTimerId: null,
                 motion: false, 
-                timestamp: null
+                timestamp: null,
+                update: false
             },
-            livestream: {
+            stream: {
                 duration: (this.device.data.settings.video_settings.hasOwnProperty('clip_length_max') && this.device.data.settings.video_settings.clip_length_max) 
                     ? this.device.data.settings.video_settings.clip_length_max
                     : 60,
-                active: false,
+                state: 'OFF',
+                status: 'inactive',
                 expires: 0,
-                updateSnapshot: false
+                snapshot: { 
+                    active: false,
+                    expires: 0
+                },
+                keepalive:{ 
+                    active: false, 
+                    expires: 0
+                }, 
+                sipSession: null
             },
             lightState: null,
             sirenState: null,
@@ -75,6 +87,11 @@ class Camera extends RingPolledDevice {
                 device_class: 'motion',
                 attributes: true,
             },
+            stream: {
+                component: 'switch',
+                attributes: true,
+                icon: 'mdi:cctv'
+            },
             ...this.device.isDoorbot ? {
                 ding: {
                     component: 'binary_sensor',
@@ -104,7 +121,7 @@ class Camera extends RingPolledDevice {
                 snapshot_interval: {
                     component: 'number',
                     min: 10,
-                    max: 3600,
+                    max: 604800,
                     icon: 'hass:timer'
                 }
             } : {},
@@ -169,6 +186,15 @@ class Camera extends RingPolledDevice {
             this.data.ding.last_ding = lastDingDate ? Math.floor(lastDingDate/1000) : 0
             this.data.ding.last_ding_time = lastDingDate ? utils.getISOTime(lastDingDate) : ''
         }
+
+        // Set some helper attributes for streaming
+        this.data.stream.stillImageURL = `http://localhost:8123{{ states.camera.${this.device.name.toLowerCase().replace(" ","_")}_snapshot.attribute.entity_picture }}`,
+        this.data.stream.streamSource = (this.config.livestream_user && this.config.livestream_pass)
+            ? `rtsp://${this.config.livestream_user}:${this.config.livestream_pass}@${await utils.getHostFqdn()}:8554/${this.deviceId}_live`
+            : `rtsp://${await utils.getHostFqdn()}:8554/${this.deviceId}_live`,
+        this.data.stream.rtspLocalUrl = (this.config.livestream_user && this.config.livestream_pass)
+            ? `rtsp://${this.config.livestream_user}:${this.config.livestream_pass}@localhost:8554/${this.deviceId}_live`
+            : `rtsp://localhost:8554/${this.deviceId}_live`
     }
 
     // Publish camera capabilities and state and subscribe to events
@@ -176,10 +202,13 @@ class Camera extends RingPolledDevice {
         const isPublish = data === undefined ? true : false
         this.publishPolledState(isPublish)
 
-        if (isPublish) { 
+        if (isPublish) {
+            // Publish stream state
+            this.publishStreamState(isPublish)
+ 
             this.publishDingStates()
             if (this.data.snapshot.motion || this.data.snapshot.interval) {
-                this.data.snapshot.currentImage ? this.publishSnapshot() : this.refreshSnapshot()
+                this.data.snapshot.currentImage ? this.publishSnapshot() : this.refreshSnapshot('interval')
                 if (this.data.snapshot.interval) {
                     this.publishSnapshotInterval(isPublish)
                 }
@@ -224,6 +253,17 @@ class Camera extends RingPolledDevice {
         if (ding.kind === 'motion') {
             this.data[ding.kind].is_person = (ding.detection_type === 'human') ? true : false
             if (this.data.snapshot.motion) {
+                if (this.device.operatingOnBattery) {
+                    this.data.snapshot.update = true
+                    // If there's not a current snapshot stream, start one now
+                    if (this.data.stream.status === 'inactive' || this.data.stream.status === 'failed') {
+                        this.startRtspReadStream('snapshot', this.data.stream.duration)
+                    } else {
+                        // Received a motion ding while a stream is active, extend the expire 
+                        // time for stream. Wouldn't it be cool if Ring cameras could actually do this?
+                        this.data.stream.snapshot.expires = Math.floor(Date.now()/1000) + this.data.stream.duration
+                    }
+                }
                 this.refreshSnapshot()
             }
         }
@@ -328,36 +368,12 @@ class Camera extends RingPolledDevice {
             } else {
                 attributes.wirelessNetwork = deviceHealth.wifi_name
                 attributes.wirelessSignal = deviceHealth.latest_signal_strength
-            }            
+            }
+            attributes.stream_Source = this.data.stream.streamSource
+            attributes.still_Image_URL = this.data.stream.stillImageURL
             this.publishMqtt(this.entity.info.state_topic, JSON.stringify(attributes), true)
             this.publishAttributeEntities(attributes)
         }
-    }
-
-    async refreshSnapshot() {
-        let newSnapshot
-        try {
-            newSnapshot = await this.getRefreshedSnapshot()
-        } catch(e) {
-            debug(e.message)
-        }
-        if (newSnapshot && newSnapshot === 'SnapFromStream') {
-            // Livestream snapshots publish automatically from the stream so just return
-            return
-        } else if (newSnapshot) {
-            this.data.snapshot.currentImage = newSnapshot
-            this.data.snapshot.timestamp = Math.round(Date.now()/1000)
-            this.publishSnapshot()
-        } else {
-            debug('Could not retrieve updated snapshot for camera '+this.deviceId)
-        }
-    }
-
-    // Publish snapshot image/metadata
-    async publishSnapshot() {
-        debug(colors.brightBlue(`[${this.deviceData.name}]`)+' '+colors.gray(`${this.entity.snapshot.topic}`)+' '+colors.cyan('<binary_image_data>'))
-        this.publishMqtt(this.entity.snapshot.topic, this.data.snapshot.currentImage)
-        this.publishMqtt(this.entity.snapshot.json_attributes_topic, JSON.stringify({ timestamp: this.data.snapshot.timestamp }))
     }
 
     async publishSnapshotInterval(isPublish) {
@@ -374,6 +390,53 @@ class Camera extends RingPolledDevice {
         }
     }
 
+    publishStreamState(isPublish) {
+        const streamState = (this.data.stream.status === 'active' || this.data.stream.status === 'activating') ? 'ON' : 'OFF'
+        if (streamState !== this.data.stream.state || isPublish) {
+            this.data.stream.state = streamState
+            this.publishMqtt(this.entity.stream.state_topic, this.data.stream.state, true)
+        }
+
+        const attributes = { status: this.data.stream.status }
+        this.publishMqtt(this.entity.stream.json_attributes_topic, JSON.stringify(attributes), true)
+    }
+
+    // Publish snapshot image/metadata
+    async publishSnapshot() {
+        debug(colors.green(`[${this.deviceData.name}]`)+' '+colors.blue(`${this.entity.snapshot.topic}`)+' '+colors.cyan('<binary_image_data>'))
+        this.publishMqtt(this.entity.snapshot.topic, this.data.snapshot.currentImage)
+        this.publishMqtt(this.entity.snapshot.json_attributes_topic, JSON.stringify({ timestamp: this.data.snapshot.timestamp }))
+    }
+
+    // Refresh snapshot on scheduled interval
+    async scheduleSnapshotRefresh() {
+        this.data.snapshot.intervalTimerId = setInterval(() => {
+            if (this.isOnline() && this.data.snapshot.interval && !(this.data.snapshot.motion && this.data.motion.active_ding)) {
+                this.refreshSnapshot()
+            }
+        }, this.data.snapshot.interval * 1000)
+    }
+    
+    async refreshSnapshot() {
+        let newSnapshot
+        try {
+            newSnapshot = await this.getRefreshedSnapshot()
+        } catch(e) {
+            debug(e.message)
+        }
+
+        if (newSnapshot && newSnapshot === 'SnapFromStream') {
+            // Snapshots from active stream publish automatically so just return
+            return
+        } else if (newSnapshot) {
+            this.data.snapshot.currentImage = newSnapshot
+            this.data.snapshot.timestamp = Math.round(Date.now()/1000)
+            this.publishSnapshot()
+        } else {
+            debug('Could not retrieve updated snapshot for camera '+this.deviceId)
+        }
+    }
+
     // This function uses various methods to get a snapshot to work around limitations
     // of Ring API, ring-client-api snapshot caching, battery cameras, etc.
     async getRefreshedSnapshot() {
@@ -382,58 +445,32 @@ class Camera extends RingPolledDevice {
             return false
         }
 
-        if (this.data.motion.active_ding) {
-            if (this.device.operatingOnBattery) {
+        if (this.data.snapshot.motion && this.data.motion.active_ding) {
+            if (this.device.operatingOnBattery && this.data.stream.snapshot.active) {
                 // Battery powered cameras can't take snapshots while recording, try to get image from video stream instead
                 debug('Motion event detected on battery powered camera '+this.deviceId+' snapshot will be updated from live stream')
-                this.getSnapshotFromStream()
+                this.data.snapshot.update = true
                 return 'SnapFromStream'
             } else {
                 // Line powered cameras can take a snapshot while recording, but ring-client-api will return a cached
                 // snapshot if a previous snapshot was taken within 10 seconds. If a motion event occurs during this time
                 // a stale image would be returned so, instead, we call our local function to force an uncached snapshot.
                 debug('Motion event detected for line powered camera '+this.deviceId+', forcing a non-cached snapshot update')
-                return await this.getUncachedSnapshot()
+                await this.device.requestSnapshotUpdate()
+                await utils.sleep(1)
+                const newSnapshot = await this.device.restClient.request({
+                    url: clientApi(`snapshots/image/${this.device.id}`),
+                    responseType: 'buffer'
+                })
+                return newSnapshot
             }
         } else {
-            // If not an active ding it's a scheduled refresh, just call getSnapshot()
+            // If not an active ding it's a scheduled refresh, just call device getSnapshot()
             return await this.device.getSnapshot()
         }
     }
 
-    // Bypass ring-client-api cached snapshot behavior by calling refresh snapshot API directly
-    async getUncachedSnapshot() {
-        await this.device.requestSnapshotUpdate()
-        await utils.sleep(1)
-        const newSnapshot = await this.device.restClient.request({
-            url: clientApi(`snapshots/image/${this.device.id}`),
-            responseType: 'buffer',
-        })
-        return newSnapshot
-    }
-
-    // Refresh snapshot on scheduled interval
-    async scheduleSnapshotRefresh() {
-            this.data.snapshot.intervalTimerId = setInterval(() => {
-                if (this.isOnline() && this.data.snapshot.motion && !this.data.motion.active_ding) {
-                    this.refreshSnapshot()
-                }
-            }, this.data.snapshot.interval * 1000)
-    }
-
-    async getSnapshotFromStream() {
-        // This will trigger P2J to publish one new snapshot from the live stream
-        this.data.livestream.updateSnapshot = true
-
-        // If there's no active live stream, start it, otherwise, extend live stream timeout
-        if (!this.data.livestream.active) {
-            this.startLiveStream()
-        } else {
-            this.data.livestream.expires = Math.floor(Date.now()/1000) + this.data.livestream.duration
-        }
-    }
-
-    // Start P2J server to emit complete JPEG images from livestream
+    // Start P2J server to extract and publish JPEG images from stream
     async startP2J() {
         const p2j = new P2J()
         const p2jPort = await getPort()
@@ -451,12 +488,11 @@ class Camera extends RingPolledDevice {
         p2jServer.listen(p2jPort, 'localhost')
       
         p2j.on('jpeg', (jpegFrame) => {
-            // If updateSnapshot = true then publish the next full JPEG frame as new snapshot
-            if (this.data.livestream.updateSnapshot) {
+            if (this.data.snapshot.update) {
                 this.data.snapshot.currentImage = jpegFrame
                 this.data.snapshot.timestamp = Math.round(Date.now()/1000)
                 this.publishSnapshot()
-                this.data.livestream.updateSnapshot = false
+                this.data.snapshot.update = false
             }
         })
 
@@ -464,56 +500,164 @@ class Camera extends RingPolledDevice {
         return p2jPort
     }
 
-    // Start a live stream and send mjpeg stream to p2j server
-    async startLiveStream() {
-        this.data.livestream.active = true
-
-        // Start a P2J pipeline and server and get the listening TCP port
-        const p2jPort = await this.startP2J()
+    async startRtspReadStream(type, duration) {
+        if (this.data.stream[type].active) { return }
+        this.data.stream[type].active = true
+        let ffmpegProcess
         
-        // Start livestream with MJPEG output directed to P2J server with one frame every 2 seconds 
-        debug('Establishing connection to video stream for camera '+this.deviceId)
-        try {
-            const sipSession = await this.device.streamVideo({
-                output: [
-                    '-y',
-                    '-c:v',
-                    'mjpeg',
-                    '-pix_fmt',
-                    'yuvj422p',
-                    '-f',
-                    'image2pipe',
-                    '-s',
-                    '640:360',
-                    '-r',
-                    '.5',
-                    '-q:v',
-                    '2',
-                    'tcp://localhost:'+p2jPort
-                  ]
-            })
+        // Start stream with MJPEG output directed to P2J server with one frame every 2 seconds 
+        debug(`Starting a ${type} stream for camera `+this.deviceId)
 
-            // If stream starts, set expire time, may be extended by new events
-            this.data.livestream.expires = Math.floor(Date.now()/1000) + this.data.livestream.duration
+        if (type === 'snapshot') {
+            // Start a P2J pipeline and server and get the listening TCP port
+            const p2jPort = await this.startP2J()
+            // Create a low frame-rate MJPEG stream to publish motion snapshots
+            // Process only key frames to keep CPU usage low
+            ffmpegProcess = spawn(pathToFfmpeg, [
+                '-skip_frame',
+                'nokey',
+                '-i',
+                this.data.stream.rtspLocalUrl,
+                '-f',
+                'image2pipe',
+                '-s',
+                '640:360',
+                '-vsync',
+                '0',
+                '-q:v',
+                '2',
+                `tcp://localhost:+${p2jPort}`
+            ])
+        } else {
+            // Keepalive stream is used only when the live stream is started 
+            // manually. It copies only the audio stream to null output just to
+            // trigger rtsp-simple-server to start the on-demand stream and 
+            // keep it running when there are no other RTSP readers.
+            ffmpegProcess = spawn(pathToFfmpeg, [
+                '-i',
+                this.data.stream.rtspLocalUrl,
+                '-map',
+                '0:a:0',
+                '-c:a',
+                'copy',
+                '-f',
+                'null',
+                '-'
+            ])
+        }
 
-            sipSession.onCallEnded.subscribe(() => {
-                debug('Video stream ended for camera '+this.deviceId)
-                this.data.livestream.active = false
-            })
+        ffmpegProcess.on('spawn', async () => {
+            debug(`The ${type} stream for camera ${this.deviceId} has started`)
+        })
 
-            // Don't stop SIP session until current tyime > expire time
-            // Expire time may be extedned by new motion events
-            while (Math.floor(Date.now()/1000) < this.data.livestream.expires) {
-                const sleeptime = (this.data.livestream.expires - Math.floor(Date.now()/1000)) + 1
+        ffmpegProcess.on('close', async () => {
+            this.data.stream[type].active = false
+            debug(`The ${type} stream for camera ${this.deviceId} has stopped`)
+        })
+
+        // If stream starts, set expire time, may be extended by new events
+        // (if only Ring sent events while streaming)
+        this.data.stream[type].expires = Math.floor(Date.now()/1000) + duration
+
+        // Don't stop stream session until current time > expire time
+        // Expire time could be extended by additional motion events, except 
+        // Ring devices don't send motion events while a stream is active so
+        // it won't ever happen!
+        while (Math.floor(Date.now()/1000) < this.data.stream[type].expires) {
+            if (type === 'snapshot') {
+                const sleeptime = (this.data.stream[type].expires - Math.floor(Date.now()/1000)) + 1
                 await utils.sleep(sleeptime)
+            } else {
+                await utils.sleep(5)
+                const pathDetails = await rss.getPathDetails(`${this.deviceId}_live`)
+                if (!pathDetails.sourceReady) {
+                    // If the source stream stops (due to manual cancel or Ring timeout)
+                    // force the keepalive stream to expire
+                    this.data.stream[type].expires = 0
+                }
             }
+        }
 
-            // Stream time has expired, stop the current SIP session
-            sipSession.stop()
+        ffmpegProcess.kill()
+        this.data.stream[type].active = false
+    }
 
-        } catch(e) {
-            debug(e)
-            this.data.livestream.active = false
+    async setStreamState(message) {
+        const command = message.toLowerCase()
+        switch (command) {
+            case 'on':
+                // Stream was manually started, create a dummy, audio only
+                // RTSP source stream to trigger stream startup and keep it active
+                this.startRtspReadStream('keepalive', 86400)
+                break;
+            case 'on-demand':
+                debug('Received set stream state ON for camera '+this.deviceId)
+                debug('Location Id: '+ this.locationId)        
+                if (this.data.stream.status === 'active' || this.data.stream.status === 'activating') {
+                    this.publishStreamState()
+                    return
+                } else {
+                    this.data.stream.status = 'activating'
+                    this.publishStreamState()
+                }
+
+                // Start and publish stream to rtsp-simple-server 
+                debug('Establishing connection to live stream for camera '+this.deviceId)
+                try {
+                    this.data.stream.sipSession = await this.device.streamVideo({
+                        audio: [], video: [],
+                        // The below takes the native AVC video stream from Rings servers and just 
+                        // copies the video stream to the RTPS server unmodified.  However, for
+                        // audio it splits the G.711 μ-law stream into two output streams one
+                        // being converted to AAC audio, and the other just the raw G.711 stream.
+                        // This allows support for playback methods that either don't support AAC
+                        // (e.g. native browser based WebRTC) and provides stong compatibility across
+                        // the various playback technolgies with minimal processing overhead. 
+                        output: [
+                            '-map',
+                            '0:v:0',
+                            '-map',
+                            '0:a:0',
+                            '-map',
+                            '0:a:0',
+                            '-c:v',
+                            'copy',
+                            '-c:a:0',
+                            'aac',
+                            '-c:a:1',
+                            'copy',
+                            '-f',
+                            'rtsp',
+                            this.data.stream.rtspLocalUrl
+                        ]
+                    })
+
+                    this.data.stream.status = 'active'
+                    this.publishStreamState()
+
+                    this.data.stream.sipSession.onCallEnded.subscribe(() => {
+                        debug('Video stream ended for camera '+this.deviceId)
+                        this.data.stream.status = 'inactive'
+                        this.data.stream.sipSession = false
+                        this.publishStreamState()
+                    })
+                } catch(e) {
+                    debug(e)
+                    this.data.stream.status = 'failed'
+                    this.publishStreamState()
+                }
+                break;
+            case 'off':
+                debug('Received set stream state OFF for camera '+this.deviceId)
+                debug('Location Id: '+ this.locationId)        
+                if (this.data.stream.sipSession) {
+                    this.data.stream.sipSession.stop()
+                } else {
+                    this.publishStreamState()
+                }
+                break;
+            default:
+                debug('Received unknown command for stream on camera '+this.deviceId)
         }
     }
 
@@ -539,6 +683,11 @@ class Camera extends RingPolledDevice {
             case 'snapshot_interval/command':
                 if (this.entity.hasOwnProperty(entityKey)) {
                     this.setSnapshotInterval(message)
+                }
+                break;
+            case 'stream/command':
+                if (this.entity.hasOwnProperty(entityKey)) {
+                    this.setStreamState(message)
                 }
                 break;
             default:
@@ -592,8 +741,8 @@ class Camera extends RingPolledDevice {
         debug('Location Id: '+ this.locationId)
         if (isNaN(message)) {
             debug ('Snapshot interval value received but not a number')
-        } else if (!(message >= 10 && message <= 3600)) {
-            debug('Snapshot interval value received but out of range (10-3600)')
+        } else if (!(message >= 10 && message <= 604800)) {
+            debug('Snapshot interval value received but out of range (10-604800)')
         } else {
             this.data.snapshot.interval = Math.round(message)
             this.data.snapshot.autoInterval = false

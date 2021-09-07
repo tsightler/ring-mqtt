@@ -8,6 +8,7 @@ const debug = require('debug')('ring-mqtt')
 const colors = require('colors/safe')
 const utils = require('./lib/utils.js')
 const tokenApp = require('./lib/tokenapp.js')
+const rss = require('./lib/rtsp-simple-server.js')
 const { createHash, randomBytes } = require('crypto')
 const fs = require('fs')
 const SecurityPanel = require('./devices/security-panel')
@@ -49,12 +50,17 @@ process.on('uncaughtException', function(err) {
     processExit(2)
 })
 process.on('unhandledRejection', function(err) {
-    if (err.message.match('token is not valid')) {
-        // Really need to put some kind of retry handler here
-        debug(colors.yellow(err.message))
-    } else {
-        debug(colors.yellow('WARNING - Unhandled Promise Rejection'))
-        console.log(colors.yellow(err))
+    switch(true) {
+        // For these strings suppress the stack trace and only print the message
+        case /token is not valid/.test(err.message):
+        case /https:\/\/github.com\/dgreif\/ring\/wiki\/Refresh-Tokens/.test(err.message):
+        case /error: access_denied/.test(err.message):
+            debug(colors.yellow(err.message))
+            break;
+        default:
+            debug(colors.yellow('WARNING - Unhandled Promise Rejection'))
+            console.log(colors.yellow(err))
+            break;
     }
 })
 
@@ -62,6 +68,7 @@ process.on('unhandledRejection', function(err) {
 async function processExit(exitCode) {
     await utils.sleep(1)
     debug('The ring-mqtt process is shutting down...')
+    rss.shutdown()
     if (ringDevices.length > 0) {
         debug('Setting all devices offline...')
         await utils.sleep(1)
@@ -180,9 +187,9 @@ async function updateRingData(mqttClient, ringClient) {
         debug(colors.green('-'.repeat(80)))
         // If new location, set custom properties and add to location list
         if (ringLocations.find(l => l.locationId == location.locationId)) {
-            debug(colors.green('Existing location: ')+colors.brightBlue(location.name)+colors.white(` (${location.id})`))
+            debug(colors.white('Existing location: ')+colors.green(location.name)+colors.cyan(` (${location.id})`))
         } else {
-            debug(colors.green('New location: ')+colors.brightBlue(location.name)+colors.white(` (${location.id})`))
+            debug(colors.white('New location: ')+colors.green(location.name)+colors.cyan(` (${location.id})`))
             location.isSubscribed = false
             location.isConnected = false
             ringLocations.push(location)
@@ -232,13 +239,13 @@ async function updateRingData(mqttClient, ringClient) {
             }
             
             if (ringDevice) {
-                debug(colors.green(foundMessage)+colors.brightBlue(`${ringDevice.deviceData.name}`)+colors.white(' ('+ringDevice.deviceId+')'))
+                debug(colors.white(foundMessage)+colors.green(`${ringDevice.deviceData.name}`)+colors.cyan(' ('+ringDevice.deviceId+')'))
                 if (ringDevice.device.deviceType === RingDeviceType.Thermostat) {
                     const spacing = ' '.repeat(foundMessage.length-4)
-                    debug(colors.green(`${spacing}│   `)+colors.gray(ringDevice.device.deviceType))
-                    debug(colors.green(`${spacing}├─: `)+colors.brightBlue('Operating Status')+colors.white(` (${ringDevice.operatingStatus.id})`))
-                    debug(colors.green(`${spacing}│   `)+colors.gray(ringDevice.operatingStatus.deviceType))
-                    debug(colors.green(`${spacing}└─: `)+colors.brightBlue('Temperature Sensor')+colors.white(` (${ringDevice.temperatureSensor.id})`))
+                    debug(colors.white(`${spacing}│   `)+colors.gray(ringDevice.device.deviceType))
+                    debug(colors.white(`${spacing}├─: `)+colors.green('Operating Status')+colors.cyan(` (${ringDevice.operatingStatus.id})`))
+                    debug(colors.white(`${spacing}│   `)+colors.gray(ringDevice.operatingStatus.deviceType))
+                    debug(colors.white(`${spacing}└─: `)+colors.green('Temperature Sensor')+colors.cyan(` (${ringDevice.temperatureSensor.id})`))
                     debug(colors.gray(`${spacing}    `+ringDevice.temperatureSensor.deviceType))
                 } else {
                     const spacing = ' '.repeat(foundMessage.length)
@@ -253,7 +260,12 @@ async function updateRingData(mqttClient, ringClient) {
     }
     debug(colors.green('-'.repeat(80)))
     debug('Ring location/device data updated, sleeping for 5 seconds.')
-    await utils.sleep(5)
+    await utils.sleep(2)
+    const cameras = await ringDevices.filter(d => d.device instanceof RingCamera)
+    if (cameras.length > 0 && !rss.started) {
+        await rss.start(cameras)
+    }
+    await utils.sleep(3)
 }
 
 // Publish devices/cameras for given location
@@ -327,14 +339,17 @@ async function processMqttMessage(topic, message, mqttClient, ringClient) {
     if (topic === CONFIG.hass_topic || topic === 'hass/status') {
         debug('Home Assistant state topic '+topic+' received message: '+message)
         if (message == 'online') {
-            // Republish devices and state after 60 seconds if restart of HA is detected
-            debug('Resending device config/state in 30 seconds')
-            // Make sure any existing republish dies
-            republishCount = 0 
-            await utils.sleep(republishDelay+5)
-            // Reset republish counter and start publishing config/state
-            republishCount = 10
-            processLocations(mqttClient, ringClient)
+            // Republish devices and state if restart of HA is detected
+            if (republishCount > 0) {
+                debug('Home Assisntat restart detected during existing republish cycle')
+                debug('Resetting device config/state republish count')
+                republishCount = 6
+            } else {
+                debug('Home Assistant restart detected, resending device config/state in 5 seconds')
+                await utils.sleep(5)
+                republishCount = 6
+                processLocations(mqttClient, ringClient)
+            }
         }
     } else {
         // Parse topic to get location/device ID
@@ -414,19 +429,21 @@ async function initConfig(configFile) {
             "mqtt_user": process.env.MQTTUSER,
             "mqtt_pass": process.env.MQTTPASSWORD,
             "ring_token": process.env.RINGTOKEN,
+            "disarm_code": process.env.DISARMCODE,
+            "beam_duration": process.env.BEAMDURATION,
             "enable_cameras": process.env.ENABLECAMERAS,
             "snapshot_mode": process.env.SNAPSHOTMODE,
+            "livestream_user": process.env.LIVESTREAMUSER,
+            "livestream_pass": process.env.LIVESTREAMPASSWORD,
             "enable_modes": process.env.ENABLEMODES,
             "enable_panic": process.env.ENABLEPANIC,
-            "beam_duration": process.env.BEAMDURATION,
-            "disarm_code": process.env.DISARMCODE,
             "location_ids": process.env.RINGLOCATIONIDS
         }
         if (CONFIG.enable_cameras && CONFIG.enable_cameras != 'true') { CONFIG.enable_cameras = false}
         if (CONFIG.location_ids) { CONFIG.location_ids = CONFIG.location_ids.split(',') }
     }
-    // If Home Assistant addon, try config or environment for MQTT settings
-    if (process.env.ISADDON) {
+    // If Home Assistant addon, always get MQTT settings from environment (set by startup script)
+    if (process.env.RUNMODE === 'addon') {
         CONFIG.host = process.env.MQTTHOST
         CONFIG.port = process.env.MQTTPORT
         CONFIG.mqtt_user = process.env.MQTTUSER
@@ -444,12 +461,19 @@ async function initConfig(configFile) {
     if (!CONFIG.enable_panic) { CONFIG.enable_panic = false }
     if (!CONFIG.beam_duration) { CONFIG.beams_duration = 0 }
     if (!CONFIG.disarm_code) { CONFIG.disarm_code = '' }
+
+    // Make sure MQTT environment variables are set even if only using config file (standalone install)
+    // (these are needed fo start_stream.sh to be able to connect to MQTT broker)
+    process.env.MQTTHOST = CONFIG.host
+    process.env.MQTTPORT = CONFIG.port
+    process.env.MQTTUSER = CONFIG.mqtt_user
+    process.env.MQTTPASSWORD = CONFIG.mqtt_pass
 }
 
 // Save updated refresh token to config or state file
 async function updateToken(newRefreshToken, oldRefreshToken, stateFile, stateData, configFile) {
     if (!oldRefreshToken) { return }
-    if (process.env.ISADDON || process.env.ISDOCKER) {
+    if (process.env.RUNMODE === 'addon' || process.env.RUNMODE === 'docker') {
         stateData.ring_token = newRefreshToken
         fs.writeFile(stateFile, JSON.stringify(stateData, null, 2), (err) => {
             if (err) throw err;
@@ -475,9 +499,9 @@ const main = async(generatedToken) => {
     let mqttClient
 
     // For HASSIO and DOCKER latest token is saved in /data/ring-state.json
-    if (process.env.ISADDON || process.env.ISDOCKER) { 
+    if (process.env.RUNMODE === 'addon' || process.env.RUNMODE === 'docker') { 
         stateFile = '/data/ring-state.json'
-        if (process.env.ISADDON) {
+        if (process.env.RUNMODE === 'addon') {
             configFile = '/data/options.json'
             // For addon config is performed via Web UI
             if (!tokenApp.listener) {
@@ -504,7 +528,7 @@ const main = async(generatedToken) => {
                 stateData.ring_token = generatedToken
             }
         } else {
-            debug('File '+stateFile+' not found. No saved state data available.')
+            debug(colors.brightYellow('File '+stateFile+' not found. No saved state data available.'))
             if (generatedToken) {
                 debug('Using refresh token generated via web UI.')
                 stateData.ring_token = generatedToken
@@ -514,15 +538,15 @@ const main = async(generatedToken) => {
     
     // If no refresh tokens were found, either exit or start Web UI for token generator
     if (!CONFIG.ring_token && !stateData.ring_token) {
-        if (process.env.ISDOCKER) {
-            debug('No refresh token was found in state file and RINGTOKEN is not configured.')
+        if (process.env.RUNMODE === 'docker') {
+            debug(colors.brightRed('No refresh token was found in state file and RINGTOKEN is not configured.'))
             process.exit(2)
         } else {
-            if (process.env.ISADDON) {
-                debug('No refresh token was found in saved state file or config file.')
-                debug('Use the web interface to generate a new token.')
+            if (process.env.RUNMODE === 'addon') {
+                debug(colors.brightRed('No refresh token was found in saved state file or config file.'))
+                debug(colors.brightRed('Use the web interface to generate a new token.'))
             } else {
-                debug('No refresh token was found in config file.')
+                debug(colors.brightRed('Use the web interface to generate a new token.'))
                 tokenApp.start()
             }
         }
@@ -530,7 +554,7 @@ const main = async(generatedToken) => {
         // There is at least one token in state file or config
         // Check if network is up before attempting to connect to Ring, wait if network is not ready
         while (!(await isOnline())) {
-            debug('Network is offline, waiting 10 seconds to check again...')
+            debug(colors.brightYellow('Network is offline, waiting 10 seconds to check again...'))
             await utils.sleep(10)
         }
 
@@ -546,7 +570,7 @@ const main = async(generatedToken) => {
         if (!(CONFIG.location_ids === undefined || CONFIG.location_ids == 0)) {
             ringAuth.locationIds = CONFIG.location_ids
         }
-        ringAuth.controlCenterDisplayName = (process.env.ISADDON) ? 'ring-mqtt-addon' : 'ring-mqtt'
+        ringAuth.controlCenterDisplayName = (process.env.RUNMODE === 'addon') ? 'ring-mqtt-addon' : 'ring-mqtt'
 
         if (!stateData.hasOwnProperty('systemId')) {
             stateData.systemId = (createHash('sha256').update(randomBytes(32)).digest('hex'))
@@ -570,7 +594,7 @@ const main = async(generatedToken) => {
 
         // If Ring API is not already connected, try using refresh token from config file or RINGTOKEN variable
         if (!ringClient && CONFIG.ring_token) {
-            const debugMsg = process.env.ISDOCKER ? 'RINGTOKEN environment variable.' : 'refresh token from file: '+configFile
+            const debugMsg = process.env.RUNMODE === 'docker' ? 'RINGTOKEN environment variable.' : 'refresh token from file: '+configFile
             debug('Attempting connection to Ring API using '+debugMsg)
             ringAuth.refreshToken = CONFIG.ring_token
             try {
@@ -581,7 +605,7 @@ const main = async(generatedToken) => {
                 debug(colors.brightRed(error.message))
                 debug(colors.brightRed('Could not create the API instance. This could be because the Ring servers are down/unreachable'))
                 debug(colors.brightRed('or maybe all available refresh tokens are invalid.'))
-                if (process.env.ISADDON) {
+                if (process.env.RUNMODE === 'addon') {
                     debug('Restart the addon to try again or use the web interface to generate a new token.')
                 } else {
                     debug('Please check the configuration and network settings, or generate a new refresh token, and try again.')
@@ -590,12 +614,12 @@ const main = async(generatedToken) => {
             }
         } else if (!ringClient && !CONFIG.ring_token) {
             // No connection with Ring API using saved token and no configured token to try
-            if (process.env.ISDOCKER) {
-                debug('Could not connect with saved refresh token and RINGTOKEN is not configured.')    
+            if (process.env.RUNMODE === 'docker') {
+                debug(colors.brightRed('Could not connect with saved refresh token and RINGTOKEN is not configured.'))
                 process.exit(2)
-            } else if (process.env.ISADDON) {
-                debug('Could not connect with saved refresh token and no refresh token exist in config file.')
-                debug('Please use the web interface to generate a new token or restart the addon to try the existing token again.')
+            } else if (process.env.RUNMODE === 'addon') {
+                debug(colors.brightRed('Could not connect with saved refresh token and no refresh token exist in config file.'))
+                debug(colors.brightRed('Please use the web interface to generate a new token or restart the addon to try the existing token again.'))
             }
         }
     }
