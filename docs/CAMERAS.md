@@ -1,5 +1,5 @@
 ## Camera Live Streaming
-While ring-mqtt is primarily designed to integrate Ring devices into home automation platforms via MQTT to allow driving automations from those devices, there was high demand to provide live streaming integration as well, especially for Home Assistant users, but also to provide things like on-demand recording.  With the release of version 4.8.0 it is now possible to view live stream from any RTSP compatible client as well as trigger a recording event on a camera based on an automation using MQTT.
+While ring-mqtt is primarily designed to integrate Ring devices into home automation platforms via MQTT to allow driving automations from those devices, there was high demand to provide live streaming integration as well, especially for Home Assistant users, but also to provide things like on-demand recording.  With the release of version 4.8.0 it is now possible to view live streams from any RTSP compatible client as well as trigger a recording event on a camera based on an automation using MQTT.
 
 This document provides detailed information about the live streaming support include how to configure it with Home Assistant or use it with other medial players, as well as some troubleshooting information and known limitations.  If you would like to use the live streaming feature, please read this section carefully.
 
