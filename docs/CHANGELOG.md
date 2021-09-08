@@ -1,3 +1,12 @@
+## v4.8.1
+**Fixed Bugs**
+- Fix tamper entity state not updating on tamper event
+- Fix typo in still image URL (thanks to [aneisch](https://github.com/aneisch)  for the PR)
+
+**Minor Enhancements**
+- Add additional debug message for on-demand stream trigger
+- Update to official rtsp-simple-server 0.17.3 release since bug fixes were rolled upstream
+
 ## v4.8.0
 **New Features**  
 Live Video Streaming is here!  
