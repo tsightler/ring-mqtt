@@ -1,5 +1,5 @@
 ## Camera Live Streaming
-While ring-mqtt is primarily designed to integrate Ring devices into home automation platforms via MQTT to allow driving automations from Ring devices, there was high demand to provide live streaming integration as well, especially for Home Assistant users, but also to provide things like on-demand recording.  With the release of version 4.8.0 it is now possible to view live stream from any RTSP compatible client as well as trigger a recording event on a camera based on an automation using MQTT.
+While ring-mqtt is primarily designed to integrate Ring devices into home automation platforms via MQTT to allow driving automations from those devices, there was high demand to provide live streaming integration as well, especially for Home Assistant users, but also to provide things like on-demand recording.  With the release of version 4.8.0 it is now possible to view live streams from any RTSP compatible client as well as trigger a recording event on a camera based on an automation using MQTT.
 
 This document provides detailed information about the live streaming support include how to configure it with Home Assistant or use it with other medial players, as well as some troubleshooting information and known limitations.  If you would like to use the live streaming feature, please read this section carefully.
 
@@ -23,7 +23,7 @@ The stream_source is the URL required to play the video stream.  To make the cam
 
 The following example is uses a camera called "Front Porch".  The MQTT discovered snapshot camera has a Home Assistant entity ID of **camera.front_porch_snapshot** and the camera device ID is **3452b19184fa** so the attributes in the info sensor are as follows:
 ```
-Still Image URL: http://localhost:8123{{ states.camera.front_porch_snapshot.attributes.entity_picture }}  
+Still Image URL: http://my.ha.instance:8123{{ states.camera.front_porch_snapshot.attributes.entity_picture }}  
 Stream Source:   rtsp://3ba32cf2-ring-mqtt-dev.local.hass.io:8554/3452b19184fa_live
 ```
 To create my generic IP camera in configuration.yaml I just need these lines:
@@ -31,9 +31,11 @@ To create my generic IP camera in configuration.yaml I just need these lines:
 camera:
   - platform: generic
     name: Front Porch Live
-    still_image_url: http://localhost:8123{{ states.camera.front_porch_snapshot.attributes.entity_picture }}
+    still_image_url: http://my.ha.instance:8123{{ states.camera.front_porch_snapshot.attributes.entity_picture }}
     stream_source: rtsp://3ba32cf2-ring-mqtt-dev.local.hass.io:8554/3452b19184fa_live
 ```
+
+Note that the still_image_url is pulled from the local instance API so if you've change the port, enabled SSL, etc, you'll need to use the URL for your Home Assistant instance.  For example, if you access your Home Assistant instance directly via https://myha.mydomain.local/ then the URL would be https://myha.mydomain.local{{ states.camera.front_porch_snapshot.attributes.entity_picture }}.  If you are using SSL, but are generating self-signed certificates, or prefer to access the local instance via localhost instead of your oficially registered URL, you will need to add `verify_ssl: false` to the config as well because your SSL certificate will likely be bound to your hostname and thus won't work with localhost without this.
 
 Once the configuraiton is saved, simply reload the configuration (generic IP camera entities can be reloaded with a full HA restart) and a new camera entity should appear which can now be added to the dashboard via a Picture Glance card.  With no special configuration this should now provide a card that provides still image snapshots based on your snapshot settings, and then, with a click, open a window that starts a live stream of that camera.
 
