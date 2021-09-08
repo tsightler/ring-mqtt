@@ -584,6 +584,8 @@ class Camera extends RingPolledDevice {
 
     async setStreamState(message) {
         const command = message.toLowerCase()
+        debug(`Received set stream state ${message} for camera ${this.deviceId}`)
+        debug(`Location Id: ${this.locationId}`) 
         switch (command) {
             case 'on':
                 // Stream was manually started, create a dummy, audio only
@@ -591,8 +593,6 @@ class Camera extends RingPolledDevice {
                 this.startRtspReadStream('keepalive', 86400)
                 break;
             case 'on-demand':
-                debug('Received set stream state ON for camera '+this.deviceId)
-                debug('Location Id: '+ this.locationId)        
                 if (this.data.stream.status === 'active' || this.data.stream.status === 'activating') {
                     this.publishStreamState()
                     return
@@ -648,8 +648,6 @@ class Camera extends RingPolledDevice {
                 }
                 break;
             case 'off':
-                debug('Received set stream state OFF for camera '+this.deviceId)
-                debug('Location Id: '+ this.locationId)        
                 if (this.data.stream.sipSession) {
                     this.data.stream.sipSession.stop()
                 } else {
