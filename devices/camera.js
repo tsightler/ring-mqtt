@@ -743,6 +743,11 @@ class Camera extends RingPolledDevice {
                     this.setStreamState(message)
                 }
                 break;
+            case 'stream_select/command':
+                if (this.entity.hasOwnProperty(entityKey)) {
+                    this.setStreamSelect(message)
+                }
+                break;
             default:
                 debug('Somehow received message to unknown state topic for camera '+this.deviceId)
         }
@@ -803,6 +808,18 @@ class Camera extends RingPolledDevice {
             this.scheduleSnapshotRefresh()
             this.publishSnapshotInterval()
             debug ('Snapshot refresh interval has been set to '+this.data.snapshot.interval+' seconds')
+        }
+    }
+
+    // Set Stream Select Option
+    setStreamSelect() {
+        debug('Received set video stream to '+message+' for camera '+this.deviceId)
+        debug('Location Id: '+ this.locationId)
+        if (this.entity.stream_select.options.includes(message)) {
+            this.data.stream_select.state = message
+            this.publishStreamState()
+        } else {
+            debug('Set stream to '+message+' received by not a valid value')
         }
     }
 }
