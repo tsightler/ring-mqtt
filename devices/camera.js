@@ -21,7 +21,8 @@ class Camera extends RingPolledDevice {
                 last_ding: 0,
                 last_ding_expires: 0,
                 last_ding_time: 'none',
-                is_person: false
+                is_person: false,
+                detection_enabled: null
             },
             ... this.device.isDoorbot ? { 
                 ding: {
@@ -62,9 +63,20 @@ class Camera extends RingPolledDevice {
                     : `rtsp://localhost:8554/${this.deviceId}_live`
     
             },
-            lightState: null,
-            sirenState: null,
-            motionDetectionEnabled: null
+            stream_select: {
+                state: 'Live',
+                publishedState: null
+            },
+            ...this.device.hasLight ? {
+                light: {
+                    state: null
+                }
+            } : {},
+            ...this.device.hasSiren ? {
+                siren: {
+                    state:null
+                }
+            } : {}
         }
 
         if (this.config.snapshot_mode.match(/^(motion|interval|all)$/)) {
@@ -142,7 +154,7 @@ class Camera extends RingPolledDevice {
                     attributes: true
                 }
             } : {},
-            ...(this.data.snapshot.motion || this.data.snapshot.interval) ? {
+            ...(this.data.snapshot.interval) ? {
                 snapshot_interval: {
                     component: 'number',
                     min: 10,
@@ -352,8 +364,8 @@ class Camera extends RingPolledDevice {
             personDetected: this.data.motion.is_person
         }
         if (this.device.data.settings && typeof this.device.data.settings.motion_detection_enabled !== 'undefined') {
-            this.data.motionDetectionEnabled = this.device.data.settings.motion_detection_enabled
-            attributes.motionDetectionEnabled = this.data.motionDetectionEnabled
+            this.data.motion.detection_enabled = this.device.data.settings.motion_detection_enabled
+            attributes.motionDetectionEnabled = this.data.motion.detection_enabled
         }
         this.publishMqtt(this.entity.motion.json_attributes_topic, JSON.stringify(attributes), true)
     }
@@ -372,20 +384,20 @@ class Camera extends RingPolledDevice {
     async publishPolledState(isPublish) {
         if (this.device.hasLight) {
             const lightState = this.device.data.led_status === 'on' ? 'ON' : 'OFF'
-            if (lightState !== this.data.lightState || isPublish) {
-                this.data.lightState = lightState
-                this.publishMqtt(this.entity.light.state_topic, this.data.lightState, true)
+            if (lightState !== this.data.light.state || isPublish) {
+                this.data.light.state = lightState
+                this.publishMqtt(this.entity.light.state_topic, this.data.light.state, true)
             }
         }
         if (this.device.hasSiren) {
             const sirenState = this.device.data.siren_status.seconds_remaining > 0 ? 'ON' : 'OFF'
-            if (sirenState !== this.data.sirenState || isPublish) {
-                this.data.sirenState = sirenState
-                this.publishMqtt(this.entity.siren.state_topic, this.data.sirenState, true)
+            if (sirenState !== this.data.siren.state || isPublish) {
+                this.data.siren.state = sirenState
+                this.publishMqtt(this.entity.siren.state_topic, this.data.siren.state, true)
             }
         }
 
-        if (this.device.data.settings.motion_detection_enabled !== this.data.motionDetectionEnabled || isPublish) {
+        if (this.device.data.settings.motion_detection_enabled !== this.data.motion.detection_enabled || isPublish) {
             this.publishMotionAttributes()
         }
     }
@@ -433,6 +445,11 @@ class Camera extends RingPolledDevice {
         if (streamState !== this.data.stream.state || isPublish) {
             this.data.stream.state = streamState
             this.publishMqtt(this.entity.stream.state_topic, this.data.stream.state, true)
+        }
+
+        if (this.entity.stream_select.state !== this.entity.stream_select.publishedState) {
+            this.entity.stream_select.publishedState = this.entity.stream_select.state
+            this.publishMqtt(this.entity.stream_select.state_topic, this.data.stream_select.state)
         }
 
         const attributes = { status: this.data.stream.status }
