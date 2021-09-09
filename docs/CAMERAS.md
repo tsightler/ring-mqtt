@@ -17,25 +17,25 @@ camera:
     stream_source: <stream_url>
 ```
 
-Name is the name you want your camera to appear as in the Home Assistant UI.  The still_image_url can be an automatically updating image, so in the configuration below we will use a value template to pull the current snapshot image delivered via MQTT using the Home Assistant camera proxy API as this way when using the picture glance card the still image will be the most recent snapshot, while clicking the image will open a live stream.  Using this requires enabling snapshot support in the addon as well and works best with interval.  Note that you can also use any still image you wish.
+Name is the name you want your camera to appear as in the Home Assistant UI.  You can use a URL to any image for the still_image_url but the suggested configuraiton is to enable the snapshot feature in the addon and use the camera proxy so you get a nice, automatically updating still image.  The configuration example below does exactly that, it shows how to use a value template to pull the current MQTT snapshot image using the Home Assistant camera proxy API.  Using this setup the picture glance card will display the most recent snapshot and simply clicking the image will open a live stream.
 
-The stream_source is the URL required to play the video stream.  To make the camera setup as easy as possible ring-mqtt attempts to guess the required entries and includes them as attributes in the camera info sensor.  Simply open the camera device in Home Assistant, select the Info sensor entity, and the open the attributes and there will be a stream source and still image URL entry that you can copy and paste to create your config.  Alternately, you can find the attributes using the Developer Tools portion of the UI and finding the info sensor entity for the camera.
+The stream_source is the URL required to play the video stream.  To make the camera setup as easy as possible ring-mqtt attempts to guess the required entries and includes them as attributes in the camera info sensor.  Simply open the camera device in Home Assistant, select the Info sensor entity, and the open the attributes and there will be a stream source and still image URL entry that you can copy and paste to create your config.  Alternately, you can find the attributes using the Developer Tools portion of the UI and finding the info sensor entity for the camera.  While the addon makes efforts to "guess" the correct URL, because the addon runs as a docker container, it has limited infomration to build the URL so you will probably have to tweak it slightly.  When running as an addon on supervised HA, it does attempt to query the API to get more information, but it still may not get exact port and other data correct.
 
 The following example is uses a camera called "Front Porch".  The MQTT discovered snapshot camera has a Home Assistant entity ID of **camera.front_porch_snapshot** and the camera device ID is **3452b19184fa** so the attributes in the info sensor are as follows:
 ```
-Still Image URL: http://my.ha.instance:8123{{ states.camera.front_porch_snapshot.attributes.entity_picture }}  
-Stream Source:   rtsp://3ba32cf2-ring-mqtt-dev.local.hass.io:8554/3452b19184fa_live
+Still Image URL: http://<MY_HA_HOSTNAME>:8123{{ states.camera.front_porch_snapshot.attributes.entity_picture }}  
+Stream Source:   rtsp://03cabcc9-ring-mqtt:8554/3452b19184fa_live
 ```
-To create my generic IP camera in configuration.yaml I just need these lines:
+To create the generic IP camera in configuration.yaml simple enter the lines as follows:
 ```
 camera:
   - platform: generic
     name: Front Porch Live
-    still_image_url: http://my.ha.instance:8123{{ states.camera.front_porch_snapshot.attributes.entity_picture }}
-    stream_source: rtsp://3ba32cf2-ring-mqtt-dev.local.hass.io:8554/3452b19184fa_live
+    still_image_url: http://<MY_HA_HOSTNAME>:8123{{ states.camera.front_porch_snapshot.attributes.entity_picture }}
+    stream_source: rtsp://03cabcc9-ring-mqtt:8554/3452b19184fa_live
 ```
 
-Note that the still_image_url is pulled from the local instance API so if you've change the port, enabled SSL, etc, you'll need to use the URL for your Home Assistant instance.  For example, if you access your Home Assistant instance directly via https://myha.mydomain.local/ then the URL would be https://myha.mydomain.local{{ states.camera.front_porch_snapshot.attributes.entity_picture }}.  If you are using SSL, but are generating self-signed certificates, or prefer to access the local instance via localhost instead of your oficially registered URL, you will need to add `verify_ssl: false` to the config as well because your SSL certificate will likely be bound to your hostname and thus won't work with localhost without this.
+Note that the still_image_url uses the guessed hostname and/or localhost.  This could work in many cases, but if you've enabled SSL, changed the default port, etc, you'll need to use the URL for your Home Assistant instance.  For example, if you access your Home Assistant instance directly via https://myha.mydomain.local/ then the URL would be https://myha.mydomain.local{{ states.camera.front_porch_snapshot.attributes.entity_picture }}.  If you are using SSL, but are generating self-signed certificates, or prefer to access the local instance via localhost instead of your oficially registered URL, you will need to add `verify_ssl: false` to the config as well because your SSL certificate will likely be bound to your hostname and thus attempting to use localhost will generate an SSL hostname mismatch otherwise.
 
 Once the configuraiton is saved, simply reload the configuration (generic IP camera entities can be reloaded with a full HA restart) and a new camera entity should appear which can now be added to the dashboard via a Picture Glance card.  With no special configuration this should now provide a card that provides still image snapshots based on your snapshot settings, and then, with a click, open a window that starts a live stream of that camera.
 
