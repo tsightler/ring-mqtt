@@ -1,3 +1,7 @@
+## v4.8.2
+**Fixed Bugs**
+- Bump ring-client-api to 9.21.2 to address issue with error on toggling camera lights on/off
+
 ## v4.8.1
 **Fixed Bugs**
 - Fix tamper entity state not updating on tamper events

@@ -96,6 +96,27 @@ class Camera extends RingPolledDevice {
                 attributes: true,
                 icon: 'mdi:cctv'
             },
+            stream_select: {
+                component: 'select',
+                options: [
+                    'Live',
+                    'Motion 1',
+                    'Motion 2',
+                    'Motion 3',
+                    'Motion 4',
+                    'Motion 5',
+                    'Ding 1',
+                    'Ding 2',
+                    'Ding 3',
+                    'Ding 4',
+                    'Ding 5',
+                    'On-demand 1',
+                    'On-demand 2',
+                    'On-demand 3',
+                    'On-demand 4',
+                    'On-demand 5'
+                ]
+            },
             ...this.device.isDoorbot ? {
                 ding: {
                     component: 'binary_sensor',

@@ -51,9 +51,9 @@ class RingDevice {
             // will also get legacy device name generation (i.e. no name suffix either). However,
             // automatic name generation can also be completely overridden with entity 'name' parameter.
             //
-            // I know the below will offend the sensibilities of some people, especially with regards
-            // to formatting, but, for whatever reason, my brain reads through it linerarly and parses
-            // the logic out easily, so I went with it.
+            // I know the code below will offend the sensibilities of some people, especially with
+            // regards to formatting, but, for whatever reason, my brain reads through it linerarly 
+            // and parses the logic out easily, so I've decided I can live with it.
             let discoveryMessage = {
                 ... entity.hasOwnProperty('name')
                     ? { name: entity.name }
@@ -70,7 +70,7 @@ class RingDevice {
                     : entity.component === 'climate'
                         ? { mode_state_topic: entityStateTopic }
                         : { state_topic: entityStateTopic },
-                ... entity.component.match(/^(switch|number|light|fan|lock|alarm_control_panel)$/)
+                ... entity.component.match(/^(switch|number|light|fan|lock|alarm_control_panel|select)$/)
                     ? { command_topic: `${entityTopic}/command` } : {},
                 ... entity.hasOwnProperty('device_class')
                     ? { device_class: entity.device_class } : {},
@@ -124,6 +124,8 @@ class RingDevice {
                         temperature_state_topic: `${entityTopic}/temperature_state`,
                         temperature_command_topic: `${entityTopic}/temperature_command`,
                         temperature_unit: 'C' } : {},
+                ... entity.component === 'select'
+                        ? { option: entity.options } : {},
                 availability_topic: this.availabilityTopic,
                 payload_available: 'online',
                 payload_not_available: 'offline',
