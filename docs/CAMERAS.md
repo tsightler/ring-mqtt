@@ -66,28 +66,28 @@ Note that turning the stream off ALWAYS stops the live stream immediately, no ma
 
 ### FAQ
 
-**Q)** Why do streams keep running for 5+ minutes after viewing them in Home Assistant
+**Q) Why do streams keep running for 5+ minutes after viewing them in Home Assistant** 
 **A)** Home Assistant keeps streams running in the background for ~5 minutes even when they are no longer viewed.  It's always possible to stop streams manually using the stream switch.
 
-**Q)** Streams keep starting all the time even when I'm not viewing
+**Q) Streams keep starting all the time even when I'm not viewing anything**  
 **A)** In Home Assistant, do not use the "Preload Stream" option and make server Camera View is set to "auto" instead of "live" in the picture glance card.  These other options attempt to start streams in the background for faster startup.  Because Ring cameras do not send motion events during streams, having streams running all the time will cause motion events to be missed.
 
-**Q)** Why does the live stream stop after ~10 minutes?  
+**Q) Why does the live stream stop after ~10 minutes?**  
 **A)** Ring enforces a time limit on active live streams and terminates them, typically at approximately 10 minutes, although sometimes significantly less and sometimes a little more.  Currently, you'll need to refresh to manually start the stream again but it is NOT recommended to attempt to stream 24 hours.  I say currently because Ring has hinted that continuous live streaming is something they are working on, but, for now, the code honors the exiting limits and does not just immediately retry as, otherwise, they may block access to their API completely.
 
-**Q)** Why is the stream delayed/lagged?  
+**Q) Why is the stream delayed/lagged?**    
 **A)** Likely this is due to the streaming technology used by Home Assistant that fully streams over HTTP/HTTPS.  While the technology is extremely reliable and widely compatible with various web browsers and network setups, it typically adds betwee 4-6 seconds of delay and sometimes as many as 10-15 seconds.  The best solution for Home Assistant is to use a card like the excellent [WebRTC Camera](https://github.com/AlexxIT/WebRTC) which will allow you to use your browser native video capabilities, although this technology will like require special configuration if you want to play back while outside of your network without using a VPN.  However, when configured, it provides typically 1 second or less delay (can be as little as .5 seconds) so it's the best option when available.
 
-**Q)** Why do I have video artifacts and/or stuttering in the stream?  
+**Q) Why do I have video artifacts and/or stuttering in the stream?**   
 **A)** The live stream from Ring uses UDP to send the packets and is currently processed by ring-client-api inside of the NodeJS process before being sent via a pipe to ffmpeg.  While Node is fast for running an interpreted language like Javascript, it's still not exactly the most efficient for real-time stream processing so you need a reasonable amount of CPU and is sensitive to latency.  Having a reasonable amount of CPU and a solid netwokring that does not drop UDP packets is critical to reliable function of the live stream.  If you have mulitple cameras, or a system with limited CPU/RAM (RPi3 for example) then you should limit concurrent live streams to just a few at a time for the most stable video.
 
-**Q)** Why do I see high memory usage?  
+**Q) Why do I see high memory usage?**  
 **A)** Support for live streaming uses rtsp-simple-server, which is a binary process running in additional to the normal node process used by ring-mqtt.  When idle, this process uses very minimal memory (typically <20MB).  Also, every stream has at least one FFmpeg process to process the incoming stream and publish it to the server.  Total memory usage is typically about 25-30MB per each active stream on top of the base memory usage of the addon.  Also, when using Home Assistant, the Home Assistant memory usage will also increase for each stream.
 
-**Q)** Why are there no motion events while live streaming?  
+**Q) Why are there no motion events while live streaming?**  
 **A)** This is a limitaiton of Ring cameras as they do not detect/send motion events while a stream/recording is active.  The code itself has no limitations in this regard.
 
-**Q)** Why do I have so many recordings on my Ring App?  
+**Q) Why do I have so many recordings on my Ring App?**  
 **A)** Ring "live streams" are actually recording sessions as well, so every time you start a live view of your camera you will get a recording on the Ring app.
 
 ### How it works - the gory details
