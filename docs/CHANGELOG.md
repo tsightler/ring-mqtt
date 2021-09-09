@@ -1,11 +1,17 @@
 ## v4.8.1
 **Fixed Bugs**
-- Fix tamper entity state not updating on tamper event
-- Fix typo in still image URL (thanks to [aneisch](https://github.com/aneisch)  for the PR)
+- Fix tamper entity state not updating on tamper events
+- Fix typo in still image URL (thanks to [aneisch](https://github.com/aneisch) for the PR!)
 
 **Minor Enhancements**
 - Add additional debug message for on-demand stream trigger
-- Update to official rtsp-simple-server 0.17.3 release since bug fixes were rolled upstream
+- Small enhancement to still image and stream URL generation to hopefully make a slightly better "guess"
+- Monitor legacy hassio/status topic for birth/last will messages to inform of HA restarts for users with setups still using older defaults
+
+**Other Changes**
+- Update to rtsp-simple-server 0.17.3, hopefully slightly reduces stream startup time
+- Minor tweak to docker image to allow running under Docker as non-root user.  Requires adding S6_READ_ONLY_ROOT=1 to docker run environment.
+- Documentation tweaks to clarify camera setup steps, especially for still image URL.
 
 ## v4.8.0
 **New Features**  
