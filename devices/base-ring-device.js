@@ -125,7 +125,7 @@ class RingDevice {
                         temperature_command_topic: `${entityTopic}/temperature_command`,
                         temperature_unit: 'C' } : {},
                 ... entity.component === 'select'
-                        ? { option: entity.options } : {},
+                        ? { options: entity.options } : {},
                 availability_topic: this.availabilityTopic,
                 payload_available: 'online',
                 payload_not_available: 'offline',
