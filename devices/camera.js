@@ -447,8 +447,8 @@ class Camera extends RingPolledDevice {
             this.publishMqtt(this.entity.stream.state_topic, this.data.stream.state, true)
         }
 
-        if (this.entity.stream_select.state !== this.entity.stream_select.publishedState) {
-            this.entity.stream_select.publishedState = this.entity.stream_select.state
+        if (this.data.stream_select.state !== this.data.stream_select.publishedState) {
+            this.data.stream_select.publishedState = this.data.stream_select.state
             this.publishMqtt(this.entity.stream_select.state_topic, this.data.stream_select.state)
         }
 
