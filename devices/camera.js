@@ -812,7 +812,7 @@ class Camera extends RingPolledDevice {
     }
 
     // Set Stream Select Option
-    setStreamSelect() {
+    setStreamSelect(message) {
         debug('Received set video stream to '+message+' for camera '+this.deviceId)
         debug('Location Id: '+ this.locationId)
         if (this.entity.stream_select.options.includes(message)) {
