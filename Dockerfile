@@ -46,7 +46,7 @@ RUN apk add --no-cache tar git libcrypto1.1 libssl1.1 musl-utils musl bash curl 
     ln -s /usr/lib/bashio/bashio /usr/bin/bashio && \
     chmod +x /app/ring-mqtt/scripts/*.sh && \
     mkdir /data && \
-    chmod 777 /data /app && \
+    chmod 777 /data /app /run && \
     cd /app/ring-mqtt && \
     chmod +x ring-mqtt.js && \
     npm install && \

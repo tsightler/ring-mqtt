@@ -34,6 +34,10 @@ git --version
 echo "-------------------------------------------------------"
 
 if [ "${RUNMODE}" = "addon" ]; then
+    # Export a few helper variables for building the Streaming and Still Image URLs
+    export HAHOSTNAME=$(bashio::info.hostname)
+    export ADDONHOSTNAME=$HOSTNAME
+
     # Setup the MQTT environment options based on addon configuration settings
     export MQTTHOST=$(bashio::config "mqtt_host")
     export MQTTPORT=$(bashio::config "mqtt_port")

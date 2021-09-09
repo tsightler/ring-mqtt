@@ -56,7 +56,11 @@ class Camera extends RingPolledDevice {
                     active: false, 
                     expires: 0
                 }, 
-                sipSession: null
+                sipSession: null,
+                rtspPublishUrl: (this.config.livestream_user && this.config.livestream_pass)
+                    ? `rtsp://${this.config.livestream_user}:${this.config.livestream_pass}@localhost:8554/${this.deviceId}_live`
+                    : `rtsp://localhost:8554/${this.deviceId}_live`
+    
             },
             lightState: null,
             sirenState: null,
@@ -187,14 +191,27 @@ class Camera extends RingPolledDevice {
             this.data.ding.last_ding_time = lastDingDate ? utils.getISOTime(lastDingDate) : ''
         }
 
+        let stillImageUrlBase = 'localhost'
+        let streamSourceUrlBase
+        if (process.env.RUNMODE === 'addon') {
+            // For the addon we get some values populated from the startup script
+            // that queries the HA API via bashio
+            stillImageUrlBase = process.env.HAHOSTNAME
+            streamSourceUrlBase = process.env.ADDONHOSTNAME
+        } else if (process.env.RUNMODE === 'docker') {
+            // For docker we don't have any API to query so we just use the IP of the docker container
+            // since it probably doesn't have a DNS entry
+            streamSourceUrlBase = await utils.getHostIp()
+        } else {
+            // For the stadalone install we try to get the host FQDN
+            streamSourceUrlBase = await utils.getHostFqdn()
+        }
+
         // Set some helper attributes for streaming
-        this.data.stream.stillImageURL = `http://localhost:8123{{ states.camera.${this.device.name.toLowerCase().replace(" ","_")}_snapshot.attributes.entity_picture }}`,
+        this.data.stream.stillImageURL = `https://${stillImageUrlBase}:8123{{ states.camera.${this.device.name.toLowerCase().replace(" ","_")}_snapshot.attributes.entity_picture }}`,
         this.data.stream.streamSource = (this.config.livestream_user && this.config.livestream_pass)
-            ? `rtsp://${this.config.livestream_user}:${this.config.livestream_pass}@${await utils.getHostFqdn()}:8554/${this.deviceId}_live`
-            : `rtsp://${await utils.getHostFqdn()}:8554/${this.deviceId}_live`,
-        this.data.stream.rtspLocalUrl = (this.config.livestream_user && this.config.livestream_pass)
-            ? `rtsp://${this.config.livestream_user}:${this.config.livestream_pass}@localhost:8554/${this.deviceId}_live`
-            : `rtsp://localhost:8554/${this.deviceId}_live`
+            ? `rtsp://${this.config.livestream_user}:${this.config.livestream_pass}@${streamSourceUrlBase}:8554/${this.deviceId}_live`
+            : `rtsp://${streamSourceUrlBase}:8554/${this.deviceId}_live`
     }
 
     // Publish camera capabilities and state and subscribe to events
@@ -517,7 +534,7 @@ class Camera extends RingPolledDevice {
                 '-skip_frame',
                 'nokey',
                 '-i',
-                this.data.stream.rtspLocalUrl,
+                this.data.stream.rtspPublishUrl,
                 '-f',
                 'image2pipe',
                 '-s',
@@ -535,7 +552,7 @@ class Camera extends RingPolledDevice {
             // keep it running when there are no other RTSP readers.
             ffmpegProcess = spawn(pathToFfmpeg, [
                 '-i',
-                this.data.stream.rtspLocalUrl,
+                this.data.stream.rtspPublishUrl,
                 '-map',
                 '0:a:0',
                 '-c:a',
@@ -628,7 +645,7 @@ class Camera extends RingPolledDevice {
                             'copy',
                             '-f',
                             'rtsp',
-                            this.data.stream.rtspLocalUrl
+                            this.data.stream.rtspPublishUrl
                         ]
                     })
 
