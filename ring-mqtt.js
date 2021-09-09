@@ -336,7 +336,7 @@ async function processLocations(mqttClient, ringClient) {
 // Process received MQTT command
 async function processMqttMessage(topic, message, mqttClient, ringClient) {
     message = message.toString()
-    if (topic === CONFIG.hass_topic || topic === 'hass/status') {
+    if (topic === CONFIG.hass_topic || topic === 'hass/status' || topic === 'hassio/status') {
         debug('Home Assistant state topic '+topic+' received message: '+message)
         if (message == 'online') {
             // Republish devices and state if restart of HA is detected
@@ -646,8 +646,9 @@ const main = async(generatedToken) => {
             }
             // Monitor configured/default Home Assistant status topic
             mqttClient.subscribe(CONFIG.hass_topic)
-            // Monitor legacy Home Assistant status topic
+            // Monitor legacy Home Assistant status topics
             mqttClient.subscribe('hass/status')
+            mqttClient.subscribe('hassio/status')
             startMqtt(mqttClient, ringClient)
         } catch (error) {
             debug(error)
