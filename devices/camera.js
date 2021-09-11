@@ -57,7 +57,7 @@ class Camera extends RingPolledDevice {
                     active: false, 
                     expires: 0
                 }, 
-                sipSession: null,
+                session: false,
                 rtspPublishUrl: (this.config.livestream_user && this.config.livestream_pass)
                     ? `rtsp://${this.config.livestream_user}:${this.config.livestream_pass}@localhost:8554/${this.deviceId}_live`
                     : `rtsp://localhost:8554/${this.deviceId}_live`
@@ -655,62 +655,66 @@ class Camera extends RingPolledDevice {
                     this.data.stream.status = 'activating'
                     this.publishStreamState()
                 }
-
-                // Start and publish stream to rtsp-simple-server 
-                debug('Establishing connection to live stream for camera '+this.deviceId)
-                try {
-                    this.data.stream.sipSession = await this.device.streamVideo({
-                        audio: [], video: [],
-                        // The below takes the native AVC video stream from Rings servers and just 
-                        // copies the video stream to the RTPS server unmodified.  However, for
-                        // audio it splits the G.711 μ-law stream into two output streams one
-                        // being converted to AAC audio, and the other just the raw G.711 stream.
-                        // This allows support for playback methods that either don't support AAC
-                        // (e.g. native browser based WebRTC) and provides stong compatibility across
-                        // the various playback technolgies with minimal processing overhead. 
-                        output: [
-                            '-map',
-                            '0:v:0',
-                            '-map',
-                            '0:a:0',
-                            '-map',
-                            '0:a:0',
-                            '-c:v',
-                            'copy',
-                            '-c:a:0',
-                            'aac',
-                            '-c:a:1',
-                            'copy',
-                            '-f',
-                            'rtsp',
-                            this.data.stream.rtspPublishUrl
-                        ]
-                    })
-
-                    this.data.stream.status = 'active'
-                    this.publishStreamState()
-
-                    this.data.stream.sipSession.onCallEnded.subscribe(() => {
-                        debug('Video stream ended for camera '+this.deviceId)
-                        this.data.stream.status = 'inactive'
-                        this.data.stream.sipSession = false
-                        this.publishStreamState()
-                    })
-                } catch(e) {
-                    debug(e)
-                    this.data.stream.status = 'failed'
-                    this.publishStreamState()
-                }
+                this.startLiveStream()
                 break;
             case 'off':
-                if (this.data.stream.sipSession) {
-                    this.data.stream.sipSession.stop()
+                if (this.data.stream.session) {
+                    this.data.stream.session.stop()
                 } else {
                     this.publishStreamState()
                 }
                 break;
             default:
                 debug('Received unknown command for stream on camera '+this.deviceId)
+        }
+    }
+
+    async startLiveStream() {
+        // Start and publish stream to rtsp-simple-server 
+        debug('Establishing connection to live stream for camera '+this.deviceId)
+        try {
+            this.data.stream.session = await this.device.streamVideo({
+                audio: [], video: [],
+                // The below takes the native AVC video stream from Rings servers and just 
+                // copies the video stream to the RTPS server unmodified.  However, for
+                // audio it splits the G.711 μ-law stream into two output streams one
+                // being converted to AAC audio, and the other just the raw G.711 stream.
+                // This allows support for playback methods that either don't support AAC
+                // (e.g. native browser based WebRTC) and provides stong compatibility across
+                // the various playback technolgies with minimal processing overhead. 
+                output: [
+                    '-map',
+                    '0:v:0',
+                    '-map',
+                    '0:a:0',
+                    '-map',
+                    '0:a:0',
+                    '-c:v',
+                    'copy',
+                    '-c:a:0',
+                    'aac',
+                    '-c:a:1',
+                    'copy',
+                    '-f',
+                    'rtsp',
+                    this.data.stream.rtspPublishUrl
+                ]
+            })
+
+            this.data.stream.status = 'active'
+            this.publishStreamState()
+
+            this.data.stream.session.onCallEnded.subscribe(() => {
+                debug('Video stream ended for camera '+this.deviceId)
+                this.data.stream.status = 'inactive'
+                this.data.stream.session = false
+                this.publishStreamState()
+            })
+        } catch(e) {
+            debug(e)
+            this.data.stream.status = 'failed'
+            this.data.stream.session = false
+            this.publishStreamState()
         }
     }
 
