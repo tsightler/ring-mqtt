@@ -59,8 +59,8 @@ When this option is set, upon starting the Docker container the startup script w
 
 To revert to the code in the Docker image simply run the container without the BRANCH setting.
 
-### Standard Install
-Stanard installation is fully supported, please make sure Node.js is installed (tested with 12.18.x but should work on 10.x and higher) on your system and then clone this repo:
+### Standard Install 
+Stanard installation is supported, but note that this method is not tested regularly, it's hightly recommended to use the Docker install method where possible.  Please make sure Node.js is installed and is at least version 14.17.0 (latest LTS is recommended in most cases, but at least 14.17.0 is a hard requirement if you expect to use streaming support).  Once all of the pre-requisites are met clone this repo:
 
 `git clone https://github.com/tsightler/ring-mqtt.git`
 
@@ -73,7 +73,7 @@ npm install
 
 This will install all required dependencies.  Edit config.js to configure your Ring refresh token and MQTT broker connection information and any other settings (see [Config Options](#config-options).  Note that the user the script runs as will need permission to write the config.json as, for the standalone version of the script, updated refresh tokens are written directly to the config.json file.
 
-To support live video streaming you will need to have a copy of rtsp-simple-server installed.  I normally recommend installing this into /usr/local/bin, but anywhere in the defined system PATH is acceptable.  You can download the lastest binary release for your platform from the [rtsp-simple-server project](https://github.com/aler9/rtsp-simple-server).
+To support live video streaming you will need to have a copy of rtsp-simple-server 0.17.3 or newer installed as well as the mosquitto clients (mosquitto_sub/moquitto_pub) for your distribution of choice.  I normally recommend installing rtsp-simple-server into /usr/local/bin, but anywhere in the system PATH is acceptable.  You can download the lastest binary release for your platform from the [rtsp-simple-server project](https://github.com/aler9/rtsp-simple-server).
 
 #### Config Options
 | Config Option | Description | Default |
@@ -265,9 +265,9 @@ MQTT topics are built consistently during each startup.  The easiest way to dete
 By default the script should produce no console output, however, the debug output is available by leveraging the terrific [debug](https://www.npmjs.com/package/debug) package.  To get debug output simply set the DEBUG environment variable as appropriate on the run command.
 **Note** Debugging output for ring-mqtt is enabled by default in Docker builds
 
-**Debug messages from ring-mqtt only**\
+**Debug messages from ring-mqtt and sub-components (this is the most useful for debugging issues)**\
 This option is also useful when using the script with external MQTT tools as it dumps all discovered sensors and their topics.  Also allows you to monitor sensor states in real-time on the console.\
-```DEBUG=ring-mqtt```
+```DEBUG=ring-*```
 
 **Debug messages from all modules** (Warning, this very verbose!)\
 ```DEBUG=*```

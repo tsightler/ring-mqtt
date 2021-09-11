@@ -12,7 +12,7 @@ If you are using the Ring Devices Addon for Home Assistant, and the issue you ar
 https://github.com/tsightler/ring-mqtt-ha-addon
 
 ** Describe the bug **
-A clear and concise description of what the bug is.  Please enter a brief summary of the issue in the title above as well.
+A clear and concise description of the issue.  Please enter a brief summary of the issue in the title above as well.
 
 **Debug Logs**
-To effectively troubleshoot the issue logs will generally be required.  Please run the script with DEBUG=ring-mqtt enabled and post any relevant output here.
+Nearly the only way to effectively troubleshoot most issues is to review the logs, without this, we'll mostly just be guessing at the problem.  Please run the script with DEBUG=ring-* enabled (note this is enabled by default for the addon and Docker) and post any relevant output here, or, if you are uncomfortable posting them publicly, which I certainly understand, you can send them, or a link to downloda them, to my personal email which is the same as my github username at gmail.
