@@ -265,9 +265,9 @@ MQTT topics are built consistently during each startup.  The easiest way to dete
 By default the script should produce no console output, however, the debug output is available by leveraging the terrific [debug](https://www.npmjs.com/package/debug) package.  To get debug output simply set the DEBUG environment variable as appropriate on the run command.
 **Note** Debugging output for ring-mqtt is enabled by default in Docker builds
 
-**Debug messages from ring-mqtt only**\
+**Debug messages from ring-mqtt and sub-components (this is the most useful for debugging issues)**\
 This option is also useful when using the script with external MQTT tools as it dumps all discovered sensors and their topics.  Also allows you to monitor sensor states in real-time on the console.\
-```DEBUG=ring-mqtt```
+```DEBUG=ring-*```
 
 **Debug messages from all modules** (Warning, this very verbose!)\
 ```DEBUG=*```
