@@ -46,34 +46,34 @@ while read -u 10 message
 do
     # If start message received, publish the command to start stream
     if [ ${message} = "START" ]; then
-        echo -e "${green}[${client_name}]${reset} Activating live stream via topic ${blue}${command_topic}${reset}"
+        echo -e "${green}[${client_name}]${reset} Activating stream via topic ${blue}${command_topic}${reset}"
         mosquitto_pub -i "${client_id}_pub" -u "${MQTTUSER}" -P "${MQTTPASSWORD}" -h "${MQTTHOST}" -p "${MQTTPORT}" -t "${command_topic}" -m "ON-DEMAND"
     else
         # Otherwise it should be a JSON message from the stream state attribute topic so extract the detailed stream state
         stream_state=`echo ${message} | jq -r '.status'`
         case ${stream_state,,} in
             activating)
-                echo -e "${green}[${client_name}]${reset} Camera live stream is activating..."
+                echo -e "${green}[${client_name}]${reset} Camera stream is activating..."
                 ;;
             active)
-                echo -e "${green}[${client_name}]${reset} Camera live stream successfully activated!"
+                echo -e "${green}[${client_name}]${reset} Camera stream successfully activated!"
                 ;;
             inactive)
-                echo -e "${green}[${client_name}]${yellow} Camera live stream has gone inactive, exiting...${reset}"
+                echo -e "${green}[${client_name}]${yellow} Camera stream has gone inactive, exiting...${reset}"
                 reason='inactive'
                 ctrl_c
                 ;;
             failed)
-                echo -e "${green}[${client_name}]${red} ERROR - Camera live stream failed to activate, exiting...${reset}"
+                echo -e "${green}[${client_name}]${red} ERROR - Camera stream failed to activate, exiting...${reset}"
                 reason='failed'
                 ctrl_c
                 ;;
             *)
-                echo -e "${green}[${client_name}]${red} ERROR - Unknown live stream state received on topic ${blue}${json_attribute_topic}${reset}"
+                echo -e "${green}[${client_name}]${red} ERROR - Unknown stream state received on topic ${blue}${json_attribute_topic}${reset}"
                 ;;
         esac
     fi
-done 10< <(mosquitto_sub -q 1 -i "${client_id}_sub" -u "${MQTTUSER}" -P "${MQTTPASSWORD}" -h "${MQTTHOST}" -p "${MQTTPORT}" -t "${json_attribute_topic}" & (sleep .1; echo "START"))
+done 10< <(mosquitto_sub -q 1 -i "${client_id}_sub" -u "${MQTTUSER}" -P "${MQTTPASSWORD}" -h "${MQTTHOST}" -p "${MQTTPORT}" -t "${json_attribute_topic}" & (sleep .025; echo "START"))
 
 ctrl_c
 exit 0

@@ -698,10 +698,11 @@ class Camera extends RingPolledDevice {
     }
 
     async startRecordedStream() {
-        let recordingUrl
+        let recordingUrl, ffmpegProcess
         const streamSelect = this.data.stream_select.state.split(' ')
-        const kind = streamSelect[0].toLowerCase()
+        const kind = streamSelect[0].toLowerCase().replace('-', '_')
         const index = streamSelect[1]
+
         debug(`Streaming the${(index==1?" ":index==2?"2nd ":index==3?"3rd ":index+"th ")}most recent ${kind} recording`)
         try {
             const events = ((await this.device.getEvents({ limit: 10, kind: 'ding' })).events).filter(event => event.recording_status === 'ready')
@@ -723,6 +724,15 @@ class Camera extends RingPolledDevice {
             '-rtsp_transport', 'tcp',
             this.data.stream.rtspPublishUrl
         ])
+
+        ffmpegProcess.on('spawn', async () => {
+            debug(`The recorded ${kind} stream for camera ${this.deviceId} has started`)
+        })
+
+        ffmpegProcess.on('close', async () => {
+            this.data.stream[type].active = false
+            debug(`The recorded ${kind} stream for camera ${this.deviceId} has stopped`)
+        })
     }
 
     // Process messages from MQTT command topic
