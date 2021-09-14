@@ -713,6 +713,7 @@ class Camera extends RingPolledDevice {
         }
 
         ffmpegProcess = spawn(pathToFfmpeg, [
+            '-re',
             '-i', recordingUrl,
             '-map', '0:v:0',
             '-map', '0:a:0',
