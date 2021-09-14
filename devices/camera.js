@@ -645,6 +645,7 @@ class Camera extends RingPolledDevice {
                 if (this.data.stream.session) {
                     this.data.stream.session.stop()
                 } else {
+                    this.data.stream.status = 'inactive'
                     this.publishStreamState()
                 }
                 break;
@@ -700,7 +701,27 @@ class Camera extends RingPolledDevice {
         const streamSelect = this.data.stream_select.state.split(' ')
         const kind = streamSelect[0].toLowerCase()
         const index = streamSelect[1]
-        debug(`Streaming the ${(index==1?"":index==2?"nd":index==3?"rd":"th")} most recent ${kind} recording`)
+        debug(`Streaming the${(index==1?" ":index==2?"2nd ":index==3?"3rd ":index+"th ")}most recent ${kind} recording`)
+        try {
+            const events = ((await camera.getEvents({ limit: 10, kind: 'ding' })).events).filter(event => event.recording_status === 'ready')
+            const recordingUrl = await camera.getRecordingUrl(events[index-1].ding_id_str)
+        } catch {
+            debug('Failed to retrieve URL for event recording')
+            return
+        }
+
+        ffmpegProcess = spawn(pathToFfmpeg, [
+            '-i', recordingUrl,
+            '-map', '0:v:0',
+            '-map', '0:a:0',
+            '-map', '0:a:0',
+            '-c:v', 'copy',
+            '-c:a:0', 'aac',
+            '-c:a:1', 'copy',
+            '-f', 'rtsp',
+            '-rtsp_transport', 'tcp',
+            this.data.stream.rtspPublishUrl
+        ])
     }
 
     // Process messages from MQTT command topic
