@@ -698,13 +698,14 @@ class Camera extends RingPolledDevice {
     }
 
     startRecordedStream() {
+        let recordingUrl
         const streamSelect = this.data.stream_select.state.split(' ')
         const kind = streamSelect[0].toLowerCase()
         const index = streamSelect[1]
         debug(`Streaming the${(index==1?" ":index==2?"2nd ":index==3?"3rd ":index+"th ")}most recent ${kind} recording`)
         try {
-            const events = ((await camera.getEvents({ limit: 10, kind: 'ding' })).events).filter(event => event.recording_status === 'ready')
-            const recordingUrl = await camera.getRecordingUrl(events[index-1].ding_id_str)
+            const events = ((await this.device.getEvents({ limit: 10, kind: 'ding' })).events).filter(event => event.recording_status === 'ready')
+            recordingUrl = await this.device.getRecordingUrl(events[index-1].ding_id_str)
         } catch {
             debug('Failed to retrieve URL for event recording')
             return
