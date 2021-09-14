@@ -112,21 +112,11 @@ class Camera extends RingPolledDevice {
                 component: 'select',
                 options: [
                     'Live',
-                    'Motion 1',
-                    'Motion 2',
-                    'Motion 3',
-                    'Motion 4',
-                    'Motion 5',
-                    'Ding 1',
-                    'Ding 2',
-                    'Ding 3',
-                    'Ding 4',
-                    'Ding 5',
-                    'On-demand 1',
-                    'On-demand 2',
-                    'On-demand 3',
-                    'On-demand 4',
-                    'On-demand 5'
+                    ...(this.device.isDoorbot
+                        ? [ 'Ding 1', 'Ding 2', 'Ding 3', 'Ding 4', 'Ding 5' ]
+                        : []),
+                    'Motion 1', 'Motion 2', 'Motion 3', 'Motion 4', 'Motion 5',
+                    'On-demand 1', 'On-demand 2', 'On-demand 3', 'On-demand 4', 'On-demand 5'
                 ]
             },
             ...this.device.isDoorbot ? {
@@ -569,18 +559,12 @@ class Camera extends RingPolledDevice {
             // Create a low frame-rate MJPEG stream to publish motion snapshots
             // Process only key frames to keep CPU usage low
             ffmpegProcess = spawn(pathToFfmpeg, [
-                '-skip_frame',
-                'nokey',
-                '-i',
-                this.data.stream.rtspPublishUrl,
-                '-f',
-                'image2pipe',
-                '-s',
-                '640:360',
-                '-vsync',
-                '0',
-                '-q:v',
-                '2',
+                '-skip_frame', 'nokey',
+                '-i', this.data.stream.rtspPublishUrl,
+                '-f', 'image2pipe',
+                '-s', '640:360',
+                '-vsync', '0',
+                '-q:v', '2',
                 `tcp://localhost:+${p2jPort}`
             ])
         } else {
@@ -589,14 +573,10 @@ class Camera extends RingPolledDevice {
             // trigger rtsp-simple-server to start the on-demand stream and 
             // keep it running when there are no other RTSP readers.
             ffmpegProcess = spawn(pathToFfmpeg, [
-                '-i',
-                this.data.stream.rtspPublishUrl,
-                '-map',
-                '0:a:0',
-                '-c:a',
-                'copy',
-                '-f',
-                'null',
+                '-i', this.data.stream.rtspPublishUrl,
+                '-map', '0:a:0',
+                '-c:a', 'copy',
+                '-f', 'null',
                 '-'
             ])
         }
@@ -655,7 +635,11 @@ class Camera extends RingPolledDevice {
                     this.data.stream.status = 'activating'
                     this.publishStreamState()
                 }
-                this.startLiveStream()
+                if (this.data.stream_select.state === 'Live') {
+                    this.startLiveStream()
+                } else {
+                    this.startRecordedStream()
+                }
                 break;
             case 'off':
                 if (this.data.stream.session) {
@@ -674,12 +658,6 @@ class Camera extends RingPolledDevice {
         debug('Establishing connection to live stream for camera '+this.deviceId)
         try {
             this.data.stream.session = await this.device.streamVideo({
-                input: [
-                    '-fflags',
-                    'nobuffer',
-                    '-flags',
-                    'low_delay'
-                ],
                 audio: [], video: [],
                 // The below takes the native AVC video stream from Rings servers and just 
                 // copies the video stream to the RTPS server unmodified.  However, for
@@ -689,22 +667,14 @@ class Camera extends RingPolledDevice {
                 // (e.g. native browser based WebRTC) and provides stong compatibility across
                 // the various playback technolgies with minimal processing overhead. 
                 output: [
-                    '-map',
-                    '0:v:0',
-                    '-map',
-                    '0:a:0',
-                    '-map',
-                    '0:a:0',
-                    '-c:v',
-                    'copy',
-                    '-c:a:0',
-                    'aac',
-                    '-c:a:1',
-                    'copy',
-                    '-rtsp_transport',
-                    'tcp',
-                    '-f',
-                    'rtsp',
+                    '-map', '0:v:0',
+                    '-map', '0:a:0',
+                    '-map', '0:a:0',
+                    '-c:v', 'copy',
+                    '-c:a:0', 'aac',
+                    '-c:a:1', 'copy',
+                    '-f', 'rtsp',
+                    '-rtsp_transport', 'tcp',
                     this.data.stream.rtspPublishUrl
                 ]
             })
@@ -724,6 +694,13 @@ class Camera extends RingPolledDevice {
             this.data.stream.session = false
             this.publishStreamState()
         }
+    }
+
+    startRecordedStream() {
+        const streamSelect = this.data.stream_select.state.split(' ')
+        const kind = streamSelect[0].toLowerCase()
+        const index = streamSelect[1]
+        debug(`Streaming the ${(index==1?"":index==2?"nd":index==3?"rd":"th")} most recent ${kind} recording`)
     }
 
     // Process messages from MQTT command topic
