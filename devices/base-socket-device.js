@@ -78,7 +78,7 @@ class RingSocketDevice extends RingDevice {
         // Get full set of device data and publish to info topic JSON attributes
         const attributes = {
             ... this.device.data.hasOwnProperty('acStatus') ? { acStatus: this.device.data.acStatus } : {},
-            ... this.device.data.hasOwnProperty('alarmInfo') && this.device.data.alarmInfo.hasOwnProperty('state')
+            ... this.device.data.hasOwnProperty('alarmInfo') && this.device.data.alarmInfo !== null && this.device.data.alarmInfo.hasOwnProperty('state')
                 ? { alarmState: this.device.data.alarmInfo.state }
                 : (this.device.deviceType === 'security-panel') 
                     ? { alarmState: 'all-clear' } : {},

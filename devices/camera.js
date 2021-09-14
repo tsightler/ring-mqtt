@@ -674,6 +674,12 @@ class Camera extends RingPolledDevice {
         debug('Establishing connection to live stream for camera '+this.deviceId)
         try {
             this.data.stream.session = await this.device.streamVideo({
+                input: [
+                    '-fflags',
+                    'nobuffer',
+                    '-flags',
+                    'low_delay'
+                ],
                 audio: [], video: [],
                 // The below takes the native AVC video stream from Rings servers and just 
                 // copies the video stream to the RTPS server unmodified.  However, for
@@ -695,6 +701,8 @@ class Camera extends RingPolledDevice {
                     'aac',
                     '-c:a:1',
                     'copy',
+                    '-rtsp_transport',
+                    'tcp',
                     '-f',
                     'rtsp',
                     this.data.stream.rtspPublishUrl

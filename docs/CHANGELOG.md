@@ -1,6 +1,7 @@
 ## v4.8.2
 **Fixed Bugs**
 - Bump ring-client-api to 9.21.2 to address issue with error on toggling camera lights on/off
+- Fix alarm state attribute not resetting to all-clear after alarm event
 
 ## v4.8.1
 **Fixed Bugs**
