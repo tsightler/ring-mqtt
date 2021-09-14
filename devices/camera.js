@@ -703,9 +703,9 @@ class Camera extends RingPolledDevice {
         const kind = streamSelect[0].toLowerCase().replace('-', '_')
         const index = streamSelect[1]
 
-        debug(`Streaming the${(index==1?" ":index==2?"2nd ":index==3?"3rd ":index+"th ")}most recent ${kind} recording`)
+        debug(`Streaming the ${(index==1?"":index==2?"2nd ":index==3?"3rd ":index+"th ")}most recent ${kind} recording`)
         try {
-            const events = ((await this.device.getEvents({ limit: 10, kind: 'ding' })).events).filter(event => event.recording_status === 'ready')
+            const events = ((await this.device.getEvents({ limit: 10, kind })).events).filter(event => event.recording_status === 'ready')
             recordingUrl = await this.device.getRecordingUrl(events[index-1].ding_id_str)
         } catch {
             debug('Failed to retrieve URL for event recording')
@@ -727,11 +727,14 @@ class Camera extends RingPolledDevice {
 
         ffmpegProcess.on('spawn', async () => {
             debug(`The recorded ${kind} stream for camera ${this.deviceId} has started`)
+            this.data.stream.status = 'active'
+            this.publishStreamState()
         })
 
         ffmpegProcess.on('close', async () => {
-            this.data.stream[type].active = false
             debug(`The recorded ${kind} stream for camera ${this.deviceId} has stopped`)
+            this.data.stream.active = 'inactive'
+            this.publishStreamState()
         })
     }
 
