@@ -697,7 +697,7 @@ class Camera extends RingPolledDevice {
         }
     }
 
-    startRecordedStream() {
+    async startRecordedStream() {
         let recordingUrl
         const streamSelect = this.data.stream_select.state.split(' ')
         const kind = streamSelect[0].toLowerCase()
