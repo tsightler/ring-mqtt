@@ -29,6 +29,7 @@ const ModesPanel = require('./devices/modes-panel')
 const Keypad = require('./devices/keypad')
 const BaseStation = require('./devices/base-station')
 const RangeExtender = require('./devices/range-extender')
+const Bridge = require('./devices/bridge')
 const Siren = require('./devices/siren')
 const Thermostat = require('./devices/thermostat')
 const TemperatureSensor = require('./devices/temperature-sensor')
@@ -138,6 +139,8 @@ async function getDevice(device, mqttClient, allDevices) {
             return new BaseStation(deviceInfo)
         case RingDeviceType.RangeExtender:
             return new RangeExtender(deviceInfo)
+        case RingDeviceType.RingNetAdapter:
+            return new Bridge(deviceInfo)
         case RingDeviceType.Sensor:
             return newDevice = (device.name.toLowerCase().includes('motion'))
                 ? new MotionSensor(deviceInfo)
