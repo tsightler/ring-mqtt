@@ -1,4 +1,8 @@
 ## v4.8.2
+**New Features**
+- Support streaming video of last 5 recorded motion/ding/on-demand events via stream selector
+- Info sensor support for Ring Bridge
+
 **Fixed Bugs**
 - Bump ring-client-api to 9.21.2 to address issue with error on toggling camera lights on/off
 - Fix alarm state attribute not resetting to all-clear after alarm event
