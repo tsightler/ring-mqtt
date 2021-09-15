@@ -841,12 +841,27 @@ class Camera extends RingPolledDevice {
     }
 
     // Set Stream Select Option
-    setStreamSelect(message) {
+    async setStreamSelect(message) {
         debug('Received set video stream to '+message+' for camera '+this.deviceId)
         debug('Location Id: '+ this.locationId)
         if (this.entity.stream_select.options.includes(message)) {
             this.data.stream_select.state = message
-            this.publishStreamState()
+            if (this.data.stream_select.state !== this.data.stream_select.publishedState) {
+                this.publishStreamState()
+                if (this.data.stream.liveSession || this.data.stream.recordedSession) {
+                    if (this.data.stream.liveSession) {
+                        this.data.stream.liveSession.stop()
+                    } else if (this.data.stream.recordedSession) {
+                        this.data.stream.recordedSession.kill()
+                    }
+                    await utils.msleep(250)
+                    if (this.data.stream_select.state === 'Live') {
+                        this.startLiveStream()
+                    } else {
+                        this.startRecordedStream()
+                    }
+                }
+            }
         } else {
             debug('Set stream to '+message+' received by not a valid value')
         }
