@@ -56,8 +56,9 @@ class Camera extends RingPolledDevice {
                 keepalive:{ 
                     active: false, 
                     expires: 0
-                }, 
-                session: false,
+                },
+                liveSession: false,
+                recordedSession: false,
                 rtspPublishUrl: (this.config.livestream_user && this.config.livestream_pass)
                     ? `rtsp://${this.config.livestream_user}:${this.config.livestream_pass}@localhost:8554/${this.deviceId}_live`
                     : `rtsp://localhost:8554/${this.deviceId}_live`
@@ -642,8 +643,10 @@ class Camera extends RingPolledDevice {
                 }
                 break;
             case 'off':
-                if (this.data.stream.session) {
-                    this.data.stream.session.stop()
+                if (this.data.stream.liveSession) {
+                    this.data.stream.liveSession.stop()
+                } else if (this.data.stream.recordedSession) {
+                    this.data.stream.recordedSession.kill()
                 } else {
                     this.data.stream.status = 'inactive'
                     this.publishStreamState()
@@ -658,7 +661,7 @@ class Camera extends RingPolledDevice {
         // Start and publish stream to rtsp-simple-server 
         debug('Establishing connection to live stream for camera '+this.deviceId)
         try {
-            this.data.stream.session = await this.device.streamVideo({
+            this.data.stream.liveSession = await this.device.streamVideo({
                 audio: [], video: [],
                 // The below takes the native AVC video stream from Rings servers and just 
                 // copies the video stream to the RTPS server unmodified.  However, for
@@ -683,22 +686,22 @@ class Camera extends RingPolledDevice {
             this.data.stream.status = 'active'
             this.publishStreamState()
 
-            this.data.stream.session.onCallEnded.subscribe(() => {
-                debug('Video stream ended for camera '+this.deviceId)
+            this.data.stream.liveSession.onCallEnded.subscribe(() => {
+                debug('Live video stream ended for camera '+this.deviceId)
                 this.data.stream.status = 'inactive'
-                this.data.stream.session = false
+                this.data.stream.liveSession = false
                 this.publishStreamState()
             })
         } catch(e) {
             debug(e)
             this.data.stream.status = 'failed'
-            this.data.stream.session = false
+            this.data.stream.liveSession = false
             this.publishStreamState()
         }
     }
 
     async startRecordedStream() {
-        let recordingUrl, ffmpegProcess
+        let recordingUrl
         const streamSelect = this.data.stream_select.state.split(' ')
         const kind = streamSelect[0].toLowerCase().replace('-', '_')
         const index = streamSelect[1]
@@ -712,7 +715,7 @@ class Camera extends RingPolledDevice {
             return
         }
 
-        ffmpegProcess = spawn(pathToFfmpeg, [
+        this.data.stream.recordedSession = spawn(pathToFfmpeg, [
             '-re',
             '-i', recordingUrl,
             '-map', '0:v:0',
@@ -726,14 +729,15 @@ class Camera extends RingPolledDevice {
             this.data.stream.rtspPublishUrl
         ])
 
-        ffmpegProcess.on('spawn', async () => {
+        this.data.stream.recordedSession.on('spawn', async () => {
             debug(`The recorded ${kind} stream for camera ${this.deviceId} has started`)
             this.data.stream.status = 'active'
             this.publishStreamState()
         })
 
-        ffmpegProcess.on('close', async () => {
-            debug(`The recorded ${kind} stream for camera ${this.deviceId} has stopped`)
+        this.data.stream.recordedSession.on('close', async () => {
+            debug(`The recorded ${kind} stream for camera ${this.deviceId} has ended`)
+            this.data.stream.recordedSession = false
             this.data.stream.active = 'inactive'
             this.publishStreamState()
         })
