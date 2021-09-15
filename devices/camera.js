@@ -737,8 +737,8 @@ class Camera extends RingPolledDevice {
 
         this.data.stream.recordedSession.on('close', async () => {
             debug(`The recorded ${kind} stream for camera ${this.deviceId} has ended`)
-            this.data.stream.recordedSession = false
             this.data.stream.active = 'inactive'
+            this.data.stream.recordedSession = false
             this.publishStreamState()
         })
     }
@@ -849,11 +849,7 @@ class Camera extends RingPolledDevice {
             if (this.data.stream_select.state !== this.data.stream_select.publishedState) {
                 this.publishStreamState()
                 if (this.data.stream.liveSession || this.data.stream.recordedSession) {
-                    if (this.data.stream_select.state === 'Live') {
-                        this.startLiveStream()
-                    } else {
-                        this.startRecordedStream()
-                    }
+                    this.setStreamState('off')
                 }
             }
         } else {
