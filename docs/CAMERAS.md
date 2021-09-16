@@ -1,14 +1,24 @@
-## Camera Live Streaming
-While ring-mqtt is primarily designed to integrate Ring devices into home automation platforms via MQTT to allow driving automations from those devices, there was high demand to provide live streaming integration as well, especially for Home Assistant users, but also to provide things like on-demand recording.  With the release of version 4.8.0 it is now possible to view live streams from any RTSP compatible client as well as trigger a recording event on a camera based on an automation using MQTT.
+## Camera Video Streaming
+While ring-mqtt is primarily designed to integrate Ring devices into home automation platforms via MQTT to allow driving automations from those devices, there was high demand to provide video streaming integration as well, especially for Home Assistant users, but also to provide features like on-demand recording.  With the release of version 4.8.0 it is now possible to view videos streams from any RTSP compatible client as well as trigger a recording event on a camera based on an automation using MQTT.
 
-This document provides detailed information about the live streaming support include how to configure it with Home Assistant or use it with other medial players, as well as some troubleshooting information and known limitations.  If you would like to use the live streaming feature, please read this section carefully.
+This document provides detailed information about the video streaming support, including how to configure it with Home Assistant or use it with other medial players, as well as some troubleshooting information and known limitations.  If you would like to use the videos streaming features, please read this section carefully.
 
-### Quick configuration with Home Assistant
-Because MQTT camera support in Home Assistant only supports still images (due to the fact that MQTT is not a streaming technology) it is not currently possible to have Home Assistant automatically discover the Ring live streaming cameras via MQTT integration.  Because of this, the live streaming cameras will need to be configured manually in configuration.yaml.  Home Assistant provides a signficant number of camera platforms that can work with RTSP streams, but this document will focus on the setup of the [Generic IP Camera](https://www.home-assistant.io/integrations/generic/).
+### Quick overview
+Ring video streaming support is implemented by running a localhost instance of rtsp-simple-server.  For each camera discovered two separate RTSP paths are registered with the server using the following format:
 
-To setup the generic IP camera you will need to manually add entries to the configuration.yaml file.  How to do that is outside of the scope of this document so please read up on that if you are not familiar with editing Home Assistants configuration files.
+Live Stream:  <camera_id>_live
+Event Stream: <camera_id>_event
 
-Setting up a camera require a basic entry like this at a minimum:
+To start a stream all that is required is to use any media client that support the RTSP protocol to connect to the given URL.  Behind the scenes the rtsp-simple-server uses an on-demand script to communicate via MQTT to ring-mqtt to instruct it when to start and stop the video stream.
+
+The "live" provides always starts a live view of the camera, while the "event" paths starts a stream of the selected previously recorded event.  See the event section below for more details on how to select the specific event displayed on this path.
+
+### Quick live stream configuration with Home Assistant
+Due to the fact that MQTT is not a techonology built for streaming, the MQTT camera support in Home Assistant only supports still images updated at most every 10 seconds and it is not currently possible to have Home Assistant automatically discover the video streaming cameras via the MQTT integration.  Because of this, the video streaming cameras will need to be configured manually in configuration.yaml.  Home Assistant provides a signficant number of camera platforms that can work with RTSP streams, but this document will focus on the setup of the [Generic IP Camera](https://www.home-assistant.io/integrations/generic/) integration.
+
+To setup the generic IP camera you will need to manually add entries to the Home Assistant configuration.yaml file.  How to do that is outside of the scope of this document so please read up on that if you are not familiar with editing Home Assistants configuration files.
+
+Setting up a camera requires a basic entry like this at a minimum:
 ```
 camera:
   - platform: generic
@@ -17,29 +27,36 @@ camera:
     stream_source: <stream_url>
 ```
 
-Name is the name you want your camera to appear as in the Home Assistant UI.  You can use a URL to any image for the still_image_url but the suggested configuraiton is to enable the snapshot feature in the addon and use the camera proxy so you get a nice, automatically updating still image.  The configuration example below does exactly that, it shows how to use a value template to pull the current MQTT snapshot image using the Home Assistant camera proxy API.  Using this setup the picture glance card will display the most recent snapshot and simply clicking the image will open a live stream.
+Thie "name" options is the name that the camera will appear as in the Home Assistant UI.  You can use a URL to any image for the still_image_url but the suggested configuraiton is to enable the snapshot feature in this addon and use the camera proxy API so you get a nice, automatically updating still image.  The configuration example below does exactly that, it shows how to use a value template to pull the current MQTT snapshot image using the Home Assistant camera proxy API.  Using this setup the picture glance card will display the most recent snapshot and simply clicking the image will open the video stream.
 
-The stream_source is the URL required to play the video stream.  To make the camera setup as easy as possible ring-mqtt attempts to guess the required entries and includes them as attributes in the camera info sensor.  Simply open the camera device in Home Assistant, select the Info sensor entity, and the open the attributes and there will be a stream source and still image URL entry that you can copy and paste to create your config.  Alternately, you can find the attributes using the Developer Tools portion of the UI and finding the info sensor entity for the camera.  While the addon makes efforts to "guess" the correct URL, because the addon runs as a docker container, it has limited infomration to build the URL so you will probably have to tweak it slightly.  When running as an addon on supervised HA, it does attempt to query the API to get more information, but it still may not get exact port and other data correct.
+The stream_source is the URL required to play the video stream.  To make the camera setup as easy as possible, ring-mqtt attempts to guess the required entries and includes them as attributes in the camera info sensor.  Simply open the camera device in Home Assistant, select the Info sensor entity, and the open the attributes and there will be a stream source and still image URL entry that you can copy and paste to create your config.  Alternately, you can find the attributes using the Developer Tools portion of the UI and finding the info sensor entity for the camera.  While the addon makes efforts to "guess" the correct URL, because the addon runs as an entirely separate process from Home Assistant, it has limited infomration to build the exact URL so in many cases it will not be exactly correct.  When running as an addon on supervised HA, it does attempt to query the API to get more information, but it still may not get exact port and other data correct.
 
-The following example is uses a camera called "Front Porch".  The MQTT discovered snapshot camera has a Home Assistant entity ID of **camera.front_porch_snapshot** and the camera device ID is **3452b19184fa** so the attributes in the info sensor are as follows:
+The following example uses a camera with the name "Front Porch" in the Ring app.  The MQTT discovered snapshot camera has a Home Assistant entity ID of **camera.front_porch_snapshot** and the camera device ID is **3452b19184fa** so the attributes in the info sensor are as follows:
 ```
 Still Image URL: http://<MY_HA_HOSTNAME>:8123{{ states.camera.front_porch_snapshot.attributes.entity_picture }}  
 Stream Source:   rtsp://03cabcc9-ring-mqtt:8554/3452b19184fa_live
 ```
-To create the generic IP camera in configuration.yaml simple enter the lines as follows:
+To create the generic IP camera for the live video stream, in the configuration.yaml, simple add the following lines:
 ```
 camera:
   - platform: generic
-    name: Front Porch Live
+    name: Front Porch Video
     still_image_url: http://<MY_HA_HOSTNAME>:8123{{ states.camera.front_porch_snapshot.attributes.entity_picture }}
     stream_source: rtsp://03cabcc9-ring-mqtt:8554/3452b19184fa_live
 ```
 
-Note that the still_image_url uses the guessed hostname and/or localhost.  This could work in many cases, but if you've enabled SSL, changed the default port, etc, you'll need to use the URL for your Home Assistant instance.  For example, if you access your Home Assistant instance directly via https://myha.mydomain.local/ then the URL would be https://myha.mydomain.local{{ states.camera.front_porch_snapshot.attributes.entity_picture }}.  If you are using SSL, but are generating self-signed certificates, or prefer to access the local instance via localhost instead of your oficially registered URL, you will need to add `verify_ssl: false` to the config as well because your SSL certificate will likely be bound to your hostname and thus attempting to use localhost will generate an SSL hostname mismatch otherwise.
+Note that the still_image_url uses the guessed hostname and/or localhost.  This could work in some cases, but if SSL is enabled or the default default port has been changed, the correct URL may not be reflected here, simple use the Home Assistant base URL with the value template on the end and make sure there is no slash after the hostname or port.  For example, if the Home Assistant instance is accessed directly via https://myha.mydomain.local/ then the URL would be https://myha.mydomain.local{{ states.camera.front_porch_snapshot.attributes.entity_picture }}.  If SSL is in use, but is using self-signed certificates, or if the use of localhost or the IP address instead of the full HA hostname is desired, then the `verify_ssl: false` config option will likely need to be added as well.  This is because the SSL certificate will typically be bound to the HA instance full hostname so attempts to connect via localhost/IP address will cause invalid certificate warnings.
 
-Once the configuraiton is saved, simply reload the configuration (generic IP camera entities can be reloaded with a full HA restart) and a new camera entity should appear which can now be added to the dashboard via a Picture Glance card.  With no special configuration this should now provide a card that provides still image snapshots based on your snapshot settings, and then, with a click, open a window that starts a live stream of that camera.
+Once the configuraiton is saved, simply reload the configuration (generic IP camera entities can be reloaded without a full HA restart) and the new camera entities should appear.  These cameras can now be added to the dashboard via a Picture Glance card or any other card that supports cameras.  With no special configuration this should now provide a card that provides still image snapshots based on the addon snapshot settings, and then, with a click, open a window that starts a live stream of that camera.
 
 The picture glance card is quite flexible and it's possible to add the additional camera entities to this card as well, like the motion, light and siren switches (for devices with those features) and the stream switch.  With this setup it's possible to see at a glance if any motion/ding event is active, see the latest snapshot from that event, see the light/siren/stream state, and a simple click opens the live stream.
+
+### Event Stream
+As mentioned above, this addon provides two separate paths for video streams, one that always provides a live stream, and a second that can stream a selected, previously recorded stream.  Note that use of this feature requires a Ring Protect plan that stores recordings of prior events in the cloud.  Camera setup for this feature is the same as above, but uses the "<camera_id>_event" path vs the live path in the example above.
+
+On startup the default event is always the most recent motion (Motion 1) but the play back event can be selected using the Event Selector entity in Home Assistant or the equivalient MQTT command topic.  Each camera allows selecting from any of the last five motion, ding, or on-demand events (ding events are available only for doorbells).  For example, selecting "Ding 1" will cause the event stream to play back the recording of the most recent doorbell ding event, while selecting "Motion 3" would play back the 3rd most recently recorded motion event.  On-demand recording events occur any time a video stream is started for on-demand viewing without a motion/ding event.
+
+When a recorded stream is playing it is streamed only a single time for each RTSP client request and then the stream shuts down until the next request for a stream.  Stream playback can be manually stopped via the stream switch, although note that this will also stop the live stream if both are active.  If a recorded stream is actively playing, changing the event selector immediately cancels playback of the existing event stream and the stream will not start again until a new client makes an RTSP request (for example, just closing and re-opening the playback window in Home Assistant).
 
 ### Authentication
 By default, the addon does not expose the RTSP server to external devices so only Home Assistant can actually access the streams, thus using a non-authenticated stream isn't too bad since the stream stays completely internal to the Home Assistant server.  This assumes that the addon is running on the same server as Home Assistant.
