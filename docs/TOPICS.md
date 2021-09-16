@@ -200,11 +200,28 @@ ring/<location_id>/camera/<device_id>/snapshot_interval/state   <-- Get snapshot
 ring/<location_id>/camera/<device_id>/snapshot_interval/command <-- Set snapshot refresh interval (10-604800)
 ring/<location_id>/camera/<device_id>/stream/state              <-- Get live stream ON/OFF
 ring/<location_id>/camera/<device_id>/stream/command            <-- Set live stream ON/OFF
-ring/<location_id>/camera/<device_id>/stream/attributes         <-- Detailed stream state:
+ring/<location_id>/camera/<device_id>/stream/attributes         <-- Detailed live stream state:
                                                                     - inactive
                                                                     - activating
                                                                     - active
                                                                     - failed
+ring/<location_id>/camera/<device_id>/event_stream/state        <-- Get event stream ON/OFF
+ring/<location_id>/camera/<device_id>/event_stream/command      <-- Commands ignored for event stream
+ring/<location_id>/camera/<device_id>/event_stream/attributes   <-- Detailed event stream state:
+                                                                    - inactive
+                                                                    - activating
+                                                                    - active
+                                                                    - failed
+ring/<location_id>/camera/<device_id>/event_select/state        <-- Get selected event stream
+ring/<location_id>/camera/<device_id>/event_select/command      <-- Set selected event stream
+                                                                    - Motion 1-5
+                                                                    - On-demand 1-5
+                                                                    - Ding 1-5 (Doorbells only)
+                                                                    1 = most recent event
+                                                                    2 = 2nd most recent event
+                                                                    3 = 3rd most recent event
+                                                                    4 = 4th most recent event
+                                                                    5 = 5th most recent event
 ```
 
 ```

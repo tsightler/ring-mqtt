@@ -1,6 +1,6 @@
 ## v4.8.2
 **New Features**
-- Support streaming video of last 5 recorded motion/ding/on-demand events via stream selector
+- Support streaming video of historical motion/ding/on-demand events via event stream.  See the [camera documentation](CAMERAS.md) for more details.
 - Info sensor support for Ring Bridge
 
 **Fixed Bugs**
