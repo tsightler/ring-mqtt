@@ -130,7 +130,8 @@ class Camera extends RingPolledDevice {
                         : []),
                     'Motion 1', 'Motion 2', 'Motion 3', 'Motion 4', 'Motion 5',
                     'On-demand 1', 'On-demand 2', 'On-demand 3', 'On-demand 4', 'On-demand 5'
-                ]
+                ],
+                name: `${this.deviceData.name} Event Stream`
             },
             ...this.device.isDoorbot ? {
                 ding: {
@@ -755,7 +756,7 @@ class Camera extends RingPolledDevice {
             this.publishStreamState()
         })
 
-        this.data.stream.event.statusession.on('close', async () => {
+        this.data.stream.event.session.on('close', async () => {
             debug(`The recorded ${kind} stream for camera ${this.deviceId} has ended`)
             this.data.stream.event.active = 'inactive'
             this.data.stream.event.session = false
