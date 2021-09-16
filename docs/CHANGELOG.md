@@ -1,3 +1,12 @@
+## v4.8.2
+**New Features**
+- Support streaming video of historical motion/ding/on-demand events via new event stream RTSP path.  See the [camera documentation](CAMERAS.md) for more details. (Note that this feature requires a Ring Protect plan that allows saving videos)
+- Info sensor support for Ring Bridge (thanks to [alexanv1](https://github.com/alexanv1) for this PR!)
+
+**Fixed Bugs**
+- Bump ring-client-api to 9.21.2 to address issue with error on toggling camera lights on/off
+- Fix alarm state attribute not resetting to all-clear after an alarm trigger event
+
 ## v4.8.1
 **Fixed Bugs**
 - Fix tamper entity state not updating on tamper events
