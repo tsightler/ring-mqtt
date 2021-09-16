@@ -445,7 +445,7 @@ class Camera extends RingPolledDevice {
 
     publishStreamState(isPublish) {
         ['live', 'event'].forEach(type => {
-            entityProp = (type === 'live') ? 'stream' : `${type}_stream`
+            const entityProp = (type === 'live') ? 'stream' : `${type}_stream`
             const streamState = (this.data.stream[type].status === 'active' || this.data.stream[type].status === 'activating') ? 'ON' : 'OFF'
             if (streamState !== this.data.stream[type].state || isPublish) {
                 this.data.stream[type].state = streamState
