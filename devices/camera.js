@@ -453,15 +453,17 @@ class Camera extends RingPolledDevice {
             }
 
             const attributes = { status: this.data.stream[type].status }
-            if (entityProp === 'event_stream') {
-                attributes.recordingUrl = this.data.stream.event.recordingUrl
-            }
             this.publishMqtt(this.entity[entityProp].json_attributes_topic, JSON.stringify(attributes), true)    
         })
 
         if (this.data.event_select.state !== this.data.event_select.publishedState || isPublish) {
             this.data.event_select.publishedState = this.data.event_select.state
             this.publishMqtt(this.entity.event_select.state_topic, this.data.event_select.state, true)
+            const attributes = { 
+                recordingUrl: this.data.stream.event.recordingUrl,
+                eventId: this.data.stream.event.dingId
+            }
+            this.publishMqtt(this.entity.event_select.json_attributes_topic, JSON.stringify(attributes), true)
         }
     }
 
@@ -692,7 +694,7 @@ class Camera extends RingPolledDevice {
     }
 
     async startEventStream() {
-        await updateEventStreamUrl()
+        await this.updateEventStreamUrl()
         const streamSelect = this.data.event_select.state.split(' ')
         const kind = streamSelect[0].toLowerCase().replace('-', '_')
         const index = streamSelect[1]
