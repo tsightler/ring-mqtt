@@ -256,7 +256,7 @@ class Camera extends RingPolledDevice {
     }
 
     // Publish camera capabilities and state and subscribe to events
-    publishData(data) {
+    async publishData(data) {
         // Update every 3 polling cycles (~1 minute, check for updated event or expired event URL)
         this.data.stream.event.pollCycle--
         if (this.data.stream.event.pollCycle <= 0) {
