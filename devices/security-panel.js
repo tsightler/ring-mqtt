@@ -1,4 +1,3 @@
-const debug = require('debug')('ring-mqtt')
 const utils = require( '../lib/utils' )
 const { allAlarmStates, RingDeviceType } = require('ring-client-api')
 const RingSocketDevice = require('./base-socket-device')
@@ -234,7 +233,7 @@ class SecurityPanel extends RingSocketDevice {
                 this.device.location.soundSiren().catch(err => { this.debug(err) })
                 break;
             case 'off': {
-                debug(`Deactivating siren for ${this.device.location.name}`)
+                this.debug(`Deactivating siren for ${this.device.location.name}`)
                 this.device.location.silenceSiren().catch(err => { this.debug(err) })
                 break;
             }
