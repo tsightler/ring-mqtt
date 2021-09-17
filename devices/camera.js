@@ -482,13 +482,17 @@ class Camera extends RingPolledDevice {
     // special stream that extracts keyframes from the live stream to use as snapshots
     async updateBatterySnapshot(type) {
         if (type === 'interval' && this.data.stream.live.status.match(/^(inactive|failed)$/)) {
-            // It's just an interval snapshot and there's no active local stream
-            // so a standard snapshot should work
+            // It's an interval snapshot and there's no active local stream so assume
+            // a standard snapshot will work
             this.updateSnapshot(type)
         } else {
-            // There's an active local live stream or it's a motion snapshot request
-            // which means a recording is likely active, start a snapshot stream
+            if (type === 'motion') {
+                debug('Motion event detected on battery powered camera '+this.deviceId+' snapshot will be updated from live stream')
+            }
+            // There's a local live stream already active or it's a motion snapshot
+            // which means a recording is in progress, use a snapshot stream
             this.data.snapshot.update = true
+            // Start the snapshot stream if not already active
             if (!this.data.stream.snapshot.active) {
                 this.startRtspReadStream('snapshot', this.data.stream.snapshot.duration)
             }
