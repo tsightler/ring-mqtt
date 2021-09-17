@@ -56,18 +56,18 @@ do
         stream_state=`echo ${message} | jq -r '.status'`
         case ${stream_state,,} in
             activating)
-                echo -e "${green}[${client_name}]${reset} Camera ${type} stream is activating..."
+                echo -e "${green}[${client_name}]${reset} ${type^} stream is activating..."
                 ;;
             active)
-                echo -e "${green}[${client_name}]${reset} Camera ${type} stream successfully activated!"
+                echo -e "${green}[${client_name}]${reset} ${type^} stream successfully activated!"
                 ;;
             inactive)
-                echo -e "${green}[${client_name}]${yellow} Camera ${type} stream has gone inactive, exiting...${reset}"
+                echo -e "${green}[${client_name}]${yellow} ${type^} stream has gone inactive, exiting...${reset}"
                 reason='inactive'
                 ctrl_c
                 ;;
             failed)
-                echo -e "${green}[${client_name}]${red} ERROR - Camera ${type} stream failed to activate, exiting...${reset}"
+                echo -e "${green}[${client_name}]${red} ERROR - ${type^} stream failed to activate, exiting...${reset}"
                 reason='failed'
                 ctrl_c
                 ;;
