@@ -261,7 +261,7 @@ class Camera extends RingPolledDevice {
         this.data.stream.event.pollCycle--
         if (this.data.stream.event.pollCycle <= 0) {
             this.data.stream.event.pollCycle = 3
-            this.updateEventStreamUrl()
+            await this.updateEventStreamUrl()
         }        
 
         const isPublish = data === undefined ? true : false
