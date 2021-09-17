@@ -45,6 +45,7 @@ class Camera extends RingPolledDevice {
                 live: {
                     state: 'OFF',
                     status: 'inactive',
+                    publishedStatus: '',
                     session: false,
                     rtspPublishUrl: (this.config.livestream_user && this.config.livestream_pass)
                         ? `rtsp://${this.config.livestream_user}:${this.config.livestream_pass}@localhost:8554/${this.deviceId}_live`
@@ -53,6 +54,7 @@ class Camera extends RingPolledDevice {
                 event: {
                     state: 'OFF',
                     status: 'inactive',
+                    publishedStatus: '',
                     session: false,
                     dingId: null,
                     recordingUrl: null,
@@ -455,8 +457,11 @@ class Camera extends RingPolledDevice {
                 this.publishMqtt(this.entity[entityProp].state_topic, this.data.stream[type].state, true)
             }
 
-            const attributes = { status: this.data.stream[type].status }
-            this.publishMqtt(this.entity[entityProp].json_attributes_topic, JSON.stringify(attributes), true)    
+            if (this.data.stream[type].publishedStatus !== this.data.stream[type].status || isPublish) {
+                this.data.stream[type].publishedStatus = this.data.stream[type].status
+                const attributes = { status: this.data.stream[type].status }
+                this.publishMqtt(this.entity[entityProp].json_attributes_topic, JSON.stringify(attributes), true)
+            } 
         })
     }
 
