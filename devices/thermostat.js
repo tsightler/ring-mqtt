@@ -107,7 +107,7 @@ class Thermostat extends RingSocketDevice {
     }
     
     async setSetPoint(value) {
-        debthis.debugug(`Received set target temperature to ${value}`)
+        this.debug(`Received set target temperature to ${value}`)
         if (isNaN(value)) {
             this.debug('New target temperature received but not a number!')
         } else if (!(value >= 10 && value <= 37.22223)) {
