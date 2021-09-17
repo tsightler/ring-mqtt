@@ -53,7 +53,7 @@ class MultiLevelSwitch extends RingSocketDevice {
     // Set switch target state on received MQTT command message
     setSwitchLevel(message) {
         const level = message
-        this.debug(`Received set switch level to ${level}`)
+        this.debug(`Received set switch level to ${level}%`)
         if (isNaN(message)) {
             this.debug('Brightness command received but not a number!')
         } else if (!(message >= 0 && message <= 100)) {
