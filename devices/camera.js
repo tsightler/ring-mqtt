@@ -508,14 +508,16 @@ class Camera extends RingPolledDevice {
                     // to force a non-cached snapshot update instead
                     debug('Motion event detected for line powered camera '+this.deviceId+', forcing a non-cached snapshot update')
                     await this.device.requestSnapshotUpdate()
-                    await utils.msleep(200) // Just a short pause to give time for the snapshot to update
+                    await utils.sleep(1) // Give time for the snapshot to actually update
                     newSnapshot = await this.device.restClient.request({
                         url: clientApi(`snapshots/image/${this.device.id}`),
                         responseType: 'buffer'
                     })
+                    break;
                 case 'interval':
                     // For interval snapshots we call the standard snapshot function
                     newSnapshot = await this.device.getSnapshot()
+                    break;
             }
         } catch (error) {
             debug(error)
