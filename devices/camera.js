@@ -134,7 +134,8 @@ class Camera extends RingPolledDevice {
                         : []),
                     'Motion 1', 'Motion 2', 'Motion 3', 'Motion 4', 'Motion 5',
                     'On-demand 1', 'On-demand 2', 'On-demand 3', 'On-demand 4', 'On-demand 5'
-                ]
+                ],
+                attributes: true
             },
             ...this.device.isDoorbot ? {
                 ding: {
