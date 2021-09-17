@@ -917,7 +917,7 @@ class Camera extends RingPolledDevice {
                 this.data.stream.event.session.kill()
             }
             this.data.event_select.state = message
-            if (!this.updateEventStreamUrl()) {
+            if (!await this.updateEventStreamUrl()) {
                 this.publishStreamState()
             }
         } else {
