@@ -1,9 +1,11 @@
 ## v4.8.3
 **New Features**
-- Event stream switch attribute now includes URL for recorded video to make it easier to automate download of recordings
+- The event stream select entity now includes an attribute with the dingID and the recordingURL for the selected event.  These URLs are time limited to approximately 15 minutes, but the code automatically updates the URL when it nears expiration so the URL in the attribute should always be valid.  If you select a new event the URL is updated immediately.  See the [camera documentation](CAMERAS.md) for examples of automations that download video files.
 
 **Fixed Bugs**
-- Refactor and simplify snapshot functions, especially for battery cameras.  Hopefully fixes users experiencing no snapshots with battery cameras.
+- Refactor and simplify snapshot functions.  Should fix the issue with of no motion snapshots for users with battery powered cameras.
+
+**Other Changes**
 
 ## v4.8.2
 **New Features**
