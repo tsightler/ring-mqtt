@@ -486,12 +486,12 @@ class Camera extends RingPolledDevice {
             // a standard snapshot will work
             this.updateSnapshot(type)
         } else {
-            if (type === 'motion') {
-                debug('Motion event detected on battery powered camera '+this.deviceId+' snapshot will be updated from live stream')
-            }
             // There's a local live stream already active or it's a motion snapshot
             // which means a recording is in progress, use a snapshot stream
             this.data.snapshot.update = true
+            if (type === 'motion') {
+                debug('Motion event detected on battery powered camera '+this.deviceId+' snapshot will be updated from live stream')
+            }
             // Start the snapshot stream if not already active
             if (!this.data.stream.snapshot.active) {
                 this.startRtspReadStream('snapshot', this.data.stream.snapshot.duration)
