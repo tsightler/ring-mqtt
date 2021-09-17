@@ -1,4 +1,3 @@
-const debug = require('debug')('ring-mqtt')
 const RingSocketDevice = require('./base-socket-device')
 
 class Beam extends RingSocketDevice {
@@ -98,14 +97,13 @@ class Beam extends RingSocketDevice {
                 }
                 break;
             default:
-                debug('Received unknown command topic '+topic+' for beams light: '+this.deviceId)
+                this.debug(`Received message to unknown command topic ${topic}`)
         }
     }
 
     // Set switch target state on received MQTT command message
     setLightState(message) {
-        debug('Received set state '+message+' for beams light: '+this.deviceId)
-        debug('Location: '+ this.locationId)
+        this.debug(`Received set light state ${message}`)
         const command = message.toLowerCase()
         switch(command) {
             case 'on':
@@ -121,19 +119,18 @@ class Beam extends RingSocketDevice {
                 break;
             }
             default:
-                debug('Received invalid command for beams light')
+                this.debug('Received invalid light state command')
         }
     }
 
     // Set switch target state on received MQTT command message
     setLightLevel(message) {
         const level = message
-        debug('Received set brightness level to '+level+' for beams light: '+this.deviceId)
-        debug('Location: '+ this.locationId)
+        this.debug(`Received set brightness level to ${level}`)
         if (isNaN(level)) {
-             debug('Brightness command received but not a number')
+             this.debug('Brightness command received but not a number')
         } else if (!(level >= 0 && level <= 100)) {
-            debug('Brightness command received but out of range (0-100)')
+            this.debug('Brightness command received but out of range (0-100)')
         } else {
             this.device.setInfo({ device: { v1: { level: level / 100 } } })
         }
@@ -141,12 +138,11 @@ class Beam extends RingSocketDevice {
 
     setLightDuration(message) {
         const duration = message
-        debug('Received set light duration to '+duration+' seconds for beams light: '+this.deviceId)
-        debug('Location Id: '+ this.locationId)
+        this.debug(`Received set light duration to ${duration} seconds`)
         if (isNaN(duration)) {
-                debug('Light duration command received but value is not a number')
+            this.debug('Light duration command received but value is not a number')
         } else if (!(duration >= 0 && duration <= 32767)) {
-            debug('Light duration command received but out of range (0-32767)')
+            this.debug('Light duration command received but out of range (0-32767)')
         } else {
             this.entity.beam_duration.state = parseInt(duration)
             this.publishMqtt(this.entity.beam_duration.state_topic, this.entity.beam_duration.state.toString(), true)            

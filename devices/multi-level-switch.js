@@ -1,4 +1,3 @@
-const debug = require('debug')('ring-mqtt')
 const RingSocketDevice = require('./base-socket-device')
 
 class MultiLevelSwitch extends RingSocketDevice {
@@ -31,14 +30,13 @@ class MultiLevelSwitch extends RingSocketDevice {
                 this.setSwitchLevel(message)
                 break;
             default:
-                debug('Received unknown command topic '+topic+' for light: '+this.deviceId)
+                this.debug(`Received message to unknown command topic ${topic}`)
         }
     }
 
     // Set switch target state on received MQTT command message
     setSwitchState(message) {
-        debug('Received set switch state '+message+' for switch: '+this.deviceId)
-        debug('Location Id: '+ this.locationId)
+        this.debug(`Received set switch state ${message}`)
         const command = message.toLowerCase()
         switch(command) {
             case 'on':
@@ -48,19 +46,18 @@ class MultiLevelSwitch extends RingSocketDevice {
                 break;
             }
             default:
-                debug('Received invalid command for switch!')
+                this.debug('Received invalid command for switch!')
         }
     }
 
     // Set switch target state on received MQTT command message
     setSwitchLevel(message) {
         const level = message
-        debug('Received set switch level to '+level+' for switch: '+this.deviceId)
-        debug('Location Id: '+ this.locationId)
+        this.debug(`Received set switch level to ${level}`)
         if (isNaN(message)) {
-             debug('Brightness command received but not a number!')
+            this.debug('Brightness command received but not a number!')
         } else if (!(message >= 0 && message <= 100)) {
-            debug('Brightness command received but out of range (0-100)!')
+            this.debug('Brightness command received but out of range (0-100)!')
         } else {
             this.device.setInfo({ device: { v1: { level: level / 100 } } })
         }

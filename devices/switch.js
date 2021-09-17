@@ -1,4 +1,3 @@
-const debug = require('debug')('ring-mqtt')
 const RingSocketDevice = require('./base-socket-device')
 
 class Switch extends RingSocketDevice {
@@ -26,14 +25,13 @@ class Switch extends RingSocketDevice {
                 this.setSwitchState(message)
                 break;
             default:
-                debug(`Received unknown command topic ${topic} for ${this.component} ${this.deviceId}`)
+                this.debug(`Received message to unknown command topic ${topic}`)
         }
     }
 
     // Set switch target state on received MQTT command message
     setSwitchState(value) {
-        debug(`Received set switch state ${value} for switch ${this.deviceId}`)
-        debug(`Location Id: ${this.locationId}`)
+        this.debug(`Received set switch state ${value}`)
         const command = value.toLowerCase()
         switch(command) {
             case 'on':
@@ -42,7 +40,7 @@ class Switch extends RingSocketDevice {
                 break;
             }
             default:
-                debug(`Received invalid command for switch ${this.deviceId}`)
+                this.debug(`Received invalid switch state command`)
         }
     }
 }

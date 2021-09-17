@@ -1,4 +1,3 @@
-const debug = require('debug')('ring-mqtt')
 const RingSocketDevice = require('./base-socket-device')
 
 class Lock extends RingSocketDevice {
@@ -35,14 +34,13 @@ class Lock extends RingSocketDevice {
                 this.setLockState(message)
                 break;
             default:
-                debug('Received unknown command topic '+topic+' for lock: '+this.deviceId)
+                this.debug(`Received message to unknown command topic ${topic}`)
         }
     }
 
     // Set lock target state on received MQTT command message
     setLockState(message) {
-        debug('Received set lock state '+message+' for lock: '+this.deviceId)
-        debug('Location: '+ this.locationId)
+        this.debug(`Received set lock state ${message}`)
         const command = message.toLowerCase()
         switch(command) {
             case 'lock':
@@ -50,7 +48,7 @@ class Lock extends RingSocketDevice {
                 this.device.sendCommand(`lock.${command}`);
                 break;
             default:
-                debug('Received invalid command for lock: '+this.deviceId)
+                this.debug('Received invalid command for lock')
         }
     }
 }
