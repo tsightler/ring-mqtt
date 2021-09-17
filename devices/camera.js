@@ -481,7 +481,7 @@ class Camera extends RingPolledDevice {
     // This function attempts to determine if a stream is active and instead starts a
     // special stream that extracts keyframes from the live stream to use as snapshots
     async updateBatterySnapshot(type) {
-        if (type === interval && this.data.stream.live.status.match(/^(inactive|failed)$/)) {
+        if (type === 'interval' && this.data.stream.live.status.match(/^(inactive|failed)$/)) {
             // It's just an interval snapshot and there's no active local stream
             // so a standard snapshot should work
             this.updateSnapshot(type)
