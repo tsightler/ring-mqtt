@@ -306,18 +306,7 @@ class Camera extends RingPolledDevice {
         if (ding.kind === 'motion') {
             this.data[ding.kind].is_person = (ding.detection_type === 'human') ? true : false
             if (this.data.snapshot.motion) {
-                if (this.device.operatingOnBattery) {
-                    this.data.snapshot.update = true
-                    // If there's not a current snapshot stream, start one now
-                    if (this.data.stream.live.status === 'inactive' || this.data.stream.live.status === 'failed') {
-                        this.startRtspReadStream('snapshot', this.data.stream.live.duration)
-                    } else {
-                        // Received a motion ding while a stream is active, extend the expire 
-                        // time for stream. Wouldn't it be cool if Ring cameras could actually do this?
-                        this.data.stream.snapshot.expires = Math.floor(Date.now()/1000) + this.data.stream.snapshot.duration
-                    }
-                }
-                this.refreshSnapshot()
+                this.refreshSnapshot('motion')
             }
         }
 
@@ -473,61 +462,74 @@ class Camera extends RingPolledDevice {
     async scheduleSnapshotRefresh() {
         this.data.snapshot.intervalTimerId = setInterval(() => {
             if (this.isOnline() && this.data.snapshot.interval && !(this.data.snapshot.motion && this.data.motion.active_ding)) {
-                this.refreshSnapshot()
+                this.refreshSnapshot('interval')
             }
         }, this.data.snapshot.interval * 1000)
     }
     
-    async refreshSnapshot() {
-        let newSnapshot
-        try {
-            newSnapshot = await this.getRefreshedSnapshot()
-        } catch(e) {
-            debug(e.message)
+    async refreshSnapshot(type) {        
+        if (this.device.operatingOnBattery) {
+            // Battery cameras can't take snapshots while streaming
+            // Call the function to deal with those cases
+            this.updateBatterySnapshot(type)
+        } else {
+            // Line powered cameras can take snapshots all the time
+            this.updateSnapshot(type)
+        }
+    }
+
+    // This function attempts to determine if a stream is active and instead starts a
+    // special stream that extracts keyframes from the live stream to use as snapshots
+    async updateBatterySnapshot(type) {
+        if (type === interval && this.data.stream.live.status.match(/^(inactive|failed)$/)) {
+            // It's just an interval snapshot and there's no active local stream
+            // so a standard snapshot should work
+            this.updateSnapshot(type)
+        } else {
+            // There's an active local live stream or it's a motion snapshot request
+            // which means a recording is likely active, start a snapshot stream
+            this.data.snapshot.update = true
+            if (!this.data.stream.snapshot.active) {
+                this.startRtspReadStream('snapshot', this.data.stream.snapshot.duration)
+            }
+        }
+    }
+
+    async updateSnapshot(type) {
+        if (this.device.snapshotsAreBlocked) {
+            debug('Snapshots are unavailable for camera '+this.deviceId+', check if motion capture is disabled manually or via modes settings')
+            return
         }
 
-        if (newSnapshot && newSnapshot === 'SnapFromStream') {
-            // Snapshots from active stream publish automatically so just return
-            return
-        } else if (newSnapshot) {
+        let newSnapshot
+        try {
+            switch (type) {
+                case 'motion':
+                    // For motion snapshots we don't want a cached snapshot so force
+                    // an immediate snapshot update
+                    debug('Motion event detected for line powered camera '+this.deviceId+', forcing a non-cached snapshot update')
+                    await this.device.requestSnapshotUpdate()
+                    await utils.msleep(200) // Just a short pause to give time for the snapshot to update
+                    newSnapshot = await this.device.restClient.request({
+                        url: clientApi(`snapshots/image/${this.device.id}`),
+                        responseType: 'buffer'
+                    })
+                case 'interval':
+                    // For interval snapshots we call the standard snapshot function which
+                    // will return a cached snapshot if called more frequently than every
+                    // 10 seconds
+                    newSnapshot = await this.device.getSnapshot()
+            }
+        } catch (error) {
+            debug(error)
+        }
+
+        if (newSnapshot) {
             this.data.snapshot.currentImage = newSnapshot
             this.data.snapshot.timestamp = Math.round(Date.now()/1000)
             this.publishSnapshot()
         } else {
             debug('Could not retrieve updated snapshot for camera '+this.deviceId)
-        }
-    }
-
-    // This function uses various methods to get a snapshot to work around limitations
-    // of Ring API, ring-client-api snapshot caching, battery cameras, etc.
-    async getRefreshedSnapshot() {
-        if (this.device.snapshotsAreBlocked) {
-            debug('Snapshots are unavailable for camera '+this.deviceId+', check if motion capture is disabled manually or via modes settings')
-            return false
-        }
-
-        if (this.data.snapshot.motion && this.data.motion.active_ding) {
-            if (this.device.operatingOnBattery && this.data.stream.snapshot.active) {
-                // Battery powered cameras can't take snapshots while recording, try to get image from video stream instead
-                debug('Motion event detected on battery powered camera '+this.deviceId+' snapshot will be updated from live stream')
-                this.data.snapshot.update = true
-                return 'SnapFromStream'
-            } else {
-                // Line powered cameras can take a snapshot while recording, but ring-client-api will return a cached
-                // snapshot if a previous snapshot was taken within 10 seconds. If a motion event occurs during this time
-                // a stale image would be returned so, instead, we call our local function to force an uncached snapshot.
-                debug('Motion event detected for line powered camera '+this.deviceId+', forcing a non-cached snapshot update')
-                await this.device.requestSnapshotUpdate()
-                await utils.sleep(1)
-                const newSnapshot = await this.device.restClient.request({
-                    url: clientApi(`snapshots/image/${this.device.id}`),
-                    responseType: 'buffer'
-                })
-                return newSnapshot
-            }
-        } else {
-            // If not an active ding it's a scheduled refresh, just call device getSnapshot()
-            return await this.device.getSnapshot()
         }
     }
 
