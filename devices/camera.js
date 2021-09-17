@@ -55,7 +55,10 @@ class Camera extends RingPolledDevice {
                     state: 'OFF',
                     status: 'inactive',
                     session: false,
+                    dingId: null,
                     recordingUrl: null,
+                    recordingUrlExpire: null,
+                    pollCycle: 0,
                     rtspPublishUrl: (this.config.livestream_user && this.config.livestream_pass)
                         ? `rtsp://${this.config.livestream_user}:${this.config.livestream_pass}@localhost:8554/${this.deviceId}_event`
                         : `rtsp://localhost:8554/${this.deviceId}_event`
@@ -85,8 +88,7 @@ class Camera extends RingPolledDevice {
                 siren: {
                     state:null
                 }
-            } : {},
-            pollCycle: 0
+            } : {}
         }
 
         if (this.config.snapshot_mode.match(/^(motion|interval|all)$/)) {
@@ -273,10 +275,10 @@ class Camera extends RingPolledDevice {
             this.publishAttributes()
         }
 
-        // Every 3 polling cycles (~1 minute, check for and publish updated event URL)
-        this.data.pollCycle++
-        if (this.data.pollCycle > 2) {
-            this.data.pollCycle = 0
+        // Every 3 polling cycles (~1 minute, check for updated event and/or publish new event video URL)
+        this.data.stream.event.pollCycle++
+        if (this.data.stream.event.pollCycle > 2) {
+            this.data.stream.event.pollCycle = 0
             this.updateEventStreamUrl()
         }
 
@@ -732,19 +734,28 @@ class Camera extends RingPolledDevice {
         const kind = streamSelect[0].toLowerCase().replace('-', '_')
         const index = streamSelect[1]-1
         let recordingUrl
+        let dingId
 
         try {
             const events = ((await this.device.getEvents({ limit: 10, kind })).events).filter(event => event.recording_status === 'ready')
-            recordingUrl = await this.device.getRecordingUrl(events[index].ding_id_str)
+            dingId = events[index].ding_id_str
+            if (dingId !== this.data.stream.event.dingId) {
+                debug('New event detected, updating event recording URL')
+                recordingUrl = await this.device.getRecordingUrl(events[index].dingId)
+            } else if (this.data.stream.event.recordingUrlExpire - Math.floor(Date.now()/1000) > 0) {
+                debug('Previous recording URL expired, updating event recording URL')
+                recordingUrl = await this.device.getRecordingUrl(events[index].dingId)
+            }
         } catch {
             debug('Failed to retrieve URL for event recording')
             return false
         }
+
         if (recordingUrl) {
-            if (recordingUrl !== this.data.stream.event.recordingUrl) {
+                this.data.stream.event.dingId = dingId
                 this.data.stream.event.recordingUrl = recordingUrl
+                this.data.stream.event.recordingUrlExpire = Math.floor(Date.now()/1000) + 720
                 this.publishStreamState()
-            }
             return true
         } else {
             return false

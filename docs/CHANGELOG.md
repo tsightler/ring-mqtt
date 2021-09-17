@@ -1,3 +1,10 @@
+## v4.8.3
+**New Features**
+- Event stream switch attribute now includes URL for recorded video to make it easier to automate download of recordings
+
+**Fixed Bugs**
+- Refactor and simplify snapshot functions, especially for battery cameras.  Hopefully fixes users experiencing no snapshots with battery cameras.
+
 ## v4.8.2
 **New Features**
 - Support streaming video of historical motion/ding/on-demand events via new event stream RTSP path.  See the [camera documentation](CAMERAS.md) for more details. (Note that this feature requires a Ring Protect plan that allows saving videos)
