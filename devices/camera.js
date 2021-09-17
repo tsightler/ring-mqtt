@@ -743,6 +743,7 @@ class Camera extends RingPolledDevice {
                 debug('New event detected, updating event recording URL')
                 recordingUrl = await this.device.getRecordingUrl(dingId)
             } else if (this.data.stream.event.recordingUrlExpire - Math.floor(Date.now()/1000) > 0) {
+                console.log(this.data.stream.event.recordingUrlExpire, Math.floor(Date.now()/1000))
                 debug('Previous recording URL expired, updating event recording URL')
                 recordingUrl = await this.device.getRecordingUrl(dingId)
             }
