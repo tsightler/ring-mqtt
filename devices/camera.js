@@ -55,6 +55,7 @@ class Camera extends RingPolledDevice {
                     state: 'OFF',
                     status: 'inactive',
                     session: false,
+                    recordingUrl: null,
                     rtspPublishUrl: (this.config.livestream_user && this.config.livestream_pass)
                         ? `rtsp://${this.config.livestream_user}:${this.config.livestream_pass}@localhost:8554/${this.deviceId}_event`
                         : `rtsp://localhost:8554/${this.deviceId}_event`
@@ -84,7 +85,8 @@ class Camera extends RingPolledDevice {
                 siren: {
                     state:null
                 }
-            } : {}
+            } : {},
+            pollCycle: 0
         }
 
         if (this.config.snapshot_mode.match(/^(motion|interval|all)$/)) {
@@ -248,6 +250,8 @@ class Camera extends RingPolledDevice {
         this.data.stream.live.streamSource = (this.config.livestream_user && this.config.livestream_pass)
             ? `rtsp://${this.config.livestream_user}:${this.config.livestream_pass}@${streamSourceUrlBase}:8554/${this.deviceId}_live`
             : `rtsp://${streamSourceUrlBase}:8554/${this.deviceId}_live`
+
+        this.updateEventStreamUrl()
     }
 
     // Publish camera capabilities and state and subscribe to events
@@ -267,6 +271,13 @@ class Camera extends RingPolledDevice {
                 }
             }
             this.publishAttributes()
+        }
+
+        // Every 3 polling cycles (~1 minute, check for and publish updated event URL)
+        this.data.pollCycle++
+        if (this.data.pollCycle > 2) {
+            this.data.pollCycle = 0
+            this.updateEventStreamUrl()
         }
 
         // Check for subscription to ding and motion events and attempt to resubscribe
@@ -442,6 +453,9 @@ class Camera extends RingPolledDevice {
             }
 
             const attributes = { status: this.data.stream[type].status }
+            if (entityProp === 'event_stream') {
+                attributes.recordingUrl = this.data.stream.event.recordingUrl
+            }
             this.publishMqtt(this.entity[entityProp].json_attributes_topic, JSON.stringify(attributes), true)    
         })
 
@@ -634,50 +648,6 @@ class Camera extends RingPolledDevice {
         this.data.stream[type].active = false
     }
 
-    async setStreamState(type, message) {
-        const command = message.toLowerCase()
-        debug(`Received set ${type} stream state ${message} for camera ${this.deviceId}`)
-        debug(`Location Id: ${this.locationId}`) 
-        switch (command) {
-            case 'on':
-                if (type === 'live') {
-                    // Stream was manually started, create a dummy, audio only
-                    // RTSP source stream to trigger stream startup and keep it active
-                    this.startRtspReadStream('keepalive', 86400)
-                } else {
-                    debug (`Event stream can only be started on-demand!`)
-                    return
-                }
-                break;
-            case 'on-demand':
-                if (this.data.stream[type].status === 'active' || this.data.stream[type].status === 'activating') {
-                    this.publishStreamState()
-                    return
-                } else {
-                    this.data.stream[type].status = 'activating'
-                    this.publishStreamState()
-                    if (type === 'live') {
-                        this.startLiveStream()
-                    } else {
-                        this.startEventStream()
-                    }
-                }
-                break;
-            case 'off':
-                if (type === 'live' && this.data.stream[type].session) {
-                    this.data.stream[type].session.stop()
-                } else if (type === 'event' && this.data.stream[type].session) {
-                    this.data.stream[type].session.kill()
-                } else {
-                    this.data.stream[type].status = 'inactive'
-                    this.publishStreamState()
-                }
-                break;
-            default:
-                debug(`Received unknown command for ${type} stream on camera ${this.deviceId}`)
-        }
-    }
-
     async startLiveStream() {
         // Start and publish stream to rtsp-simple-server 
         debug('Establishing connection to live stream for camera '+this.deviceId)
@@ -722,46 +692,63 @@ class Camera extends RingPolledDevice {
     }
 
     async startEventStream() {
-        let recordingUrl
+        if (await this.updateEventStreamUrl()) {
+            const streamSelect = this.data.event_select.state.split(' ')
+            const kind = streamSelect[0].toLowerCase().replace('-', '_')
+            const index = streamSelect[1]
+            debug(`Streaming the ${(index==1?"":index==2?"2nd ":index==3?"3rd ":index+"th ")}most recent ${kind} recording`)
+
+            this.data.stream.event.session = spawn(pathToFfmpeg, [
+                '-re',
+                '-i', this.data.stream.event.recordingUrl,
+                '-map', '0:v:0',
+                '-map', '0:a:0',
+                '-map', '0:a:0',
+                '-c:v', 'copy',
+                '-c:a:0', 'aac',
+                '-c:a:1', 'copy',
+                '-f', 'rtsp',
+                '-rtsp_transport', 'tcp',
+                this.data.stream.event.rtspPublishUrl
+            ])
+
+            this.data.stream.event.session.on('spawn', async () => {
+                debug(`The recorded ${kind} stream for camera ${this.deviceId} has started`)
+                this.data.stream.event.status = 'active'
+                this.publishStreamState()
+            })
+
+            this.data.stream.event.session.on('close', async () => {
+                debug(`The recorded ${kind} stream for camera ${this.deviceId} has ended`)
+                this.data.stream.event.active = 'inactive'
+                this.data.stream.event.session = false
+                this.publishStreamState()
+            })
+        }
+    }
+
+    async updateEventStreamUrl() {
         const streamSelect = this.data.event_select.state.split(' ')
         const kind = streamSelect[0].toLowerCase().replace('-', '_')
-        const index = streamSelect[1]
+        const index = streamSelect[1]-1
+        let recordingUrl
 
-        debug(`Streaming the ${(index==1?"":index==2?"2nd ":index==3?"3rd ":index+"th ")}most recent ${kind} recording`)
         try {
             const events = ((await this.device.getEvents({ limit: 10, kind })).events).filter(event => event.recording_status === 'ready')
-            recordingUrl = await this.device.getRecordingUrl(events[index-1].ding_id_str)
+            recordingUrl = await this.device.getRecordingUrl(events[index].ding_id_str)
         } catch {
             debug('Failed to retrieve URL for event recording')
-            return
+            return false
         }
-
-        this.data.stream.event.session = spawn(pathToFfmpeg, [
-            '-re',
-            '-i', recordingUrl,
-            '-map', '0:v:0',
-            '-map', '0:a:0',
-            '-map', '0:a:0',
-            '-c:v', 'copy',
-            '-c:a:0', 'aac',
-            '-c:a:1', 'copy',
-            '-f', 'rtsp',
-            '-rtsp_transport', 'tcp',
-            this.data.stream.event.rtspPublishUrl
-        ])
-
-        this.data.stream.event.session.on('spawn', async () => {
-            debug(`The recorded ${kind} stream for camera ${this.deviceId} has started`)
-            this.data.stream.event.status = 'active'
-            this.publishStreamState()
-        })
-
-        this.data.stream.event.session.on('close', async () => {
-            debug(`The recorded ${kind} stream for camera ${this.deviceId} has ended`)
-            this.data.stream.event.active = 'inactive'
-            this.data.stream.event.session = false
-            this.publishStreamState()
-        })
+        if (recordingUrl) {
+            if (recordingUrl !== this.data.stream.event.recordingUrl) {
+                this.data.stream.event.recordingUrl = recordingUrl
+                this.publishStreamState()
+            }
+            return true
+        } else {
+            return false
+        }
     }
 
     // Process messages from MQTT command topic
@@ -866,17 +853,61 @@ class Camera extends RingPolledDevice {
         }
     }
 
+    async setStreamState(type, message) {
+        const command = message.toLowerCase()
+        debug(`Received set ${type} stream state ${message} for camera ${this.deviceId}`)
+        debug(`Location Id: ${this.locationId}`) 
+        switch (command) {
+            case 'on':
+                if (type === 'live') {
+                    // Stream was manually started, create a dummy, audio only
+                    // RTSP source stream to trigger stream startup and keep it active
+                    this.startRtspReadStream('keepalive', 86400)
+                } else {
+                    debug (`Event stream can only be started on-demand!`)
+                    return
+                }
+                break;
+            case 'on-demand':
+                if (this.data.stream[type].status === 'active' || this.data.stream[type].status === 'activating') {
+                    this.publishStreamState()
+                    return
+                } else {
+                    this.data.stream[type].status = 'activating'
+                    this.publishStreamState()
+                    if (type === 'live') {
+                        this.startLiveStream()
+                    } else {
+                        this.startEventStream()
+                    }
+                }
+                break;
+            case 'off':
+                if (type === 'live' && this.data.stream[type].session) {
+                    this.data.stream[type].session.stop()
+                } else if (type === 'event' && this.data.stream[type].session) {
+                    this.data.stream[type].session.kill()
+                } else {
+                    this.data.stream[type].status = 'inactive'
+                    this.publishStreamState()
+                }
+                break;
+            default:
+                debug(`Received unknown command for ${type} stream on camera ${this.deviceId}`)
+        }
+    }
+
     // Set Stream Select Option
     setEventSelect(message) {
         debug('Received set event stream to '+message+' for camera '+this.deviceId)
         debug('Location Id: '+ this.locationId)
         if (this.entity.event_select.options.includes(message)) {
+            if (this.data.stream.event.session) {
+                this.data.stream.event.session.kill()
+            }
             this.data.event_select.state = message
-            if (this.data.event_select.state !== this.data.event_select.publishedState) {
+            if (!this.updateEventStreamUrl()) {
                 this.publishStreamState()
-                if (this.data.stream.event.session) {
-                    this.data.stream.event.session.kill()
-                }
             }
         } else {
             debug('Set event stream to '+message+' received by not a valid value')
