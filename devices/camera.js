@@ -252,8 +252,6 @@ class Camera extends RingPolledDevice {
         this.data.stream.live.streamSource = (this.config.livestream_user && this.config.livestream_pass)
             ? `rtsp://${this.config.livestream_user}:${this.config.livestream_pass}@${streamSourceUrlBase}:8554/${this.deviceId}_live`
             : `rtsp://${streamSourceUrlBase}:8554/${this.deviceId}_live`
-
-        this.updateEventStreamUrl()
     }
 
     // Publish camera capabilities and state and subscribe to events
@@ -275,10 +273,10 @@ class Camera extends RingPolledDevice {
             this.publishAttributes()
         }
 
-        // Every 3 polling cycles (~1 minute, check for updated event and/or publish new event video URL)
-        this.data.stream.event.pollCycle++
-        if (this.data.stream.event.pollCycle > 2) {
-            this.data.stream.event.pollCycle = 0
+        // Every 3 polling cycles (~1 minute, check for updated event or expired event URL)
+        this.data.stream.event.pollCycle--
+        if (this.data.stream.event.pollCycle <= 0) {
+            this.data.stream.event.pollCycle = 3
             this.updateEventStreamUrl()
         }
 
@@ -742,8 +740,7 @@ class Camera extends RingPolledDevice {
             if (dingId !== this.data.stream.event.dingId) {
                 debug('New event detected, updating event recording URL')
                 recordingUrl = await this.device.getRecordingUrl(dingId)
-            } else if (this.data.stream.event.recordingUrlExpire - Math.floor(Date.now()/1000) > 0) {
-                console.log(this.data.stream.event.recordingUrlExpire, Math.floor(Date.now()/1000))
+            } else if (Math.floor(Date.now()/1000) - this.data.stream.event.recordingUrlExpire > 0) {
                 debug('Previous recording URL expired, updating event recording URL')
                 recordingUrl = await this.device.getRecordingUrl(dingId)
             }
