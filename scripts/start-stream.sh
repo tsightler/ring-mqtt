@@ -21,7 +21,7 @@ reset='\033[0m'
 ctrl_c() {
     if [ -z ${reason} ]; then
         # If no reason defined, that means we were interrupted by a singnal, send the command to stop the live stream
-        echo -e "${green}[${client_name}]${reset} Deactivating stream due to signal from RTSP server (no more active clients or publish ended)"
+        echo -e "${green}[${client_name}]${reset} Deactivating stream due to signal from RTSP server (no more active clients or publisher ended stream)"
         mosquitto_pub -i "${client_id}_pub" -u "${MQTTUSER}" -P "${MQTTPASSWORD}" -h "${MQTTHOST}" -p "${MQTTPORT}" -t "${command_topic}" -m "OFF"
     fi
     # Cheesy, but there should only ever be one process per client active at any time so this works for now
