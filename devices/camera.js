@@ -257,6 +257,13 @@ class Camera extends RingPolledDevice {
 
     // Publish camera capabilities and state and subscribe to events
     async publishData(data) {
+        // Every 3 polling cycles (~1 minute, check for updated event or expired event URL)
+        this.data.stream.event.pollCycle--
+        if (this.data.stream.event.pollCycle <= 0) {
+            this.data.stream.event.pollCycle = 3
+            this.updateEventStreamUrl()
+        }        
+
         const isPublish = data === undefined ? true : false
         this.publishPolledState(isPublish)
 
@@ -272,13 +279,6 @@ class Camera extends RingPolledDevice {
                 }
             }
             this.publishAttributes()
-        }
-
-        // Every 3 polling cycles (~1 minute, check for updated event or expired event URL)
-        this.data.stream.event.pollCycle--
-        if (this.data.stream.event.pollCycle <= 0) {
-            this.data.stream.event.pollCycle = 3
-            this.updateEventStreamUrl()
         }
 
         // Check for subscription to ding and motion events and attempt to resubscribe
