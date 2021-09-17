@@ -692,39 +692,38 @@ class Camera extends RingPolledDevice {
     }
 
     async startEventStream() {
-        if (await this.updateEventStreamUrl()) {
-            const streamSelect = this.data.event_select.state.split(' ')
-            const kind = streamSelect[0].toLowerCase().replace('-', '_')
-            const index = streamSelect[1]
-            debug(`Streaming the ${(index==1?"":index==2?"2nd ":index==3?"3rd ":index+"th ")}most recent ${kind} recording`)
+        await updateEventStreamUrl()
+        const streamSelect = this.data.event_select.state.split(' ')
+        const kind = streamSelect[0].toLowerCase().replace('-', '_')
+        const index = streamSelect[1]
+        debug(`Streaming the ${(index==1?"":index==2?"2nd ":index==3?"3rd ":index+"th ")}most recent ${kind} recording`)
 
-            this.data.stream.event.session = spawn(pathToFfmpeg, [
-                '-re',
-                '-i', this.data.stream.event.recordingUrl,
-                '-map', '0:v:0',
-                '-map', '0:a:0',
-                '-map', '0:a:0',
-                '-c:v', 'copy',
-                '-c:a:0', 'aac',
-                '-c:a:1', 'copy',
-                '-f', 'rtsp',
-                '-rtsp_transport', 'tcp',
-                this.data.stream.event.rtspPublishUrl
-            ])
+        this.data.stream.event.session = spawn(pathToFfmpeg, [
+            '-re',
+            '-i', this.data.stream.event.recordingUrl,
+            '-map', '0:v:0',
+            '-map', '0:a:0',
+            '-map', '0:a:0',
+            '-c:v', 'copy',
+            '-c:a:0', 'aac',
+            '-c:a:1', 'copy',
+            '-f', 'rtsp',
+            '-rtsp_transport', 'tcp',
+            this.data.stream.event.rtspPublishUrl
+        ])
 
-            this.data.stream.event.session.on('spawn', async () => {
-                debug(`The recorded ${kind} stream for camera ${this.deviceId} has started`)
-                this.data.stream.event.status = 'active'
-                this.publishStreamState()
-            })
+        this.data.stream.event.session.on('spawn', async () => {
+            debug(`The recorded ${kind} stream for camera ${this.deviceId} has started`)
+            this.data.stream.event.status = 'active'
+            this.publishStreamState()
+        })
 
-            this.data.stream.event.session.on('close', async () => {
-                debug(`The recorded ${kind} stream for camera ${this.deviceId} has ended`)
-                this.data.stream.event.active = 'inactive'
-                this.data.stream.event.session = false
-                this.publishStreamState()
-            })
-        }
+        this.data.stream.event.session.on('close', async () => {
+            debug(`The recorded ${kind} stream for camera ${this.deviceId} has ended`)
+            this.data.stream.event.active = 'inactive'
+            this.data.stream.event.session = false
+            this.publishStreamState()
+        })
     }
 
     async updateEventStreamUrl() {
