@@ -261,7 +261,7 @@ class Camera extends RingPolledDevice {
         const isPublish = data === undefined ? true : false
         this.publishPolledState(isPublish)
 
-        // Update every 3 polling cycles (~1 minute, check for updated event or expired event URL)
+        // Update every 3 polling cycles (~1 minute), check for updated event or expired recording URL
         this.data.stream.event.pollCycle--
         if (this.data.stream.event.pollCycle <= 0) {
             this.data.stream.event.pollCycle = 3
@@ -710,7 +710,7 @@ class Camera extends RingPolledDevice {
         const streamSelect = this.data.event_select.state.split(' ')
         const kind = streamSelect[0].toLowerCase().replace('-', '_')
         const index = streamSelect[1]
-        this.debug(`Streaming the ${(index==1?"":index==2?"2nd ":index==3?"3rd ":index+"th ")}most recent ${kind} recording`)
+        this.debug(`Streaming the ${(index==1?"":index==2?"2nd ":index==3?"3rd ":index+"th ")}most recently recorded ${kind} event`)
 
         this.data.stream.event.session = spawn(pathToFfmpeg, [
             '-re',
@@ -727,13 +727,13 @@ class Camera extends RingPolledDevice {
         ])
 
         this.data.stream.event.session.on('spawn', async () => {
-            this.debug(`The recorded ${kind} stream has started`)
+            this.debug(`The recorded ${kind} event stream has started`)
             this.data.stream.event.status = 'active'
             this.publishStreamState()
         })
 
         this.data.stream.event.session.on('close', async () => {
-            this.debug(`The recorded ${kind} stream has ended`)
+            this.debug(`The recorded ${kind} event stream has ended`)
             this.data.stream.event.active = 'inactive'
             this.data.stream.event.session = false
             this.publishStreamState()
@@ -751,14 +751,14 @@ class Camera extends RingPolledDevice {
             const events = ((await this.device.getEvents({ limit: 10, kind })).events).filter(event => event.recording_status === 'ready')
             dingId = events[index].ding_id_str
             if (dingId !== this.data.stream.event.dingId) {
-                this.debug('New event detected, updating event recording URL')
+                this.debug(`New ${kind} event detected, updating the event recording URL`)
                 recordingUrl = await this.device.getRecordingUrl(dingId)
             } else if (Math.floor(Date.now()/1000) - this.data.stream.event.recordingUrlExpire > 0) {
-                this.debug('Previous recording URL expired, updating event recording URL')
+                this.debug(`Previous ${kind} event recording URL has expired, updating the event recording URL`)
                 recordingUrl = await this.device.getRecordingUrl(dingId)
             }
         } catch {
-            this.debug('Failed to retrieve URL for event recording')
+            this.debug(`Failed to retrieve ${kind} event recording URL for event`)
             return false
         }
 

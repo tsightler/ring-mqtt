@@ -59,7 +59,7 @@ do
                 echo -e "${green}[${client_name}]${reset} ${type^} stream is activating..."
                 ;;
             active)
-                echo -e "${green}[${client_name}]${reset} ${type^} stream successfully activated!"
+                echo -e "${green}[${client_name}]${reset} ${type^} stream is active!"
                 ;;
             inactive)
                 echo -e "${green}[${client_name}]${yellow} ${type^} stream has gone inactive, exiting...${reset}"
