@@ -468,7 +468,7 @@ class Camera extends RingPolledDevice {
     }
     
     async refreshSnapshot(type) {        
-        if (!this.device.operatingOnBattery) {
+        if (this.device.operatingOnBattery) {
             // Battery cameras can't take snapshots while streaming
             // Call the function to deal with those cases
             if (type === 'interval' && this.data.stream.live.status.match(/^(inactive|failed)$/)) {
