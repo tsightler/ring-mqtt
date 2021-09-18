@@ -812,7 +812,7 @@ class Camera extends RingPolledDevice {
                 }
                 break;
             default:
-                this.debug(`Received message to unknown command topic ${topic}`)
+                this.debug(`Received message to unknown command topic: ${componentCommand}`)
         }
     }
 

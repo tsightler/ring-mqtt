@@ -32,7 +32,7 @@ class Keypad extends RingSocketDevice {
                 this.setVolumeLevel(message)
                 break;
             default:
-                this.debug(`Received message to unknown command topic ${topic}`)
+                this.debug(`Received message to unknown command topic: ${componentCommand}`)
         }
     }
 

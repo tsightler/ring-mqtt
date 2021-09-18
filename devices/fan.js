@@ -58,7 +58,7 @@ class Fan extends RingSocketDevice {
                 this.setFanPreset(message)
                 break;
             default:
-                this.debug(`Received message to unknown command topic ${topic}`)
+                this.debug(`Received message to unknown command topic: ${componentCommand}`)
         }
     }
 

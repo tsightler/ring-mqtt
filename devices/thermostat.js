@@ -70,8 +70,8 @@ class Thermostat extends RingSocketDevice {
     }
 
     // Process messages from MQTT command topic
-    processCommand(message, topic) {
-        switch (topic.split("/").slice(-2).join("/")) {
+    processCommand(message, componentCommand) {
+        switch (componentCommand) {
             case 'thermostat/mode_command':
                 this.setMode(message)
                 break;
@@ -85,7 +85,7 @@ class Thermostat extends RingSocketDevice {
                 this.setAuxMode(message)
                 break;
             default:
-                this.debug(`Received message to unknown command topic ${topic}`)
+                this.debug(`Received message to unknown command topic: ${componentCommand}`)
         }
     }
 

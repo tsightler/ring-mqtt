@@ -34,7 +34,7 @@ class Lock extends RingSocketDevice {
                 this.setLockState(message)
                 break;
             default:
-                this.debug(`Received message to unknown command topic ${topic}`)
+                this.debug(`Received message to unknown command topic: ${componentCommand}`)
         }
     }
 
@@ -45,7 +45,7 @@ class Lock extends RingSocketDevice {
         switch(command) {
             case 'lock':
             case 'unlock':
-                this.device.sendCommand(`lock.${command}`);
+                this.device.sendCommand(`lock.${command}`)
                 break;
             default:
                 this.debug('Received invalid command for lock')
