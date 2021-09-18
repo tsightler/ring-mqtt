@@ -81,14 +81,40 @@ To allow streaming to external media clients you'll need to open the port for th
 `rtsp://streaming_user:let_me_stream!@3ba32cf2-ring-mqtt:8554/3452b19184fa_live`
 
 ### Manually Starting a Live Stream
-When a media client connects to the live stream server the stream is started automatically, however, there may be cases where you want to start a live stream manually without a media client.  This is mostly useful because every Ring live stream also creates a recording (with a Protect Plan) so doing this allows an automation to manually start and stop a recording.  This is possible using the "live stream" switch which is exposed as an entity to Home Assistant and can of course be accessed by MQTT as well.  It performs like any switch, accepting "ON" and "OFF" to start and stop a stream repsectively.
+When a media client connects to the live stream server the stream is started automatically, however, there may be cases where starting a stream without a media client is desired.  When used with a Ring Protect plan all live streams also create a recording so being able to manually start a stream allows an automation to effectively manually start and stop a recording.  This is possible ising the "live stream" switch, which is exposed as an entity to Home Assistant and can be accessed by MQTT as well.  It performs like any switch, accepting "ON" and "OFF" to start and stop a stream repsectively.
 
-Note that turning the stream off ALWAYS stops the live stream immediately, no matter how many clients are connected.
+Note that turning the stream off ALWAYS stops the local live stream immediately, no matter how many clients are connected to the local RTSP server.
 
 ### Downloading recorded videos using the Event Stream
-If you have a Ring Protect Plan that saves videos to the Ring Cloud service, you can use this addon to create an automation to automatically download videos once they have been processed.  The "Select Event Stream" entity includes an attribute for both the current eventId and the recordingURL.  Note that recordingURLs are only valid for 15 minutes so you will see updates for this URL every 10-15 minutes automatically.  This URL should always point to the selected events current video.  When a new event comes in, you can monitor for the eventId to change as an indicator that the recording for that event is ready and then download the video using the recordingURL attribute.
+If this addon is used with an account that includes a Ring Protect Plan that supports saving videos to the Ring Cloud service, it is possible to use this addon to automate downloading of videos once they have been processed.  To assist with this, the "Select Event Stream" entity includes attributes for both the current eventId and the recordingUrl.
 
+Note that recordingURLs are only valid for 15 minutes so the addon automatically requests a new URL between the 12-15 minute mark before the old URL expires.  Also, any time a new event stream is selected the eventId and recordingUrl are immediately updated with the information for the selected event.  This means it's not a good idea to trigger downloads specifically on eventID changes.
 
+As an alternetive, the best method is to use an automation that triggers on the event type being downloaded, then use a wait for trigger to perform the download as soon as the eventId changes.  Below is a simple example automation that uses the Home Assistant downloader service to download a recording as soon as the eventId is updated, which indicates that the recording is ready.
+
+```
+alias: Download Ring Video (Front Porch)
+trigger:
+  - platform: state
+    entity_id: binary_sensor.front_porch_motion
+    to: 'on'
+action:
+  - wait_for_trigger:
+      - platform: state
+        entity_id: select.front_porch_event_select
+        attribute: eventId
+    timeout: '00:05'
+  - service: downloader.download_file
+    data_template:
+      url: '{{ states.select.front_porch_event_select.attributes.recordingUrl }}'
+      subdir: front_porch
+      filename: '{{ now().strftime( ''%Y%m%dT%H%M%S_motion.mp4'' ) }}'
+      overwrite: false
+```
+
+This automation starts any time the motion state switches to "on", and then waits for the eventId attribute to change, which indicates that the new event is ready. It then uses the Home Assistant downloader service with the recordingUrl attribute to download the file to a subdirectory with a date based filename.
+
+Of course there are other possible automation options as well, and, even without a Ring Protect Plan, you can do things like start an FFmpeg stream on a motion event to record a video (although note that you will likely miss the event that started the recording).
 
 ### FAQ
 
