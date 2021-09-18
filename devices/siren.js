@@ -15,8 +15,8 @@ class Siren extends RingSocketDevice {
     publishData(data) {
         const isPublish = data === undefined ? true : false
         if (isPublish) {
-            // Eventually remove this but for now this attempts to delete the old light component based volume control from Home Assistant
-            this.publishMqtt('homeassistant/light/'+this.locationId+'/'+this.deviceId+'_audio/config', '', false)
+            // Eventually remove this but for now this attempts to delete the old siren binary_sensor
+            this.publishMqtt('homeassistant/binary_sensor/'+this.locationId+'/'+this.deviceId+'_siren/config', '', false)
         }
 
         const sirenState = this.device.data.sirenStatus === 'active' ? 'ON' : 'OFF'

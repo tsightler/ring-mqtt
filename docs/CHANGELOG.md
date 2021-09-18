@@ -1,11 +1,13 @@
 ## v4.8.3
 **New Features**
-- The event stream select entity now includes an attribute with the dingID and the recordingURL for the selected event.  These URLs are time limited to approximately 15 minutes, but the code automatically updates the URL when it nears expiration so the URL in the attribute should always be valid.  If you select a new event the URL is updated immediately.  See the [camera documentation](CAMERAS.md) for examples of automations that download video files.
+- The event stream select entity now includes eventId and recordingUrl attributes with values updated based on the selected event to facilitate automatic downloading of recorded videos. See the [camera documentation](CAMERAS.md) for more information and an example automation using Home Assistant downloader service.
+- Dome sirens are now supported
 
 **Fixed Bugs**
-- Refactor and simplify snapshot functions.  Should fix the issue with of no motion snapshots for users with battery powered cameras.
+- Refactor and simplify snapshot functions.  This should hopefully fix the issue of no motion snapshots for users with battery powered cameras.
 
 **Other Changes**
+- Siren devices are now represented as a switch instead of just a sensor, allowing the siren to be activated manually (uses "test siren" functionality from Ring app)
 
 ## v4.8.2
 **New Features**
