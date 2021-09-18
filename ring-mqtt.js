@@ -147,8 +147,8 @@ async function getDevice(device, mqttClient, allDevices) {
                 : new ContactSensor(deviceInfo)
         case 'location.mode':
             return new ModesPanel(deviceInfo)
-        case 'siren.outdoor-strobe':
         case 'siren':
+        case 'siren.outdoor-strobe':
             return new Siren(deviceInfo)
         case RingDeviceType.Thermostat:
             const operatingStatus = allDevices.find(d => d.data.parentZid === device.id && d.deviceType === 'thermostat-operating-status')
