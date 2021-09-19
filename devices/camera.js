@@ -592,6 +592,7 @@ class Camera extends RingPolledDevice {
         if (this.data.stream[type].active) { return }
         this.data.stream[type].active = true
         let ffmpegProcess
+        let killSignal = 'SIGTERM'
         
         // Start stream with MJPEG output directed to P2J server with one frame every 2 seconds 
         this.debug(`Starting a ${type} stream for camera`)
@@ -616,13 +617,14 @@ class Camera extends RingPolledDevice {
             // trigger rtsp-simple-server to start the on-demand stream and 
             // keep it running when there are no other RTSP readers.
             ffmpegProcess = spawn(pathToFfmpeg, [
-                '-stimeout', '5000000',
                 '-i', this.data.stream.live.rtspPublishUrl,
                 '-map', '0:a:0',
                 '-c:a', 'copy',
                 '-f', 'null',
                 '/dev/null'
             ])
+
+            killSignal = 'SIGKILL'
         }
 
         ffmpegProcess.on('spawn', async () => {
@@ -660,7 +662,7 @@ class Camera extends RingPolledDevice {
             }
         }
 
-        ffmpegProcess.kill()
+        ffmpegProcess.kill(killSignal)
         this.data.stream[type].active = false
     }
 
