@@ -7,7 +7,7 @@
 - Refactor and simplify snapshot functions.  This should hopefully fix the issue of no motion snapshots for users with battery powered cameras.
 
 **Other Changes**
-- Siren devices are now represented as a switch instead of just a sensor, allowing the siren to be activated manually (uses "test siren" functionality from Ring app)
+- Siren devices are now represented as a switch instead of a binary_sensor.  
 
 ## v4.8.2
 **New Features**

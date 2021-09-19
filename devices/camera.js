@@ -651,7 +651,10 @@ class Camera extends RingPolledDevice {
                 if (!pathDetails.sourceReady) {
                     // If the source stream stops (due to manual cancel or Ring timeout)
                     // force the keepalive stream to expire
+                    this.debug('Ring livestream has timed out...expire the keepalive stream')
                     this.data.stream[type].expires = 0
+                } else {
+                    this.debug('Keepalive stream is still publishing')
                 }
             }
         }
