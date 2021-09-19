@@ -616,12 +616,12 @@ class Camera extends RingPolledDevice {
             // trigger rtsp-simple-server to start the on-demand stream and 
             // keep it running when there are no other RTSP readers.
             ffmpegProcess = spawn(pathToFfmpeg, [
-                'timeout', '5000000',
+                '-stimeout', '5000000',
                 '-i', this.data.stream.live.rtspPublishUrl,
                 '-map', '0:a:0',
                 '-c:a', 'copy',
                 '-f', 'null',
-                '-'
+                '/dev/null'
             ])
         }
 
