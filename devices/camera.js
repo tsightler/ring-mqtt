@@ -623,8 +623,6 @@ class Camera extends RingPolledDevice {
                 '-f', 'null',
                 '/dev/null'
             ])
-
-            killSignal = 'SIGKILL'
         }
 
         ffmpegProcess.on('spawn', async () => {
@@ -654,10 +652,10 @@ class Camera extends RingPolledDevice {
                 if (!pathDetails.sourceReady) {
                     // If the source stream stops (due to manual cancel or Ring timeout)
                     // force the keepalive stream to expire
-                    this.debug('Ring livestream has timed out...expire the keepalive stream')
+                    this.debug('Ring live stream has stopped publishing, killing the keepalive stream')
                     this.data.stream[type].expires = 0
-                } else {
-                    this.debug('Keepalive stream is still publishing')
+                     // For some reason the keepalive stream never times out so kill the process hard
+                    killSignal = 'SIGKILL'
                 }
             }
         }
