@@ -40,8 +40,9 @@ class Siren extends RingSocketDevice {
             case 'on':
             case 'off':
                 this.debug(`Received set siren state ${message}`)
-                const command = (message.toLowerCase() === 'on') ? 'start' : 'stop' 
-                this.device.sendCommand(`siren-test.${command}`)
+                const command = (message.toLowerCase() === 'on') ? 'start' : 'stop'
+                const data = (message.toLowerCase() === 'on') ? { duration: 3600000 } : {}
+                this.device.sendCommand(`siren-test.${command}`, data)
                 break;
             default:
                 this.debug('Received invalid command for siren!')
