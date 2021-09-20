@@ -230,14 +230,11 @@ class SecurityPanel extends RingSocketDevice {
         switch(message.toLowerCase()) {
             case 'on':
                 this.debug(`Activating siren for ${this.device.location.name}`)
-                //this.device.location.soundSiren().catch(err => { this.debug(err) })
-                const data = { duration: 3600000 }
-                this.device.sendCommand('siren-test.start', data)
+                this.device.location.soundSiren().catch(err => { this.debug(err) })
                 break;
             case 'off': {
                 this.debug(`Deactivating siren for ${this.device.location.name}`)
-                //this.device.location.silenceSiren().catch(err => { this.debug(err) })
-                this.device.sendCommand('siren-test.stop')
+                this.device.location.silenceSiren().catch(err => { this.debug(err) })
                 break;
             }
             default:
