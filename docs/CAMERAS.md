@@ -112,9 +112,9 @@ action:
       overwrite: false
 ```
 
-This automation starts any time the motion state switches to "on", and then waits for the eventId attribute to change, which indicates that the new event is ready. It then uses the Home Assistant downloader service with the recordingUrl attribute to download the file to a subdirectory with a date based filename.
+This automation in this example is initially trigger any time motion starts, oncw triggered, it waits for the eventId attribute to change, which indicates that recording of the new event is ready. At that point it uses the Home Assistant downloader service with the recordingUrl attribute to download the file to a subdirectory with a date based filename.
 
-Of course there are other possible automation options as well, and, even without a Ring Protect Plan, you can do things like start an FFmpeg stream on a motion event to record a video (although note that you will likely miss the event that started the recording).
+Of course there are other possible automation options as well, and, even without a Ring Protect Plan, you can do things like start an FFmpeg stream on a motion event to record a video, however, the Ring Protect Plan still offers a significant value in that it pulls the seconds just before the event, while triggering a recording of the stream will always miss the first few seconds at least since it won't know to start recording until after the motion event is received.  If course, if you are using other devices or events as the start trigger, this might be good enough.
 
 ### FAQ
 

@@ -30,12 +30,12 @@ class Switch extends RingSocketDevice {
     }
 
     // Set switch target state on received MQTT command message
-    setSwitchState(value) {
-        this.debug(`Received set switch state ${value}`)
-        const command = value.toLowerCase()
+    setSwitchState(message) {
+        const command = message.toLowerCase()
         switch(command) {
             case 'on':
             case 'off': {
+                this.debug(`Received set switch state ${message}`)
                 this.device.setInfo({ device: { v1: { on: (command === 'on') ? true : false } } })
                 break;
             }
