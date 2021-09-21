@@ -1,4 +1,3 @@
-const debug = require('debug')('ring-mqtt')
 const RingSocketDevice = require('./base-socket-device')
 
 class Keypad extends RingSocketDevice {
@@ -33,19 +32,18 @@ class Keypad extends RingSocketDevice {
                 this.setVolumeLevel(message)
                 break;
             default:
-                debug('Received unknown command topic '+topic+' for keypad: '+this.deviceId)
+                this.debug(`Received message to unknown command topic: ${componentCommand}`)
         }
     }
 
     // Set volume level on received MQTT command message
     setVolumeLevel(message) {
         const volume = message
-        debug('Received set volume level to '+volume+'% for keypad: '+this.deviceId)
-        debug('Location Id: '+ this.locationId)
+        this.debug(`Received set volume level to ${volume}%`)
         if (isNaN(message)) {
-                debug('Volume command received but value is not a number')
+            this.debug('Volume command received but value is not a number')
         } else if (!(message >= 0 && message <= 100)) {
-            debug('Volume command received but out of range (0-100)')
+            this.debug('Volume command received but out of range (0-100)')
         } else {
             this.device.setVolume(volume/100)
         }

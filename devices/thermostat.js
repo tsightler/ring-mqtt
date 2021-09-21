@@ -1,4 +1,3 @@
-const debug = require('debug')('ring-mqtt')
 const RingSocketDevice = require('./base-socket-device')
 
 class Thermostat extends RingSocketDevice {
@@ -71,8 +70,8 @@ class Thermostat extends RingSocketDevice {
     }
 
     // Process messages from MQTT command topic
-    processCommand(message, topic) {
-        switch (topic.split("/").slice(-2).join("/")) {
+    processCommand(message, componentCommand) {
+        switch (componentCommand) {
             case 'thermostat/mode_command':
                 this.setMode(message)
                 break;
@@ -86,13 +85,12 @@ class Thermostat extends RingSocketDevice {
                 this.setAuxMode(message)
                 break;
             default:
-                debug(`Received unknown command topic ${topic} for ${this.component} ${this.deviceId}`)
+                this.debug(`Received message to unknown command topic: ${componentCommand}`)
         }
     }
 
     async setMode(value) {
-        debug(`Received set mode ${value} for thermostat ${this.deviceId}`)
-        debug(`Location Id: ${this.locationId}`)
+        this.debug(`Received set mode ${value}`)
         const mode = value.toLowerCase()
         switch(mode) {
             case 'off':
@@ -104,17 +102,16 @@ class Thermostat extends RingSocketDevice {
                 this.publishMqtt(this.entity.thermostat.mode_state_topic, mode, true)
                 break;
             default:
-                debug(`Received invalid command for thermostat ${this.deviceId}`)
+                this.debug(`Received invalid set mode command`)
         }
     }
     
     async setSetPoint(value) {
-        debug(`Received set target temperature to ${value} for thermostat ${this.deviceId}`)
-        debug(`Location Id: ${this.locationId}`)
+        this.debug(`Received set target temperature to ${value}`)
         if (isNaN(value)) {
-            debug('New target temperature received but not a number!')
+            this.debug('New target temperature received but not a number!')
         } else if (!(value >= 10 && value <= 37.22223)) {
-            debug('New target command received but out of range (10-37.22223°C)!')
+            this.debug('New target command received but out of range (10-37.22223°C)!')
         } else {
             this.device.setInfo({ device: { v1: { setPoint: Number(value) } } })
             this.publishMqtt(this.entity.thermostat.temperature_state_topic, value, true)
@@ -122,20 +119,18 @@ class Thermostat extends RingSocketDevice {
     }
 
     async setFanMode(value) {
-        debug(`Recevied set fan mode ${value} for thermostat ${this.deviceId}`)
-        debug(`Location Id: ${this.locationId}`)
+        this.debug(`Recevied set fan mode ${value}`)
         const fanMode = value.toLowerCase()
         if (this.entity.thermostat.fan_modes.map(e => e.toLocaleLowerCase()).includes(fanMode)) {
             this.device.setInfo({ device: { v1: { fanMode }}})
             this.publishMqtt(this.entity.thermostat.fan_mode_state_topic, fanMode.replace(/^./, str => str.toUpperCase()), true)
         } else {
-                debug('Received invalid fan mode command for thermostat!')
+            this.debug('Received invalid fan mode command')
         }
     }
 
     async setAuxMode(value) {
-        debug(`Received set aux mode ${value} for thermostat ${this.deviceId}`)
-        debug(`Location Id: ${this.locationId}`)
+        this.debug(`Received set aux mode ${value}`)
         const auxMode = value.toLowerCase()
         switch(auxMode) {
             case 'on':
@@ -145,7 +140,7 @@ class Thermostat extends RingSocketDevice {
                 this.publishMqtt(this.entity.thermostat.aux_state_topic, auxMode.toUpperCase(), true)
                 break;
             default:
-                debug('Received invalid aux mode command for thermostat!')
+                this.debug('Received invalid aux mode command')
         }
     }
 }

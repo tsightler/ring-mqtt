@@ -1,4 +1,3 @@
-const debug = require('debug')('ring-mqtt')
 const utils = require('../lib/utils')
 const RingPolledDevice = require('./base-polled-device')
 
@@ -49,13 +48,13 @@ class ModesPanel extends RingPolledDevice {
                 this.setLocationMode(message)
                 break;
             default:
-                debug('Received unknown mode command topic '+topic+' for location: '+this.deviceId)
+                this.debug(`Received message to unknown command topic: ${componentCommand}`)
         }
     }
     
     // Set Alarm Mode on received MQTT command message
     async setLocationMode(message) {
-        debug('Received command set mode '+message+' for location '+this.device.location.name+' ('+this.locationId+')')
+        this.debug(`Received command set mode ${message} for location ${this.device.location.name} (${this.locationId})`)
 
         // Try to set alarm mode and retry after delay if mode set fails
         // Initial attempt with no delay
@@ -69,9 +68,9 @@ class ModesPanel extends RingPolledDevice {
         }
         // Check the return status and print some debugging for failed states
         if (setModeSuccess == false ) {
-            debug('Location could not enter proper mode after all retries...Giving up!')
+            this.debug('Location could not enter proper mode after all retries...Giving up!')
         } else if (setModeSuccess == 'unknown') {
-            debug('Ignoring unknown command.')
+            this.debug('Ignoring unknown command.')
         }
     }
 
@@ -89,19 +88,19 @@ class ModesPanel extends RingPolledDevice {
                 targetMode = 'away'
                 break
             default:
-                debug('Cannot set location mode: Unknown')
+                this.debug('Cannot set location mode: Unknown')
                 return 'unknown'
         }
-        debug('Set location mode: '+targetMode)
+        this.debug(`Set location mode: ${targetMode}`)
         await this.device.location.setLocationMode(targetMode)
 
         // Sleep a 1 second and check if location entered the requested mode
         await utils.sleep(1);
         if (targetMode == (await this.device.location.getLocationMode()).mode) {
-            debug('Location '+this.device.location.name+' successfully entered '+message+' mode')
+            this.debug(`Location ${this.device.location.name} successfully entered ${message} mode`)
             return true
         } else {
-            debug('Location '+this.device.location.name+' failed to enter requested mode!')
+            this.debug(`Location ${this.device.location.name} failed to enter requested mode!`)
             return false
         }
     }

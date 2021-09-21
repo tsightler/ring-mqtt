@@ -1,4 +1,3 @@
-const debug = require('debug')('ring-mqtt')
 const utils = require( '../lib/utils' )
 const { allAlarmStates, RingDeviceType } = require('ring-client-api')
 const RingSocketDevice = require('./base-socket-device')
@@ -84,13 +83,13 @@ class SecurityPanel extends RingSocketDevice {
                 case 'user-verified-burglar-alarm':
                 case 'burglar-accelerated-alarm':
                     policeState = 'ON'
-                    debug('Burgler alarm is active for '+this.device.location.name)
+                    this.debug('Burgler alarm is active for '+this.device.location.name)
                 case 'fire-alarm':
                 case 'co-alarm':
                 case 'user-verified-co-or-fire-alarm':
                 case 'fire-accelerated-alarm':
                     fireState = 'ON'
-                    debug('Fire alarm is active for '+this.device.location.name)
+                    this.debug('Fire alarm is active for '+this.device.location.name)
             }
             this.publishMqtt(this.entity.police.state_topic, policeState, true)
             this.publishMqtt(this.entity.fire.state_topic, fireState, true)
@@ -134,13 +133,13 @@ class SecurityPanel extends RingSocketDevice {
                 }
                 break;
             default:
-                debug('Received unknown command topic '+topic+' for switch: '+this.deviceId)
+                this.debug(`Received message to unknown command topic: ${componentCommand}`)
         }
     }
 
     // Set Alarm Mode on received MQTT command message
     async setAlarmMode(message) {
-        debug('Received set alarm mode '+message+' for location '+this.device.location.name+' ('+this.locationId+')')
+        this.debug(`Received set alarm mode ${message} for location ${this.device.location.name} (${this.locationId})`)
 
         // Try to set alarm mode and retry after delay if mode set fails
         // Initial attempt with no delay
@@ -161,7 +160,7 @@ class SecurityPanel extends RingSocketDevice {
                 if (bypassDevices.length > 0) {
                     bypassDeviceIds = bypassDevices.map((bypassDevice) => bypassDevice.id)
                     const bypassDeviceNames = bypassDevices.map((bypassDevice) => bypassDevice.name)
-                    debug('Arming bypass mode is enabled, bypassing sensors: ' + bypassDeviceNames.join(', '))
+                    this.debug(`Arming bypass mode is enabled, bypassing sensors: ${bypassDeviceNames.join(', ')}`)
                 }
             }
 
@@ -172,40 +171,40 @@ class SecurityPanel extends RingSocketDevice {
         }
         // Check the return status and print some debugging for failed states
         if (!setAlarmSuccess) {
-            debug('Alarm could not enter proper arming mode after all retries...Giving up!')
+            this.debug('Alarm could not enter proper arming mode after all retries...Giving up!')
         } else if (setAlarmSuccess == 'unknown') {
-            debug('Unknown alarm arming mode requested.')
+            this.debug('Unknown alarm arming mode requested.')
         }
     }
 
     async trySetAlarmMode(message, bypassDeviceIds) {
         let alarmTargetMode
-        debug('Set alarm mode: '+message)
+        this.debug(`Set alarm mode: ${message}`)
         switch(message.toLowerCase()) {
             case 'disarm':
-                this.device.location.disarm().catch(err => { debug(err) })
+                this.device.location.disarm().catch(err => { this.debug(err) })
                 alarmTargetMode = 'none'
                 break
             case 'arm_home':
-                this.device.location.armHome(bypassDeviceIds).catch(err => { debug(err) })
+                this.device.location.armHome(bypassDeviceIds).catch(err => { this.debug(err) })
                 alarmTargetMode = 'some'
                 break
             case 'arm_away':
-                this.device.location.armAway(bypassDeviceIds).catch(err => { debug(err) })
+                this.device.location.armAway(bypassDeviceIds).catch(err => { this.debug(err) })
                 alarmTargetMode = 'all'
                 break
             default:
-                debug('Cannot set alarm mode: Unknown')
+                this.debug('Cannot set alarm mode: Unknown')
                 return 'unknown'
         }
 
         // Sleep a few seconds and check if alarm entered requested mode
         await utils.sleep(1);
         if (this.device.data.mode == alarmTargetMode) {
-            debug('Alarm for location '+this.device.location.name+' successfully entered '+message+' mode')
+            this.debug(`Alarm for location ${this.device.location.name} successfully entered ${message} mode`)
             return true
         } else {
-            debug('Alarm for location '+this.device.location.name+' failed to enter requested arm/disarm mode!')
+            this.debug(`Alarm for location ${this.device.location.name} failed to enter requested arm/disarm mode!`)
             return false
         }
     }
@@ -213,16 +212,16 @@ class SecurityPanel extends RingSocketDevice {
     async setBypassMode(message) {
         switch(message.toLowerCase()) {
             case 'on':
-                debug('Enabling arming bypass mode for '+this.device.location.name)
+                this.debug(`Enabling arming bypass mode for ${this.device.location.name}`)
                 this.entity.bypass.state = true
                 break;
             case 'off': {
-                debug('Disabling arming bypass mode for '+this.device.location.name)
+                this.debug(`Disabling arming bypass mode for ${this.device.location.name}`)
                 this.entity.bypass.state = false
                 break;
             }
             default:
-                debug('Received invalid command for arming bypass mode!')
+                this.debug('Received invalid command for arming bypass mode!')
         }
         this.publishData()
     }
@@ -230,48 +229,48 @@ class SecurityPanel extends RingSocketDevice {
     async setSirenMode(message) {
         switch(message.toLowerCase()) {
             case 'on':
-                debug('Activating siren for '+this.device.location.name)
-                this.device.location.soundSiren().catch(err => { debug(err) })
+                this.debug(`Activating siren for ${this.device.location.name}`)
+                this.device.location.soundSiren().catch(err => { this.debug(err) })
                 break;
             case 'off': {
-                debug('Deactivating siren for '+this.device.location.name)
-                this.device.location.silenceSiren().catch(err => { debug(err) })
+                this.debug(`Deactivating siren for ${this.device.location.name}`)
+                this.device.location.silenceSiren().catch(err => { this.debug(err) })
                 break;
             }
             default:
-                debug('Received invalid command for siren!')
+                this.debug('Received invalid command for siren!')
         }
     }
 
     async setPoliceMode(message) {
         switch(message.toLowerCase()) {
             case 'on':
-                debug('Activating burglar alarm for '+this.device.location.name)
-                this.device.location.triggerBurglarAlarm().catch(err => { debug(err) })
+                this.debug(`Activating burglar alarm for ${this.device.location.name}`)
+                this.device.location.triggerBurglarAlarm().catch(err => { this.debug(err) })
                 break;
             case 'off': {
-                debug('Deactivating burglar alarm for '+this.device.location.name)
-                this.device.location.setAlarmMode('none').catch(err => { debug(err) })
+                this.debug(`Deactivating burglar alarm for ${this.device.location.name}`)
+                this.device.location.setAlarmMode('none').catch(err => { this.debug(err) })
                 break;
             }
             default:
-                debug('Received invalid command for panic!')
+                this.debug('Received invalid command for panic!')
         }
     }
 
     async setFireMode(message) {
         switch(message.toLowerCase()) {
             case 'on':
-                debug('Activating fire alarm for '+this.device.location.name)
-                this.device.location.triggerFireAlarm().catch(err => { debug(err) })
+                this.debug(`Activating fire alarm for ${this.device.location.name}`)
+                this.device.location.triggerFireAlarm().catch(err => { this.debug(err) })
                 break;
             case 'off': {
-                debug('Deactivating fire alarm for '+this.device.location.name)
-                this.device.location.setAlarmMode('none').catch(err => { debug(err) })
+                this.debug(`Deactivating fire alarm for ${this.device.location.name}`)
+                this.device.location.setAlarmMode('none').catch(err => { this.debug(err) })
                 break;
             }
             default:
-                debug('Received invalid command for panic!')
+                this.debug('Received invalid command for panic!')
         }
     }
 }

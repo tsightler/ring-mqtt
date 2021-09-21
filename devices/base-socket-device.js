@@ -1,4 +1,3 @@
-const debug = require('debug')('ring-mqtt')
 const utils = require('../lib/utils')
 const RingDevice = require('./base-ring-device')
 

@@ -11,8 +11,9 @@ class RingDevice {
         this.deviceId = deviceId
         this.locationId = locationId
         this.availabilityState = 'unpublished'
-        this.isOnline = () => { return this.availabilityState === 'online' ? true : false }
         this.entity = {}
+        this.isOnline = () => { return this.availabilityState === 'online' ? true : false }
+        this.debug = (message) => { debug(colors.green(`[${this.deviceData.name}] `)+message) }
 
         // Build device base and availability topic
         this.deviceTopic = `${this.config.ring_topic}/${this.locationId}/${deviceInfo.category}/${this.deviceId}`
@@ -180,7 +181,7 @@ class RingDevice {
 
     // Publish state messages with debug
     publishMqtt(topic, message, isDebug) {
-        if (isDebug) { debug(colors.green(`[${this.deviceData.name}]`)+' '+colors.blue(`${topic}`)+' '+colors.cyan(`${message}`)) }
+        if (isDebug) { this.debug(colors.blue(`${topic} `)+colors.cyan(`${message}`)) }
         this.mqttClient.publish(topic, message, { qos: 1 })
     }
 

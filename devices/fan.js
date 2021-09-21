@@ -1,4 +1,3 @@
-const debug = require('debug')('ring-mqtt')
 const utils = require( '../lib/utils' )
 const RingSocketDevice = require('./base-socket-device')
 
@@ -28,7 +27,7 @@ class Fan extends RingSocketDevice {
         } else if (fanPercent >= 0) {
             fanPreset = 'low'
         } else {
-            debug('ERROR - Could not determine fan preset value.  Raw percent value: '+fanPercent+'%')
+            this.debug(`ERROR - Could not determine fan preset value.  Raw percent value: ${fanPercent}%`)
         }
         
         // Publish device state
@@ -59,14 +58,13 @@ class Fan extends RingSocketDevice {
                 this.setFanPreset(message)
                 break;
             default:
-                debug('Received unknown command topic '+topic+' for fan: '+this.deviceId)
+                this.debug(`Received message to unknown command topic: ${componentCommand}`)
         }
     }
 
     // Set fan target state from received MQTT command message
     setFanState(message) {
-        debug('Received set fan state '+message+' for fan: '+this.deviceId)
-        debug('Location Id: '+ this.locationId)
+        this.debug(`Received set fan state ${message}`)
         const command = message.toLowerCase()
         switch(command) {
             case 'on':
@@ -75,35 +73,34 @@ class Fan extends RingSocketDevice {
                 this.device.setInfo({ device: { v1: { on } } })
                 break;
             default:
-                debug('Received invalid command for fan!')
+                this.debug('Received invalid command for fan!')
         }
     }
 
     // Set fan speed based on percent
     async setFanPercent(message) {
         if (isNaN(message)) {
-            debug('Fan speed percent command received but value is not a number')
+            this.debug('Fan speed percent command received but value is not a number')
             return
         }
 
         let setFanPercent = parseInt(message)
 
         if (setFanPercent === 0) {
-            debug('Received fan speed of 0%, turning off fan: '+this.deviceId)
+            this.debug('Received fan speed of 0%, turning fan off')
             if (this.device.data.on) { this.setFanState('off') }
             return
         } else if (setFanPercent < 10) {
-            debug('Received fan speed of '+setFanPercent+'% which is < 10%, overriding to 10%')
+            this.debug(`Received fan speed of ${setFanPercent}% which is < 10%, overriding to 10%`)
             setFanPercent = 10 
         } else if (setFanPercent > 100) {
-            debug('Received fan speed of '+setFanPercent+'% which is > 100%, overriding to 100%')
+            this.debug(`Received fan speed of ${setFanPercent}% which is > 100%, overriding to 100%`)
             setFanPercent = 100
         }
 
         this.data.targetFanPercent = setFanPercent
 
-        debug('Seting fan speed percentage to '+this.data.targetFanPercent+'% for fan: '+this.deviceId)
-        debug('Location Id: '+ this.locationId)
+        this.debug(`Setting fan speed percentage to ${this.data.targetFanPercent}%`)
 
         this.device.setInfo({ device: { v1: { level: this.data.targetFanPercent / 100 } } })
         // Automatically turn on fan when level is sent.
@@ -125,12 +122,11 @@ class Fan extends RingSocketDevice {
                 fanPercent = 100
                 break;
             default:
-                debug('Received invalid fan preset command '+message.toLowerCase()+' for fan: '+this.deviceId)
-                debug('Location Id: '+ this.locationId)
+                this.debug(`Received invalid fan preset command ${message.toLowerCase()}`)
         }
 
         if (fanPercent) {
-            debug('Received set fan preset to '+message+' for fan: '+this.deviceId)
+            this.debug(`Received set fan preset to ${message.toLowerCase()}`)
             this.setFanPercent(fanPercent)
         }
     }

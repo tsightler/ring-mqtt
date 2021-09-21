@@ -1,4 +1,3 @@
-const debug = require('debug')('ring-mqtt')
 const utils = require('../lib/utils')
 const RingPolledDevice = require('./base-polled-device')
 
@@ -117,13 +116,12 @@ class Chime extends RingPolledDevice {
                 this.playSound(message, 'motion')
                 break;
             default:
-                debug('Somehow received message to unknown state topic for chime '+this.deviceId)
+                this.debug(`Received message to unknown command topic: ${componentCommand}`)
         }
     }
 
     async setSnoozeState(message) {
-        debug('Received set snooze '+message+' for chime Id: '+this.deviceId)
-        debug('Location Id: '+ this.locationId)
+        this.debug(`Received set snooze ${message}`)
         const command = message.toLowerCase()
 
         switch(command) {
@@ -135,19 +133,18 @@ class Chime extends RingPolledDevice {
                 break;
             }
             default:
-                debug('Received invalid command for set snooze!')
+                this.debug('Received invalid command for set snooze!')
         }
         this.device.requestUpdate()
     }
 
     setSnoozeMinutes(message) {
         const minutes = message
-        debug('Received set snooze minutes to '+minutes+' minutes for chime Id: '+this.deviceId)
-        debug('Location Id: '+ this.locationId)
+        this.debug(`Received set snooze minutes to ${minutes} minutes`)
         if (isNaN(minutes)) {
-                debug('Snooze minutes command received but value is not a number')
+            this.debug('Snooze minutes command received but value is not a number')
         } else if (!(minutes >= 0 && minutes <= 32767)) {
-            debug('Snooze minutes command received but out of range (0-1440 minutes)')
+            this.debug('Snooze minutes command received but out of range (0-1440 minutes)')
         } else {
             this.data.snooze_minutes = parseInt(minutes)
             this.publishMqtt(this.entity.snooze_minutes.state_topic, this.data.snooze_minutes.toString(), true)           
@@ -156,12 +153,11 @@ class Chime extends RingPolledDevice {
 
     async setVolumeLevel(message) {
         const volume = message
-        debug('Received set volume level to '+volume+' for chime: '+this.deviceId)
-        debug('Location Id: '+ this.locationId)
+        this.debug(`Received set volume level to ${volume}`)
         if (isNaN(message)) {
-                debug('Volume command received but value is not a number')
+            this.debug('Volume command received but value is not a number')
         } else if (!(message >= 0 && message <= 11)) {
-            debug('Volume command received but out of range (0-11)')
+            this.debug('Volume command received but out of range (0-11)')
         } else {
             await this.device.setVolume(volume)
             this.device.requestUpdate()
@@ -169,8 +165,7 @@ class Chime extends RingPolledDevice {
     }
 
     async playSound(message, chimeType) {
-        debug('Receieved play '+chimeType+' chime sound '+message+' for chime Id: '+this.deviceId)
-        debug('Location Id: '+ this.locationId)
+        this.debug(`Receieved play ${chimeType} chime sound ${message}`)
         const command = message.toLowerCase()
 
         switch(command) {
@@ -184,7 +179,7 @@ class Chime extends RingPolledDevice {
                 break;
             }
             default:
-                debug('Received invalid command for play chime sound!')
+                this.debug('Received invalid command for play chime sound!')
         }
     }
 }

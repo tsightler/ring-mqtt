@@ -1,4 +1,3 @@
-const debug = require('debug')('ring-mqtt')
 const utils = require( '../lib/utils' )
 const RingSocketDevice = require('./base-socket-device')
 
@@ -18,7 +17,7 @@ class BaseStation extends RingSocketDevice {
         this.device.setVolume(testVolume)
         await utils.sleep(1)
         if (this.device.data.volume === testVolume) {
-            debug('Account has access to set volume on base station, enabling volume control')
+            this.debug('Account has access to set volume on base station, enabling volume control')
             this.device.setVolume(origVolume)
             this.entity.volume = {
                 component: 'number',
@@ -27,7 +26,7 @@ class BaseStation extends RingSocketDevice {
                 icon: 'hass:volume-high'
             }
         } else {
-            debug('Account does not have access to set volume on base station, disabling volume control')
+            this.debug('Account does not have access to set volume on base station, disabling volume control')
         }
     }
 
@@ -56,19 +55,18 @@ class BaseStation extends RingSocketDevice {
                 }
                 break;
             default:
-                debug('Received unknown command topic '+topic+' for keypad: '+this.deviceId)
+                this.debug(`Received message to unknown command topic: ${componentCommand}`)
         }
     }
 
     // Set volume level on received MQTT command message
     setVolumeLevel(message) {
         const volume = message
-        debug('Received set volume level to '+volume+'% for base station: '+this.deviceId)
-        debug('Location Id: '+ this.locationId)
+        this.debug(`Received set volume level to ${volume}%`)
         if (isNaN(message)) {
-                debug('Volume command received but value is not a number')
+                this.debug('Volume command received but value is not a number')
         } else if (!(message >= 0 && message <= 100)) {
-            debug('Volume command received but out of range (0-100)')
+            this.debug('Volume command received but out of range (0-100)')
         } else {
             this.device.setVolume(volume/100)
         }

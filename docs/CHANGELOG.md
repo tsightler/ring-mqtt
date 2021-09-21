@@ -1,3 +1,17 @@
+## v4.8.3
+**New Features**
+- The event stream select entity now includes eventId and recordingUrl attributes with values updated based on the selected event to facilitate automatic downloading of recorded videos. See the [camera documentation](CAMERAS.md) for more information and an example automation using Home Assistant downloader service.
+- Dome sirens (and perhaps other Z-wave sirens) are now supported
+
+**Fixed Bugs**
+- Refactor and simplify snapshot functions, especially for battery cameras.  This should hopefully fix the issue of no motion snapshots for users with battery powered cameras.
+
+**Breaking Changes**
+- Siren devices are now represented as a switch instead of a binary_sensor.
+
+**Other Changes**
+- Device debug output now includes device name for all entries, including all received commands
+
 ## v4.8.2
 **New Features**
 - Support streaming video of historical motion/ding/on-demand events via new event stream RTSP path.  See the [camera documentation](CAMERAS.md) for more details. (Note that this feature requires a Ring Protect plan that allows saving videos)
