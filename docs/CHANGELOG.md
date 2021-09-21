@@ -6,8 +6,10 @@
 **Fixed Bugs**
 - Refactor and simplify snapshot functions, especially for battery cameras.  This should hopefully fix the issue of no motion snapshots for users with battery powered cameras.
 
-**Other Changes**
+**Breaking Changes**
 - Siren devices are now represented as a switch instead of a binary_sensor.
+
+**Other Changes**
 - Device debug output now includes device name for all entries, including all received commands
 
 ## v4.8.2
