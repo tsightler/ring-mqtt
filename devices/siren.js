@@ -35,7 +35,7 @@ class Siren extends RingSocketDevice {
         }
     }
 
-    async setSirenState(message) {
+    setSirenState(message) {
         const command = message.toLowerCase()
         switch(command) {
             case 'on':
@@ -44,7 +44,7 @@ class Siren extends RingSocketDevice {
                 this.device.setInfo({ device: { v1: { on: (command === 'on') ? true : false } } })
                 break;
             default:
-                this.debug('Received invalid command for siren!')
+                this.debug('Received invalid siren state command')
         }
     }
 }

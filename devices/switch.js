@@ -34,11 +34,10 @@ class Switch extends RingSocketDevice {
         const command = message.toLowerCase()
         switch(command) {
             case 'on':
-            case 'off': {
+            case 'off':
                 this.debug(`Received set switch state ${message}`)
                 this.device.setInfo({ device: { v1: { on: (command === 'on') ? true : false } } })
                 break;
-            }
             default:
                 this.debug(`Received invalid switch state command`)
         }
