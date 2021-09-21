@@ -174,7 +174,7 @@ class Camera extends RingPolledDevice {
             info: {
                 component: 'sensor',
                 device_class: 'timestamp',
-                value_template: '{{ value_json["lastUpdate"] | default }}'
+                value_template: '{{ value_json["lastUpdate"] | default("") }}'
             }
         }
 
@@ -199,7 +199,7 @@ class Camera extends RingPolledDevice {
                 unit_of_measurement: 'dBm',
                 parent_state_topic: 'info/state',
                 attributes: 'wireless',
-                value_template: '{{ value_json["wirelessSignal"] | default }}'
+                value_template: '{{ value_json["wirelessSignal"] | default("") }}'
             }
         }
 
@@ -212,7 +212,7 @@ class Camera extends RingPolledDevice {
                 state_class: 'measurement',
                 parent_state_topic: 'info/state',
                 attributes: 'battery',
-                value_template: '{{ value_json["batteryLevel"] | default }}'
+                value_template: '{{ value_json["batteryLevel"] | default("") }}'
             }
         }
 

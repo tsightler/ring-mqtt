@@ -43,7 +43,7 @@ class Chime extends RingPolledDevice {
             info: {
                 component: 'sensor',
                 device_class: 'timestamp',
-                value_template: '{{ value_json["lastUpdate"] | default }}'
+                value_template: '{{ value_json["lastUpdate"] | default("") }}'
             }
         }
     }
@@ -55,7 +55,7 @@ class Chime extends RingPolledDevice {
             unit_of_measurement: 'dBm',
             parent_state_topic: 'info/state',
             attributes: 'wireless',
-            value_template: '{{ value_json["wirelessSignal"] | default }}'
+            value_template: '{{ value_json["wirelessSignal"] | default("") }}'
         }
     }
 
