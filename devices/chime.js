@@ -24,7 +24,8 @@ class Chime extends RingPolledDevice {
             },
             snooze: {
                 component: 'switch',
-                icon: 'hass:bell-sleep'
+                icon: 'hass:bell-sleep',
+                attributes: true
             },
             snooze_minutes: {
                 component: 'number',
@@ -69,8 +70,13 @@ class Chime extends RingPolledDevice {
             this.publishMqtt(this.entity.volume.state_topic, volumeState.toString(), true)
             this.data.volume = volumeState
         }
+
         if (snoozeState !== this.data.snooze || isPublish) { 
             this.publishMqtt(this.entity.snooze.state_topic, snoozeState, true)
+            if (snoozeState !== this.data.snooze || snoozeState === 'ON') {
+                this.publishMqtt(this.entity.snooze.json_attributes_topic, this.device.data.do_not_disturb.seconds_left.toString(), true)
+            }
+
             this.data.snooze = snoozeState
         }
 

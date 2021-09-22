@@ -114,7 +114,7 @@ class Camera extends RingPolledDevice {
             motion: {
                 component: 'binary_sensor',
                 device_class: 'motion',
-                attributes: true,
+                attributes: true
             },
             stream: {
                 component: 'switch',
