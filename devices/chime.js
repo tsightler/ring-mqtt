@@ -9,6 +9,11 @@ class Chime extends RingPolledDevice {
             volume: null,
             snooze: null,
             snooze_minutes: 1440,
+            snooze_minutes_remaining: (() => { return this.device.data.do_not_disturb.seconds_left }),
+            snooze_expire_time: (() => { return this.device.data.do_not_disturb.seconds_left > 0 
+                ? utils.getISOTime(Date.now()/1000 + this.device.data.do_not_disturb.seconds_left)
+                : 'expired' }),
+            pollCycle: 0,
             play_ding_sound: 'OFF',
             play_motion_sound: 'OFF'
         }
@@ -71,12 +76,18 @@ class Chime extends RingPolledDevice {
             this.data.volume = volumeState
         }
 
-        if (snoozeState !== this.data.snooze || isPublish) { 
-            this.publishMqtt(this.entity.snooze.state_topic, snoozeState, true)
-            if (snoozeState !== this.data.snooze || snoozeState === 'ON') {
-                this.publishMqtt(this.entity.snooze.json_attributes_topic, this.device.data.do_not_disturb.seconds_left.toString(), true)
+        if (snoozeState === 'ON' || snoozeState !== this.data.snooze || isPublish) {
+            if (snoozeState !== this.data.snooze || isPublish) {
+                this.publishMqtt(this.entity.snooze.state_topic, snoozeState, true)
             }
-
+            
+            if (snoozeState !== this.data.snooze || isPublish || this.data.pollCycle <= 0 && snoozeState == 'ON' ) {
+                const attributes = {
+                    minutes_remaining = this.data.snooze_minutes_remaining(),
+                    expire_time = this.data.snooze_expire_time()
+                } 
+                this.publishMqtt(this.entity.snooze.json_attributes_topic, attributes, true)
+            }
             this.data.snooze = snoozeState
         }
 
@@ -86,6 +97,11 @@ class Chime extends RingPolledDevice {
             this.publishMqtt(this.entity.play_ding_sound.state_topic, this.data.play_ding_sound, true)
             this.publishMqtt(this.entity.play_motion_sound.state_topic, this.data.play_motion_sound, true)
             this.publishAttributes()
+        }
+
+        this.data.stream.event.pollCycle--
+        if (this.data.stream.event.pollCycle <= 0) {
+            this.data.stream.event.pollCycle = 3
         }
     }
 
