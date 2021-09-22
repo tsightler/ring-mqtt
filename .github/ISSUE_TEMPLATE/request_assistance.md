@@ -2,7 +2,7 @@
 name: Request assistance
 about: Request assistance with an installation or operational issues
 title: ''
-labels: 'support'
+labels: 'issue'
 assignees: tsightler
 ---
 
