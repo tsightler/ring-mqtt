@@ -7,7 +7,7 @@ assignees: tsightler
 ---
 
 ### !!!!PLEASE READ THIS FIRST!!!!! ###
-This is a community project and opening a feature request indicates that you are prepared to interact as a community member.  Note that this doesn't mean that I expect you to be a developer or a super tech guru, but you must at least be willing to put some time and effort into helping me understand your your request, it's use case, and how you see this feature benefits other ring-mqtt users.  That last part is important, if it's some edge case feature that only benefits you, or a very small handful of users, then the chances of it being accepted are slim, but note that this is an open source project and you can fork it and do with it what you will.
+This is a community project and opening a feature request indicates that you are prepared to interact as a community member.  Note that this doesn't mean that I expect you to be a developer or a super tech guru, but you must at least be willing to put some time and effort into helping me understand your request, it's use case, and how you see this feature benefits other ring-mqtt users.  That last part is important, if it's some edge case feature that only benefits you, or a very small handful of users, then the chances of it being accepted are slim, but note that this is an open source project and you can fork it and do with it what you will.
 
 Keep in mind that the goal of this project is primarily to expose Ring devices to your home automation platform of choice, it is not to work around Ring platform limitations and restrictions.  In general, I will not implement features that intentionally attempt to get around Ring specific restrictions.
 
