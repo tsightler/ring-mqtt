@@ -91,10 +91,6 @@ class Chime extends RingPolledDevice {
             this.publishMqtt(this.entity.play_motion_sound.state_topic, this.data.play_motion_sound, true)
             this.publishAttributes()
         }
-
-        if (this.data.pollCycle <= 0) {
-            this.data.pollCycle = 3
-        }
     }
 
     // Publish device data to info topic
