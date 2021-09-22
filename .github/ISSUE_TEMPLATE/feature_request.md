@@ -2,7 +2,7 @@
 name: Feature Request
 about: Request a feature in Ring-MQTT
 title: ''
-labels: ''
+labels: 'enhancement'
 assignees: tsightler
 ---
 
