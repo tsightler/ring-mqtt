@@ -9,10 +9,6 @@ class Chime extends RingPolledDevice {
             volume: null,
             snooze: null,
             snooze_minutes: 1440,
-            snooze_minutes_remaining: (() => { return Math.ceil(this.device.data.do_not_disturb.seconds_left/60) }),
-            snooze_expire_time: (() => { return this.device.data.do_not_disturb.seconds_left > 0 
-                ? utils.getISOTime(Date.now() + (this.device.data.do_not_disturb.seconds_left * 1000))
-                : '' }),
             pollCycle: 0,
             play_ding_sound: 'OFF',
             play_motion_sound: 'OFF'
@@ -80,14 +76,9 @@ class Chime extends RingPolledDevice {
         if (snoozeState === 'ON' || snoozeState !== this.data.snooze || isPublish) {
             if (snoozeState !== this.data.snooze || isPublish) {
                 this.publishMqtt(this.entity.snooze.state_topic, snoozeState, true)
-            }
-            
-            if (snoozeState !== this.data.snooze || isPublish || this.data.pollCycle <= 0 && snoozeState == 'ON' ) {
-                const attributes = {
-                    minutes_remaining: this.data.snooze_minutes_remaining(),
-                    expire_time: this.data.snooze_expire_time()
-                } 
-                this.publishMqtt(this.entity.snooze.json_attributes_topic, JSON.stringify(attributes), true)
+                if (snoozeState !== this.data.snooze || isPublish || (this.data.pollCycle <= 0 && snoozeState === 'ON') ) {
+                    this.publishMqtt(this.entity.snooze.json_attributes_topic, '{ minutes_remaining: Math.floor(this.device.data.do_not_disturb.seconds_left/60) }', true)
+                }
             }
             this.data.snooze = snoozeState
         }
