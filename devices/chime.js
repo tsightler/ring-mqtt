@@ -78,7 +78,6 @@ class Chime extends RingPolledDevice {
             this.data.snooze = snoozeState
         }
 
-        // Publish attribute on state change, or every minute when ON, or republsih
         if (snoozeMinutesRemaining !== this.data.snooze_minutes_remaining || isPublish) {
             this.publishMqtt(this.entity.snooze.json_attributes_topic, JSON.stringify({ minutes_remaining: snoozeMinutesRemaining }), true)
             this.data.snooze_minutes_remaining = snoozeMinutesRemaining
