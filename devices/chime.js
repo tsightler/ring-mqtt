@@ -9,9 +9,9 @@ class Chime extends RingPolledDevice {
             volume: null,
             snooze: null,
             snooze_minutes: 1440,
-            snooze_minutes_remaining: (() => { return this.device.data.do_not_disturb.seconds_left }),
+            snooze_minutes_remaining: (() => { return Math.ceil(this.device.data.do_not_disturb.seconds_left/60) }),
             snooze_expire_time: (() => { return this.device.data.do_not_disturb.seconds_left > 0 
-                ? utils.getISOTime(Date.now()/1000 + this.device.data.do_not_disturb.seconds_left)
+                ? utils.getISOTime(Date.now() + (this.device.data.do_not_disturb.seconds_left * 1000))
                 : '' }),
             pollCycle: 0,
             play_ding_sound: 'OFF',
