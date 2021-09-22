@@ -67,6 +67,7 @@ class Chime extends RingPolledDevice {
 
     publishData(data) {
         const isPublish = data === undefined ? true : false
+        this.data.pollCycle--
         const volumeState = this.device.data.settings.volume
         const snoozeState = Boolean(this.device.data.do_not_disturb.seconds_left) ? 'ON' : 'OFF'
 
@@ -99,7 +100,6 @@ class Chime extends RingPolledDevice {
             this.publishAttributes()
         }
 
-        this.data.pollCycle--
         if (this.data.pollCycle <= 0) {
             this.data.pollCycle = 3
         }
