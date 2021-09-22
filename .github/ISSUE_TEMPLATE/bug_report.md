@@ -2,7 +2,7 @@
 name: Bug report
 about: Submit an issue with ring-mqtt
 title: ''
-labels: ''
+labels: 'bug'
 assignees: tsightler
 ---
 
