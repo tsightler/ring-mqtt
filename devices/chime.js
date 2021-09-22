@@ -79,7 +79,8 @@ class Chime extends RingPolledDevice {
             }
 
             if (snoozeState !== this.data.snooze || isPublish || (this.data.pollCycle <= 0 && snoozeState === 'ON') ) {
-                this.publishMqtt(this.entity.snooze.json_attributes_topic, '{ minutes_remaining: Math.floor(this.device.data.do_not_disturb.seconds_left/60) }', true)
+                const attributes = { minutes_remaining: Math.floor(this.device.data.do_not_disturb.seconds_left/60) }
+                this.publishMqtt(this.entity.snooze.json_attributes_topic, JSON.stringify(attributes), true)
             }
             this.data.snooze = snoozeState
         }
