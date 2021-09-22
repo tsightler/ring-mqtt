@@ -12,7 +12,7 @@ class Chime extends RingPolledDevice {
             snooze_minutes_remaining: (() => { return this.device.data.do_not_disturb.seconds_left }),
             snooze_expire_time: (() => { return this.device.data.do_not_disturb.seconds_left > 0 
                 ? utils.getISOTime(Date.now()/1000 + this.device.data.do_not_disturb.seconds_left)
-                : 'expired' }),
+                : '' }),
             pollCycle: 0,
             play_ding_sound: 'OFF',
             play_motion_sound: 'OFF'
@@ -99,9 +99,9 @@ class Chime extends RingPolledDevice {
             this.publishAttributes()
         }
 
-        this.data.stream.event.pollCycle--
-        if (this.data.stream.event.pollCycle <= 0) {
-            this.data.stream.event.pollCycle = 3
+        this.data.pollCycle--
+        if (this.data.pollCycle <= 0) {
+            this.data.pollCycle = 3
         }
     }
 
