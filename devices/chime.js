@@ -9,7 +9,7 @@ class Chime extends RingPolledDevice {
             volume: null,
             snooze: null,
             snooze_minutes: 1440,
-            pollCycle: 0,
+            snooze_minutes_remaining: Math.floor(this.device.data.do_not_disturb.seconds_left/60),
             play_ding_sound: 'OFF',
             play_motion_sound: 'OFF'
         }
@@ -63,9 +63,9 @@ class Chime extends RingPolledDevice {
 
     publishData(data) {
         const isPublish = data === undefined ? true : false
-        this.data.pollCycle--
         const volumeState = this.device.data.settings.volume
         const snoozeState = Boolean(this.device.data.do_not_disturb.seconds_left) ? 'ON' : 'OFF'
+        const snoozeMinutesRemaining = Math.floor(this.device.data.do_not_disturb.seconds_left/60)
 
         // Polled states are published only if value changes or it's a device publish
         if (volumeState !== this.data.volume || isPublish) { 
@@ -73,16 +73,15 @@ class Chime extends RingPolledDevice {
             this.data.volume = volumeState
         }
 
-        if (snoozeState === 'ON' || snoozeState !== this.data.snooze || isPublish) {
-            if (snoozeState !== this.data.snooze || isPublish) {
-                this.publishMqtt(this.entity.snooze.state_topic, snoozeState, true)
-            }
-
-            if (snoozeState !== this.data.snooze || isPublish || (this.data.pollCycle <= 0 && snoozeState === 'ON') ) {
-                const attributes = { minutes_remaining: Math.floor(this.device.data.do_not_disturb.seconds_left/60) }
-                this.publishMqtt(this.entity.snooze.json_attributes_topic, JSON.stringify(attributes), true)
-            }
+        if (snoozeState !== this.data.snooze || isPublish) {
+            this.publishMqtt(this.entity.snooze.state_topic, snoozeState, true)
             this.data.snooze = snoozeState
+        }
+
+        // Publish attribute on state change, or every minute when ON, or republsih
+        if (snoozeMinutesRemaining !== this.data.snooze_minutes_remaining || isPublish) {
+            this.publishMqtt(this.entity.snooze.json_attributes_topic, JSON.stringify({ minutes_remaining: snoozeMinutesRemaining }), true)
+            this.data.snooze_minutes_remaining = snoozeMinutesRemaining
         }
 
         // Local states are published only for publish/republish
