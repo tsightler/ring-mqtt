@@ -1,6 +1,6 @@
 ## v4.8.4
 **Fixed Bugs**  
-- Event streams failed to update status after event finishe=d playing, causing replay issues
+- Event streams failed to update status to off/inactive after event finished playing, causing various replay issues
 - Minor change to default filter for entites that use value templates to hopefully quiet warnings for openHAB users attempting to leverage this addon using openHAB Home Assistant MQTT binding
 
 ## v4.8.3
