@@ -1,3 +1,8 @@
+## v4.8.4
+**Fixed Bugs**  
+- Event streams failed to update status after event finishe=d playing, causing replay issues
+- Minor change to default filter for entites that use value templates to hopefully quiet warnings for openHAB users attempting to leverage this addon using openHAB Home Assistant MQTT binding
+
 ## v4.8.3
 **New Features**
 - The event stream select entity now includes eventId and recordingUrl attributes with values updated based on the selected event to facilitate automatic downloading of recorded videos. See the [camera documentation](CAMERAS.md) for more information and an example automation using Home Assistant downloader service.
