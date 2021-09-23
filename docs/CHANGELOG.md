@@ -1,10 +1,10 @@
 ## v4.8.4
 **Fixed Bugs**  
 - Event streams failed to update status to off/inactive after event finished playing, causing various replay issues
-- Minor change to default filter for entites that use value templates to hopefully quiet warnings for openHAB users attempting to leverage this addon using openHAB Home Assistant MQTT binding
+- Minor change to default filter for value templates entities to hopefully quiet warnings for openHAB users attempting to leverage this project via the Home Assistant MQTT binding
 
 **Minor Enhancements**
-- Chimes snooze switch now includes additional metadata as JSON attributes "minutes_remaining" showing approximate minutes before snooze expires.
+- Chimes snooze switch now includes additional JSON attribute with "minutes_remaining" showing approximate number of minutes before snooze expires.
 
 ## v4.8.3
 **New Features**
