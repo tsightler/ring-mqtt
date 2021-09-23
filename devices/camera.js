@@ -114,7 +114,7 @@ class Camera extends RingPolledDevice {
             motion: {
                 component: 'binary_sensor',
                 device_class: 'motion',
-                attributes: true,
+                attributes: true
             },
             stream: {
                 component: 'switch',
@@ -174,7 +174,7 @@ class Camera extends RingPolledDevice {
             info: {
                 component: 'sensor',
                 device_class: 'timestamp',
-                value_template: '{{ value_json["lastUpdate"] | default }}'
+                value_template: '{{ value_json["lastUpdate"] | default("") }}'
             }
         }
 
@@ -199,7 +199,7 @@ class Camera extends RingPolledDevice {
                 unit_of_measurement: 'dBm',
                 parent_state_topic: 'info/state',
                 attributes: 'wireless',
-                value_template: '{{ value_json["wirelessSignal"] | default }}'
+                value_template: '{{ value_json["wirelessSignal"] | default("") }}'
             }
         }
 
@@ -212,7 +212,7 @@ class Camera extends RingPolledDevice {
                 state_class: 'measurement',
                 parent_state_topic: 'info/state',
                 attributes: 'battery',
-                value_template: '{{ value_json["batteryLevel"] | default }}'
+                value_template: '{{ value_json["batteryLevel"] | default("") }}'
             }
         }
 
@@ -716,32 +716,39 @@ class Camera extends RingPolledDevice {
         const index = streamSelect[1]
         this.debug(`Streaming the ${(index==1?"":index==2?"2nd ":index==3?"3rd ":index+"th ")}most recently recorded ${kind} event`)
 
-        this.data.stream.event.session = spawn(pathToFfmpeg, [
-            '-re',
-            '-i', this.data.stream.event.recordingUrl,
-            '-map', '0:v:0',
-            '-map', '0:a:0',
-            '-map', '0:a:0',
-            '-c:v', 'copy',
-            '-c:a:0', 'aac',
-            '-c:a:1', 'copy',
-            '-f', 'rtsp',
-            '-rtsp_transport', 'tcp',
-            this.data.stream.event.rtspPublishUrl
-        ])
+        try {
+            this.data.stream.event.session = spawn(pathToFfmpeg, [
+                '-re',
+                '-i', this.data.stream.event.recordingUrl,
+                '-map', '0:v:0',
+                '-map', '0:a:0',
+                '-map', '0:a:0',
+                '-c:v', 'copy',
+                '-c:a:0', 'aac',
+                '-c:a:1', 'copy',
+                '-f', 'rtsp',
+                '-rtsp_transport', 'tcp',
+                this.data.stream.event.rtspPublishUrl
+            ])
 
-        this.data.stream.event.session.on('spawn', async () => {
-            this.debug(`The recorded ${kind} event stream has started`)
-            this.data.stream.event.status = 'active'
-            this.publishStreamState()
-        })
+            this.data.stream.event.session.on('spawn', async () => {
+                this.debug(`The recorded ${kind} event stream has started`)
+                this.data.stream.event.status = 'active'
+                this.publishStreamState()
+            })
 
-        this.data.stream.event.session.on('close', async () => {
-            this.debug(`The recorded ${kind} event stream has ended`)
-            this.data.stream.event.active = 'inactive'
+            this.data.stream.event.session.on('close', async () => {
+                this.debug(`The recorded ${kind} event stream has ended`)
+                this.data.stream.event.status = 'inactive'
+                this.data.stream.event.session = false
+                this.publishStreamState()
+            })
+        } catch(e) {
+            this.debug(e)
+            this.data.stream.event.status = 'failed'
             this.data.stream.event.session = false
             this.publishStreamState()
-        })
+        }
     }
 
     async updateEventStreamUrl() {

@@ -36,8 +36,8 @@ class RingSocketDevice extends RingDevice {
             info: {
                 component: 'sensor',
                 ...primaryAttribute
-                    ? { value_template: `{{value_json["${primaryAttribute}"] | default }}` }
-                    : { value_template: '{{value_json["commStatus"] | default }}' }
+                    ? { value_template: `{{ value_json["${primaryAttribute}"] | default("") }}` }
+                    : { value_template: '{{ value_json["commStatus"] | default("") }}' }
             },
             ...this.device.data.hasOwnProperty('batteryLevel') ? { 
                 battery: {
@@ -47,7 +47,7 @@ class RingSocketDevice extends RingDevice {
                     state_class: 'measurement',
                     parent_state_topic: 'info/state',
                     attributes: 'battery',
-                    value_template: '{{ value_json["batteryLevel"] | default }}'
+                    value_template: '{{ value_json["batteryLevel"] | default("") }}'
                 }
             } : {},
             ...this.device.data.hasOwnProperty('tamperStatus') ? {
@@ -66,7 +66,7 @@ class RingSocketDevice extends RingDevice {
                         unit_of_measurement: 'dBm',
                         parent_state_topic: 'info/state',
                         attributes: 'wireless',
-                        value_template: '{{ value_json["wirelessSignal"] | default }}'
+                        value_template: '{{ value_json["wirelessSignal"] | default("") }}'
                     }
                 } : {}
         }

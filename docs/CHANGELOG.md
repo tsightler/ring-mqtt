@@ -1,3 +1,11 @@
+## v4.8.4
+**Fixed Bugs**  
+- Event streams failed to update status to off/inactive after event finished playing, causing various replay issues
+- Minor change to default filter for value templates entities to hopefully quiet warnings for openHAB users attempting to leverage this project via the Home Assistant MQTT binding
+
+**Minor Enhancements**
+- Chimes snooze switch now includes additional JSON attribute with "minutes_remaining" showing approximate number of minutes before snooze expires.
+
 ## v4.8.3
 **New Features**
 - The event stream select entity now includes eventId and recordingUrl attributes with values updated based on the selected event to facilitate automatic downloading of recorded videos. See the [camera documentation](CAMERAS.md) for more information and an example automation using Home Assistant downloader service.
