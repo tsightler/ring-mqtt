@@ -529,9 +529,6 @@ class Camera extends RingPolledDevice {
         try {
             switch (type) {
                 case 'motion':
-                    // For motion snapshots calling getSnapshot() might return a cached
-                    // snapshot if an interval snap was taken within 10 seconds so attempt
-                    // to force a non-cached snapshot update instead
                     this.debug('Motion event detected for line powered camera, forcing a non-cached snapshot update')
                 default:
                     await this.device.requestSnapshotUpdate()
