@@ -1,4 +1,8 @@
-const debug = require('debug')('ring-mqtt')
+const debug = {
+    mqtt: require('debug')('ring-mqtt'),
+    attr: require('debug')('ring-attr'),
+    disc: require('debug')('ring-disc')
+}
 const utils = require('../lib/utils')
 const colors = require('colors/safe')
 
@@ -12,9 +16,13 @@ class RingDevice {
         this.locationId = locationId
         this.availabilityState = 'unpublished'
         this.entity = {}
-        this.isOnline = () => { return this.availabilityState === 'online' ? true : false }
-        this.debug = (message) => { debug(colors.green(`[${this.deviceData.name}] `)+message) }
-
+        this.isOnline = () => { 
+            return this.availabilityState === 'online' ? true : false 
+        }
+        this.debug = (message, debugType) => {
+            debugType = debugType ? debugType : 'mqtt'
+            debug[debugType](colors.green(`[${this.deviceData.name}] `)+message)
+        }
         // Build device base and availability topic
         this.deviceTopic = `${this.config.ring_topic}/${this.locationId}/${deviceInfo.category}/${this.deviceId}`
         this.availabilityTopic = `${this.deviceTopic}/status`
@@ -31,7 +39,7 @@ class RingDevice {
     // and publishes this message to the Home Assistant config topic
     async publishDiscovery() {
         const debugMsg = (this.availabilityState === 'unpublished') ? 'Publishing new ' : 'Republishing existing '
-        debug(debugMsg+'device id: '+this.deviceId)
+        debug.disc(debugMsg+'device id: '+this.deviceId, 'disc')
 
         Object.keys(this.entity).forEach(entityKey => {
             const entity = this.entity[entityKey]
@@ -47,7 +55,7 @@ class RingDevice {
             
             // ***** Build a Home Assistant style MQTT discovery message *****
             // Legacy versions of ring-mqtt created entity names and IDs for single function devices
-            // without using any type of suffix. To maintain compatibility with older version entities
+            // without using any type of suffix. To maintain compatibility with older version, entities
             // can pass their unique_id in the entity definition. If this is detected then the device
             // will also get legacy device name generation (i.e. no name suffix either). However,
             // automatic name generation can also be completely overridden with entity 'name' parameter.
@@ -134,9 +142,9 @@ class RingDevice {
             }
 
             const configTopic = `homeassistant/${entity.component}/${this.locationId}/${this.deviceId}_${entityKey}/config`
-            debug(`HASS config topic: ${configTopic}`)
-            debug(discoveryMessage)
-            this.publishMqtt(configTopic, JSON.stringify(discoveryMessage))
+            debug.disc(`HASS config topic: ${configTopic}`)
+            debug.disc(discoveryMessage)
+            this.publishMqtt(configTopic, JSON.stringify(discoveryMessage), false)
 
             // On first publish store generated topics in entities object and subscribe to command topics
             if (!this.entity[entityKey].hasOwnProperty('published')) {
@@ -173,37 +181,34 @@ class RingDevice {
                         return filteredAttributes
                     }, {})
                 if (Object.keys(entityAttributes).length > 0) {
-                    this.publishMqtt(this.entity[entityKey].json_attributes_topic, JSON.stringify(entityAttributes), true)
+                    this.publishMqtt(this.entity[entityKey].json_attributes_topic, JSON.stringify(entityAttributes), 'attr')
                 }
             }
         })
     }
 
     // Publish state messages with debug
-    publishMqtt(topic, message, isDebug) {
-        if (isDebug) { this.debug(colors.blue(`${topic} `)+colors.cyan(`${message}`)) }
+    publishMqtt(topic, message, debugType) {
+        if (debugType !== false) {
+            this.debug(colors.blue(`${topic} `)+colors.cyan(`${message}`), debugType)
+        }
         this.mqttClient.publish(topic, message, { qos: 1 })
-    }
-
-    // Publish availability state
-    publishAvailabilityState(enableDebug) {
-        this.publishMqtt(this.availabilityTopic, this.availabilityState, enableDebug)
     }
 
     // Set state topic online
     async online() {
-        const enableDebug = (this.availabilityState === 'online') ? false : true
-        if (this.shutdown) { return }
+        if (this.shutdown) { return } // Supress any delayed online state messages if ring-mqtt is shutting down
+        const debugType = (this.availabilityState === 'online') ? false : 'mqtt'
         this.availabilityState = 'online'
-        this.publishAvailabilityState(enableDebug)
+        this.publishMqtt(this.availabilityTopic, this.availabilityState, debugType)
         await utils.sleep(2)
     }
 
     // Set state topic offline
     offline() {
-        const enableDebug = (this.availabilityState === 'offline') ? false : true
+        const debugType = (this.availabilityState === 'offline') ? false : 'mqtt'
         this.availabilityState = 'offline'
-        this.publishAvailabilityState(enableDebug)
+        this.publishMqtt(this.availabilityTopic, this.availabilityState, debugType)
     }
 }
 

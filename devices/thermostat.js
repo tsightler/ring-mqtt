@@ -51,10 +51,10 @@ class Thermostat extends RingSocketDevice {
     async publishData(data) {
         const isPublish = data === undefined ? true : false
 
-        this.publishMqtt(this.entity.thermostat.mode_state_topic, this.data.mode(), true)
-        this.publishMqtt(this.entity.thermostat.temperature_state_topic, this.data.setPoint(), true)
-        this.publishMqtt(this.entity.thermostat.fan_mode_state_topic, this.data.fanMode(), true)
-        this.publishMqtt(this.entity.thermostat.aux_state_topic, this.data.auxMode(), true)
+        this.publishMqtt(this.entity.thermostat.mode_state_topic, this.data.mode())
+        this.publishMqtt(this.entity.thermostat.temperature_state_topic, this.data.setPoint())
+        this.publishMqtt(this.entity.thermostat.fan_mode_state_topic, this.data.fanMode())
+        this.publishMqtt(this.entity.thermostat.aux_state_topic, this.data.auxMode())
         this.publishOperatingMode()
 
         if (isPublish) { this.publishTemperature() }
@@ -62,11 +62,11 @@ class Thermostat extends RingSocketDevice {
     }
 
     publishOperatingMode() {
-        this.publishMqtt(this.entity.thermostat.action_topic, this.data.operatingMode(), true)
+        this.publishMqtt(this.entity.thermostat.action_topic, this.data.operatingMode())
     }
 
     publishTemperature() {
-        this.publishMqtt(this.entity.thermostat.current_temperature_topic, this.data.temperature(), true)
+        this.publishMqtt(this.entity.thermostat.current_temperature_topic, this.data.temperature())
     }
 
     // Process messages from MQTT command topic
@@ -94,12 +94,12 @@ class Thermostat extends RingSocketDevice {
         const mode = value.toLowerCase()
         switch(mode) {
             case 'off':
-                this.publishMqtt(this.entity.thermostat.action_topic, mode, true)
+                this.publishMqtt(this.entity.thermostat.action_topic, mode)
             case 'cool':
             case 'heat':
             case 'aux':
                 this.device.setInfo({ device: { v1: { mode } } })
-                this.publishMqtt(this.entity.thermostat.mode_state_topic, mode, true)
+                this.publishMqtt(this.entity.thermostat.mode_state_topic, mode)
                 break;
             default:
                 this.debug(`Received invalid set mode command`)
@@ -114,7 +114,7 @@ class Thermostat extends RingSocketDevice {
             this.debug('New target command received but out of range (10-37.22223°C)!')
         } else {
             this.device.setInfo({ device: { v1: { setPoint: Number(value) } } })
-            this.publishMqtt(this.entity.thermostat.temperature_state_topic, value, true)
+            this.publishMqtt(this.entity.thermostat.temperature_state_topic, value)
         }
     }
 
@@ -123,7 +123,7 @@ class Thermostat extends RingSocketDevice {
         const fanMode = value.toLowerCase()
         if (this.entity.thermostat.fan_modes.map(e => e.toLocaleLowerCase()).includes(fanMode)) {
             this.device.setInfo({ device: { v1: { fanMode }}})
-            this.publishMqtt(this.entity.thermostat.fan_mode_state_topic, fanMode.replace(/^./, str => str.toUpperCase()), true)
+            this.publishMqtt(this.entity.thermostat.fan_mode_state_topic, fanMode.replace(/^./, str => str.toUpperCase()))
         } else {
             this.debug('Received invalid fan mode command')
         }
@@ -137,7 +137,7 @@ class Thermostat extends RingSocketDevice {
             case 'off':
                 const mode = auxMode === 'on' ? 'aux' : 'heat'
                 this.device.setInfo({ device: { v1: { mode } } })
-                this.publishMqtt(this.entity.thermostat.aux_state_topic, auxMode.toUpperCase(), true)
+                this.publishMqtt(this.entity.thermostat.aux_state_topic, auxMode.toUpperCase())
                 break;
             default:
                 this.debug('Received invalid aux mode command')

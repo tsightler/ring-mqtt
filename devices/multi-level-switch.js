@@ -15,8 +15,8 @@ class MultiLevelSwitch extends RingSocketDevice {
     publishData() {
         const switchState = this.device.data.on ? "ON" : "OFF"
         const switchLevel = (this.device.data.level && !isNaN(this.device.data.level) ? Math.round(100 * this.device.data.level) : 0) 
-        this.publishMqtt(this.entity.light.state_topic, switchState, true)
-        this.publishMqtt(this.entity.light.brightness_state_topic, switchLevel.toString(), true)
+        this.publishMqtt(this.entity.light.state_topic, switchState)
+        this.publishMqtt(this.entity.light.brightness_state_topic, switchLevel.toString())
         this.publishAttributes()
     }
     

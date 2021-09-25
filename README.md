@@ -262,14 +262,25 @@ MQTT topics are built consistently during each startup.  The easiest way to dete
 - Dynamic add/remove of alarms/devices (i.e. no service restart required)
 
 ## Debugging
-By default the script should produce no console output, however, the debug output is available by leveraging the terrific [debug](https://www.npmjs.com/package/debug) package.  To get debug output simply set the DEBUG environment variable as appropriate on the run command.
-**Note** Debugging output for ring-mqtt is enabled by default in Docker builds
+By default the Docker and Home Assistant Addon produce significate debugging output, while the standard install produces very limited output at all.  Debug output is controlled using the DEBUG enviornment variable and leverages the terrific [debug](https://www.npmjs.com/package/debug) package.  To get debug output simply set the DEBUG environment variable as appropriate.
 
-**Debug messages from ring-mqtt and sub-components (this is the most useful for debugging issues)**\
-This option is also useful when using the script with external MQTT tools as it dumps all discovered sensors and their topics.  Also allows you to monitor sensor states in real-time on the console.\
+The following debug options and the logging output are described below:
+
+DEBUG=ring-mqtt - Startup messages and MQTT topic/state messages only for simple text based entity topics
+DEBUG=ring-attr - MQTT topic/state message for JSON attribute topics
+DEBUG=ring-disc - Full MQTT Home Assistant discovery messages (for large environments can be quite wordy during startup)
+DEBUG=ring-rtsp - Messages from RTSP streaming server the video stream on-demand scripts 
+
+Multiple debug options can be selected by combined with a comma or by using wildcards.  Below are some examples:
+
+**Debug messages from both simple topics and attributes topics**\
+```DEBUG=ring-mqtt,ring-attr```
+
+**Enable all ring-mqtt specific debug messages (this is the most useful for debugging issues)**\
+This option can also be useful when using the script with external MQTT tools as it dumps all discovered sensors and their topics and allows you to monitor sensor states in real-time on the console.\
 ```DEBUG=ring-*```
 
-**Debug messages from all modules** (Warning, this very verbose!)\
+**Debug messages from all modules used by ring-mqtt** (Warning, this very verbose and rarely needed!)\
 ```DEBUG=*```
 
 **Example for Docker**\

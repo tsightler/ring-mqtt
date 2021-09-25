@@ -117,7 +117,7 @@ class RingSocketDevice extends RingDevice {
                 && this.device.data.hasOwnProperty('networks') && this.device.data.networks.hasOwnProperty('wlan0')
                     ? { wirelessNetwork: this.device.data.networks.wlan0.ssid, wirelessSignal: this.device.data.networks.wlan0.rssi } : {}
         }
-        this.publishMqtt(this.entity.info.state_topic, JSON.stringify(attributes), true)
+        this.publishMqtt(this.entity.info.state_topic, JSON.stringify(attributes), 'attr')
         this.publishAttributeEntities(attributes)
     }
 }

@@ -20,7 +20,7 @@ class Siren extends RingSocketDevice {
         }
 
         const sirenState = this.device.data.sirenStatus === 'active' ? 'ON' : 'OFF'
-        this.publishMqtt(this.entity.siren.state_topic, sirenState, true)
+        this.publishMqtt(this.entity.siren.state_topic, sirenState)
         this.publishAttributes()
     }
 

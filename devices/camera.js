@@ -356,7 +356,7 @@ class Camera extends RingPolledDevice {
     // Publish ding state and attributes
     publishDingState(dingKind) {
         const dingState = this.data[dingKind].active_ding ? 'ON' : 'OFF'
-        this.publishMqtt(this.entity[dingKind].state_topic, dingState, true)
+        this.publishMqtt(this.entity[dingKind].state_topic, dingState)
 
         if (dingKind === 'motion') {
             this.publishMotionAttributes()
@@ -375,7 +375,7 @@ class Camera extends RingPolledDevice {
             this.data.motion.detection_enabled = this.device.data.settings.motion_detection_enabled
             attributes.motionDetectionEnabled = this.data.motion.detection_enabled
         }
-        this.publishMqtt(this.entity.motion.json_attributes_topic, JSON.stringify(attributes), true)
+        this.publishMqtt(this.entity.motion.json_attributes_topic, JSON.stringify(attributes), 'attr')
     }
 
     publishDingAttributes() {
@@ -383,7 +383,7 @@ class Camera extends RingPolledDevice {
             lastDing: this.data.ding.last_ding,
             lastDingTime: this.data.ding.last_ding_time
         }
-        this.publishMqtt(this.entity.ding.json_attributes_topic, JSON.stringify(attributes), true)
+        this.publishMqtt(this.entity.ding.json_attributes_topic, JSON.stringify(attributes), 'attr')
     }
 
     // Publish camera state for polled attributes (light/siren state, etc)
@@ -394,14 +394,14 @@ class Camera extends RingPolledDevice {
             const lightState = this.device.data.led_status === 'on' ? 'ON' : 'OFF'
             if (lightState !== this.data.light.state || isPublish) {
                 this.data.light.state = lightState
-                this.publishMqtt(this.entity.light.state_topic, this.data.light.state, true)
+                this.publishMqtt(this.entity.light.state_topic, this.data.light.state)
             }
         }
         if (this.device.hasSiren) {
             const sirenState = this.device.data.siren_status.seconds_remaining > 0 ? 'ON' : 'OFF'
             if (sirenState !== this.data.siren.state || isPublish) {
                 this.data.siren.state = sirenState
-                this.publishMqtt(this.entity.siren.state_topic, this.data.siren.state, true)
+                this.publishMqtt(this.entity.siren.state_topic, this.data.siren.state)
             }
         }
 
@@ -429,14 +429,14 @@ class Camera extends RingPolledDevice {
             }
             attributes.stream_Source = this.data.stream.live.streamSource
             attributes.still_Image_URL = this.data.stream.live.stillImageURL
-            this.publishMqtt(this.entity.info.state_topic, JSON.stringify(attributes), true)
+            this.publishMqtt(this.entity.info.state_topic, JSON.stringify(attributes), 'attr')
             this.publishAttributeEntities(attributes)
         }
     }
 
     publishSnapshotInterval(isPublish) {
         if (isPublish) {
-            this.publishMqtt(this.entity.snapshot_interval.state_topic, this.data.snapshot.interval.toString(), true)
+            this.publishMqtt(this.entity.snapshot_interval.state_topic, this.data.snapshot.interval.toString())
         } else {
             // Update snapshot frequency in case it's changed
             if (this.data.snapshot.autoInterval && this.data.snapshot.interval !== this.device.data.settings.lite_24x7.frequency_secs) {
@@ -444,7 +444,7 @@ class Camera extends RingPolledDevice {
                 clearTimeout(this.data.snapshot.intervalTimerId)
                 this.scheduleSnapshotRefresh()
             }
-            this.publishMqtt(this.entity.snapshot_interval.state_topic, this.data.snapshot.interval.toString(), true)
+            this.publishMqtt(this.entity.snapshot_interval.state_topic, this.data.snapshot.interval.toString())
         }
     }
 
@@ -454,13 +454,13 @@ class Camera extends RingPolledDevice {
             const streamState = (this.data.stream[type].status === 'active' || this.data.stream[type].status === 'activating') ? 'ON' : 'OFF'
             if (streamState !== this.data.stream[type].state || isPublish) {
                 this.data.stream[type].state = streamState
-                this.publishMqtt(this.entity[entityProp].state_topic, this.data.stream[type].state, true)
+                this.publishMqtt(this.entity[entityProp].state_topic, this.data.stream[type].state)
             }
 
             if (this.data.stream[type].publishedStatus !== this.data.stream[type].status || isPublish) {
                 this.data.stream[type].publishedStatus = this.data.stream[type].status
                 const attributes = { status: this.data.stream[type].status }
-                this.publishMqtt(this.entity[entityProp].json_attributes_topic, JSON.stringify(attributes), true)
+                this.publishMqtt(this.entity[entityProp].json_attributes_topic, JSON.stringify(attributes), 'attr')
             } 
         })
     }
@@ -468,20 +468,20 @@ class Camera extends RingPolledDevice {
     publishStreamSelectState(isPublish) {
         if (this.data.event_select.state !== this.data.event_select.publishedState || isPublish) {
             this.data.event_select.publishedState = this.data.event_select.state
-            this.publishMqtt(this.entity.event_select.state_topic, this.data.event_select.state, true)
+            this.publishMqtt(this.entity.event_select.state_topic, this.data.event_select.state)
         }
         const attributes = { 
             recordingUrl: this.data.stream.event.recordingUrl,
             eventId: this.data.stream.event.dingId
         }
-        this.publishMqtt(this.entity.event_select.json_attributes_topic, JSON.stringify(attributes), true)
+        this.publishMqtt(this.entity.event_select.json_attributes_topic, JSON.stringify(attributes), 'attr')
     }
 
     // Publish snapshot image/metadata
     publishSnapshot() {
         this.debug(colors.blue(`${this.entity.snapshot.topic}`)+' '+colors.cyan('<binary_image_data>'))
-        this.publishMqtt(this.entity.snapshot.topic, this.data.snapshot.currentImage)
-        this.publishMqtt(this.entity.snapshot.json_attributes_topic, JSON.stringify({ timestamp: this.data.snapshot.timestamp }))
+        this.publishMqtt(this.entity.snapshot.topic, this.data.snapshot.currentImage, false)
+        this.publishMqtt(this.entity.snapshot.json_attributes_topic, JSON.stringify({ timestamp: this.data.snapshot.timestamp }), 'attr')
     }
 
     // Refresh snapshot on scheduled interval

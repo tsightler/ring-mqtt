@@ -21,7 +21,7 @@ class Keypad extends RingSocketDevice {
         }
 
         const currentVolume = (this.device.data.volume && !isNaN(this.device.data.volume) ? Math.round(100 * this.device.data.volume) : 0)
-        this.publishMqtt(this.entity.volume.state_topic, currentVolume.toString(), true)
+        this.publishMqtt(this.entity.volume.state_topic, currentVolume.toString())
         this.publishAttributes()
     }
 
