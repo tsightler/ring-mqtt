@@ -14,7 +14,7 @@ sleep .5
 # If options.json exist we are running as addon
 if [ -f /data/options.json ]; then
     echo "-------------------------------------------------------"
-    echo "| Ring Device Integration via MQTT                    |"
+    echo "| Ring-MQTT with Video Streaming                      |"
     echo "| Addon for Home Assistant                            |"
     echo "|                                                     |"
     echo "| Report issues at:                                   |"
@@ -25,7 +25,7 @@ if [ -f /data/options.json ]; then
 else
     # No options.json found, assume we are in running in standard Docker
     echo "-------------------------------------------------------"
-    echo "| Ring Devices via MQTT                               |"
+    echo "| Ring-MQTT with Video Streaming                      |"
     echo "| Docker Edition                                      |"
     echo "|                                                     |"
     echo "| Report issues at:                                   |"
