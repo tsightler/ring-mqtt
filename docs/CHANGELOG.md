@@ -1,3 +1,13 @@
+## v4.8.5
+**Minor Enhancements**
+- Abandon use of getSnapshot() function in favor of internal snapshot implementation
+- More granular debug output selection.  For now default debug output is still all categories, but users can now reduce logging or select more limited debug output with the following debug options:
+  - ring-mqtt - Startup messages and MQTT topic/state messages only for simple text based entity topics
+  - ring-attr - MQTT topic/state message for all JSON attribute topics
+  - ring-disc - MQTT Home Assistant style discovery messages (for large environments can be quite wordy during startup)
+  - ring-rtsp - Logging related to the RTSP streaming functions
+- Minor tweaks to debug output so that debug categories are the same length
+
 ## v4.8.4
 **Fixed Bugs**  
 - Event streams failed to update status to off/inactive after event finished playing, causing various replay issues
