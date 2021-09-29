@@ -6,7 +6,7 @@ This script leverages the excellent [ring-client-api](https://github.com/dgreif/
 Starting with the 4.0.0 release of ring-mqtt, Docker is the recommended installation method, however, standard, non-Docker installation is still fully supported.  Please skip to the [Standard Install](#standard-install) section for details on this install method.
 
 ### Docker Install
-For Docker installtion details, please read this section entirely.  While it is possible to build the image locally from the included Dockerfile, it is recommended to install and update by pulling the official image directly from Docker Hub.  You can pull the image with the following command:
+For Docker installation details, please read this section entirely.  While it is possible to build the image locally from the included Dockerfile, it is recommended to install and update by pulling the official image directly from Docker Hub.  You can pull the image with the following command:
 ```
 docker pull tsightler/ring-mqtt
 ```
@@ -16,7 +16,7 @@ Alternatively, you can issue "docker run" and Docker will automatically pull the
 docker run --rm -e "MQTTHOST=host_name" -e "MQTTPORT=host_port" -e "MQTTRINGTOPIC=ring_topic" -e "MQTTHASSTOPIC=hass_topic" -e "MQTTUSER=mqtt_user" -e "MQTTPASSWORD=mqtt_pw" -e "RINGTOKEN=ring_refreshToken" -e "ENABLECAMERAS=true-or-false" -e "RINGLOCATIONIDS=comma-separated_location_IDs" tsightler/ring-mqtt
 ```
 
-Note that Docker Compose also works well if you prefer this approach to a large amount of command line variables.
+Note that Docker Compose [(an example can be found here)](#docker-compose-example) also works well if you prefer this approach to a large amount of command line variables.
 
 #### Storing Updated Refresh Tokens
 The Docker container supports the use of a bind mount to provide persistent storage.  While the Docker container will run without this storage, using the bind mount is highly recommended as, otherwise, it will likely be required to generate a new token each time the container starts since there is nowhere for the script to save renewed tokens which are typically generated every hour. For more details on acquiring an initial refresh token please see ([Authentication](#authentication)).
@@ -277,6 +277,39 @@ This option is also useful when using the script with external MQTT tools as it 
 
 **Example for Standard Install**\
 ```DEBUG=ring-mqtt ./ring-mqtt```
+
+## Docker Compose Example
+Docker is the recommended installation method, with Docker Compose allowing for easier management of the evironmental variables (rather than executing one long command). 
+Documentation on Docker Compose can be [found here](https://docs.docker.com/compose/).
+
+Here is an /example/ of a Docker Compose file, with some [environment variables](#environment-variables) defined:
+
+```yml
+version: "3.7"
+services:
+  ring-mqtt:
+    container_name: ring-mqtt
+    restart: unless-stopped
+    image: tsightler/ring-mqtt
+    ports:
+      - 8554:8554 #Enable RTSP port for external media player access (see https://github.com/tsightler/ring-mqtt/blob/main/docs/CAMERAS.md)
+    volumes:
+      - /etc/ring-mqtt:/data  #Mapping of local folder to provide persistant storage for data (eg. tokens)
+    environment:  #All environmental varaibles can be found here: https://github.com/tsightler/ring-mqtt#environment-variables
+      - RINGTOKEN=  #Default is blank, see https://github.com/tsightler/ring-mqtt#authentication
+      - MQTTHOST=localhost  #Or IP Address if using a different host
+      - MQTTPORT=1883  #This is the default port, change if required
+      - MQTTUSER=mqttbrokerusername  #CHANGE ME, or remove line for anonymous connection
+      - MQTTPASSWORD=mqttbrokerpassword  #CHANGE ME, or remove line for anonymous connection
+      - ENABLECAMERAS=true  #Enable cameras: required for snapshot mode and RTSP access
+      - SNAPSHOTMODE=all  #Enable still snapshot image updates from camera (see https://github.com/tsightler/ring-mqtt#snapshot-options)
+      - LIVESTREAMUSER=livestreamuser  #CHANGE ME -- Highly recommended if the RTSP port for external media player access is enabled
+      - LIVESTREAMPASSWORD=livestreampassword  #CHANGE ME -- Highly recommended if the RTSP port for external media player access is enabled
+    logging:  #limit logs to 10m and 3 files
+      options:
+        max-size: 10m
+        max-file: "3"
+ ```
 
 ## Thanks
 Many thanks to @dgrief and his excellent [ring-client-api API](https://github.com/dgreif/ring/) as well as his homebridge plugin, from which I've learned a lot.  Without his work it would have taken far more effort and time, probably more time than I had, to get this working.
