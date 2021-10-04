@@ -6,7 +6,7 @@ This document provides detailed information about the video streaming support, i
 ### Quick overview
 Ring video streaming support is implemented by running a localhost instance of rtsp-simple-server.  For each camera discovered two separate RTSP paths are registered with the server using the following format:
 
-Live Stream:  <camera_id>_live
+Live Stream:  <camera_id>_live  
 Event Stream: <camera_id>_event
 
 To start a stream all that is required is to use any media client that support the RTSP protocol to connect to the given URL.  Behind the scenes the rtsp-simple-server uses an on-demand script to communicate via MQTT to ring-mqtt to instruct it when to start and stop the video stream.
