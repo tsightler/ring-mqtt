@@ -134,7 +134,7 @@ By default, this script will discover and monitor enabled devices across all loc
 Volume Control is supported for Ring Keypads and Base Stations.  Note that Ring shared users do not have access to control the Base Station volume so, if you want to control the Base Station volume using this integration, you must generate the refresh token using the primary Ring account.  During startup the system attempts to detect if the account can control the base station volume and only shows the volume control if it determines the accout has access.  This is a limitation of the Ring API as even the offical Ring App does not offer volume control to shared users.
 
 ## Debugging
-By default the Docker and Home Assistant Addon produce significate debugging output, while the standard install produces very limited output at all.  Debug output is controlled using the DEBUG enviornment variable and leverages the terrific [debug](https://www.npmjs.com/package/debug) package.  To get debug output simply set the DEBUG environment variable as appropriate.
+Debug output is controlled using the DEBUG enviornment variable and leverages the terrific [debug](https://www.npmjs.com/package/debug) package.  To get debug output simply set the DEBUG environment variable as appropriate.
 
 The following debug options and the logging output are described below:
 
@@ -143,7 +143,9 @@ DEBUG=ring-attr - MQTT topic/state message for JSON attribute topics
 DEBUG=ring-disc - Full MQTT Home Assistant discovery messages (for large environments can be quite wordy during startup)
 DEBUG=ring-rtsp - Messages from RTSP streaming server the video stream on-demand scripts 
 
-Multiple debug options can be selected by combined with a comma or by using wildcards.  Below are some examples:
+The default debug output for the Docker image, as well as the Home Assistant addon, is all categories (```DEBUG=ring-*```) but you can override this by explicitly setting the DEBUG enviornment variable.  For the standard installation, debug output is completely disabled by default.
+
+Multiple debug options can be selected by combining options with a comma or by using wildcards.  Below are some examples:
 
 **Debug messages from both simple topics and attributes topics**\
 ```DEBUG=ring-mqtt,ring-attr```
