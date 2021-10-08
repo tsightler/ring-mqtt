@@ -16,7 +16,7 @@ Docker is the recommended installation method, however, standard, non-Docker ins
 ### Camera video stream support
 Please read the detailed [camera documentation](docs/CAMERAS.md) for more information on video streaming configuration.
 
-## Use with MQTT Tools other than Home Assistant (Node-Red, OpenHAB, etc)
+### Use with MQTT Tools other than Home Assistant (Node-Red, OpenHAB, etc)
 MQTT topics are built consistently during each startup.  The easiest way to determine the device topics is to run the script with debug output.  More details about the topic format for all devices is available in [docs/TOPICS.md](docs/TOPICS.md).
 
 ## Supported Devices and Features
@@ -134,18 +134,16 @@ By default, this script will discover and monitor enabled devices across all loc
 Volume Control is supported for Ring Keypads and Base Stations.  Note that Ring shared users do not have access to control the Base Station volume so, if you want to control the Base Station volume using this integration, you must generate the refresh token using the primary Ring account.  During startup the system attempts to detect if the account can control the base station volume and only shows the volume control if it determines the accout has access.  This is a limitation of the Ring API as even the offical Ring App does not offer volume control to shared users.
 
 ## Debugging
-Debug output is controlled using the DEBUG enviornment variable and leverages the terrific [debug](https://www.npmjs.com/package/debug) package.  To get debug output simply set the DEBUG environment variable as appropriate.
+Debug output is controlled using the **DEBUG** enviornment variable and leverages the terrific [debug](https://www.npmjs.com/package/debug) package.  To get debug output simply set the **DEBUG** environment variable as appropriate.  The following debug message categories and the corresponding output are described below:
 
-The following debug options and the logging output are described below:
+| Category | Description |
+| --- | --- |
+| ring-mqtt | Startup messages and MQTT topic/state messages only for simple text based entity topics |
+| ring-attr | MQTT topic/state message for JSON attribute topics |
+| ring-disc | Full MQTT Home Assistant discovery messages (for large environments can be quite wordy during startup) |
+| ring-rtsp | Messages from RTSP streaming server the video stream on-demand scripts |
 
-DEBUG=ring-mqtt - Startup messages and MQTT topic/state messages only for simple text based entity topics
-DEBUG=ring-attr - MQTT topic/state message for JSON attribute topics
-DEBUG=ring-disc - Full MQTT Home Assistant discovery messages (for large environments can be quite wordy during startup)
-DEBUG=ring-rtsp - Messages from RTSP streaming server the video stream on-demand scripts 
-
-The default debug output for the Docker image, as well as the Home Assistant addon, is all categories (```DEBUG=ring-*```) but you can override this by explicitly setting the DEBUG enviornment variable.  For the standard installation, debug output is completely disabled by default.
-
-Multiple debug options can be selected by combining options with a comma or by using wildcards.  Below are some examples:
+The default debug output for the Docker image, as well as the Home Assistant addon, is all categories (```DEBUG=ring-*```) but it is possible to override this by explicitly setting the **DEBUG** enviornment variable.  For the standard installation, debug output is disabled by default.  Multiple debug categories can be selected by combining them with a comma or by using wildcards.  Below are some examples:
 
 **Debug messages from both simple topics and attributes topics**\
 ```DEBUG=ring-mqtt,ring-attr```
@@ -154,7 +152,7 @@ Multiple debug options can be selected by combining options with a comma or by u
 This option can also be useful when using the script with external MQTT tools as it dumps all discovered sensors and their topics and allows you to monitor sensor states in real-time on the console.  
 ```DEBUG=ring-*```
 
-**Debug messages from all modules used by ring-mqtt** (Warning, this very verbose and rarely needed!)\
+**Debug messages from ring-mqtt and all sub-modules** (Warning, this extremely verbose and rarely needed!)\
 ```DEBUG=*```
 
 **Example for Docker**
