@@ -4,15 +4,25 @@ For Docker installation details, please read this section entirely.  While it is
 docker pull tsightler/ring-mqtt
 ```
 
-Alternatively, you can issue "docker run" and Docker will automatically pull the image if it doesn't already exist locally (the command below is just an example, please see the [Environment Variables](#environment-variables) section for all available configuration options):
+### Docker Run
+You can issue "docker run" and Docker will automatically pull the image, if it doesn't already exist locally, and then run the script.  The command line below is an example, please see the [Environment Variables](#environment-variables) section for all available configuration options:
 ```
 docker run --rm -e "MQTTHOST=host_name" -e "MQTTPORT=host_port"  -e "MQTTUSER=mqtt_user" -e "MQTTPASSWORD=mqtt_pw" -e "RINGTOKEN=ring_refreshToken" -e "ENABLECAMERAS=true-or-false" -e "RINGLOCATIONIDS=comma-separated_location_IDs" tsightler/ring-mqtt
 ```
 
-Note that Docker Compose also works well if you prefer this approach vs passing a large number of command line variables, here is an example Docker Compose file (please read the environment variable documentation before attempting to use):
+#### Storing Updated Refresh Tokens
+The Docker container uses a bind mount to provide persistent storage.  While the Docker container will run without this storage, using the bind mount is highly recommended as, otherwise, it will sometimes be required to generate a new token when the container restarts since tokens eventually expire and there will be no way for an updated token to be stored in a persistent fashion. For more details on acquiring an initial refresh token please see ([Authentication](#authentication)).
 
-#### Docker Compose Example
-Here is an /example/ Docker Compose file, with some [environment variables](#environment-variables) defined:
+You can use any directory on the host for this persistent store, but it must be mounted to /data in the container.  The following is an example docker run command using a bind mount to mount the host directory /etc/ring-mqtt to the container path /data:
+```
+docker run --rm --mount type=bind,source=/etc/ring-mqtt,target=/data -e "MQTTHOST=host_name" -e "MQTTUSER=mqtt_user" -e "MQTTPASSWORD=mqtt_pw" -e "RINGTOKEN=ring_refreshToken" tsightler/ring-mqtt
+```
+
+#### Starting the Docker container automatically during boot
+To start the ring-mqtt docker container automatically during boot you can simply use the standard Docker methods, for example, adding ```--restart unless-stopped``` to the ```docker run``` command will cause Docker to automatically restart the container unless it has been explicitly stopped.
+
+### Docker Compose
+Docker Compose also works well if you prefer this method vs passing a large number of command line variables.  Below is an example Docker Compose file, please see the [Environment Variables](#environment-variables) section for all available configuration options:
 ```yml
 version: "3.7"
 services:
@@ -40,14 +50,7 @@ services:
         max-file: "3"
  ```
 
-#### Storing Updated Refresh Tokens
-The Docker container uses a bind mount to provide persistent storage.  While the Docker container will run without this storage, using the bind mount is highly recommended as, otherwise, it will sometimes be required to generate a new token when the container restarts since tokens eventually expire and there will be no way for an updated token to be stored in a persistent fashion. For more details on acquiring an initial refresh token please see ([Authentication](#authentication)).
-
-You can use any directory on the host for this persistent store, but it must be mounted to /data in the container.  The following is an example docker run command using a bind mount to mount the host directory /etc/ring-mqtt to the container path /data:
-```
-docker run --rm --mount type=bind,source=/etc/ring-mqtt,target=/data -e "MQTTHOST=host_name" -e "MQTTUSER=mqtt_user" -e "MQTTPASSWORD=mqtt_pw" -e "RINGTOKEN=ring_refreshToken" tsightler/ring-mqtt
-```
-#### Environment Variables
+### Environment Variables
 The only absolutely required parameter for initial startup is **RINGTOKEN** but, in practice, at least **MQTTHOST** will likely be required as well, and **MQTTUSER/MQTTPASSWORD** will be required if the MQTT broker does not accept anonymous connections.  Default values for the environment values if they are not defined are as follows:
 
 | Environment Variable Name | Description | Default |
@@ -68,19 +71,16 @@ The only absolutely required parameter for initial startup is **RINGTOKEN** but,
 | RINGLOCATIONIDS | Array of location Ids in format: "loc-id","loc-id2", see [Limiting Locations](#limiting-locations) for details | blank |
 | BRANCH | During startup pull latest master/dev branch from Github instead of running local copy, see [Branch Feature](#branch-feature) for details. | blank |
 
-#### Starting the Docker container automatically during boot
-To start the ring-mqtt docker container automatically during boot you can simply use the standard Docker methods, for example, adding ```--restart unless-stopped``` to the ```docker run``` command will cause Docker to automatically restart the container unless it has been explicitly stopped.
-
 ### Authentication
 Ring has made two factor authentication (2FA) mandatory thus the script now only supports this authentication method.  Using 2FA requires acquiring a refresh token for your Ring account and passing the token with the RINGTOKEN environment variable on initial startup.  From this point new tokens are acquired automatically and stored in the ring-state file for use during future startups.  The two following methods are available for acquiring a token:
 
-**Primary Method**  
+#### Primary Method
 Run the bundled ring-auth-cli utility directly via the Docker command line to acquire the token:
 ```
 docker run -it --rm --entrypoint /app/ring-mqtt/node_modules/ring-client-api/ring-auth-cli.js tsightler/ring-mqtt
 ```
 
-**Alternative Method**  
+#### Alternative Method
 Use ring-auth-cli from any system with NodeJS and NPM installed via npx, which downloads and runs ring-auth-cli on demand:
 ```
 npx -p ring-client-api ring-auth-cli
