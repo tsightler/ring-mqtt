@@ -7,7 +7,7 @@ The code is written primarily in Javascript and leverages the excellent [ring-cl
 Home Assistant style MQTT discovery is supported which allows for easy integration with minimal configuration (requires the Home Assistant Mosquitto/MQTT integration to be enabled).  For those using Home Assistant OS, or other supervised Home Assistant installations, there is a sister project providding a [Home Assistant Addon](https://github.com/tsightler/ring-mqtt-ha-addon) which allows installing Ring-MQTT directly via the native add-on store capabilities (not HACS).
 
 ## Installation
-Docker is the recommended installation method, however, standard, non-Docker installation is still supported, but not regularly tested.  Please read the documenation for your preferred install method below for details on the require installtion steps and configuration:
+Docker is the recommended installation method, however, standard, non-Docker installation is still supported, but not regularly tested.  Note that this project supports only Linux platforms and will not run properly on Windows.  Please read the documenation for your preferred install method below for details on the require installtion steps and configuration:
 
 [Docker Install](docs/DOCKER.md)
 
