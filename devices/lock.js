@@ -23,7 +23,7 @@ class Lock extends RingSocketDevice {
             default:
                 lockState = 'UNKNOWN'
         }
-        this.publishMqtt(this.entity.lock.state_topic, lockState, true)
+        this.publishMqtt(this.entity.lock.state_topic, lockState)
         this.publishAttributes()
     }
 

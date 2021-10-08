@@ -1,16 +1,18 @@
 #!/bin/bash
-# Script to activate live stream on Ring cameras via ring-mqtt
+# Activate video stream on Ring cameras via ring-mqtt
+# Intended for use as on-demand script for rtsp-simple-server
+
 # Requires mosquitto MQTT clients package to be installed
-# Provides status updates and termintates stream on exit or if stream 
-# ends unexpectedly.  Primarily inteded for use with rtsp-simple-server
-# to start and end stream on-demand.
+# Provides status updates and termintates stream on script exit
 
 # Required command line arguments
-client_name=${1}          # Friendly name of camera (used for logging)
-device_id=${2}            # This is the id used to connect to the MQTT broker. Can be anything but typically camera ID
-type=${3}          # This is the type of stream being starts ("live" or "event")
-base_topic=${4}           # Command topic for Camera entity
-client_id="${device_id}_${type}"
+client_name=${1}   # Friendly name of camera (used for logging)
+device_id=${2}     # Camera device Id
+type=${3}          # Stream type ("live" or "event")
+base_topic=${4}    # Command topic for Camera entity
+client_id="${device_id}_${type}"  # Id used to connect to the MQTT broker, camera Id + event type
+activated="false"
+
 json_attribute_topic="${base_topic}stream/attributes"
 command_topic="${base_topic}stream/command"
 
@@ -23,11 +25,11 @@ reset='\033[0m'
 
 ctrl_c() {
     if [ -z ${reason} ]; then
-        # If no reason defined, that means we were interrupted by a singnal, send the command to stop the live stream
+        # If no reason defined, that means we were interrupted by a signal, send the command to stop the live stream
         echo -e "${green}[${client_name}]${reset} Deactivating ${type} stream due to signal from RTSP server (no more active clients or publisher ended stream)"
         mosquitto_pub -i "${client_id}_pub" -u "${MQTTUSER}" -P "${MQTTPASSWORD}" -h "${MQTTHOST}" -p "${MQTTPORT}" -t "${command_topic}" -m "OFF"
     fi
-    # Cheesy, but there should only ever be one process per client active at any time so this works for now
+    # There should only ever be one process per client active at any time so this works for now
     mosquitto_pid=`ps -ef | grep mosquitto_sub | grep "${client_id}" | tr -s ' ' | cut -d ' ' -f2`
     [ ! -z ${mosquitto_pid} ] && kill ${mosquitto_pid}
     exit 0
@@ -37,9 +39,10 @@ ctrl_c() {
 trap ctrl_c INT TERM QUIT
 
 # This loop starts mosquitto_sub with a subscription on the camera stream topic that sends all received
-# messages to a file descriptor which is read continously. On initial startup the script waits 100ms to
-# publish the stream 'ON' command to the command topic.  All stream state messages received are processed
-# based on the detailed states from the json_attributes_topic:
+# messages via file descriptor to the read process. On initial the startup the script publishes the 
+# stream 'ON-DEMAND' command to the command topic which lets ring-mqtt know that an RTSP client has
+# requested the stream.  Stream state is determined via the the detailed stream state messages received
+# via the json_attributes_topic:
 #
 # "inactive" = There is no active live stream and none currently requested
 # "activating" = A live stream has been requested and is in the process of starting
@@ -56,10 +59,15 @@ do
         stream_state=`echo ${message} | jq -r '.status'`
         case ${stream_state,,} in
             activating)
-                echo -e "${green}[${client_name}]${reset} ${type^} stream is activating..."
+                if [ ${activated} = "false" ]; then
+                    echo -e "${green}[${client_name}]${reset} ${type^} stream is activating..."
+                fi
                 ;;
             active)
-                echo -e "${green}[${client_name}]${reset} ${type^} stream is active!"
+                if [ ${activated} = "false" ]; then
+                    echo -e "${green}[${client_name}]${reset} ${type^} stream is active!"
+                    activated="true"
+                fi
                 ;;
             inactive)
                 echo -e "${green}[${client_name}]${yellow} ${type^} stream has gone inactive, exiting...${reset}"
@@ -76,7 +84,7 @@ do
                 ;;
         esac
     fi
-done 10< <(mosquitto_sub -q 1 -i "${client_id}_sub" -u "${MQTTUSER}" -P "${MQTTPASSWORD}" -h "${MQTTHOST}" -p "${MQTTPORT}" -t "${json_attribute_topic}" & (sleep .025; echo "START"))
+done 10< <(mosquitto_sub -q 1 -i "${client_id}_sub" -u "${MQTTUSER}" -P "${MQTTPASSWORD}" -h "${MQTTHOST}" -p "${MQTTPORT}" -t "${json_attribute_topic}" & (sleep .02; echo "START"))
 
 ctrl_c
 exit 0

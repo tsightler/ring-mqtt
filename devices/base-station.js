@@ -35,7 +35,7 @@ class BaseStation extends RingSocketDevice {
 
         if (this.entity.hasOwnProperty('volume')) {
             const currentVolume = (this.device.data.volume && !isNaN(this.device.data.volume) ? Math.round(100 * this.device.data.volume) : 0)
-            this.publishMqtt(this.entity.volume.state_topic, currentVolume.toString(), true)
+            this.publishMqtt(this.entity.volume.state_topic, currentVolume.toString())
 
             // Eventually remove this but for now this attempts to delete the old light component based volume control from Home Assistant
             if (isPublish) {

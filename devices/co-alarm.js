@@ -17,7 +17,7 @@ class CoAlarm extends RingSocketDevice {
 
     publishData() {
         const coState = this.device.data.alarmStatus === 'active' ? 'ON' : 'OFF'
-        this.publishMqtt(this.entity.co.state_topic, coState, true)
+        this.publishMqtt(this.entity.co.state_topic, coState)
         this.publishAttributes()
     }
 }

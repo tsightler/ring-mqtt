@@ -14,13 +14,19 @@ sleep .5
 if [ -f /data/options.json ]; then
     export RUNMODE=addon
     export BRANCH=$(bashio::config "branch")
+    export DEBUG=$(bashio::config "debug")
 else
     export RUNMODE=docker
+    # If debug is not explicitly defined, use default
+    if [ ! -v DEBUG ]; then
+        export DEBUG="ring-*"
+    fi
 fi
 
-set +o nounset
-if [ "${BRANCH}" = "latest" ] || [ "${BRANCH}" = "dev" ]; then
-    cd "/app/ring-mqtt-${BRANCH}"
+if [ -v BRANCH ]; then
+    if [ "${BRANCH}" = "latest" ] || [ "${BRANCH}" = "dev" ]; then
+        cd "/app/ring-mqtt-${BRANCH}"
+    fi
 else
     cd /app/ring-mqtt
 fi
@@ -100,4 +106,4 @@ if [ "${RUNMODE}" = "addon" ]; then
 fi
 
 echo "Running ring-mqtt..."
-DEBUG=ring-* exec ./ring-mqtt.js
+exec ./ring-mqtt.js

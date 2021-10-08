@@ -34,7 +34,7 @@ class ContactSensor extends RingSocketDevice {
 
     publishData() {
         const contactState = this.device.data.faulted ? 'ON' : 'OFF'
-        this.publishMqtt(this.entity[this.entityName].state_topic, contactState, true)
+        this.publishMqtt(this.entity[this.entityName].state_topic, contactState)
         this.publishAttributes()
     }
 }

@@ -66,13 +66,13 @@ class SecurityPanel extends RingSocketDevice {
                     alarmMode = 'unknown'
             }
         }
-        this.publishMqtt(this.entity.alarm.state_topic, alarmMode, true)
+        this.publishMqtt(this.entity.alarm.state_topic, alarmMode)
 
         const sirenState = (this.device.data.siren && this.device.data.siren.state === 'on') ? 'ON' : 'OFF'
-        this.publishMqtt(this.entity.siren.state_topic, sirenState, true)
+        this.publishMqtt(this.entity.siren.state_topic, sirenState)
 
         const bypassState = this.entity.bypass.state ? 'ON' : 'OFF'
-        this.publishMqtt(this.entity.bypass.state_topic, bypassState, true)
+        this.publishMqtt(this.entity.bypass.state_topic, bypassState)
 
         if (this.config.enable_panic) {
             let policeState = 'OFF'
@@ -91,8 +91,8 @@ class SecurityPanel extends RingSocketDevice {
                     fireState = 'ON'
                     this.debug('Fire alarm is active for '+this.device.location.name)
             }
-            this.publishMqtt(this.entity.police.state_topic, policeState, true)
-            this.publishMqtt(this.entity.fire.state_topic, fireState, true)
+            this.publishMqtt(this.entity.police.state_topic, policeState)
+            this.publishMqtt(this.entity.fire.state_topic, fireState)
         }
 
         this.publishAttributes()
@@ -104,7 +104,7 @@ class SecurityPanel extends RingSocketDevice {
             exitDelayMs = this.device.data.transitionDelayEndTimestamp - Date.now()
             if (exitDelayMs <= 0) {
                 // Publish device sensor state
-                this.publishMqtt(this.entity.alarm.state_topic, 'armed_away', true)
+                this.publishMqtt(this.entity.alarm.state_topic, 'armed_away')
             }
         }
     }

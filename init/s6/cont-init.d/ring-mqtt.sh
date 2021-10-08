@@ -8,13 +8,13 @@
 # for the detected environment.
 # ==============================================================================
 
-# Delay to keep logs messages from overlapping with s6 logs
+# Short delay to keep log messages from overlapping with s6 logs
 sleep .5
 
 # If options.json exist we are running as addon
 if [ -f /data/options.json ]; then
     echo "-------------------------------------------------------"
-    echo "| Ring Device Integration via MQTT                    |"
+    echo "| Ring-MQTT with Video Streaming                      |"
     echo "| Addon for Home Assistant                            |"
     echo "|                                                     |"
     echo "| Report issues at:                                   |"
@@ -25,7 +25,7 @@ if [ -f /data/options.json ]; then
 else
     # No options.json found, assume we are in running in standard Docker
     echo "-------------------------------------------------------"
-    echo "| Ring Devices via MQTT                               |"
+    echo "| Ring-MQTT with Video Streaming                      |"
     echo "| Docker Edition                                      |"
     echo "|                                                     |"
     echo "| Report issues at:                                   |"
@@ -33,7 +33,8 @@ else
     echo "-------------------------------------------------------"
 fi
 
-set +o nounset
-if [ "${BRANCH}" = "latest" ] || [ "${BRANCH}" = "dev" ]; then
-    /app/ring-mqtt/scripts/update2branch.sh
+if [ -v BRANCH ]; then
+    if [ "${BRANCH}" = "latest" ] || [ "${BRANCH}" = "dev" ]; then
+        /app/ring-mqtt/scripts/update2branch.sh
+    fi
 fi
