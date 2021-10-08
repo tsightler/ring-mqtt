@@ -1,14 +1,13 @@
 ## v4.8.5
-I'm expecting this to be the last update for a while as I will be taking a hiatus from working on this project for the next few months.  This update is mostly about cleaning up a few minor things to try to get this project into a state that it will need minimal maintenance for the coming months.
+I'm expecting this to be the last update for a while as I will be taking a hiatus from working on this project for the next few months.  This update is mostly about cleaning up a few minor things to make sure everything is in a state where it will need minimal maintenance during that time.  Reported issues have dropped quite low over the last few weeks so I'm hopeful nothing serious will crop up during my time away from the project.  Note that I will still attempt to answer any reported issues, I just may not have time to address them.
 
 **Minor Enhancements**
-- Abandon use of getSnapshot() function in favor of internal snapshot implementation
-- More granular debug output selection.  For now default debug output is still all categories, but users can now reduce logging or select more limited debug output with the following debug options:
+- Abandon use of getSnapshot() function in favor of internal snapshot implementation in all cases (previously the internal implementation was used only for motion snapshots)
+- More granular debug output selection and standardizaion which makes it easier to visually parse logs.  For now the default debug output for the Docker and addon versions is still all categories, but users can now reduce logging or select more limited debug output with the following debug options:
   - ring-mqtt - Startup messages and MQTT topic/state messages for primary text based entity topics
   - ring-attr - MQTT topic/state messages for JSON attribute topics
   - ring-disc - MQTT Home Assistant style discovery messages (for large environments can be quite wordy during startup)
   - ring-rtsp - Logging related to the RTSP streaming functions
-- Improve visual parsing of debug output by standardizing all debug categories to the same length
 
 **Other Changes**
 - Refactor documentation
