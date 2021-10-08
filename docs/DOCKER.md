@@ -1,4 +1,4 @@
-### Docker Install
+## Docker Install
 For Docker installation details, please read this section entirely.  While it is possible to build the image locally from the included Dockerfile, it is recommended to install and update by pulling the official image directly from Docker Hub.  You can pull the image with the following command:
 ```
 docker pull tsightler/ring-mqtt
@@ -11,7 +11,7 @@ docker run --rm -e "MQTTHOST=host_name" -e "MQTTPORT=host_port"  -e "MQTTUSER=mq
 
 Note that Docker Compose also works well if you prefer this approach vs passing a large number of command line variables, here is an example Docker Compose file (please read the environment variable documentation before attempting to use):
 
-## Docker Compose Example
+#### Docker Compose Example
 Here is an /example/ Docker Compose file, with some [environment variables](#environment-variables) defined:
 ```yml
 version: "3.7"
@@ -71,7 +71,7 @@ The only absolutely required parameter for initial startup is **RINGTOKEN** but,
 #### Starting the Docker container automatically during boot
 To start the ring-mqtt docker container automatically during boot you can simply use the standard Docker methods, for example, adding ```--restart unless-stopped``` to the ```docker run``` command will cause Docker to automatically restart the container unless it has been explicitly stopped.
 
-#### Authentication
+### Authentication
 Ring has made two factor authentication (2FA) mandatory thus the script now only supports this authentication method.  Using 2FA requires acquiring a refresh token for your Ring account and passing the token with the RINGTOKEN environment variable on initial startup.  From this point new tokens are acquired automatically and stored in the ring-state file for use during future startups.  The two following methods are available for acquiring a token:
 
 **Primary Method**  

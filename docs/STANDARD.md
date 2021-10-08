@@ -1,4 +1,4 @@
-### Standard Install 
+## Standard Install 
 Stanard installation is supported but use of the Docker install method is highly recommended since the Docker image includes fully tested pre-requisites within the image.  Note that, for the most part, this code will run on any NodeJS version from v12 or later, however, video streaming support requires at least NodeJS 14.17.0 to function properly.
 
 #### Video Streaming Pre-requisites
@@ -19,7 +19,7 @@ chmod +x ring-mqtt.js
 npm install
 ```
 
-This will install all of the required node dependencies.  Now edit the config.js file to configure your Ring refresh token and MQTT broker connection information and any other settings (see [Config Options](#config-options).  Note that the user the script runs as will need permission to write the config.json file as, for the standalone installation, updated refresh tokens are written back directly to the config.json file.
+This will install all of the required node dependencies.  Now edit the config.js file to configure your Ring refresh token and MQTT broker connection information and any other settings (see [Configuration Options](#configuration-options) below).  Note that the user the script runs as will need permission to write the config.json file as updated refresh tokens are written back directly to this file when running via standard install.
 
 #### Configuration Options
 | Config Option | Description | Default |
