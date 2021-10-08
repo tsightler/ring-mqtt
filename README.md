@@ -16,7 +16,7 @@ Docker is the recommended installation method, however, standard, non-Docker ins
 ### Camera video stream support
 Please read the detailed [camera documentation](docs/CAMERAS.md) for more information on video streaming configuration.
 
-## Using with non-Home Assistant MQTT Tools (Node-Red, OpenHAB, etc)
+## Use with MQTT Tools other than Home Assistant (Node-Red, OpenHAB, etc)
 MQTT topics are built consistently during each startup.  The easiest way to determine the device topics is to run the script with debug output.  More details about the topic format for all devices is available in [docs/TOPICS.md](docs/TOPICS.md).
 
 ## Supported Devices and Features
