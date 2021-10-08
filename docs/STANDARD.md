@@ -1,13 +1,14 @@
 ## Standard Install 
 Stanard installation is supported but use of the Docker install method is highly recommended since the Docker image includes fully tested pre-requisites within the image.  Note that, for the most part, this code will run on any NodeJS version from v12 or later, however, video streaming support requires at least NodeJS 14.17.0 to function properly.
 
+### Installation
 #### Video Streaming Pre-requisites
 While the standard functionality in ring-mqtt requires just NodeJS and 
 - NodeJS version must be at least 14.17.0 (latest LTS is recommended)
 - [rtsp-simple-server](https://github.com/aler9/rtsp-simple-server) 0.17.3 or later must be installed and available in the system path
 - The mosquitto clients package (mosquitto_sub/mosquitto_pub) must be available in the system path
 
-#### Installation
+#### Perform Install
 Once the pre-requisites have been met simply clone this project from Github into a directory of your choice (the included systemd unit file below assumes /opt but can be easily modified):
 
 `git clone https://github.com/tsightler/ring-mqtt.git`
@@ -53,10 +54,10 @@ Ring has made two factor authentication (2FA) mandatory thus the script now only
 
 There are two primary ways to acquire this token:
 
-**Primary Method**  
+#### Primary Method  
 If the script is started and the ring_token config parameter is empty, it will start a small web service at http://<ip_of_server>:55123.  Simply navigate to this URL with your browser, enter your Ring account username/password and then 2FA code, and the web browser will display the Ring refresh token that you can just copy/paste into the config file.  After copy/paste simply restart ring-mqtt and it should connect.
 
-**Alternative Method**  
+#### Alternative Method
 Use ring-auth-cli from any system with NodeJS and NPM installed via npx, which downloads and runs ring-auth-cli on demand:
 ```
 npx -p ring-client-api ring-auth-cli
