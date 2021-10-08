@@ -1,11 +1,9 @@
 #!/bin/bash
-# Script to activate video stream on Ring cameras via ring-mqtt via 
-# on-demand trigger from rtsp-simple-server
+# Activate video stream on Ring cameras via ring-mqtt
+# Intended for use as on-demand script for rtsp-simple-server
 
 # Requires mosquitto MQTT clients package to be installed
-# Provides status updates and termintates stream on exit or if stream 
-# ends unexpectedly.  Primarily inteded for use with rtsp-simple-server
-# to start and end stream on-demand.
+# Provides status updates and termintates stream on script exit
 
 # Required command line arguments
 client_name=${1}   # Friendly name of camera (used for logging)
@@ -31,7 +29,7 @@ ctrl_c() {
         echo -e "${green}[${client_name}]${reset} Deactivating ${type} stream due to signal from RTSP server (no more active clients or publisher ended stream)"
         mosquitto_pub -i "${client_id}_pub" -u "${MQTTUSER}" -P "${MQTTPASSWORD}" -h "${MQTTHOST}" -p "${MQTTPORT}" -t "${command_topic}" -m "OFF"
     fi
-    # Cheesy, but there should only ever be one process per client active at any time so this works for now
+    # There should only ever be one process per client active at any time so this works for now
     mosquitto_pid=`ps -ef | grep mosquitto_sub | grep "${client_id}" | tr -s ' ' | cut -d ' ' -f2`
     [ ! -z ${mosquitto_pid} ] && kill ${mosquitto_pid}
     exit 0
@@ -41,9 +39,10 @@ ctrl_c() {
 trap ctrl_c INT TERM QUIT
 
 # This loop starts mosquitto_sub with a subscription on the camera stream topic that sends all received
-# messages to a file descriptor which is read continously. On initial startup the script waits 100ms to
-# publish the stream 'ON' command to the command topic.  All stream state messages received are processed
-# based on the detailed states from the json_attributes_topic:
+# messages via file descriptor to the read process. On initial the startup the script publishes the 
+# stream 'ON-DEMAND' command to the command topic which lets ring-mqtt know that an RTSP client has
+# requested the stream.  Stream state is determined via the the detailed stream state messages received
+# via the json_attributes_topic:
 #
 # "inactive" = There is no active live stream and none currently requested
 # "activating" = A live stream has been requested and is in the process of starting
