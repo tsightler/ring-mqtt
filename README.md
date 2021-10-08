@@ -13,7 +13,7 @@ Docker is the recommended installation method, however, standard, non-Docker ins
 
 [Standard Install](docs/STANDARD.md)
 
-### Camera video stream support
+### Camera video stream configuration
 Please read the detailed [camera documentation](docs/CAMERAS.md) for more information on video streaming configuration.
 
 ### Use with MQTT Tools other than Home Assistant (Node-Red, OpenHAB, etc)
