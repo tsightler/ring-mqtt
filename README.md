@@ -151,14 +151,16 @@ Multiple debug options can be selected by combining options with a comma or by u
 ```DEBUG=ring-mqtt,ring-attr```
 
 **Enable all ring-mqtt specific debug messages (this is the most useful for debugging issues)**\
-This option can also be useful when using the script with external MQTT tools as it dumps all discovered sensors and their topics and allows you to monitor sensor states in real-time on the console.\
+This option can also be useful when using the script with external MQTT tools as it dumps all discovered sensors and their topics and allows you to monitor sensor states in real-time on the console.  
 ```DEBUG=ring-*```
 
 **Debug messages from all modules used by ring-mqtt** (Warning, this very verbose and rarely needed!)\
 ```DEBUG=*```
 
-**Example for Docker**\
-```docker run -it --rm --mount type=bind,source=/etc/ring-mqtt,target=/data -e "MQTTHOST=host_name" -e "MQTTUSER=mqtt_user" -e "MQTTPASSWORD=mqtt_pw" -e "RINGTOKEN=ring_refreshToken" -e "DEBUG=ring-mqtt" tsightler/ring-mqtt```
+**Example for Docker**
+```
+docker run -it --rm --mount type=bind,source=/etc/ring-mqtt,target=/data -e "MQTTHOST=host_name" -e "MQTTUSER=mqtt_user" -e "MQTTPASSWORD=mqtt_pw" -e "RINGTOKEN=ring_refreshToken" -e "DEBUG=ring-mqtt" tsightler/ring-mqtt
+```
 
 **Example for Standard Install**\
 ```DEBUG=ring-mqtt ./ring-mqtt```
