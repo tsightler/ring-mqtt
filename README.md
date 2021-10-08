@@ -127,7 +127,7 @@ By default, attempts to arm the alarm when any contact sensors are in faulted st
 
 Ring-mqtt exposes a switch labeled "Arming Bypass Mode" which can be toggled to change this arming behavior.  When this switch is "on", arming commands will automatically bypass any actively faulted contact sensors.  While this option always defaults to "off" on startup, if it is desired for the default state to always be "on" a simple automation can handle this case.
 
-#### Limiting Locations
+#### Location Limiting
 By default, this script will discover and monitor enabled devices across all locations to which the specified accout has access, even shared locations.  During startup all locations must be initially online or the script will wait forever until those locations are reachable.  To limit monitored locations it's possible to create a separate account and assign only the desired resources to it, or to pass the specific location IDs using the appropriate config option.  To get the location id from the Ring website simply login to [Ring.com](https://ring.com/users/sign_in) and look at the address bar in the browser. It will look similar to ```https://account.ring.com/account/dashboard?l=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx``` with the last path element being the location id (the id is after "?l=").
 
 #### Volume Control
