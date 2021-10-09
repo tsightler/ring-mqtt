@@ -1,5 +1,5 @@
 ## v4.8.5
-I'm expecting this to be the last update for a while as I will be taking a hiatus from working on this project for the next few months.  This update is mostly about cleaning up a few minor things to make sure everything is in a state where it will need minimal maintenance during that time.  Reported issues have dropped quite low over the last few weeks so I'm hopeful nothing serious will crop up during my time away from the project.  Note that I will still attempt to answer any reported issues, I just may not have time to address them.
+I expect this to be the last update for a while as I will be taking a hiatus from development work on this project for the next few months.  This update is mostly about cleaning up a few minor things to get everything in the best state I can so that it will, hopefully, need minimal maintenance during that time.  Reported issues have dropped quite low over the last few weeks so I'm hopeful nothing serious will crop up during my time away from the project.  Note that I will still attempt to answer any reported issues, I just may not have time to address them if they require code changes.
 
 **Minor Enhancements**
 - Abandon use of getSnapshot() function in favor of internal snapshot implementation in all cases (previously the internal implementation was used only for motion snapshots)
