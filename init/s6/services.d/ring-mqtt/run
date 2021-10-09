@@ -26,6 +26,8 @@ fi
 if [ -v BRANCH ]; then
     if [ "${BRANCH}" = "latest" ] || [ "${BRANCH}" = "dev" ]; then
         cd "/app/ring-mqtt-${BRANCH}"
+    else
+        cd /app/ring-mqtt
     fi
 else
     cd /app/ring-mqtt
