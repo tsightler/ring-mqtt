@@ -17,7 +17,7 @@ Docker is the recommended installation method, however, standard, non-Docker ins
 Please read the detailed [camera documentation](docs/CAMERAS.md) for more information on video streaming configuration.
 
 **!! Important note regarding camera support !!**    
-The ring-mqtt project does not magically turn Ring cameras into 24x7/continuous streaming CCTV cameras.  Ring cameras are designed to work with Ring cloud servers for on-demand streaming based on detected events (motion/ding) or interactive viewing.  Even when using ring-mqtt all streaming still goes through Ring servers and is not local.  Attempting to use this project to stream Ring cameras 24x7 is not a supported use case and attempts to do so will almost certainly end in disappointment.
+The ring-mqtt project does not magically turn Ring cameras into 24x7/continuous streaming CCTV cameras.  Ring cameras are designed to work with Ring cloud servers for on-demand streaming based on detected events (motion/ding) or interactive viewing.  Even when using ring-mqtt, all streaming still goes through Ring cloud servers and is not local.  Attempting to use this project for continuous streaming is not a supported use case and attempts to do so will almost certainly end in disappointment.
 
 ### Use with MQTT Tools other than Home Assistant (Node-Red, OpenHAB, etc)
 MQTT topics are built consistently during each startup.  The easiest way to determine the device topics is to run the script with debug output.  More details about the topic format for all devices is available in [docs/TOPICS.md](docs/TOPICS.md).
