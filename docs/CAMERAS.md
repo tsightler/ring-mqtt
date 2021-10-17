@@ -3,6 +3,9 @@ While ring-mqtt is primarily designed to integrate Ring devices into home automa
 
 This document provides detailed information about the video streaming support, including how to configure it with Home Assistant or use it with other medial players, as well as some troubleshooting information and known limitations.  If you would like to use the videos streaming features, please read this section carefully.
 
+**Important Note**  
+The ring-mqtt project does not magically turn Ring cameras into 24x7/continuous streaming CCTV cameras.  Ring cameras are designed to work with Ring cloud servers for on-demand streaming based on detected events (motion/ding) or active viewing.  Even when using ring-mqtt all streaming still goes through Ring servers and is not local.  Attempting to use ring-mqtt to stream Ring cameras 24x7 is not a supported use case for this project and attempts to do so will almost certainly end in disappointment.
+
 ### Quick overview
 Ring video streaming support is implemented by running a localhost instance of rtsp-simple-server.  For each camera discovered two separate RTSP paths are registered with the server using the following format:
 
@@ -118,7 +121,7 @@ Of course there are other possible automation options as well, and, even without
 
 ### FAQ
 
-**Q) Why do streams keep running for 5+ minutes after viewing them in Home Assistant** 
+**Q) Why do streams keep running for 5+ minutes after viewing them in Home Assistant**  
 **A)** Home Assistant keeps streams running in the background for ~5 minutes even when they are no longer viewed.  It's always possible to stop streams manually using the stream switch.
 
 **Q) Streams keep starting all the time even when I'm not viewing anything**  
@@ -127,7 +130,7 @@ Of course there are other possible automation options as well, and, even without
 **Q) Why does the live stream stop after ~10 minutes?**  
 **A)** Ring enforces a time limit on active live streams and terminates them, typically at approximately 10 minutes, although sometimes significantly less and sometimes a little more.  Currently, you'll need to refresh to manually start the stream again but it is NOT recommended to attempt to stream 24 hours.  I say currently because Ring has hinted that continuous live streaming is something they are working on, but, for now, the code honors the exiting limits and does not just immediately retry.
 
-**Q) Why is the stream delayed/lagged?**    
+**Q) Why is the stream delayed/lagged?**  
 **A)** Likely this is due to the streaming technology used by Home Assistant that fully streams over HTTP/HTTPS.  While the technology is extremely reliable and widely compatible with various web browsers and network setups, it typically adds betwee 5-8 seconds of delay and sometimes as many as 10-15 seconds.  The best solution for Home Assistant is to use a custom UI card like the excellent [WebRTC Camera](https://github.com/AlexxIT/WebRTC) which will allow you to use your browsers native video playback capabilities, although this technology will likely require special configuration if you want to play back while outside of your network without using a VPN.  However, when configured, it provides typically ~1-2 seconds of latency at most so it's the best option for getting as close to real-time viewing as possible within Home Assistant.  Other options that offer lower latency viewing is to use an external media player capable of RTSP playback.  VLC works well, but note that it buffers 1 second of video by default, although you can tweak this to reduce the delay.
 
 **Q) Why do I have video artifacts and/or stuttering in the stream?**   
