@@ -39,14 +39,14 @@ ctrl_c() {
 trap ctrl_c INT TERM QUIT
 
 # This loop starts mosquitto_sub with a subscription on the camera stream topic that sends all received
-# messages via file descriptor to the read process. On initial the startup the script publishes the 
-# stream 'ON-DEMAND' command to the command topic which lets ring-mqtt know that an RTSP client has
-# requested the stream.  Stream state is determined via the the detailed stream state messages received
-# via the json_attributes_topic:
+# messages via file descriptor to the read process. On initial startup the script publishes the message 
+# 'ON-DEMAND' to the stream command topic which lets ring-mqtt know that an RTSP client has requested
+# the stream.  Stream state is determined via the the detailed stream state messages received via the
+# json_attributes_topic:
 #
-# "inactive" = There is no active live stream and none currently requested
-# "activating" = A live stream has been requested and is in the process of starting
-# "active" = The live stream started successfully and is currently in progress
+# "inactive" = There is no active video stream and none currently requested
+# "activating" = A video stream has been requested and is initializing but has not yet started
+# "active" = The stream was requested successfully and an active stream is currently in progress
 # "failed" = A live stream was requested but failed to start
 while read -u 10 message
 do
