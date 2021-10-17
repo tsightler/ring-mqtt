@@ -3,8 +3,8 @@ While ring-mqtt is primarily designed to integrate Ring devices into home automa
 
 This document provides detailed information about the video streaming support, including how to configure it with Home Assistant or use it with other medial players, as well as some troubleshooting information and known limitations.  If you would like to use the videos streaming features, please read this section carefully.
 
-**Important Note**  
-The ring-mqtt project does not magically turn Ring cameras into 24x7/continuous streaming CCTV cameras.  Ring cameras are designed to work with Ring cloud servers for on-demand streaming based on detected events (motion/ding) or active viewing.  Even when using ring-mqtt all streaming still goes through Ring servers and is not local.  Attempting to use ring-mqtt to stream Ring cameras 24x7 is not a supported use case for this project and attempts to do so will almost certainly end in disappointment.
+**!!!! Important note regarding camera support !!!!**    
+The ring-mqtt project does not magically turn Ring cameras into 24x7/continuous streaming CCTV cameras.  Ring cameras are designed to work with Ring cloud servers for on-demand streaming based on detected events (motion/ding) or interactive viewing.  Even when using ring-mqtt, all streaming still goes through Ring cloud servers and is not local.  Attempting to use this project for continuous streaming is not a supported use case and attempts to do so will almost certainly end in disappointment.
 
 ### Quick overview
 Ring video streaming support is implemented by running a localhost instance of rtsp-simple-server.  For each camera discovered two separate RTSP paths are registered with the server using the following format:
