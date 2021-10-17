@@ -11,6 +11,9 @@ https://github.com/tsightler/ring-mqtt-ha-addon
 
 Note that if you are unsure, it's not a major issue, but I may move your request between the projects.
 
+**Important Note regarding camera support**
+The ring-mqtt project does not magically turn Ring cameras into 24x7/continuous streaming CCTV cameras.  Ring cameras are designed to work with Ring cloud servers for on-demand streaming based on events or active viewing.  Even when using ring-mqtt, streaming still goes through Ring servers and is not local.  Attempting to use ring-mqtt to stream Ring cameras 24x7 is not a supported use case for this project and attempts to do so will almost certainly end in disappointment.  If you are attempting to use this project for continuous streaming don't bother opening an issue here, it will be closed immediately.
+
 ### !!!!PLEASE READ THIS FIRST!!!!! ###
 This is a community project and opening a request for assistance indicates that you are prepared to interact as a community member.  This does not mean that I expect you to be a developer or a super tech guru, but you must at least be willing to put some time and effort into helping me understand your environment, answer questions, provide logs, and do so in a reasonably timely manner.  In general I will do my best to help whenever I can, but I answer these issues on my own personal time and my effort to do so will largely be commensurate to the effort that you put in.  I'm sorry for being so blunt, but recently, the number of people that have opened requests with a single sentence, or open an issue and then never respond to any request for additional information, has grown to the point that it really makes working on this project less than enjoyable, and that puts the entire project at risk.
 
