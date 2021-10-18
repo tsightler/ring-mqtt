@@ -378,11 +378,19 @@ async function processMqttMessage(topic, message, mqttClient, ringClient) {
 function initMqtt() {
     const mqtt_user = CONFIG.mqtt_user ? CONFIG.mqtt_user : null
     const mqtt_pass = CONFIG.mqtt_pass ? CONFIG.mqtt_pass : null
+	const protocol = CONFIG.protocol ? CONFIG.protocol : null
+	const mqtt_client_key = CONFIG.mqtt_client_key ? fs.readFileSync(CONFIG.mqtt_client_key) : null
+	const mqtt_client_cert = CONFIG.mqtt_client_cert ? fs.readFileSync(CONFIG.mqtt_client_cert) : null
+	const mqtt_ca = CONFIG.mqtt_ca ? fs.readFileSync(CONFIG.mqtt_ca) : null
     const mqtt = mqttApi.connect({
+		protocol: protocol,
         host:CONFIG.host,
         port:CONFIG.port,
         username: mqtt_user,
-        password: mqtt_pass
+        password: mqtt_pass,
+		key: mqtt_client_key,
+		cert: mqtt_client_cert,
+		ca: mqtt_ca
     });
     return mqtt
 }
@@ -428,10 +436,14 @@ async function initConfig(configFile) {
         CONFIG = {
             "host": process.env.MQTTHOST,
             "port": process.env.MQTTPORT,
+			"protocol": process.env.MQTTPROTOCOL,
             "ring_topic": process.env.MQTTRINGTOPIC,
             "hass_topic": process.env.MQTTHASSTOPIC,
             "mqtt_user": process.env.MQTTUSER,
             "mqtt_pass": process.env.MQTTPASSWORD,
+			"mqtt_client_key": process.env.MQTTCLIENTKEY,
+			"mqtt_client_cert": process.env.MQTTCLIENTCERT,
+			"mqtt_ca": process.env.MQTTCA,
             "ring_token": process.env.RINGTOKEN,
             "disarm_code": process.env.DISARMCODE,
             "beam_duration": process.env.BEAMDURATION,

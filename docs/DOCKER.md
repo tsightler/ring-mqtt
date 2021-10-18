@@ -40,6 +40,10 @@ services:
       - MQTTPORT=1883                  # TCP port for MQTT Broker
       - MQTTUSER=mqtt_user             # CHANGE ME -- Username for MQTT Broker (remove for anonymous)
       - MQTTPASSWORD=mqtt_password     # CHANGE ME -- Password for MQTT Broker (remove for anonymous)
+      - MQTTPROTOCOL=                  # Set to mqtts if using a secure connection
+      - MQTTCLIENTKEY=                 # Set to path of the key file if using client certificate authentication
+      - MQTTCLIENTCERT-                # Set to path of the cert file if using client certificate authentication
+      - MQTTCA=                        # Set to path of CA pem file if using self signed certificate
       - ENABLECAMERAS=true             # Enable camera support
       - SNAPSHOTMODE=all               # Snapshot options (see: https://github.com/tsightler/ring-mqtt#snapshot-options)
       - LIVESTREAMUSER=stream_user     # CHANGE ME -- Highly recommended if RTSP server is exposed
