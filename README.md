@@ -1,5 +1,9 @@
 ![ring-mqtt-logo](https://raw.githubusercontent.com/tsightler/ring-mqtt/dev/images/ring-mqtt-logo.png)
 
+**!!!! Important Note - Please Read !!!!**  
+I've decided to take a break from this project for now.  You are still welcome to use it but I'm burnt out with it and will no longer be providing support or accepting feature requests or bug reports.  You may be able to get some help on the Home Assistant forum, but I will not be monitoring or responding there either.  If it doesn't work for you, sorry, at least you didn't pay anything for it.  Good luck!
+
+### Description
 The ring-mqtt project acts as a bridge between alarm, smart lighting and camera devices sold by Ring LLC and an MQTT broker thus allowing any automation tools that can leverage the open standards based MQTT protocol to monitor and control these devices.  The project also supports video streaming by providing an RTSP gateway service that allows any media client supporting the RTSP protocol to connect to a Ring camera livestream or to play back recorded events (Ring Protect subscription required for event recording playback).  Please review the full list of [supported devices and features](#supported-devices-and-features) for more information on current capabilities.
 
 The code is written primarily in Javascript and leverages the excellent [ring-client-api](https://github.com/dgreif/ring) for communicating with the same REST API used by the official Ring apps.  For video streaming ring-client-api establishes the RTP steam via a SIP session and forwards the packets to an FFmpeg which publishes the stream via RTSP to [rtsp-simple-server](https://github.com/aler9/rtsp-simple-server).  
