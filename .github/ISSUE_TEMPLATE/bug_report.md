@@ -6,11 +6,6 @@ labels: 'bug'
 assignees: tsightler
 ---
 
-If you are using the Ring Devices Addon for Home Assistant, and the issue you are reporting is related to installing, configuring or operating the script within a Home Asssitant Supervised installation, you should probably not be opening an issue on this project, but rather on the Ring-MQTT Home Assistant Addon project:
-https://github.com/tsightler/ring-mqtt-ha-addon
-
-Note that if you are unsure, it's not a major issue, but I may move your issue between the projects.
-
 **!!!! Important note regarding camera support !!!!**    
 The ring-mqtt project does not magically turn Ring cameras into 24x7/continuous streaming CCTV cameras.  Ring cameras are designed to work with Ring cloud servers for on-demand streaming based on detected events (motion/ding) or interactive viewing.  Even when using ring-mqtt, all streaming still goes through Ring cloud servers and is not local.  Attempting to leverage this project for continuous streaming is not a supported use case and attempts to do so will almost certainly end in disappointment.  Any support cases opened for issues with continuous streaming (i.e. more than one streaming session back-to-back) will be closed as unsupported.  This includes use with NVR tools like Frigate or motionEye.
 
