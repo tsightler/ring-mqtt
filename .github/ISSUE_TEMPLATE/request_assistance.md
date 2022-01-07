@@ -5,6 +5,8 @@ title: ''
 labels: 'support'
 assignees: tsightler
 ---
+### !!!!IMPORTANT!!!! ###
+For general question about using this project please review and post your question in the [Q&A Discussion](https://github.com/tsightler/ring-mqtt/discussions/categories/q-a) group.  This template should only be used for more complex issues that are beyond simple "How-to" questions.
 
 **!!!! Important note regarding camera support !!!!**    
 The ring-mqtt project does not magically turn Ring cameras into 24x7/continuous streaming CCTV cameras.  Ring cameras are designed to work with Ring cloud servers for on-demand streaming based on detected events (motion/ding) or interactive viewing.  Even when using ring-mqtt, all streaming still goes through Ring cloud servers and is not local.  Attempting to leverage this project for continuous streaming is not a supported use case and attempts to do so will almost certainly end in disappointment.  Any support cases opened for issues with continuous streaming (i.e. more than one streaming session back-to-back) will be closed as unsupported.  This includes use with NVR tools like Frigate or motionEye.
