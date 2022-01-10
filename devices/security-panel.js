@@ -8,33 +8,34 @@ class SecurityPanel extends RingSocketDevice {
         this.deviceData.mdl = 'Alarm Control Panel'
         this.deviceData.name = `${this.device.location.name} Alarm`
         
-        this.entity.alarm = {
-            component: 'alarm_control_panel',
-            isLegacyEntity: true  // Legacy compatibility
-        }
-        this.entity.siren = {
-            component: 'switch',
-            icon: 'mdi:alarm-light',
-            name: `${this.device.location.name} Siren`
-        }
-        this.entity.bypass = {
-            component: 'switch',
-            name: `${this.device.location.name} Arming Bypass Mode`,
-            state: false,
-            icon: 'mdi:transit-skip'
-        }
-
-        if (this.config.enable_panic) {
-            this.entity.police = { 
+        this.entity = {
+            alarm: {
+                component: 'alarm_control_panel',
+                isLegacyEntity: true  // Legacy compatibility
+            },
+            siren: {
                 component: 'switch',
-                name: `${this.device.location.name} Panic - Police`,
-                icon: 'mdi:police-badge'
-            }
-            this.entity.fire = { 
+                icon: 'mdi:alarm-light',
+                name: `${this.device.location.name} Siren`
+            },
+            bypass: {
                 component: 'switch',
-                name: `${this.device.location.name} Panic - Fire`,
-                icon: 'mdi:fire'
-            }
+                name: `${this.device.location.name} Arming Bypass Mode`,
+                state: false,
+                icon: 'mdi:transit-skip'
+            },
+            ...this.config.enable_panic ? {
+                police: { 
+                    component: 'switch',
+                    name: `${this.device.location.name} Panic - Police`,
+                    icon: 'mdi:police-badge'
+                },
+                fire: { 
+                    component: 'switch',
+                    name: `${this.device.location.name} Panic - Fire`,
+                    icon: 'mdi:fire'
+                }
+            } : {}
         }
     }
 
