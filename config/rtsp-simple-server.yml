@@ -1,5 +1,3 @@
-logLevel: debug
-
 readTimeout: 5s
 readBufferCount: 1024
 
