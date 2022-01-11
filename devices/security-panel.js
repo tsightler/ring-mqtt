@@ -9,6 +9,7 @@ class SecurityPanel extends RingSocketDevice {
         this.deviceData.name = `${this.device.location.name} Alarm`
         
         this.entity = {
+            ...this.entity,
             alarm: {
                 component: 'alarm_control_panel',
                 isLegacyEntity: true  // Legacy compatibility
