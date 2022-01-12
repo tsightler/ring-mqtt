@@ -1,6 +1,17 @@
-## v4.8.5
-I expect this to be the last update for a while as I will be taking a hiatus from development work on this project for the next few months.  This update is mostly about cleaning up a few minor things to get everything in the best state I can so that it will, hopefully, need minimal maintenance during that time.  Reported issues have dropped quite low over the last few weeks so I'm hopeful nothing serious will crop up during my time away from the project.  Note that I will still attempt to answer any reported issues, I just may not have time to address them if they require code changes.
+## v4.9.0
+This release is primarily a dependency bump to catch up with 3 months worth of updates in other projects during my break from this project.
 
+**Dependency Updates**
+- Bump Alpine to 3.15
+- Bump NodeJS to v16
+- Bump RTSP Simple Server to v0.17.13 (Standard install will need to manually update to this version as an API change breaks backwards compatibility with prior versions of RTSP Simple Server)
+- Bump BashIO to v0.14.3
+- Bump NodeJS package dependencies to latest versions
+
+**Other Changes**
+- Minor change to security panel initialization to avoid a warning that occured during startup in some configurations
+
+## v4.8.5
 **Minor Enhancements**
 - Abandon use of getSnapshot() function in favor of internal snapshot implementation in all cases (previously the internal implementation was used only for motion snapshots)
 - More granular debug output selection and standardizaion which makes it easier to visually parse logs.  For now the default debug output for the Docker and addon versions is still all categories, but users can now reduce logging or select more limited debug output with the following debug options:
