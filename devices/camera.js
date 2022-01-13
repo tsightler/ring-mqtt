@@ -531,23 +531,32 @@ class Camera extends RingPolledDevice {
                 case 'motion':
                     this.debug('Motion event detected for line powered camera, forcing a non-cached snapshot update')
                 default:
+                    this.debug('Requesting updated snapshot for camera')
                     await this.device.requestSnapshotUpdate()
-                    await utils.sleep(1) // Give time for the snapshot to actually update
-                    newSnapshot = await this.device.restClient.request({
-                        url: clientApi(`snapshots/image/${this.device.id}`),
-                        responseType: 'buffer'
-                    })
+
+                    let retries = 6
+                    while (retries-- > 0 && !newSnapshot) {
+                        await utils.sleep(1) // Give time for the snapshot to actually update
+                        newSnapshot = await this.device.restClient.request({
+                            url: clientApi(`snapshots/image/${this.device.id}`),
+                            responseType: 'buffer'
+                        })
+                        if (!newSnapshot) {
+                            this.debug('Failed to retrieve an updated snapshot, retrying in 1 second...')
+                        }
+                    }
             }
         } catch (error) {
             this.debug(error)
         }
 
         if (newSnapshot) {
+            this.debug('Succesfully retrieved updated snapshot for camera')
             this.data.snapshot.currentImage = newSnapshot
             this.data.snapshot.timestamp = Math.round(Date.now()/1000)
             this.publishSnapshot()
         } else {
-            this.debug('Could not retrieve updated snapshot for camera')
+            this.debug('Failed to retrieve updated snapshot for camera after all retries')
         }
     }
 
@@ -835,8 +844,8 @@ class Camera extends RingPolledDevice {
             default:
                 this.debug('Received unknown command for light')
         }
-        await utils.sleep(1)
-        this.device.requestUpdate()
+        // await utils.sleep(1)
+        // this.device.requestUpdate()
     }
 
     // Set switch target state on received MQTT command message
