@@ -82,12 +82,14 @@ class Camera extends RingPolledDevice {
             },
             ...this.device.hasLight ? {
                 light: {
-                    state: null
+                    state: null,
+                    setTime: 0
                 }
             } : {},
             ...this.device.hasSiren ? {
                 siren: {
-                    state:null
+                    state:null,
+                    setTime: 0
                 }
             } : {}
         }
@@ -259,7 +261,7 @@ class Camera extends RingPolledDevice {
     // Publish camera capabilities and state and subscribe to events
     async publishData(data) {
         const isPublish = data === undefined ? true : false
-        this.publishPolledState(isPublish)
+        this.publishPolledState(isPublish, data)
 
         // Update every 3 polling cycles (~1 minute), check for updated event or expired recording URL
         this.data.stream.event.pollCycle--
@@ -389,16 +391,16 @@ class Camera extends RingPolledDevice {
     // Publish camera state for polled attributes (light/siren state, etc)
     // Writes state to custom property to keep from publishing state except
     // when values change from previous polling interval
-    publishPolledState(isPublish) {
+    publishPolledState(isPublish, data) {
         if (this.device.hasLight) {
-            const lightState = this.device.data.led_status === 'on' ? 'ON' : 'OFF'
+            const lightState = data.led_status === 'on' ? 'ON' : 'OFF'
             if (lightState !== this.data.light.state || isPublish) {
                 this.data.light.state = lightState
                 this.publishMqtt(this.entity.light.state_topic, this.data.light.state)
             }
         }
         if (this.device.hasSiren) {
-            const sirenState = this.device.data.siren_status.seconds_remaining > 0 ? 'ON' : 'OFF'
+            const sirenState = data.siren_status.seconds_remaining > 0 ? 'ON' : 'OFF'
             if (sirenState !== this.data.siren.state || isPublish) {
                 this.data.siren.state = sirenState
                 this.publishMqtt(this.entity.siren.state_topic, this.data.siren.state)
@@ -840,7 +842,8 @@ class Camera extends RingPolledDevice {
             default:
                 this.debug('Received unknown command for light')
         }
-        this.device.requestUpdate()
+        await utils.sleep(1)
+        this.data.light.setTime = Math.floor(Date.now()/1000)
     }
 
     // Set switch target state on received MQTT command message
