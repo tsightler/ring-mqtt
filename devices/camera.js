@@ -526,29 +526,25 @@ class Camera extends RingPolledDevice {
         }
 
         let newSnapshot
-        try {
-            switch (type) {
-                case 'motion':
-                    this.debug('Motion event detected for line powered camera, forcing a non-cached snapshot update')
-                default:
-                    this.debug('Requesting updated snapshot for camera')
-                    await this.device.requestSnapshotUpdate()
-
-                    let retries = 6
-                    while (retries-- > 0 && !newSnapshot) {
-                        await utils.sleep(1) // Give time for the snapshot to actually update
-                        newSnapshot = await this.device.restClient.request({
-                            url: clientApi(`snapshots/image/${this.device.id}`),
-                            responseType: 'buffer'
-                        })
-                        if (!newSnapshot) {
-                            this.debug('Failed to retrieve an updated snapshot, retrying in 1 second...')
-                        }
-                    }
+            if (type === 'motion') { 
+                this.debug('Motion event detected for line powered camera, forcing a non-cached snapshot update')                
             }
-        } catch (error) {
-            this.debug(error)
-        }
+            this.debug('Requesting updated snapshot for camera')
+            await this.device.requestSnapshotUpdate()
+
+            let retries = 6
+            while (retries-- > 0 && !newSnapshot) {
+                await utils.sleep(1) // Give time for the snapshot to actually update
+                try {
+                    newSnapshot = await this.device.restClient.request({
+                        url: clientApi(`snapshots/image/${this.device.id}`),
+                        responseType: 'buffer'
+                    })
+                } catch (error) {
+                    this.debug(error) 
+                    this.debug('Failed to retrieve updated snapshot, retrying in 1 second...')
+                }
+            }
 
         if (newSnapshot) {
             this.debug('Succesfully retrieved updated snapshot for camera')
@@ -844,8 +840,7 @@ class Camera extends RingPolledDevice {
             default:
                 this.debug('Received unknown command for light')
         }
-        // await utils.sleep(1)
-        // this.device.requestUpdate()
+        this.device.requestUpdate()
     }
 
     // Set switch target state on received MQTT command message
