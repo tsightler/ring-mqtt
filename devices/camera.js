@@ -392,6 +392,7 @@ class Camera extends RingPolledDevice {
     // Writes state to custom property to keep from publishing state except
     // when values change from previous polling interval
     publishPolledState(isPublish, data) {
+        data = data ? data : this.device.data
         if (this.device.hasLight) {
             const lightState = data.led_status === 'on' ? 'ON' : 'OFF'
             if (lightState !== this.data.light.state || isPublish) {
