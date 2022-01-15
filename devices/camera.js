@@ -835,15 +835,10 @@ class Camera extends RingPolledDevice {
 
         switch (command) {
             case 'on':
-                await this.device.setLight(true)
-                this.data.light.setTime = Math.floor(Date.now()/1000)
-                this.data.light.state = 'ON'
-                this.publishMqtt(this.entity.light.state_topic, this.data.light.state)
-                break;
             case 'off':
-                await this.device.setLight(false)
                 this.data.light.setTime = Math.floor(Date.now()/1000)
-                this.data.light.state = 'OFF'
+                await this.device.setLight(command === 'on' ? true : false)
+                this.data.light.state = command === 'on' ? 'ON' : 'OFF'
                 this.publishMqtt(this.entity.light.state_topic, this.data.light.state)
                 break;
             default:
