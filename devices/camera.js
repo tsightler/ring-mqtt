@@ -394,8 +394,8 @@ class Camera extends RingPolledDevice {
     publishPolledState(isPublish) {
         if (this.device.hasLight) {
             const lightState = this.device.data.led_status === 'on' ? 'ON' : 'OFF'
-            const setDelay = Math.floor(Date.now()/1000) - this.data.light.setTime > 20 ? true : false 
-            if ((lightState !== this.data.light.state && !setDelay) || isPublish) {
+            const setDelay = Math.floor(Date.now()/1000) - this.data.light.setTime > 20 ? false : true 
+            if ((!setDelay && lightState !== this.data.light.state) || isPublish) {
                 this.data.light.state = lightState
                 this.publishMqtt(this.entity.light.state_topic, this.data.light.state)
             }
@@ -837,10 +837,14 @@ class Camera extends RingPolledDevice {
             case 'on':
                 await this.device.setLight(true)
                 this.data.light.setTime = Math.floor(Date.now()/1000)
+                this.data.light.state = 'ON'
+                this.publishMqtt(this.entity.light.state_topic, this.data.light.state)
                 break;
             case 'off':
                 await this.device.setLight(false)
                 this.data.light.setTime = Math.floor(Date.now()/1000)
+                this.data.light.state = 'OFF'
+                this.publishMqtt(this.entity.light.state_topic, this.data.light.state)
                 break;
             default:
                 this.debug('Received unknown command for light')
