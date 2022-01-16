@@ -394,8 +394,7 @@ class Camera extends RingPolledDevice {
     publishPolledState(isPublish) {
         if (this.device.hasLight) {
             const lightState = this.device.data.led_status === 'on' ? 'ON' : 'OFF'
-            const setDelay = Math.floor(Date.now()/1000) - this.data.light.setTime > 20 ? false : true 
-            if ((!setDelay && lightState !== this.data.light.state) || isPublish) {
+            if ((lightState !== this.data.light.state && Date.now()/1000 - this.data.light.setTime > 30) || isPublish) {
                 this.data.light.state = lightState
                 this.publishMqtt(this.entity.light.state_topic, this.data.light.state)
             }
