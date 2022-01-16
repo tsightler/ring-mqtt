@@ -88,8 +88,7 @@ class Camera extends RingPolledDevice {
             } : {},
             ...this.device.hasSiren ? {
                 siren: {
-                    state:null,
-                    setTime: Math.floor(Date.now()/1000)
+                    state: null
                 }
             } : {}
         }
