@@ -531,7 +531,7 @@ class Camera extends RingPolledDevice {
             if (type === 'motion') { 
                 this.debug('Motion event detected for line powered camera, forcing a non-cached snapshot update')                
             }
-            this.debug('Requesting updated snapshot for camera')
+            this.debug('Requesting updated snapshot')
             await this.device.requestSnapshotUpdate()
 
             let retries = 6
@@ -549,12 +549,12 @@ class Camera extends RingPolledDevice {
             }
 
         if (newSnapshot) {
-            this.debug('Succesfully retrieved updated snapshot for camera')
+            this.debug('Succesfully retrieved updated snapshot')
             this.data.snapshot.currentImage = newSnapshot
             this.data.snapshot.timestamp = Math.round(Date.now()/1000)
             this.publishSnapshot()
         } else {
-            this.debug('Failed to retrieve updated snapshot for camera after all retries')
+            this.debug('Failed to retrieve updated snapshot after all retries')
         }
     }
 
@@ -852,16 +852,12 @@ class Camera extends RingPolledDevice {
 
         switch (command) {
             case 'on':
-                await this.device.setSiren(true)
-                break;
             case 'off':
-                await this.device.setSiren(false)
+                await this.device.setSiren(command === 'on' ? true : false)
                 break;
             default:
                 this.debug('Received unknown command for siren')
         }
-        await utils.sleep(1)
-        this.device.requestUpdate()
     }
 
     // Set refresh interval for snapshots
