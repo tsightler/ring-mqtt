@@ -1,3 +1,11 @@
+## v4.9.1
+**New Features**
+- Add support for Ring Outdoor Smart Plug
+
+**Fixed Bugs**
+- Implement retries for snapshot updates.  This is mostly for battery cameras which, when the snapshot interval is set to mulitple minutes, can enter a powersave mode that takes more than 1 second (the previous timeout) for the snapshot update request to be processed.  The code will now attempt to retrive the updated snapshot once a second for 5 seconds instead.
+- Workaround for light state toggling on cameras due to slow state updates on Ring servers.  Now any time light state is set via ring-mqtt polled updates are paused for 30 seconds to give time for API server to have proper state.  Not a perfect solution but the best I could come up with for now.
+
 ## v4.9.0
 This release is primarily a dependency bump to catch up with 3 months worth of updates in other projects during my break from this project.
 
