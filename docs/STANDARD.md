@@ -1,8 +1,8 @@
 ## Standard Install 
-Stanard installation is supported but use of the Docker install method is highly recommended since the Docker image includes fully tested pre-requisites within the image.  Note that, for the most part, this code will run on any NodeJS version from v12 or later, however, video streaming support requires at least NodeJS 14.17.0 to function properly.
+Stanard installation is supported but use of the Docker install method is highly recommended since the Docker image includes fully tested pre-requisites within the image.  Note that, for the most part, this code requires at least NodeJS 14.17.0 to function properly and attempting to run prior versions of Node is unsupported.
 
 ### Installation
-#### Video Streaming Pre-requisites
+#### Pre-requisites
 While the standard functionality in ring-mqtt requires just NodeJS and it will work with pretty much any NodeJS version 12 or higher, the addition of video streaming support has increased the requirements and added additional dependencies which must be addressed manually as follows:
 - NodeJS version must be at least 14.17.0 (latest LTS is recommended)
 - [rtsp-simple-server](https://github.com/aler9/rtsp-simple-server) v0.17.4 or later must be installed and available in the system path.
