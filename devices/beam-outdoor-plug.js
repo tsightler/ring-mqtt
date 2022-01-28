@@ -5,9 +5,8 @@ class BeamOutdoorPlug extends RingSocketDevice {
         super(deviceInfo)
         this.deviceData.mdl = 'Outdoor Smart Plug'
 
-        this.debug(childDevices)
-        this.outlet1 = childDevices.find(d => d.relToParentZid === "1")
-        this.outlet2 = childDevices.find(d => d.relToParentZid === "2")
+        this.outlet1 = childDevices.find(d => d.data.relToParentZid === "1")
+        this.outlet2 = childDevices.find(d => d.data.relToParentZid === "2")
         
         this.entity.outlet1 = {
             component: (this.outlet1.data.categoryId === 2) ? 'light' : 'switch',
