@@ -15,7 +15,7 @@ class BeamOutdoorPlug extends RingSocketDevice {
 
         this.entity.outlet2 = {
             component: (this.outlet1.data.categoryId === 2) ? 'light' : 'switch',
-            name: `${this.outlet1.name}`,
+            name: `${this.outlet2.name}`,
         }
     }
 
