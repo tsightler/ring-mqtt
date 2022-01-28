@@ -130,7 +130,7 @@ async function getDevice(device, mqttClient, allDevices) {
             return new Beam(deviceInfo)
         case RingDeviceType.BeamsDevice:
             deviceInfo.category = 'lighting'
-            const childDevices = allDevices.find(d => d.data.parentZid === device.id && d.deviceType === RingDeviceType.BeamsSwitch)
+            const childDevices = allDevices.filter(d => d.data.parentZid === device.id && d.deviceType === RingDeviceType.BeamsSwitch)
             return new BeamOutdoorPlug(deviceInfo, childDevices)
         case RingDeviceType.MultiLevelSwitch:
             return newDevice = (device.categoryId === 17)
