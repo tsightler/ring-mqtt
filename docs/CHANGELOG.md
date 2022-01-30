@@ -1,6 +1,6 @@
 ## v4.9.1
 **New Features**
-- Add support for Ring Outdoor Smart Plug
+- Add support for Ring Outdoor Smart Plug (Thanks to @mopwr on Github for testing)
 
 **Fixed Bugs**
 - Implement retries for snapshot updates.  This is mostly for battery cameras which, when the snapshot interval is set to mulitple minutes, can enter a powersave mode that takes more than 1 second (the previous timeout) for the snapshot update request to be processed.  The code will now attempt to retrive the updated snapshot once a second for 5 seconds instead.
@@ -11,13 +11,13 @@ This release is primarily a dependency bump to catch up with 3 months worth of u
 
 **Dependency Updates**
 - Bump Alpine to 3.15
-- Bump NodeJS to v16
 - Bump RTSP Simple Server to v0.17.13 (Standard install will need to manually update to this version as an API change breaks backwards compatibility with prior versions of RTSP Simple Server)
 - Bump BashIO to v0.14.3
 - Bump NodeJS package dependencies to latest versions
 
 **Other Changes**
 - Minor change to security panel initialization to avoid a warning that occured during startup in some configurations
+- Bump NodeJS to v16 in the Docker image
 
 ## v4.8.5
 **Minor Enhancements**

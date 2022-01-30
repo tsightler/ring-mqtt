@@ -19,25 +19,25 @@ class BeamOutdoorPlug extends RingSocketDevice {
         }
 
         this.outlet1.onData.subscribe((data) => {
-            if (this.isOnline()) { this.publishOutlet1() }
+            if (this.isOnline()) { this.publishOutlet1State() }
         })
 
         this.outlet2.onData.subscribe((data) => {
-            if (this.isOnline()) { this.publishOutlet2() }
+            if (this.isOnline()) { this.publishOutlet2State() }
         })
     }
 
     publishData() {
-        this.publishOutlet1()
-        this.publishOutlet2()
+        this.publishOutlet1State()
+        this.publishOutlet2State()
         this.publishAttributes()
     }
 
-    publishOutlet1() {
+    publishOutlet1State() {
         this.publishMqtt(this.entity.outlet1.state_topic, this.outlet1.data.on ? "ON" : "OFF")
     }
 
-    publishOutlet2() {
+    publishOutlet2State() {
         this.publishMqtt(this.entity.outlet2.state_topic, this.outlet2.data.on ? "ON" : "OFF")
     }
 
