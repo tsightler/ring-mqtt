@@ -17,12 +17,28 @@ class BeamOutdoorPlug extends RingSocketDevice {
             component: (this.outlet1.data.categoryId === 2) ? 'light' : 'switch',
             name: `${this.outlet2.name}`,
         }
+
+        this.outlet1.onData.subscribe((data) => {
+            if (this.isOnline()) { this.publishOutlet1() }
+        })
+
+        this.outlet2.onData.subscribe((data) => {
+            if (this.isOnline()) { this.publishOutlet2() }
+        })
     }
 
     publishData() {
-        this.publishMqtt(this.entity.outlet1.state_topic, this.outlet1.data.on ? "ON" : "OFF")
-        this.publishMqtt(this.entity.outlet2.state_topic, this.outlet2.data.on ? "ON" : "OFF")
+        this.publishOutlet1()
+        this.publishOutlet2()
         this.publishAttributes()
+    }
+
+    publishOutlet1() {
+        this.publishMqtt(this.entity.outlet1.state_topic, this.outlet1.data.on ? "ON" : "OFF")
+    }
+
+    publishOutlet2() {
+        this.publishMqtt(this.entity.outlet2.state_topic, this.outlet2.data.on ? "ON" : "OFF")
     }
 
     // Process messages from MQTT command topic
