@@ -3,7 +3,12 @@ const RingSocketDevice = require('./base-socket-device')
 class Siren extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo)
-        this.deviceData.mdl = 'Siren'
+
+        if (this.device.data.deviceType === 'siren.outdoor-strobe') {
+            this.deviceData.mdl = 'Outdoor Siren'
+        } else {
+            this.deviceData.mdl = 'Siren'
+        }
         
         this.entity.siren = {
             component: 'switch',
@@ -41,7 +46,11 @@ class Siren extends RingSocketDevice {
             case 'on':
             case 'off':
                 this.debug(`Received set siren state ${message}`)
-                this.device.setInfo({ device: { v1: { on: (command === 'on') ? true : false } } })
+                if (this.device.data.deviceType === 'siren.outdoor-strobe') {
+                    this.device.sendCommand((command ==='on') ? 'siren-test.start' : 'siren-test.stop')
+                } else {
+                    this.device.setInfo({ device: { v1: { on: (command === 'on') ? true : false } } })
+                }
                 break;
             default:
                 this.debug('Received invalid siren state command')
