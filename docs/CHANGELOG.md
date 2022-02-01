@@ -19,7 +19,7 @@ This release is primarily a dependency bump to catch up with 3 months worth of u
   - RTSP Simple Server to v0.17.13 (Standard install will need to manually update to this version as an API change breaks backwards compatibility with prior versions of RTSP Simple Server)
 
 **Other Changes**
-- Minor change to security panel initialization to avoid a warning that occured during startup in some configurations
+- Minor change to security panel initialization to avoid a warning that occurred during startup in some configurations
 
 ## v4.8.5
 **Minor Enhancements**
