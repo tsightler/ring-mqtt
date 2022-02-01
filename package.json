@@ -1,6 +1,6 @@
 {
   "name": "ring-mqtt",
-  "version": "4.9.0",
+  "version": "4.9.1",
   "description": "Ring Devices via MQTT",
   "main": "ring-mqtt.js",
   "dependencies": {
@@ -13,7 +13,7 @@
     "is-online": "^9.0.1",
     "mqtt": "^4.3.4",
     "pipe2jpeg": "^0.3.1",
-    "ring-client-api": "^9.23.0"
+    "ring-client-api": "^9.24.0"
   },
   "devDependencies": {
     "eslint": "^7.19.0"

@@ -82,12 +82,13 @@ class Camera extends RingPolledDevice {
             },
             ...this.device.hasLight ? {
                 light: {
-                    state: null
+                    state: null,
+                    setTime: Math.floor(Date.now()/1000)
                 }
             } : {},
             ...this.device.hasSiren ? {
                 siren: {
-                    state:null
+                    state: null
                 }
             } : {}
         }
@@ -392,7 +393,7 @@ class Camera extends RingPolledDevice {
     publishPolledState(isPublish) {
         if (this.device.hasLight) {
             const lightState = this.device.data.led_status === 'on' ? 'ON' : 'OFF'
-            if (lightState !== this.data.light.state || isPublish) {
+            if ((lightState !== this.data.light.state && Date.now()/1000 - this.data.light.setTime > 30) || isPublish) {
                 this.data.light.state = lightState
                 this.publishMqtt(this.entity.light.state_topic, this.data.light.state)
             }
@@ -526,28 +527,33 @@ class Camera extends RingPolledDevice {
         }
 
         let newSnapshot
-        try {
-            switch (type) {
-                case 'motion':
-                    this.debug('Motion event detected for line powered camera, forcing a non-cached snapshot update')
-                default:
-                    await this.device.requestSnapshotUpdate()
-                    await utils.sleep(1) // Give time for the snapshot to actually update
+            if (type === 'motion') { 
+                this.debug('Motion event detected for line powered camera, forcing a non-cached snapshot update')                
+            }
+            this.debug('Requesting updated snapshot')
+            await this.device.requestSnapshotUpdate()
+
+            let retries = 6
+            while (retries-- > 0 && !newSnapshot) {
+                await utils.sleep(1) // Give time for the snapshot to actually update
+                try {
                     newSnapshot = await this.device.restClient.request({
                         url: clientApi(`snapshots/image/${this.device.id}`),
                         responseType: 'buffer'
                     })
+                } catch (error) {
+                    this.debug(error) 
+                    this.debug('Failed to retrieve updated snapshot, retrying in 1 second...')
+                }
             }
-        } catch (error) {
-            this.debug(error)
-        }
 
         if (newSnapshot) {
+            this.debug('Succesfully retrieved updated snapshot')
             this.data.snapshot.currentImage = newSnapshot
             this.data.snapshot.timestamp = Math.round(Date.now()/1000)
             this.publishSnapshot()
         } else {
-            this.debug('Could not retrieve updated snapshot for camera')
+            this.debug('Failed to retrieve updated snapshot after all retries')
         }
     }
 
@@ -827,16 +833,15 @@ class Camera extends RingPolledDevice {
 
         switch (command) {
             case 'on':
-                await this.device.setLight(true)
-                break;
             case 'off':
-                await this.device.setLight(false)
+                this.data.light.setTime = Math.floor(Date.now()/1000)
+                await this.device.setLight(command === 'on' ? true : false)
+                this.data.light.state = command === 'on' ? 'ON' : 'OFF'
+                this.publishMqtt(this.entity.light.state_topic, this.data.light.state)
                 break;
             default:
                 this.debug('Received unknown command for light')
         }
-        await utils.sleep(1)
-        this.device.requestUpdate()
     }
 
     // Set switch target state on received MQTT command message
@@ -846,16 +851,12 @@ class Camera extends RingPolledDevice {
 
         switch (command) {
             case 'on':
-                await this.device.setSiren(true)
-                break;
             case 'off':
-                await this.device.setSiren(false)
+                await this.device.setSiren(command === 'on' ? true : false)
                 break;
             default:
                 this.debug('Received unknown command for siren')
         }
-        await utils.sleep(1)
-        this.device.requestUpdate()
     }
 
     // Set refresh interval for snapshots

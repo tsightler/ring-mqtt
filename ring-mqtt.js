@@ -13,6 +13,7 @@ const { createHash, randomBytes } = require('crypto')
 const fs = require('fs')
 const BaseStation = require('./devices/base-station')
 const Beam = require('./devices/beam')
+const BeamOutdoorPlug = require('./devices/beam-outdoor-plug')
 const Bridge = require('./devices/bridge')
 const Camera = require('./devices/camera')
 const Chime = require('./devices/chime')
@@ -127,6 +128,10 @@ async function getDevice(device, mqttClient, allDevices) {
         case RingDeviceType.BeamsLightGroupSwitch:
             deviceInfo.category = 'lighting'
             return new Beam(deviceInfo)
+        case RingDeviceType.BeamsDevice:
+            deviceInfo.category = 'lighting'
+            const childDevices = allDevices.filter(d => d.data.parentZid === device.id && d.deviceType === RingDeviceType.BeamsSwitch)
+            return new BeamOutdoorPlug(deviceInfo, childDevices)
         case RingDeviceType.MultiLevelSwitch:
             return newDevice = (device.categoryId === 17)
                 ? new Fan(deviceInfo)
@@ -163,6 +168,7 @@ async function getDevice(device, mqttClient, allDevices) {
             } else {
                 return new TemperatureSensor(deviceInfo)
             }
+        case RingDeviceType.BeamsSwitch:
         case 'thermostat-operating-status':
         case 'access-code':
         case 'access-code.vault':
