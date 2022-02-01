@@ -108,4 +108,4 @@ Features included in this release:
 - Docker image now uses S6 init system for supervising node process
 - Massive startup script cleanup and standardization
 
-**Changes prior to v4.8.0 are tracked in the [historical changelog](https://github.com/tsightler/ring-mqtt/blob/main/docs/CHANGELOG-HIST.md)**
+### Changes prior to v4.8.0 are tracked in the [historical changelog](https://github.com/tsightler/ring-mqtt/blob/main/docs/CHANGELOG-HIST.md)
