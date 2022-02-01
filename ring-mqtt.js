@@ -249,17 +249,26 @@ async function updateRingData(mqttClient, ringClient) {
             }
             
             if (ringDevice) {
+                let spacing = ' '.repeat(foundMessage.length-4)
                 debug(colors.white(foundMessage)+colors.green(`${ringDevice.deviceData.name}`)+colors.cyan(' ('+ringDevice.deviceId+')'))
-                if (ringDevice.device.deviceType === RingDeviceType.Thermostat) {
-                    const spacing = ' '.repeat(foundMessage.length-4)
-                    debug(colors.white(`${spacing}│   `)+colors.gray(ringDevice.device.deviceType))
-                    debug(colors.white(`${spacing}├─: `)+colors.green('Operating Status')+colors.cyan(` (${ringDevice.operatingStatus.id})`))
-                    debug(colors.white(`${spacing}│   `)+colors.gray(ringDevice.operatingStatus.deviceType))
-                    debug(colors.white(`${spacing}└─: `)+colors.green('Temperature Sensor')+colors.cyan(` (${ringDevice.temperatureSensor.id})`))
-                    debug(colors.gray(`${spacing}    `+ringDevice.temperatureSensor.deviceType))
-                } else {
-                    const spacing = ' '.repeat(foundMessage.length)
-                    debug(colors.gray(`${spacing}${ringDevice.device.deviceType}`))
+                switch (device.deviceType) {
+                    case RingDeviceType.Thermostat:
+                        debug(colors.white(`${spacing}│   `)+colors.gray(ringDevice.device.deviceType))
+                        debug(colors.white(`${spacing}├─: `)+colors.green('Operating Status')+colors.cyan(` (${ringDevice.operatingStatus.id})`))
+                        debug(colors.white(`${spacing}│   `)+colors.gray(ringDevice.operatingStatus.deviceType))
+                        debug(colors.white(`${spacing}└─: `)+colors.green('Temperature Sensor')+colors.cyan(` (${ringDevice.temperatureSensor.id})`))
+                        debug(colors.gray(`${spacing}    `+ringDevice.temperatureSensor.deviceType))
+                        break
+                    case RingDeviceType.BeamsDevice:
+                        debug(colors.white(`${spacing}│   `)+colors.gray(ringDevice.device.deviceType))
+                        debug(colors.white(`${spacing}├─: `)+colors.green('Outlet A')+colors.cyan(` (${ringDevice.outlet1.id})`))
+                        debug(colors.white(`${spacing}│   `)+colors.gray(ringDevice.outlet1.deviceType))
+                        debug(colors.white(`${spacing}└─: `)+colors.green('Outlet B')+colors.cyan(` (${ringDevice.outlet2.id})`))
+                        debug(colors.gray(`${spacing}    `+ringDevice.outlet2.deviceType))
+                        break
+                    default:
+                        const spacing = ' '.repeat(foundMessage.length)
+                        debug(colors.gray(`${spacing}${ringDevice.device.deviceType}`))
                 }
             }
         }
