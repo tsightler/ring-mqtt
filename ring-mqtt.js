@@ -5,6 +5,7 @@ const { RingApi, RingDeviceType, RingCamera, RingChime } = require('ring-client-
 const mqttApi = require ('mqtt')
 const isOnline = require ('is-online')
 const debug = require('debug')('ring-mqtt')
+const writeFileAtomic = require('write-file-atomic')
 const colors = require('colors/safe')
 const utils = require('./lib/utils.js')
 const tokenApp = require('./lib/tokenapp.js')
@@ -34,6 +35,7 @@ const SmokeCoListener = require('./devices/smoke-co-listener')
 const Switch = require('./devices/switch')
 const TemperatureSensor = require('./devices/temperature-sensor')
 const Thermostat = require('./devices/thermostat')
+const { debugPort } = require('process')
 
 var CONFIG
 var ringLocations = new Array()
@@ -251,7 +253,7 @@ async function updateRingData(mqttClient, ringClient) {
             if (ringDevice) {
                 debug(colors.white(foundMessage)+colors.green(`${ringDevice.deviceData.name}`)+colors.cyan(' ('+ringDevice.deviceId+')'))
                 const indent = ' '.repeat(foundMessage.length-4)
-                switch (device.deviceType) {
+                switch (ringDevice.device.deviceType) {
                     case RingDeviceType.Thermostat:
                         debug(colors.white(`${indent}│   `)+colors.gray(ringDevice.device.deviceType))
                         debug(colors.white(`${indent}├─: `)+colors.green('Operating Status')+colors.cyan(` (${ringDevice.operatingStatus.id})`))
@@ -493,16 +495,20 @@ async function updateToken(newRefreshToken, oldRefreshToken, stateFile, stateDat
     if (!oldRefreshToken) { return }
     if (process.env.RUNMODE === 'addon' || process.env.RUNMODE === 'docker') {
         stateData.ring_token = newRefreshToken
-        fs.writeFile(stateFile, JSON.stringify(stateData, null, 2), (err) => {
-            if (err) throw err;
+        try {
+            await writeFileAtomic(stateFile, JSON.stringify(stateData, null, 2))
             debug('File ' + stateFile + ' saved with updated refresh token.')
-        })
+        } catch (err) {
+            debug('File '+stateFile+' save failed with error '+err)
+        }
     } else if (configFile) {
         CONFIG.ring_token = newRefreshToken
-        fs.writeFile(configFile, JSON.stringify(CONFIG, null, 4), (err) => {
-            if (err) throw err;
+        try {
+            await writeFileAtomic(configFile, JSON.stringify(CONFIG, null, 4))
             debug('Config file saved with updated refresh token.')
-        })
+        } catch (err) {
+            debug('Config file save failed with error:'+err)
+        }
     }
 }
 /* End Functions */
