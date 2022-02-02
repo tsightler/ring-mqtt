@@ -1,3 +1,7 @@
+## v4.9.2
+**Fixed Bugs**
+- Use atomic writes for updating state file or config file.  Hopefully this will fix the occassional report of corrupted state file
+
 ## v4.9.1
 **New Features**
 - Add support for Ring Outdoor Smart Plug (thanks to @mopwr for suffering through my poor coding mistakes while testing)
