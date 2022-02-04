@@ -238,18 +238,18 @@ async function updateRingData(mqttClient, ringClient) {
             }
             
             if (ringDevice) {
-                const indent = ' '.repeat(foundMessage.length-4)
                 debug(colors.white(foundMessage)+colors.green(`${ringDevice.deviceData.name}`)+colors.cyan(' ('+ringDevice.deviceId+')'))
                 if (ringDevice.hasOwnProperty('childDevices')) {
+                    const indent = ' '.repeat(foundMessage.length-4)
                     debug(colors.white(`${indent}│   `)+colors.gray(ringDevice.device.deviceType))
                     let keys = Object.keys(ringDevice.childDevices).length
-                    Object.keys(ringDevice.childDevices).forEach(childDevice => {
-                        debug(childDevice)
-                        debug(colors.white(`${indent}├─: `)+colors.green(`${childDevice.name}`)+colors.cyan(` (${childDevice.id})`))
-                        debug(colors.white(`${indent}${(keys > 1) ? '│   ' : '    '}`)+colors.gray(childDevice.deviceType))
+                    Object.keys(ringDevice.childDevices).forEach(d => {
+                        debug(colors.white(`${indent}${(keys > 1) ? '├─: ' : '└─   '}`)+colors.green(`${ringDevice.childDevice[d].name}`)+colors.cyan(` (${ringDevice.childDevice[d].id})`))
+                        debug(colors.white(`${indent}${(keys > 1) ? '│   ' : '     '}`)+colors.gray(ringDevice.childDevice[d].deviceType))
                         keys--
                     })
                 } else {
+                    const indent = ' '.repeat(foundMessage.length)
                     debug(colors.gray(`${indent}${ringDevice.device.deviceType}`))
                 }
             }
