@@ -3,7 +3,7 @@ const RingPolledDevice = require('./base-polled-device')
 
 class ModesPanel extends RingPolledDevice {
     constructor(deviceInfo) {
-        super(deviceInfo, 'disable')
+        super(deviceInfo, 'alarm', 'disable')
         this.deviceData.mdl = 'Mode Control Panel'
         this.deviceData.name = `${this.device.location.name} Mode`
 

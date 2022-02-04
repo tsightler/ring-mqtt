@@ -3,7 +3,7 @@ const RingPolledDevice = require('./base-polled-device')
 
 class Chime extends RingPolledDevice {
     constructor(deviceInfo) {
-        super(deviceInfo)
+        super(deviceInfo, 'chime')
 
         this.data = {
             volume: null,

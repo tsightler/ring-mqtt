@@ -3,7 +3,7 @@ const RingSocketDevice = require('./base-socket-device')
 
 class Fan extends RingSocketDevice {
     constructor(deviceInfo) {
-        super(deviceInfo)
+        super(deviceInfo, 'alarm')
         this.deviceData.mdl = 'Fan Control'
 
         this.entity.fan = {

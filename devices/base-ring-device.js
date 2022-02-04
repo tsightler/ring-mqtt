@@ -8,7 +8,7 @@ const colors = require('colors/safe')
 
 // Base class with functions common to all devices
 class RingDevice {
-    constructor(deviceInfo, deviceId, locationId, primaryAttribute) {
+    constructor(deviceInfo, category, primaryAttribute, deviceId, locationId) {
         this.device = deviceInfo.device
         this.mqttClient = deviceInfo.mqttClient
         this.config = deviceInfo.CONFIG
@@ -24,7 +24,7 @@ class RingDevice {
             debug[debugType](colors.green(`[${this.deviceData.name}] `)+message)
         }
         // Build device base and availability topic
-        this.deviceTopic = `${this.config.ring_topic}/${this.locationId}/${deviceInfo.category}/${this.deviceId}`
+        this.deviceTopic = `${this.config.ring_topic}/${this.locationId}/${category}/${this.deviceId}`
         this.availabilityTopic = `${this.deviceTopic}/status`
 
         if (primaryAttribute !== 'disable') {

@@ -36,6 +36,7 @@ const Switch = require('./devices/switch')
 const TemperatureSensor = require('./devices/temperature-sensor')
 const Thermostat = require('./devices/thermostat')
 const { debugPort } = require('process')
+const e = require('express')
 
 var CONFIG
 var ringLocations = new Array()
@@ -92,15 +93,12 @@ async function processExit(exitCode) {
 async function getDevice(device, mqttClient, allDevices) {
     const deviceInfo = {
         device: device,
-        category: 'alarm',
         mqttClient: mqttClient,
         CONFIG
     }
     if (device instanceof RingCamera) {
-        deviceInfo.category = 'camera'
         return new Camera(deviceInfo)
     } else if (device instanceof RingChime) {
-        deviceInfo.category = 'chime'
         return new Chime(deviceInfo)
     } else if (/^lock($|\.)/.test(device.deviceType)) {
         return new Lock(deviceInfo)
@@ -119,25 +117,18 @@ async function getDevice(device, mqttClient, allDevices) {
         case RingDeviceType.SmokeAlarm:
             return new SmokeAlarm(deviceInfo)
         case RingDeviceType.CoAlarm:
-            // If this is a child device pass in parent device as well
-            const parentDevice = allDevices.find(d => d.id === device.data.parentZid && d.deviceType === RingDeviceType.SmokeAlarm)
-            return new CoAlarm(deviceInfo, parentDevice)
+            return new CoAlarm(deviceInfo, allDevices)
         case RingDeviceType.SmokeCoListener:
             return new SmokeCoListener(deviceInfo)
         case RingDeviceType.BeamsMotionSensor:
         case RingDeviceType.BeamsMultiLevelSwitch:
         case RingDeviceType.BeamsTransformerSwitch:
         case RingDeviceType.BeamsLightGroupSwitch:
-            deviceInfo.category = 'lighting'
             return new Beam(deviceInfo)
         case RingDeviceType.BeamsDevice:
-            deviceInfo.category = 'lighting'
-            const childDevices = allDevices.filter(d => d.data.parentZid === device.id && d.deviceType === RingDeviceType.BeamsSwitch)
-            return new BeamOutdoorPlug(deviceInfo, childDevices)
+            return new BeamOutdoorPlug(deviceInfo, allDevices)
         case RingDeviceType.MultiLevelSwitch:
-            return newDevice = (device.categoryId === 17)
-                ? new Fan(deviceInfo)
-                : new MultiLevelSwitch(deviceInfo)
+            return newDevice = (device.categoryId === 17) ? new Fan(deviceInfo) : new MultiLevelSwitch(deviceInfo)
         case RingDeviceType.Switch:
             return new Switch(deviceInfo)
         case RingDeviceType.Keypad:
@@ -158,11 +149,7 @@ async function getDevice(device, mqttClient, allDevices) {
         case 'siren.outdoor-strobe':
             return new Siren(deviceInfo)
         case RingDeviceType.Thermostat:
-            const operatingStatus = allDevices.find(d => d.data.parentZid === device.id && d.deviceType === 'thermostat-operating-status')
-            const temperatureSensor = allDevices.find(d => d.data.parentZid === device.id && d.deviceType === RingDeviceType.TemperatureSensor)
-            if (operatingStatus && temperatureSensor) {
-                return new Thermostat(deviceInfo, operatingStatus, temperatureSensor)
-            }
+            return new Thermostat(deviceInfo, allDevices)
         case RingDeviceType.TemperatureSensor:
             // If this is a thermostat component, ignore this device
             if (allDevices.find(d => d.id === device.data.parentZid && d.deviceType === RingDeviceType.Thermostat)) {
@@ -251,25 +238,18 @@ async function updateRingData(mqttClient, ringClient) {
             }
             
             if (ringDevice) {
-                debug(colors.white(foundMessage)+colors.green(`${ringDevice.deviceData.name}`)+colors.cyan(' ('+ringDevice.deviceId+')'))
                 const indent = ' '.repeat(foundMessage.length-4)
-                switch (ringDevice.device.deviceType) {
-                    case RingDeviceType.Thermostat:
-                        debug(colors.white(`${indent}│   `)+colors.gray(ringDevice.device.deviceType))
-                        debug(colors.white(`${indent}├─: `)+colors.green('Operating Status')+colors.cyan(` (${ringDevice.operatingStatus.id})`))
-                        debug(colors.white(`${indent}│   `)+colors.gray(ringDevice.operatingStatus.deviceType))
-                        debug(colors.white(`${indent}└─: `)+colors.green('Temperature Sensor')+colors.cyan(` (${ringDevice.temperatureSensor.id})`))
-                        debug(colors.gray(`${indent}    `+ringDevice.temperatureSensor.deviceType))
-                        break
-                    case RingDeviceType.BeamsDevice:
-                        debug(colors.white(`${indent}│   `)+colors.gray(ringDevice.device.deviceType))
-                        debug(colors.white(`${indent}├─: `)+colors.green('Outlet A')+colors.cyan(` (${ringDevice.outlet1.id})`))
-                        debug(colors.white(`${indent}│   `)+colors.gray(ringDevice.outlet1.deviceType))
-                        debug(colors.white(`${indent}└─: `)+colors.green('Outlet B')+colors.cyan(` (${ringDevice.outlet2.id})`))
-                        debug(colors.gray(`${indent}    `+ringDevice.outlet2.deviceType))
-                        break
-                    default:
-                        debug(colors.gray(`${indent}${ringDevice.device.deviceType}`))
+                debug(colors.white(foundMessage)+colors.green(`${ringDevice.deviceData.name}`)+colors.cyan(' ('+ringDevice.deviceId+')'))
+                if (ringDevice.hasOwnProperty('childDevices')) {
+                    debug(colors.white(`${indent}│   `)+colors.gray(ringDevice.device.deviceType))
+                    let keys = Object.keys(ringDevice.childDevices).length
+                    Object.keys(ringDevice.childDevices).forEach(childDevice => {
+                        debug(colors.white(`${indent}├─: `)+colors.green(`${childDevice.name}`)+colors.cyan(` (${childDevice.id})`))
+                        debug(colors.white(`${indent}${(keys > 1) ? '│   ' : '    '}`)+colors.gray(childDevice.deviceType))
+                        keys--
+                    })
+                } else {
+                    debug(colors.gray(`${indent}${ringDevice.device.deviceType}`))
                 }
             }
         }

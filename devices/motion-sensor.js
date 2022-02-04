@@ -2,7 +2,7 @@ const RingSocketDevice = require('./base-socket-device')
 
 class MotionSensor extends RingSocketDevice {
     constructor(deviceInfo) {
-        super(deviceInfo)
+        super(deviceInfo, 'alarm')
         this.deviceData.mdl = 'Motion Sensor'
 
         this.entity.motion = {

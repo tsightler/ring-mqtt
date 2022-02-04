@@ -2,7 +2,7 @@ const RingSocketDevice = require('./base-socket-device')
 
 class ContactSensor extends RingSocketDevice {
     constructor(deviceInfo) {
-        super(deviceInfo)
+        super(deviceInfo, 'alarm')
 
         let device_class = 'None'
 

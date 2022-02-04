@@ -2,7 +2,7 @@ const RingSocketDevice = require('./base-socket-device')
 
 class Switch extends RingSocketDevice {
     constructor(deviceInfo) {
-        super(deviceInfo)
+        super(deviceInfo, 'alarm')
         this.deviceData.mdl = (this.device.data.categoryId === 2) ? 'Light' : 'Switch'
         this.component = (this.device.data.categoryId === 2) ? 'light' : 'switch'
         

@@ -3,7 +3,7 @@ const RingSocketDevice = require('./base-socket-device')
 
 class BaseStation extends RingSocketDevice {
     constructor(deviceInfo) {
-        super(deviceInfo, 'acStatus')
+        super(deviceInfo, 'alarm','acStatus')
         this.deviceData.mdl = 'Alarm Base Station'
         this.deviceData.name = this.device.location.name + ' Base Station'
 

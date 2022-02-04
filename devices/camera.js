@@ -11,7 +11,7 @@ const rss = require('../lib/rtsp-simple-server')
 
 class Camera extends RingPolledDevice {
     constructor(deviceInfo) {
-        super(deviceInfo)
+        super(deviceInfo, 'camera')
 
         this.data = {
             motion: {

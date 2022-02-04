@@ -1,11 +1,15 @@
 const RingSocketDevice = require('./base-socket-device')
+const { RingDeviceType } = require('ring-client-api')
 
 class Thermostat extends RingSocketDevice {
-    constructor(deviceInfo, operatingStatus, temperatureSensor) {
-        super(deviceInfo)
+    constructor(deviceInfo, allDevices) {
+        super(deviceInfo, 'alarm')
         this.deviceData.mdl = 'Thermostat'
-        this.operatingStatus = operatingStatus
-        this.temperatureSensor = temperatureSensor
+
+        this.childDevices = {
+            operatingStatus: allDevices.find(d => d.data.parentZid === this.device.id && d.deviceType === 'thermostat-operating-status'),
+            temperatureSensor: allDevices.find(d => d.data.parentZid === this.device.id && d.deviceType === RingDeviceType.TemperatureSensor)
+        }
 
         this.entity.thermostat = {
             component: 'climate',
@@ -21,26 +25,26 @@ class Thermostat extends RingSocketDevice {
             setPoint: (() => {
                 return this.device.data.setPoint
                     ? this.device.data.setPoint.toString()
-                    : this.temperatureSensor.data.celsius.toString() 
+                    : this.childDevices.temperatureSensor.data.celsius.toString() 
                 }),
             operatingMode: (() => { 
-                return this.operatingStatus.data.operatingMode !== 'off'
-                    ? `${this.operatingStatus.data.operatingMode}ing`
+                return this.childDevices.operatingStatus.data.operatingMode !== 'off'
+                    ? `${this.childDevices.operatingStatus.data.operatingMode}ing`
                     : this.device.data.mode === 'off'
                         ? 'off'
                         : this.device.data.fanMode === 'on' ? 'fan' : 'idle' 
                 }),
-            temperature: (() => { return this.temperatureSensor.data.celsius.toString() })
+            temperature: (() => { return this.childDevices.temperatureSensor.data.celsius.toString() })
         }
 
-        this.operatingStatus.onData.subscribe(() => { 
+        this.childDevices.operatingStatus.onData.subscribe(() => { 
             if (this.isOnline()) { 
                 this.publishOperatingMode()
                 this.publishAttributes()
             }
         })
 
-        this.temperatureSensor.onData.subscribe(() => {
+        this.childDevices.temperatureSensor.onData.subscribe(() => {
             if (this.isOnline()) { 
                 this.publishTemperature()
                 this.publishAttributes()

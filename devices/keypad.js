@@ -2,7 +2,7 @@ const RingSocketDevice = require('./base-socket-device')
 
 class Keypad extends RingSocketDevice {
     constructor(deviceInfo) {
-        super(deviceInfo)
+        super(deviceInfo, 'alarm')
         this.deviceData.mdl = 'Security Keypad'
 
         this.entity.volume = {

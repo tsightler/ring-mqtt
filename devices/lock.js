@@ -2,7 +2,7 @@ const RingSocketDevice = require('./base-socket-device')
 
 class Lock extends RingSocketDevice {
     constructor(deviceInfo) {
-        super(deviceInfo)
+        super(deviceInfo, 'alarm')
         this.deviceData.mdl = 'Lock'
 
         this.entity.lock = {

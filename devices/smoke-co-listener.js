@@ -2,7 +2,7 @@ const RingSocketDevice = require('./base-socket-device')
 
 class SmokeCoListener extends RingSocketDevice {
     constructor(deviceInfo) {
-        super(deviceInfo)
+        super(deviceInfo, 'alarm')
         this.deviceData.mdl = 'Smoke & CO Listener'
         
         this.entity.smoke = {
