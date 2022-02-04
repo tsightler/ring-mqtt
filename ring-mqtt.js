@@ -244,8 +244,8 @@ async function updateRingData(mqttClient, ringClient) {
                     debug(colors.white(`${indent}│   `)+colors.gray(ringDevice.device.deviceType))
                     let keys = Object.keys(ringDevice.childDevices).length
                     Object.keys(ringDevice.childDevices).forEach(key => {
-                        debug(colors.white(`${indent}${(keys > 1) ? '├─: ' : '└─   '}`)+colors.green(`${ringDevice.childDevices[key].name}`)+colors.cyan(` (${ringDevice.childDevices[key].id})`))
-                        debug(colors.white(`${indent}${(keys > 1) ? '│   ' : '     '}`)+colors.gray(ringDevice.childDevices[key].deviceType))
+                        debug(colors.white(`${indent}${(keys > 1) ? '├─: ' : '└─: '}`)+colors.green(`${ringDevice.childDevices[key].name}`)+colors.cyan(` (${ringDevice.childDevices[key].id})`))
+                        debug(colors.white(`${indent}${(keys > 1) ? '│   ' : '    '}`)+colors.gray(ringDevice.childDevices[key].deviceType))
                         keys--
                     })
                 } else {
