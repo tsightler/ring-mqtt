@@ -440,7 +440,7 @@ async function updateToken(newRefreshToken, oldRefreshToken, stateFile, stateDat
 const main = async(generatedToken) => {
     let ringAuth = new Object()
     let stateData = new Object()
-    let stateFile
+    let stateFile = '/data/ring-state.json'
     let ringClient
     let mqttClient
 
