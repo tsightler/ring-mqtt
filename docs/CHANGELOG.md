@@ -1,6 +1,9 @@
 ## v4.9.2
 **Fixed Bugs**
-- Use atomic writes for updating state file or config file.  Hopefully this will fix the occassional report of corrupted state file
+- Use atomic writes for updating state/config file.  Hopefully this will fix the occassional report of corrupted state file
+
+**Other Changes**
+- Standardized discovery logic for parent/child devices.  The child discovery logic is now contained completely in the code for each device.  Previously this logic was implemented as hard coded exceptions in the common discovery loop which was pretty ugly and risked breaking other devices.  Now such devices can be added with no significant changes to the common code
 
 ## v4.9.1
 **New Features**

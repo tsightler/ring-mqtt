@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
 // Defines
+const config = require('./lib/config')
 const { RingApi, RingDeviceType, RingCamera, RingChime } = require('ring-client-api')
-const mqttApi = require ('mqtt')
-const isOnline = require ('is-online')
+const mqttApi = require('mqtt')
+const isOnline = require('is-online')
 const debug = require('debug')('ring-mqtt')
-const writeFileAtomic = require('write-file-atomic')
 const colors = require('colors/safe')
 const utils = require('./lib/utils.js')
 const tokenApp = require('./lib/tokenapp.js')
@@ -35,10 +35,7 @@ const SmokeCoListener = require('./devices/smoke-co-listener')
 const Switch = require('./devices/switch')
 const TemperatureSensor = require('./devices/temperature-sensor')
 const Thermostat = require('./devices/thermostat')
-const { debugPort } = require('process')
-const e = require('express')
 
-var CONFIG
 var ringLocations = new Array()
 var ringDevices = new Array()
 var mqttConnected = false
@@ -94,7 +91,7 @@ async function getDevice(device, mqttClient, allDevices) {
     const deviceInfo = {
         device: device,
         mqttClient: mqttClient,
-        CONFIG
+        config: config.data
     }
     if (device instanceof RingCamera) {
         return new Camera(deviceInfo)
@@ -196,14 +193,14 @@ async function updateRingData(mqttClient, ringClient) {
 
         // Get all location devices and, if configured, cameras
         const devices = await location.getDevices()
-        if (CONFIG.enable_cameras) { 
+        if (config.data.enable_cameras) { 
             cameras = await location.cameras
             chimes = await location.chimes
         }
         const allDevices = [...devices, ...cameras, ...chimes]
 
         // Add modes panel, if configured and the location supports it
-        if (CONFIG.enable_modes && (await location.supportsLocationModeSwitching())) {
+        if (config.data.enable_modes && (await location.supportsLocationModeSwitching())) {
             allDevices.push({
                 deviceType: 'location.mode',
                 location: location,
@@ -337,7 +334,7 @@ async function processLocations(mqttClient, ringClient) {
 // Process received MQTT command
 async function processMqttMessage(topic, message, mqttClient, ringClient) {
     message = message.toString()
-    if (topic === CONFIG.hass_topic || topic === 'hass/status' || topic === 'hassio/status') {
+    if (topic === config.data.hass_topic || topic === 'hass/status' || topic === 'hassio/status') {
         debug('Home Assistant state topic '+topic+' received message: '+message)
         if (message == 'online') {
             // Republish devices and state if restart of HA is detected
@@ -354,7 +351,7 @@ async function processMqttMessage(topic, message, mqttClient, ringClient) {
         }
     } else {
         // Parse topic to get location/device ID
-        const ringTopicLevels = (CONFIG.ring_topic).split('/').length
+        const ringTopicLevels = (config.data.ring_topic).split('/').length
         splitTopic = topic.split('/')
         const locationId = splitTopic[ringTopicLevels]
         const deviceId = splitTopic[ringTopicLevels + 2]
@@ -373,11 +370,11 @@ async function processMqttMessage(topic, message, mqttClient, ringClient) {
 
 // Initiate the connection to MQTT broker
 function initMqtt() {
-    const mqtt_user = CONFIG.mqtt_user ? CONFIG.mqtt_user : null
-    const mqtt_pass = CONFIG.mqtt_pass ? CONFIG.mqtt_pass : null
+    const mqtt_user = config.data.mqtt_user ? config.data.mqtt_user : null
+    const mqtt_pass = config.data.mqtt_pass ? config.data.mqtt_pass : null
     const mqtt = mqttApi.connect({
-        host:CONFIG.host,
-        port:CONFIG.port,
+        host: config.data.host,
+        port: config.data.port,
         username: mqtt_user,
         password: mqtt_pass
     });
@@ -415,66 +412,10 @@ function startMqtt(mqttClient, ringClient) {
     })
 }
 
-// Create CONFIG object from file or envrionment variables
-async function initConfig(configFile) {
-    debug('Using configuration file: '+configFile)
-    try {
-        CONFIG = require(configFile)
-    } catch (error) {
-        debug('Configuration file not found, attempting to use environment variables for configuration.')
-        CONFIG = {
-            "host": process.env.MQTTHOST,
-            "port": process.env.MQTTPORT,
-            "ring_topic": process.env.MQTTRINGTOPIC,
-            "hass_topic": process.env.MQTTHASSTOPIC,
-            "mqtt_user": process.env.MQTTUSER,
-            "mqtt_pass": process.env.MQTTPASSWORD,
-            "ring_token": process.env.RINGTOKEN,
-            "disarm_code": process.env.DISARMCODE,
-            "beam_duration": process.env.BEAMDURATION,
-            "enable_cameras": process.env.ENABLECAMERAS,
-            "snapshot_mode": process.env.SNAPSHOTMODE,
-            "livestream_user": process.env.LIVESTREAMUSER,
-            "livestream_pass": process.env.LIVESTREAMPASSWORD,
-            "enable_modes": process.env.ENABLEMODES,
-            "enable_panic": process.env.ENABLEPANIC,
-            "location_ids": process.env.RINGLOCATIONIDS
-        }
-        if (CONFIG.enable_cameras && CONFIG.enable_cameras != 'true') { CONFIG.enable_cameras = false}
-        if (CONFIG.location_ids) { CONFIG.location_ids = CONFIG.location_ids.split(',') }
-    }
-    // If Home Assistant addon, always get MQTT settings from environment (set by startup script)
-    if (process.env.RUNMODE === 'addon') {
-        CONFIG.host = process.env.MQTTHOST
-        CONFIG.port = process.env.MQTTPORT
-        CONFIG.mqtt_user = process.env.MQTTUSER
-        CONFIG.mqtt_pass = process.env.MQTTPASSWORD
-    }
-
-    // If there's still no configured settings, force some defaults.
-    CONFIG.host = CONFIG.host ? CONFIG.host : 'localhost'
-    CONFIG.port = CONFIG.port ? CONFIG.port : '1883'
-    CONFIG.ring_topic = CONFIG.ring_topic ? CONFIG.ring_topic : 'ring'
-    CONFIG.hass_topic = CONFIG.hass_topic ? CONFIG.hass_topic : 'homeassistant/status'
-    if (!CONFIG.enable_cameras) { CONFIG.enable_cameras = false }
-    if (!CONFIG.snapshot_mode) { CONFIG.snapshot_mode = 'disabled' }
-    if (!CONFIG.enable_modes) { CONFIG.enable_modes = false }
-    if (!CONFIG.enable_panic) { CONFIG.enable_panic = false }
-    if (!CONFIG.beam_duration) { CONFIG.beams_duration = 0 }
-    if (!CONFIG.disarm_code) { CONFIG.disarm_code = '' }
-
-    // Make sure MQTT environment variables are set even if only using config file (standalone install)
-    // (these are needed fo start_stream.sh to be able to connect to MQTT broker)
-    process.env.MQTTHOST = CONFIG.host
-    process.env.MQTTPORT = CONFIG.port
-    process.env.MQTTUSER = CONFIG.mqtt_user
-    process.env.MQTTPASSWORD = CONFIG.mqtt_pass
-}
-
 // Save updated refresh token to config or state file
 async function updateToken(newRefreshToken, oldRefreshToken, stateFile, stateData, configFile) {
     if (!oldRefreshToken) { return }
-    if (process.env.RUNMODE === 'addon' || process.env.RUNMODE === 'docker') {
+    if (config.runMode === 'addon' || config.runMode === 'docker') {
         stateData.ring_token = newRefreshToken
         try {
             await writeFileAtomic(stateFile, JSON.stringify(stateData, null, 2))
@@ -492,36 +433,26 @@ async function updateToken(newRefreshToken, oldRefreshToken, stateFile, stateDat
         }
     }
 }
+
 /* End Functions */
 
 // Main code loop
 const main = async(generatedToken) => {
     let ringAuth = new Object()
-    let configFile = './config.json'
     let stateData = new Object()
     let stateFile
     let ringClient
     let mqttClient
 
-    // For HASSIO and DOCKER latest token is saved in /data/ring-state.json
-    if (process.env.RUNMODE === 'addon' || process.env.RUNMODE === 'docker') { 
-        stateFile = '/data/ring-state.json'
-        if (process.env.RUNMODE === 'addon') {
-            configFile = '/data/options.json'
-            // For addon config is performed via Web UI
-            if (!tokenApp.listener) {
-                tokenApp.start()
-                tokenApp.token.registerListener(function(generatedToken) {
-                    main(generatedToken)
-                })
-            }
-        } else {
-            configFile = '/data/config.json'
+    if (config.runMode === 'addon') {
+        // For addon config is performed via Web UI
+        if (!tokenApp.listener) {
+            tokenApp.start()
+            tokenApp.token.registerListener(function(generatedToken) {
+                main(generatedToken)
+            })
         }
     }
-
-    // Initiate CONFIG object from file or environment variables
-    await initConfig(configFile)
 
     // If refresh token was generated via web UI, use it, otherwise attempt to get latest token from state file
     if (stateFile) {
@@ -542,12 +473,12 @@ const main = async(generatedToken) => {
     }
     
     // If no refresh tokens were found, either exit or start Web UI for token generator
-    if (!CONFIG.ring_token && !stateData.ring_token) {
-        if (process.env.RUNMODE === 'docker') {
+    if (!config.data.ring_token && !stateData.ring_token) {
+        if (config.runMode === 'docker') {
             debug(colors.brightRed('No refresh token was found in state file and RINGTOKEN is not configured.'))
             process.exit(2)
         } else {
-            if (process.env.RUNMODE === 'addon') {
+            if (config.runMode === 'addon') {
                 debug(colors.brightRed('No refresh token was found in saved state file or config file.'))
                 debug(colors.brightRed('Use the web interface to generate a new token.'))
             } else {
@@ -564,18 +495,18 @@ const main = async(generatedToken) => {
         }
 
         // Define some basic parameters for connection to Ring API
-        if (CONFIG.enable_cameras) {
+        if (config.data.enable_cameras) {
             ringAuth = { 
                 cameraStatusPollingSeconds: 20,
                 cameraDingsPollingSeconds: 2
             }
         }
 
-        if (CONFIG.enable_modes) { ringAuth.locationModePollingSeconds = 20 }
-        if (!(CONFIG.location_ids === undefined || CONFIG.location_ids == 0)) {
-            ringAuth.locationIds = CONFIG.location_ids
+        if (config.data.enable_modes) { ringAuth.locationModePollingSeconds = 20 }
+        if (!(config.data.location_ids === undefined || config.data.location_ids == 0)) {
+            ringAuth.locationIds = config.data.location_ids
         }
-        ringAuth.controlCenterDisplayName = (process.env.RUNMODE === 'addon') ? 'ring-mqtt-addon' : 'ring-mqtt'
+        ringAuth.controlCenterDisplayName = (config.runMode === 'addon') ? 'ring-mqtt-addon' : 'ring-mqtt'
 
         if (!stateData.hasOwnProperty('systemId')) {
             stateData.systemId = (createHash('sha256').update(randomBytes(32)).digest('hex'))
@@ -598,10 +529,10 @@ const main = async(generatedToken) => {
         }
 
         // If Ring API is not already connected, try using refresh token from config file or RINGTOKEN variable
-        if (!ringClient && CONFIG.ring_token) {
-            const debugMsg = process.env.RUNMODE === 'docker' ? 'RINGTOKEN environment variable.' : 'refresh token from file: '+configFile
+        if (!ringClient && config.data.ring_token) {
+            const debugMsg = config.runMode === 'docker' ? 'RINGTOKEN environment variable.' : 'refresh token from file: '+config.file
             debug('Attempting connection to Ring API using '+debugMsg)
-            ringAuth.refreshToken = CONFIG.ring_token
+            ringAuth.refreshToken = config.data.ring_token
             try {
                 ringClient = new RingApi(ringAuth)
                 await ringClient.getProfile()
@@ -610,19 +541,19 @@ const main = async(generatedToken) => {
                 debug(colors.brightRed(error.message))
                 debug(colors.brightRed('Could not create the API instance. This could be because the Ring servers are down/unreachable'))
                 debug(colors.brightRed('or maybe all available refresh tokens are invalid.'))
-                if (process.env.RUNMODE === 'addon') {
+                if (config.runMode === 'addon') {
                     debug('Restart the addon to try again or use the web interface to generate a new token.')
                 } else {
                     debug('Please check the configuration and network settings, or generate a new refresh token, and try again.')
                     process.exit(2)
                 }
             }
-        } else if (!ringClient && !CONFIG.ring_token) {
+        } else if (!ringClient && !config.data.ring_token) {
             // No connection with Ring API using saved token and no configured token to try
-            if (process.env.RUNMODE === 'docker') {
+            if (config.runMode === 'docker') {
                 debug(colors.brightRed('Could not connect with saved refresh token and RINGTOKEN is not configured.'))
                 process.exit(2)
-            } else if (process.env.RUNMODE === 'addon') {
+            } else if (config.runMode === 'addon') {
                 debug(colors.brightRed('Could not connect with saved refresh token and no refresh token exist in config file.'))
                 debug(colors.brightRed('Please use the web interface to generate a new token or restart the addon to try the existing token again.'))
             }
@@ -638,7 +569,7 @@ const main = async(generatedToken) => {
 
         // Subscribed to token update events and save new token
         ringClient.onRefreshTokenUpdated.subscribe(({ newRefreshToken, oldRefreshToken }) => {
-            updateToken(newRefreshToken, oldRefreshToken, stateFile, stateData, configFile)
+            updateToken(newRefreshToken, oldRefreshToken, stateFile, stateData, config.file)
         })
 
         // Initiate connection to MQTT broker
@@ -650,7 +581,7 @@ const main = async(generatedToken) => {
                 debug('MQTT connection established, sending config/state information in 5 seconds.')
             }
             // Monitor configured/default Home Assistant status topic
-            mqttClient.subscribe(CONFIG.hass_topic)
+            mqttClient.subscribe(config.data.hass_topic)
             // Monitor legacy Home Assistant status topics
             mqttClient.subscribe('hass/status')
             mqttClient.subscribe('hassio/status')
