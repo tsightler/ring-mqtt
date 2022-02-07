@@ -2,7 +2,7 @@
 
 // Defines
 const config = require('./lib/config')
-const writeFileAtomic = require('write-file-atomic')
+const state = require('./lib/state')
 const { RingApi, RingDeviceType, RingCamera, RingChime } = require('ring-client-api')
 const mqttApi = require('mqtt')
 const isOnline = require('is-online')
@@ -11,8 +11,6 @@ const colors = require('colors/safe')
 const utils = require('./lib/utils.js')
 const tokenApp = require('./lib/tokenapp.js')
 const rss = require('./lib/rtsp-simple-server.js')
-const { createHash, randomBytes } = require('crypto')
-const fs = require('fs')
 const BaseStation = require('./devices/base-station')
 const Beam = require('./devices/beam')
 const BeamOutdoorPlug = require('./devices/beam-outdoor-plug')
@@ -413,68 +411,30 @@ function startMqtt(mqttClient, ringClient) {
     })
 }
 
-// Save updated refresh token to config or state file
-async function updateToken(newRefreshToken, oldRefreshToken, stateFile, stateData, configFile) {
-    if (!oldRefreshToken) { return }
-    if (config.runMode === 'addon' || config.runMode === 'docker') {
-        stateData.ring_token = newRefreshToken
-        try {
-            await writeFileAtomic(stateFile, JSON.stringify(stateData, null, 2))
-            debug('File ' + stateFile + ' saved with updated refresh token.')
-        } catch (err) {
-            debug('File '+stateFile+' save failed with error '+err)
-        }
-    } else if (configFile) {
-        CONFIG.ring_token = newRefreshToken
-        try {
-            await writeFileAtomic(configFile, JSON.stringify(CONFIG, null, 4))
-            debug('Config file saved with updated refresh token.')
-        } catch (err) {
-            debug('Config file save failed with error:'+err)
-        }
-    }
-}
-
 /* End Functions */
 
 // Main code loop
 const main = async(generatedToken) => {
     let ringAuth = new Object()
-    let stateData = new Object()
-    let stateFile = '/data/ring-state.json'
     let ringClient
     let mqttClient
+    if (!state.valid) { await state.init(config) }
 
-    if (config.runMode === 'addon') {
-        // For addon config is performed via Web UI
-        if (!tokenApp.listener) {
-            tokenApp.start()
-            tokenApp.token.registerListener(function(generatedToken) {
-                main(generatedToken)
-            })
-        }
+    if (config.runMode === 'addon' && !tokenApp.listener) {
+        tokenApp.start()
+        tokenApp.token.registerListener(function(generatedToken) {
+            main(generatedToken)
+        })
     }
 
     // If refresh token was generated via web UI, use it, otherwise attempt to get latest token from state file
-    if (stateFile) {
-        if (fs.existsSync(stateFile)) {
-            debug('Reading latest data from state file: '+stateFile)
-            stateData = require(stateFile)
-            if (generatedToken) {
-                debug('Updating state data with token generated via web UI.')
-                stateData.ring_token = generatedToken
-            }
-        } else {
-            debug(colors.brightYellow('File '+stateFile+' not found. No saved state data available.'))
-            if (generatedToken) {
-                debug('Using refresh token generated via web UI.')
-                stateData.ring_token = generatedToken
-            }
-        }
+    if (generatedToken) {
+        debug(state.valid ? 'Updating state data with token generated via web UI.' : 'Using refresh token generated via web UI.')
+        state.data.ring_token = generatedToken
     }
     
     // If no refresh tokens were found, either exit or start Web UI for token generator
-    if (!config.data.ring_token && !stateData.ring_token) {
+    if (!config.data.ring_token && !state.data.ring_token) {
         if (config.runMode === 'docker') {
             debug(colors.brightRed('No refresh token was found in state file and RINGTOKEN is not configured.'))
             process.exit(2)
@@ -509,16 +469,12 @@ const main = async(generatedToken) => {
         }
         ringAuth.controlCenterDisplayName = (config.runMode === 'addon') ? 'ring-mqtt-addon' : 'ring-mqtt'
 
-        if (!stateData.hasOwnProperty('systemId')) {
-            stateData.systemId = (createHash('sha256').update(randomBytes(32)).digest('hex'))
-        }
-
         // If there is a saved or generated refresh token, try to connect using it first
-        if (stateData.ring_token) {
+        if (state.data.ring_token) {
             const tokenSource = generatedToken ? "generated" : "saved"
             debug('Attempting connection to Ring API using '+tokenSource+' refresh token.')
-            ringAuth.refreshToken = stateData.ring_token
-            ringAuth.systemId = stateData.systemId
+            ringAuth.refreshToken = state.data.ring_token
+            ringAuth.systemId = state.data.systemId
             try {
                 ringClient = new RingApi(ringAuth)
                 await ringClient.getProfile()
@@ -570,7 +526,7 @@ const main = async(generatedToken) => {
 
         // Subscribed to token update events and save new token
         ringClient.onRefreshTokenUpdated.subscribe(({ newRefreshToken, oldRefreshToken }) => {
-            updateToken(newRefreshToken, oldRefreshToken, stateFile, stateData, config.file)
+            state.updateToken(newRefreshToken, oldRefreshToken)
         })
 
         // Initiate connection to MQTT broker
@@ -595,5 +551,4 @@ const main = async(generatedToken) => {
     }
 }
 
-// Call the main code
 main()
