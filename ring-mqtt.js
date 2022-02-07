@@ -2,6 +2,7 @@
 
 // Defines
 const config = require('./lib/config')
+const writeFileAtomic = require('write-file-atomic')
 const { RingApi, RingDeviceType, RingCamera, RingChime } = require('ring-client-api')
 const mqttApi = require('mqtt')
 const isOnline = require('is-online')
