@@ -11,7 +11,7 @@ class RingDevice {
     constructor(deviceInfo, category, primaryAttribute, deviceId, locationId) {
         this.device = deviceInfo.device
         this.mqttClient = deviceInfo.mqttClient
-        this.config = deviceInfo.CONFIG
+        this.config = config
         this.deviceId = deviceId
         this.locationId = locationId
         this.availabilityState = 'unpublished'

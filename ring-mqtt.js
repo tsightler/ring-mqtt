@@ -444,7 +444,6 @@ const main = async(generatedToken) => {
     let stateFile = '/data/ring-state.json'
     let ringClient
     let mqttClient
-    debug(config.data)
 
     if (config.runMode === 'addon') {
         // For addon config is performed via Web UI
