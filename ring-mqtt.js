@@ -418,7 +418,9 @@ const main = async(generatedToken) => {
     let ringAuth = new Object()
     let ringClient
     let mqttClient
-    if (!state.valid) { await state.init(config) }
+    if (!state.valid) { 
+        await state.init(config)
+    }
 
     if (config.runMode === 'addon' && !tokenApp.listener) {
         tokenApp.start()

@@ -11,6 +11,8 @@ class Thermostat extends RingSocketDevice {
             temperatureSensor: allDevices.find(d => d.data.parentZid === this.device.id && d.deviceType === RingDeviceType.TemperatureSensor)
         }
 
+        debug(Object.keys(this.device.data.modeSetpoint))
+
         this.entity.thermostat = {
             component: 'climate',
             fan_modes: this.device.data.hasOwnProperty('supportedFanModes')

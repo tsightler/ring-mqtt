@@ -3,3 +3,4 @@ node_modules
 .eslintrc.json
 config.json.sample
 .DS_Store
+ring-state.json
