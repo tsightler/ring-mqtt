@@ -127,7 +127,7 @@ class RingDevice {
                         fan_mode_command_topic: `${entityTopic}/fan_mode_command`,
                         max_temp: 37,
                         min_temp: 10,
-                        modes: ["off", "cool", "heat"],
+                        modes: entity.modes,
                         mode_state_topic: `${entityTopic}/mode_state`,
                         mode_command_topic: `${entityTopic}/mode_command`,
                         temperature_state_topic: `${entityTopic}/temperature_state`,
