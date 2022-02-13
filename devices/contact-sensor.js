@@ -23,6 +23,10 @@ class ContactSensor extends RingSocketDevice {
                 this.deviceData.mdl = 'Tilt Sensor'
                 device_class = 'garage_door'
                 break;
+            default:
+                this.entityName = 'binary_sensor'
+                this.deviceData.mdl = 'Generic Binary Sensor'
+                device_class = 'None'
         }
 
         this.entity[this.entityName] = {

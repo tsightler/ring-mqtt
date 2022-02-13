@@ -61,8 +61,9 @@ class RingDevice {
             // automatic name generation can also be completely overridden with entity 'name' parameter.
             //
             // I know the code below will offend the sensibilities of some people, especially with
-            // regards to formatting, but, for whatever reason, my brain reads through it linerarly 
-            // and parses the logic out easily, so I've decided I can live with it.
+            // regards to formatting and nested ternaries, but, for whatever reason, my brain reads
+            // and parses the logic out easily, more so than other methods I've tried, so I've
+            // decided I can live with it.
             let discoveryMessage = {
                 ... entity.hasOwnProperty('name')
                     ? { name: entity.name }
@@ -127,7 +128,7 @@ class RingDevice {
                         fan_mode_command_topic: `${entityTopic}/fan_mode_command`,
                         max_temp: 37,
                         min_temp: 10,
-                        modes: ["off", "cool", "heat"],
+                        modes: entity.modes,
                         mode_state_topic: `${entityTopic}/mode_state`,
                         mode_command_topic: `${entityTopic}/mode_command`,
                         temperature_state_topic: `${entityTopic}/temperature_state`,

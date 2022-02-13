@@ -13,6 +13,7 @@ class Thermostat extends RingSocketDevice {
 
         this.entity.thermostat = {
             component: 'climate',
+            modes: Object.keys(this.device.data.modeSetpoints).filter(mode => ["off", "cool", "heat", "auto"].includes(mode)),
             fan_modes: this.device.data.hasOwnProperty('supportedFanModes')
                 ? this.device.data.supportedFanModes.map(f => f.charAt(0).toUpperCase() + f.slice(1))
                 : ["Auto"],
@@ -101,9 +102,12 @@ class Thermostat extends RingSocketDevice {
                 this.publishMqtt(this.entity.thermostat.action_topic, mode)
             case 'cool':
             case 'heat':
+            case 'auto':
             case 'aux':
-                this.device.setInfo({ device: { v1: { mode } } })
-                this.publishMqtt(this.entity.thermostat.mode_state_topic, mode)
+                if (this.entity.thermostat.modes.map(e => e.toLocaleLowerCase()).includes(mode) || mode === 'aux') {
+                    this.device.setInfo({ device: { v1: { mode } } })
+                    this.publishMqtt(this.entity.thermostat.mode_state_topic, mode)
+                }
                 break;
             default:
                 this.debug(`Received invalid set mode command`)
