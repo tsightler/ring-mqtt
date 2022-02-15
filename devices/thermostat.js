@@ -59,7 +59,7 @@ class Thermostat extends RingSocketDevice {
 
         this.publishMqtt(this.entity.thermostat.mode_state_topic, mode)
         if (mode === 'auto') {
-            debug(this.data.modeSetpoints)
+            this.debug(this.data.modeSetpoints)
             const deadBand = this.data.modeSetpoints.auto.deadBand ? this.data.modeSetpoints.auto.deadBand : 1.5
             const setPoint = this.data.setPoint()
             this.publishMqtt(this.entity.thermostat.temperature_high_state_topic, setPoint+deadBand)
