@@ -59,8 +59,7 @@ class Thermostat extends RingSocketDevice {
 
         this.publishMqtt(this.entity.thermostat.mode_state_topic, mode)
         if (mode === 'auto') {
-            this.debug(this.data.modeSetpoints)
-            const deadBand = this.data.modeSetpoints.auto.deadBand ? this.data.modeSetpoints.auto.deadBand : 1.5
+            const deadBand = this.device.data.modeSetpoints.auto.deadBand ? this.device.data.modeSetpoints.auto.deadBand : 1.5
             const setPoint = this.data.setPoint()
             this.publishMqtt(this.entity.thermostat.temperature_high_state_topic, setPoint+deadBand)
             this.publishMqtt(this.entity.thermostat.temperature_low_state_topic, setPoint-deadBand)
@@ -149,7 +148,7 @@ class Thermostat extends RingSocketDevice {
             this.debug(`New ${type} temperature set point received but is out of range (10-37.22223°C)!`)
         } else {
             const setPoint = this.data.setPoint()
-            const deadBand = this.data.modeSetpoints.auto.deadBand ? this.data.modeSetpoints.auto.deadBand : 1.5
+            const deadBand = this.device.data.modeSetpoints.auto.deadBand ? this.device.data.modeSetpoints.auto.deadBand : 1.5
             const targetHighSetpoint = (type === 'high') ? value : setPoint+deadBand
             const targetLowSetpoint = (type === 'low') ? value : setPoint+deadBand
             const targetSetpoint = (targetHighSetpoint+targetLowSetpoint)/2
@@ -160,7 +159,7 @@ class Thermostat extends RingSocketDevice {
                 this.publishMqtt(this.entity.thermostat.temperature_high_state_topic, targetHighSetpoint)
                 this.publishMqtt(this.entity.thermostat.temperature_low_state_topic, targetLowSetpoint)
             } else {
-                this.debug(`New ${type} temperature set point would be below the allowed deadBand range ${this.data.modeSetpoints.auto.deadBandMin}`)
+                this.debug(`New ${type} temperature set point would be below the allowed deadBand range ${this.device.data.modeSetpoints.auto.deadBandMin}`)
             }
         }
     }
