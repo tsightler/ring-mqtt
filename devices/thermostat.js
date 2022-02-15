@@ -147,9 +147,9 @@ class Thermostat extends RingSocketDevice {
     }
 
     async setAutoSetPoint(value, type) {
+        this.debug(`Received set target ${type} temperature to ${value}`)
         if (!this.data.setPointInProgress) {
             this.data.setPointInProgress = true
-            this.debug(`Received set target ${type} temperature to ${value}`)
             if (isNaN(value)) {
                 this.debug(`New ${type} temperature set point received but is not a number!`)
             } else if (!(value >= 10 && value <= 37.22223)) {
