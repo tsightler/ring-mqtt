@@ -64,13 +64,15 @@ class Thermostat extends RingSocketDevice {
         const mode = this.data.mode()
 
         this.publishMqtt(this.entity.thermostat.mode_state_topic, mode)
+        this.publishMqtt(this.entity.thermostat.temperature_state_topic, this.data.setPoint())
         if (mode === 'auto') {
             const deadBand = this.device.data.modeSetpoints.auto.deadBand ? this.device.data.modeSetpoints.auto.deadBand : 1.5
             const setPoint = parseFloat(this.data.setPoint())
-            this.publishMqtt(this.entity.thermostat.temperature_high_state_topic, (setPoint+deadBand).toString())
             this.publishMqtt(this.entity.thermostat.temperature_low_state_topic, (setPoint-deadBand).toString())
-        } else {
-            this.publishMqtt(this.entity.thermostat.temperature_state_topic, this.data.setPoint())
+            this.publishMqtt(this.entity.thermostat.temperature_high_state_topic, (setPoint+deadBand).toString())
+        } else if (this.entity.thermostat.modes.includes('auto')) {
+            this.publishMqtt(this.entity.thermostat.temperature_low_state_topic, this.data.setPoint())
+            this.publishMqtt(this.entity.thermostat.temperature_high_state_topic, this.data.setPoint())
         }
         this.publishMqtt(this.entity.thermostat.fan_mode_state_topic, this.data.fanMode())
         this.publishMqtt(this.entity.thermostat.aux_state_topic, this.data.auxMode())
@@ -141,8 +143,20 @@ class Thermostat extends RingSocketDevice {
         } else if (!(value >= 10 && value <= 37.22223)) {
             this.debug('New temperature set point received but is out of range (10-37.22223°C)!')
         } else {
-            this.device.setInfo({ device: { v1: { setPoint: Number(value) } } })
-            this.publishMqtt(this.entity.thermostat.temperature_state_topic, value)
+            if (this.data.mode() === 'auto') {
+                const setPointDiff = Number(value)-this.device.data.modeSetpoints.auto.setPoint
+                this.data.targetHighSetpoint = this.data.targetHighSetpoint+setPointDiff
+                this.data.targetLowSetpoint = this.data.targetLowSetpoint+setPointDiff
+                const targetSetpoint = (this.data.targetHighSetpoint+this.data.targetLowSetpoint)/2
+                const targetDeadBand = this.data.targetHighSetpoint-targetSetpoint
+                this.device.setInfo({ device: { v1: { setPoint: Number(targetSetpoint), deadBand: Number(targetDeadBand) } } })
+                this.publishMqtt(this.entity.thermostat.temperature_high_state_topic, this.data.targetHighSetpoint.toString())
+                this.publishMqtt(this.entity.thermostat.temperature_low_state_topic, this.data.targetLowSetpoint.toString())
+                this.data.setPointInProgress = false
+            } else {
+                this.device.setInfo({ device: { v1: { setPoint: Number(value) } } })
+                this.publishMqtt(this.entity.thermostat.temperature_state_topic, value)
+            }
         }
     }
 
@@ -164,7 +178,7 @@ class Thermostat extends RingSocketDevice {
                 const targetSetpoint = (this.data.targetHighSetpoint+this.data.targetLowSetpoint)/2
                 const targetDeadBand = this.data.targetHighSetpoint-targetSetpoint
 
-                if (targetDeadBand >= 1.5) {
+                if (targetDeadBand >= this.device.data.modeSetpoints.auto.deadBandMin) {
                     this.device.setInfo({ device: { v1: { setPoint: Number(targetSetpoint), deadBand: Number(targetDeadBand) } } })
                     this.publishMqtt(this.entity.thermostat.temperature_high_state_topic, this.data.targetHighSetpoint.toString())
                     this.publishMqtt(this.entity.thermostat.temperature_low_state_topic, this.data.targetLowSetpoint.toString())
