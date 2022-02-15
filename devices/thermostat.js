@@ -1,5 +1,6 @@
 const RingSocketDevice = require('./base-socket-device')
 const { RingDeviceType } = require('ring-client-api')
+const utils = require( '../lib/utils' )
 
 class Thermostat extends RingSocketDevice {
     constructor(deviceInfo, allDevices) {
@@ -35,7 +36,12 @@ class Thermostat extends RingSocketDevice {
                         ? 'off'
                         : this.device.data.fanMode === 'on' ? 'fan' : 'idle' 
                 }),
-            temperature: (() => { return this.childDevices.temperatureSensor.data.celsius.toString() })
+            temperature: (() => { return this.childDevices.temperatureSensor.data.celsius.toString() }),
+            ... entity.modes.includes('auto')
+                ? { setPointInProgress: false,
+                    targetHighSetpoint: this.device.data.modeSetpoints.auto.setPoint+this.device.data.modeSetpoints.auto.deadBand,
+                    targetLowSetpoint: this.device.data.modeSetpoints.auto.setPoint+this.device.data.modeSetpoints.auto.deadBand
+                } : {}
         }
 
         this.childDevices.operatingStatus.onData.subscribe(() => { 
@@ -141,26 +147,43 @@ class Thermostat extends RingSocketDevice {
     }
 
     async setAutoSetPoint(value, type) {
-        this.debug(`Received set target ${type} temperature to ${value}`)
-        if (isNaN(value)) {
-            this.debug(`New ${type} temperature set point received but is not a number!`)
-        } else if (!(value >= 10 && value <= 37.22223)) {
-            this.debug(`New ${type} temperature set point received but is out of range (10-37.22223°C)!`)
-        } else {
-            const setPoint = parseFloat(this.data.setPoint())
-            const deadBand = this.device.data.modeSetpoints.auto.deadBand ? this.device.data.modeSetpoints.auto.deadBand : 1.5
-            const targetHighSetpoint = (type === 'high') ? parseFloat(value) : setPoint+deadBand
-            const targetLowSetpoint = (type === 'low') ? parseFloat(value) : setPoint-deadBand
-            const targetSetpoint = (targetHighSetpoint+targetLowSetpoint)/2
-            const targetDeadBand = targetHighSetpoint-targetSetpoint
-
-            if (targetDeadBand >= 1.5) {
-                this.debug(`{ device: { v1: { setPoint: ${Number(targetSetpoint)}, deadBand: ${Number(targetDeadBand)} } } }`)
-                this.device.setInfo({ device: { v1: { setPoint: Number(targetSetpoint), deadBand: Number(targetDeadBand) } } })
-                this.publishMqtt(this.entity.thermostat.temperature_high_state_topic, targetHighSetpoint.toString())
-                this.publishMqtt(this.entity.thermostat.temperature_low_state_topic, targetLowSetpoint.toString())
+        if (!this.data.setPointInProgress) {
+            this.data.setPointInProgress = true
+            this.debug(`Received set target ${type} temperature to ${value}`)
+            if (isNaN(value)) {
+                this.debug(`New ${type} temperature set point received but is not a number!`)
+            } else if (!(value >= 10 && value <= 37.22223)) {
+                this.debug(`New ${type} temperature set point received but is out of range (10-37.22223°C)!`)
             } else {
-                this.debug(`New ${type} temperature set point would be below the allowed deadBand range ${this.device.data.modeSetpoints.auto.deadBandMin}`)
+                if (type === 'high') {
+                    this.data.targetHighSetpoint = Number(value)
+                } else {
+                    this.data.targetLowSetpoint = Number(value)
+                }
+                await utils.msleep(50)
+                const targetSetpoint = (this.data.targetHighSetpoint+this.data.targetLowSetpoint)/2
+                const targetDeadBand = this.data.targetHighSetpoint-targetSetpoint
+
+                if (targetDeadBand >= 1.5) {
+                    this.device.setInfo({ device: { v1: { setPoint: Number(targetSetpoint), deadBand: Number(targetDeadBand) } } })
+                    this.publishMqtt(this.entity.thermostat.temperature_high_state_topic, this.data.targetHighSetpoint.toString())
+                    this.publishMqtt(this.entity.thermostat.temperature_low_state_topic, this.data.targetLowSetpoint.toString())
+                } else {
+                    this.debug(`New ${type} temperature set point would be below the allowed deadBand range ${this.device.data.modeSetpoints.auto.deadBandMin}`)
+                }
+            }
+            this.data.setPointInProgress = false
+        } else {
+            if (isNaN(value)) {
+                this.debug(`New ${type} temperature set point received but is not a number!`)
+            } else if (!(value >= 10 && value <= 37.22223)) {
+                this.debug(`New ${type} temperature set point received but is out of range (10-37.22223°C)!`)
+            } else {
+                if (type === 'high') {
+                    this.data.targetHighSetpoint = Number(value)
+                } else {
+                    this.data.targetLowSetpoint = Number(value)
+                }
             }
         }
     }
