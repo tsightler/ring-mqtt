@@ -3,7 +3,6 @@
     "port": 1883,
     "mqtt_user": "",
     "mqtt_pass": "",
-    "ring_token": "",
     "disarm_code": "",
     "beam_duration": 0,
     "enable_cameras": false,

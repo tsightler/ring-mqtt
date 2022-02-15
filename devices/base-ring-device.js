@@ -133,6 +133,12 @@ class RingDevice {
                         mode_command_topic: `${entityTopic}/mode_command`,
                         temperature_state_topic: `${entityTopic}/temperature_state`,
                         temperature_command_topic: `${entityTopic}/temperature_command`,
+                        ... entity.modes.includes('auto')
+                            ? { temperature_high_state_topic: `${entityTopic}/temperature_high_state`,
+                                temperature_high_command_topic: `${entityTopic}/temperature_high_command`,
+                                temperature_low_state_topic: `${entityTopic}/temperature_low_state`,
+                                temperature_low_command_topic: `${entityTopic}/temerature_low_command`,
+                            } : {},
                         temperature_unit: 'C' } : {},
                 ... entity.component === 'select'
                         ? { options: entity.options } : {},
