@@ -37,7 +37,7 @@ class Thermostat extends RingSocketDevice {
                         : this.device.data.fanMode === 'on' ? 'fan' : 'idle' 
                 }),
             temperature: (() => { return this.childDevices.temperatureSensor.data.celsius.toString() }),
-            ... entity.modes.includes('auto')
+            ... this.entity.modes.includes('auto')
                 ? { setPointInProgress: false,
                     targetHighSetpoint: this.device.data.modeSetpoints.auto.setPoint+this.device.data.modeSetpoints.auto.deadBand,
                     targetLowSetpoint: this.device.data.modeSetpoints.auto.setPoint+this.device.data.modeSetpoints.auto.deadBand
