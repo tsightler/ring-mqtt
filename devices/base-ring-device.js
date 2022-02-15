@@ -136,7 +136,9 @@ class RingDevice {
                         ... entity.modes.includes('auto')
                             ? { temperature_high_state_topic: `${entityTopic}/temperature_high_state`,
                                 temperature_high_command_topic: `${entityTopic}/temperature_high_command`,
+                                temperature_high_state_template: '{% if value is equalto "null" %} "" {% else %} value {% endif %}',
                                 temperature_low_state_topic: `${entityTopic}/temperature_low_state`,
+                                temperature_low_state_template: '{% if value is equalto "null" %} "" {% else %} value {% endif %}',
                                 temperature_low_command_topic: `${entityTopic}/temperature_low_command`,
                             } : {},
                         temperature_unit: 'C' } : {},
