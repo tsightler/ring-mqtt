@@ -95,8 +95,8 @@ class Thermostat extends RingSocketDevice {
             this.publishMqtt(this.entity.thermostat.temperature_high_state_topic, (setPoint+deadBand).toString())
         } else if (this.data.hasAutoMode && this.data.useMultiSetpoints) {
             // If auto mode as every been enabled, always publish high/low values the same as primary setPoint
-            this.publishMqtt(this.entity.thermostat.temperature_low_state_topic, setPoint)
-            this.publishMqtt(this.entity.thermostat.temperature_high_state_topic, setPoint)
+            this.publishMqtt(this.entity.thermostat.temperature_low_state_topic, setPoint.toString())
+            this.publishMqtt(this.entity.thermostat.temperature_high_state_topic, setPoint.toString())
         }
     }
 
@@ -176,7 +176,7 @@ class Thermostat extends RingSocketDevice {
             this.debug('New temperature set point received but is out of range (10-37.22223°C)!')
         } else {
             this.device.setInfo({ device: { v1: { setPoint: Number(value) } } })
-            this.publishMqtt(this.entity.thermostat.temperature_state_topic, value)
+            this.publishMqtt(this.entity.thermostat.temperature_state_topic, value.toString())
         }
     }
 
