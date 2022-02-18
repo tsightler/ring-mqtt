@@ -14,7 +14,7 @@ class Thermostat extends RingSocketDevice {
 
         this.entity.thermostat = {
             component: 'climate',
-            modes: Object.keys(this.device.data.modeSetpoints).filter(mode => ["off", "cool", "heat"].includes(mode)),
+            modes: Object.keys(this.device.data.modeSetpoints).filter(mode => ["off", "cool", "heat", "auto"].includes(mode)),
             fan_modes: this.device.data.hasOwnProperty('supportedFanModes')
                 ? this.device.data.supportedFanModes.map(f => f.charAt(0).toUpperCase() + f.slice(1))
                 : ["Auto"]
@@ -84,7 +84,7 @@ class Thermostat extends RingSocketDevice {
     publishSetpoints(mode) {
         // Always publish primary setpoint
         const setPoint = this.data.setPoint()
-        if (this.hasAutoMode) {
+        if (false) {
             // Thermostats with auto mode have dual setpoints
             if (mode === 'auto') {
                 // When in auto mode publish separate low/high set point values
