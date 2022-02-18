@@ -1,4 +1,5 @@
 const RingSocketDevice = require('./base-socket-device')
+const { RingDeviceType } = require('ring-client-api')
 
 class ContactSensor extends RingSocketDevice {
     constructor(deviceInfo) {
@@ -8,21 +9,25 @@ class ContactSensor extends RingSocketDevice {
 
         // Override icons and and topics
         switch (this.device.deviceType) {
-            case 'sensor.contact':
+            case RingDeviceType.ContactSensor:
                 this.entityName = 'contact'
                 this.deviceData.mdl = 'Contact Sensor'
                 device_class = (this.device.data.subCategoryId == 2) ? 'window' : 'door'
                 break;
-            case 'sensor.zone':
+            case RingDeviceType.RetrofitZone:
                 this.entityName = 'zone'
                 this.deviceData.mdl = 'Retrofit Zone'
                 device_class = 'safety'
                 break;
-            case 'sensor.tilt':
+            case RingDeviceType.TiltSensor:
                 this.entityName = 'tilt'
                 this.deviceData.mdl = 'Tilt Sensor'
                 device_class = 'garage_door'
                 break;
+            case RingDeviceType.GlassbreakSensor:
+                this.entityName = 'glassbreak'
+                this.deviceData.mdl = 'Glassbreak Sensor'
+                device_class = 'safety'
             default:
                 this.entityName = 'binary_sensor'
                 this.deviceData.mdl = 'Generic Binary Sensor'

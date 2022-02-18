@@ -103,6 +103,7 @@ async function getDevice(device, mqttClient, allDevices) {
         case RingDeviceType.ContactSensor:
         case RingDeviceType.RetrofitZone:
         case RingDeviceType.TiltSensor:
+        case RingDeviceType.GlassbreakSensor:
             return new ContactSensor(deviceInfo)
         case RingDeviceType.MotionSensor:
             return new MotionSensor(deviceInfo)
