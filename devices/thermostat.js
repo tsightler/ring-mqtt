@@ -172,6 +172,7 @@ class Thermostat extends RingSocketDevice {
         this.debug(`Received set target ${type} temperature to ${value}`)
         if (!this.data.setPointInProgress) {
             this.data.setPointInProgress = true
+            debug(this.device.data.modeSetpoints.auto)
             if (isNaN(value)) {
                 this.debug(`New ${type} temperature set point received but is not a number!`)
             } else if (!(value >= 10 && value <= 37.22223)) {
@@ -186,7 +187,6 @@ class Thermostat extends RingSocketDevice {
                 const targetSetpoint = (this.data.targetHighSetpoint+this.data.targetLowSetpoint)/2
                 const targetDeadBand = this.data.targetHighSetpoint-targetSetpoint
 
-                debug(this.device.data.modeSetpoints.auto)
                 if (targetDeadBand >= this.device.data.modeSetpoints.auto.deadBandMin) {
                     this.device.setInfo({ device: { v1: { setPoint: Number(targetSetpoint), deadBand: Number(targetDeadBand) } } })
                     this.publishMqtt(this.entity.thermostat.temperature_high_state_topic, this.data.targetHighSetpoint)
