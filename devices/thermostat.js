@@ -127,12 +127,12 @@ class Thermostat extends RingSocketDevice {
 
     // Process messages from MQTT command topic
     processCommand(message, componentCommand) {
+        const mode = this.data.mode()
         switch (componentCommand) {
             case 'thermostat/mode_command':
                 this.setMode(message)
                 break;
             case 'thermostat/temperature_command':
-                const mode = this.data.mode()
                 if (mode !== 'auto') {
                     this.setSetPoint(message)
                 } else if (mode === 'off') {
@@ -142,7 +142,6 @@ class Thermostat extends RingSocketDevice {
                 }
                 break;
             case 'thermostat/temperature_low_command':
-                const mode = this.data.mode()
                 if (mode === 'auto') {
                     this.setAutoSetPoint(message, 'low')
                 } else if (mode === 'off') {
@@ -152,7 +151,6 @@ class Thermostat extends RingSocketDevice {
                 }
                 break;
             case 'thermostat/temperature_high_command':
-                const mode = this.data.mode()
                 if (mode === 'auto') {
                     this.setAutoSetPoint(message, 'high')
                 } else if (mode === 'off') {
