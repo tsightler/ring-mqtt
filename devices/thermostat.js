@@ -218,7 +218,7 @@ class Thermostat extends RingSocketDevice {
 
                 // Home Assistant always sends both low/high values when changing temp so wait
                 // a few milliseconds for the other temperature value to be updated
-                await utils.msleep(50)
+                await utils.msleep(100)
 
                 const setPoint = (this.data.autoSetPoint.low+this.data.autoSetPoint.high)/2
                 let deadBand = this.data.autoSetPoint.high-setPoint
