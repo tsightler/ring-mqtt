@@ -28,6 +28,7 @@ class ContactSensor extends RingSocketDevice {
                 this.entityName = 'glassbreak'
                 this.deviceData.mdl = 'Glassbreak Sensor'
                 device_class = 'safety'
+                break;
             default:
                 this.entityName = 'binary_sensor'
                 this.deviceData.mdl = 'Generic Binary Sensor'
