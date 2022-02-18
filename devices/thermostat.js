@@ -42,6 +42,7 @@ class Thermostat extends RingSocketDevice {
             ... this.hasAutoMode
                 ? { 
                     setPointInProgress: false,
+                    autoDeadBandMin: this.device.data.modeSetpoints.auto.deadBandMin ? this.device.data.modeSetpoints.auto.deadBandMin : 1.11111,
                     autoLowSetpoint: this.device.data.modeSetpoints.auto.setPoint-this.device.data.modeSetpoints.auto.deadBand,
                     autoHighSetpoint: this.device.data.modeSetpoints.auto.setPoint+this.device.data.modeSetpoints.auto.deadBand,
                     targetLowSetpoint: this.device.data.modeSetpoints.auto.setPoint-this.device.data.modeSetpoints.auto.deadBand,
@@ -183,19 +184,11 @@ class Thermostat extends RingSocketDevice {
                     this.data.targetHighSetpoint = Number(value)
                 }
                 await utils.msleep(50)
-                const targetSetpoint = (this.data.targetHighSetpoint+this.data.targetLowSetpoint)/2
-                const targetDeadBand = this.data.targetHighSetpoint-targetSetpoint
-                const autoSetpointData = this.device.data.modeSetpoints.auto
-                console.log(targetDeadBand)
-                console.log(this.data.targetLowSetpoint, this.data.targetHighSetpoint)
-                console.log(autoSetpointData)
+                const setpoint = (this.data.targetHighSetpoint+this.data.targetLowSetpoint)/2
+                const deadBand = this.data.targetHighSetpoint-targetSetpoint
 
-                if (targetDeadBand >= autoSetpointData.deadBandMin) {
-                    const autoSetpointData = this.device.data.modeSetpoints.auto
-                    autoSetpointData.setPoint = targetSetpoint
-                    autoSetpointData.deadBand = targetDeadBand
-                    console.log({ device: { v1: autoSetpointData } })
-                    this.device.setInfo({ device: { v1: autoSetpointData } })
+                if (deadBand >= this.data.autoDeadBandMin) {
+                    this.device.setInfo({ device: { v1: { setpoint, deadBand } } })
                     this.publishMqtt(this.entity.thermostat.temperature_high_state_topic, this.data.targetHighSetpoint)
                     this.publishMqtt(this.entity.thermostat.temperature_low_state_topic, this.data.targetLowSetpoint)
                 } else {
