@@ -73,10 +73,13 @@ class Thermostat extends RingSocketDevice {
         // Hackish workaround to clear states in HA when switching between modes with single/multi-setpoint
         // (i.e. auto to heat/cool, or heat/cool to auto). This is mostly to workaround limitations with
         // the Home Assistant MQTT Thermostat integration that does not allow clearing exiting values from
-        // set points.  This in turn causes confusing/unusable behavior in Home Assistant UI, especially
-        // when switch from auto modes to heat/cool mode as the UI will still show low/high settings even
-        // though these modes only have a single setpoint.  This hack sends a temporary rediscovery message
-        // without including auto mode, then immediately sends the proper discovery data which effectively
+        // set points. This in turn causes confusing/borderline unusable behavior in Home Assistant UI, 
+        // especially when switching from auto modes to heat/cool mode as the UI will still show low/high
+        // settings even though these modes only have a single setpoint. For other thermostat integrations
+        // the fix is to simply set the unsused setpoint for the current mode to a null value but I can
+        // find no method to do this via the MQTT thermostat integration as it always attempt to parse a
+        // number. So, inatead, this hack sends an MQTT discovery message that temporarily exclused auto
+        // mode from the configuraiton for the device and then, just a few hundred milliseconds later, sens immediately sends the proper discovery data which effectively
         // clears state with only a minor UI blip.
         if (this.entity.thermostat.modes.includes('auto') && mode !== this.data.publishedMode) {
             if (!this.data.publishedMode || mode === 'auto' || this.data.publishedMode === 'auto') {
@@ -175,10 +178,10 @@ class Thermostat extends RingSocketDevice {
         const mode = this.data.mode()
         switch(mode) {
             case 'off':
-                debug('Recevied set target temperature but current thermostat mode is off')
+                this.debug('Recevied set target temperature but current thermostat mode is off')
                 break;
             case 'auto':
-                debug('Recevied set target temperature but thermostat is in dual setpoint (auto) mode')
+                this.debug('Recevied set target temperature but thermostat is in dual setpoint (auto) mode')
                 break;
             default:
                 this.debug(`Received set target temperature to ${value}`)
@@ -197,7 +200,7 @@ class Thermostat extends RingSocketDevice {
         const mode = this.data.mode()
         switch(mode) {
             case 'off':
-                debug(`Recevied set auto range ${type} temperature but current thermostat mode is off`)
+                this.debug(`Recevied set auto range ${type} temperature but current thermostat mode is off`)
                 break;
             case 'auto':
                 this.debug(`Received set auto range ${type} temperature to ${value}`)
@@ -242,7 +245,7 @@ class Thermostat extends RingSocketDevice {
                 }
                 break;
             default:
-                debug(`Received set ${type} temperature but thermostat is in single setpoint (cool/heat) mode`)
+                this.debug(`Received set ${type} temperature but thermostat is in single setpoint (cool/heat) mode`)
         }
     }
 
