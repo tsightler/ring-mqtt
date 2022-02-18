@@ -14,7 +14,7 @@ class Thermostat extends RingSocketDevice {
 
         this.entity.thermostat = {
             component: 'climate',
-            modes: Object.keys(this.device.data.modeSetpoints).filter(mode => ["off", "cool", "heat", "auto"].includes(mode)),
+            modes: Object.keys(this.device.data.modeSetpoints).filter(mode => ["off", "cool", "heat"].includes(mode)),
             fan_modes: this.device.data.hasOwnProperty('supportedFanModes')
                 ? this.device.data.supportedFanModes.map(f => f.charAt(0).toUpperCase() + f.slice(1))
                 : ["Auto"]
