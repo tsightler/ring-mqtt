@@ -186,6 +186,8 @@ class Thermostat extends RingSocketDevice {
                 const targetSetpoint = (this.data.targetHighSetpoint+this.data.targetLowSetpoint)/2
                 const targetDeadBand = this.data.targetHighSetpoint-targetSetpoint
                 const autoSetpointData = this.device.data.modeSetpoints.auto
+                console.log(targetDeadBand)
+                console.log(this.data.targetLowSetpoint, this.data.targetHighSetpoint)
                 console.log(autoSetpointData)
 
                 if (targetDeadBand >= autoSetpointData.deadBand) {
