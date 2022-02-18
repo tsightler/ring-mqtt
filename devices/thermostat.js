@@ -79,7 +79,7 @@ class Thermostat extends RingSocketDevice {
                 await utils.msleep(100)
                 this.entity.thermostat.modes = supportedModes
                 await this.publishDiscovery()
-                await utils.msleep(100)
+                await utils.msleep(500)
             }
             this.data.priorMode = mode
         }
