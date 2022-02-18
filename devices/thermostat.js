@@ -184,11 +184,11 @@ class Thermostat extends RingSocketDevice {
                     this.data.targetHighSetpoint = Number(value)
                 }
                 await utils.msleep(50)
-                const setpoint = (this.data.targetHighSetpoint+this.data.targetLowSetpoint)/2
-                const deadBand = this.data.targetHighSetpoint-targetSetpoint
+                const setPoint = (this.data.targetHighSetpoint+this.data.targetLowSetpoint)/2
+                const deadBand = this.data.targetHighSetpoint-setPoint
 
                 if (deadBand >= this.data.autoDeadBandMin) {
-                    this.device.setInfo({ device: { v1: { setpoint, deadBand } } })
+                    this.device.setInfo({ device: { v1: { setPoint, deadBand } } })
                     this.publishMqtt(this.entity.thermostat.temperature_high_state_topic, this.data.targetHighSetpoint)
                     this.publishMqtt(this.entity.thermostat.temperature_low_state_topic, this.data.targetLowSetpoint)
                 } else {
