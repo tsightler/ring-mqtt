@@ -69,6 +69,7 @@ class Thermostat extends RingSocketDevice {
     async publishData(data) {
         const isPublish = data === undefined ? true : false
 
+        console.log(this.device.data)
         // If auto mode is every used, then always publish multiple setPoints
         const mode = this.data.mode()
         if (mode !== this.data.priorMode) {
