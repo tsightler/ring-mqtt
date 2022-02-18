@@ -21,7 +21,7 @@ class Thermostat extends RingSocketDevice {
         }
 
         this.data = {
-            mode: (() => { return this.device.data.mode === 'aux' ? 'heat' : this.device.data.mode }),
+            currentMode: (() => { return this.device.data.mode === 'aux' ? 'heat' : this.device.data.mode }),
             publishedMode: false,
             fanMode: (() => { return this.device.data.fanMode.replace(/^./, str => str.toUpperCase()) }),
             auxMode: (() => { return this.device.data.mode === 'aux' ? 'ON' : 'OFF' }),
@@ -45,8 +45,7 @@ class Thermostat extends RingSocketDevice {
                         low: this.device.data.modeSetpoints.auto.setPoint-this.device.data.modeSetpoints.auto.deadBand,
                         high: this.device.data.modeSetpoints.auto.setPoint+this.device.data.modeSetpoints.auto.deadBand
                     },
-                    deadBandMin: this.device.data.modeSetpoints.auto.deadBandMin ? this.device.data.modeSetpoints.auto.deadBandMin : 1.11111,
-                    autoSetPointInProgress: false,
+                    deadBandMin: this.device.data.modeSetpoints.auto.deadBandMin ? this.device.data.modeSetpoints.auto.deadBandMin : 1.11111
                 } : {}
         }
 
@@ -68,8 +67,20 @@ class Thermostat extends RingSocketDevice {
     async publishData(data) {
         const isPublish = data === undefined ? true : false
 
-        const mode = this.data.mode()
+        const mode = this.data.currentMode()
+        await this.clearStateOnAutoModeSwitch(mode)
+        this.publishMqtt(this.entity.thermostat.mode_state_topic, mode)
+        this.data.publishedMode = mode
+        this.publishSetpoints(mode)
+        this.publishMqtt(this.entity.thermostat.fan_mode_state_topic, this.data.fanMode())
+        this.publishMqtt(this.entity.thermostat.aux_state_topic, this.data.auxMode())
+        this.publishOperatingMode()
 
+        if (isPublish) { this.publishTemperature() }
+        this.publishAttributes()
+    }
+
+    async clearStateOnAutoModeSwitch(mode) {
         // Hackish workaround to clear states in HA when switching between modes with single/multi-setpoint
         // (i.e. auto to heat/cool, or heat/cool to auto). This is mostly to workaround limitations with
         // the Home Assistant MQTT Thermostat integration that does not allow clearing exiting values from
@@ -91,17 +102,7 @@ class Thermostat extends RingSocketDevice {
                 await this.publishDiscovery()
                 await utils.msleep(500)
             }
-            this.data.publishedMode = mode
         }
-
-        this.publishMqtt(this.entity.thermostat.mode_state_topic, mode)
-        this.publishSetpoints(mode)
-        this.publishMqtt(this.entity.thermostat.fan_mode_state_topic, this.data.fanMode())
-        this.publishMqtt(this.entity.thermostat.aux_state_topic, this.data.auxMode())
-        this.publishOperatingMode()
-
-        if (isPublish) { this.publishTemperature() }
-        this.publishAttributes()
     }
 
     publishSetpoints(mode) {        
@@ -178,7 +179,7 @@ class Thermostat extends RingSocketDevice {
     }
     
     async setSetPoint(value) {
-        const mode = this.data.mode()
+        const mode = this.data.currentMode()
         switch(mode) {
             case 'off':
                 this.debug('Recevied set target temperature but current thermostat mode is off')
@@ -200,7 +201,7 @@ class Thermostat extends RingSocketDevice {
     }
 
     async setAutoSetPoint(value, type) {
-        const mode = this.data.mode()
+        const mode = this.data.currentMode()
         switch(mode) {
             case 'off':
                 this.debug(`Recevied set auto range ${type} temperature but current thermostat mode is off`)
