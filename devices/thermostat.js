@@ -20,8 +20,6 @@ class Thermostat extends RingSocketDevice {
                 : ["Auto"]
         }
 
-        this.hasAutoMode = this.entity.thermostat.modes.includes('auto') ? true : false
-
         this.data = {
             mode: (() => { return this.device.data.mode === 'aux' ? 'heat' : this.device.data.mode }),
             publishedMode: false,
@@ -40,14 +38,15 @@ class Thermostat extends RingSocketDevice {
                         : this.device.data.fanMode === 'on' ? 'fan' : 'idle' 
                 }),
             temperature: (() => { return this.childDevices.temperatureSensor.data.celsius }),
-            ... this.hasAutoMode
+            ... this.entity.thermostat.modes.includes('auto')
                 ? { 
-                    setPointInProgress: false,
-                    deadBandMin: this.device.data.modeSetpoints.auto.deadBandMin ? this.device.data.modeSetpoints.auto.deadBandMin : 1.11111,
-                    setPoint: {
+                    autoSetPointInProgress: false,
+                    autoSetPoint: {
                         low: this.device.data.modeSetpoints.auto.setPoint-this.device.data.modeSetpoints.auto.deadBand,
                         high: this.device.data.modeSetpoints.auto.setPoint+this.device.data.modeSetpoints.auto.deadBand
-                    }
+                    },
+                    deadBandMin: this.device.data.modeSetpoints.auto.deadBandMin ? this.device.data.modeSetpoints.auto.deadBandMin : 1.11111,
+                    autoSetPointInProgress: false,
                 } : {}
         }
 
@@ -79,8 +78,8 @@ class Thermostat extends RingSocketDevice {
         // though these modes only have a single setpoint.  This hack sends a temporary rediscovery message
         // without including auto mode, then immediately sends the proper discovery data which effectively
         // clears state with only a minor UI blip.
-        if (mode !== this.data.publishedMode) {
-            if (this.hasAutoMode && (!this.data.publishedMode || mode === 'auto' || this.data.publishedMode === 'auto')) {
+        if (this.entity.thermostat.modes.includes('auto') && mode !== this.data.publishedMode) {
+            if (!this.data.publishedMode || mode === 'auto' || this.data.publishedMode === 'auto') {
                 const supportedModes = this.entity.thermostat.modes
                 this.entity.thermostat.modes = ["off", "cool", "heat"]
                 await this.publishDiscovery()
@@ -108,10 +107,10 @@ class Thermostat extends RingSocketDevice {
             // does use low/high settings, but rather a single setpoint with deadBand representing
             // the offset for the low/high temp from the middle setPoint
             if (!this.data.setPointInProgress) {
-                this.data.setPoint.low = this.device.data.setPoint-this.device.data.deadBand
-                this.data.setPoint.high = this.device.data.setPoint+this.device.data.deadBand
-                this.publishMqtt(this.entity.thermostat.temperature_low_state_topic, this.data.setPoint.low)
-                this.publishMqtt(this.entity.thermostat.temperature_high_state_topic, this.data.setPoint.high)
+                this.data.autoSetPoint.low = this.device.data.setPoint-this.device.data.deadBand
+                this.data.autoSetPoint.high = this.device.data.setPoint+this.device.data.deadBand
+                this.publishMqtt(this.entity.thermostat.temperature_low_state_topic, this.data.autoSetPoint.low)
+                this.publishMqtt(this.entity.thermostat.temperature_high_state_topic, this.data.autoSetPoint.high)
             }
         } else {
             this.publishMqtt(this.entity.thermostat.temperature_state_topic, this.data.setPoint())
@@ -214,19 +213,19 @@ class Thermostat extends RingSocketDevice {
             } else if (!(value >= 10 && value <= 37.22223)) {
                 this.debug(`New ${type} temperature set point received but is out of range (10-37.22223°C)!`)
             } else {
-                this.data.setPoint[type] = Number(value)
+                this.data.autoSetPoint[type] = Number(value)
 
                 // Home Assistant always sends both low/high values when changing temp so wait
                 // a few milliseconds for the other temperature value to be updated
                 await utils.msleep(50)
 
-                const setPoint = (this.data.setPoint.low+this.data.setPoint.high)/2
-                const deadBand = this.data.setPoint.high-setPoint
+                const setPoint = (this.data.autoSetPoint.low+this.data.autoSetPoint.high)/2
+                const deadBand = this.data.autoSetPoint.high-setPoint
 
                 if (deadBand >= this.data.deadBandMin) {
                     this.device.setInfo({ device: { v1: { setPoint, deadBand } } })
-                    this.publishMqtt(this.entity.thermostat.temperature_low_state_topic, this.data.setPoint.low)
-                    this.publishMqtt(this.entity.thermostat.temperature_high_state_topic, this.data.setPoint.high)
+                    this.publishMqtt(this.entity.thermostat.temperature_low_state_topic, this.data.autoSetPoint.low)
+                    this.publishMqtt(this.entity.thermostat.temperature_high_state_topic, this.data.autoSetPoint.high)
                 } else {
                     this.debug(`New ${type} temperature set point would be below the allowed deadBand range ${this.data.deadBandMin}`)
                 }
@@ -238,7 +237,7 @@ class Thermostat extends RingSocketDevice {
             } else if (!(value >= 10 && value <= 37.22223)) {
                 this.debug(`New ${type} temperature set point received but is out of range (10-37.22223°C)!`)
             } else {
-                this.data.setPoint[type] = Number(value)
+                this.data.autoSetPoint[type] = Number(value)
             }
         }
     }
