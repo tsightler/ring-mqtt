@@ -203,9 +203,6 @@ class Thermostat extends RingSocketDevice {
     async setAutoSetPoint(value, type) {
         const mode = this.data.currentMode()
         switch(mode) {
-            case 'off':
-                this.debug(`Recevied set auto range ${type} temperature but current thermostat mode is off`)
-                break;
             case 'auto':
                 // Home Assistant always sends both low/high temps even when only one had changed.
                 // This lock prevents concurrent updates overwriting each other and instead
@@ -241,6 +238,9 @@ class Thermostat extends RingSocketDevice {
                         this.data.setPointInProgress = false
                     }
                 }
+                break;
+            case 'off':
+                this.debug(`Recevied set auto range ${type} temperature but current thermostat mode is off`)
                 break;
             default:
                 this.debug(`Received set ${type} temperature but thermostat is in single setpoint (cool/heat) mode`)
