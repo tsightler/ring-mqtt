@@ -76,7 +76,7 @@ class Thermostat extends RingSocketDevice {
                 this.offline()
                 this.online()
             }
-            this.data.priorMode === mode
+            this.data.priorMode = mode
         }
         this.publishMqtt(this.entity.thermostat.mode_state_topic, mode)
 
