@@ -1,9 +1,18 @@
-## v4.9.2
+## v5.0.0
+**New Features**
+- Add support for thermostats with "auto" operating mode with low/high temperature range setting
+- Add support for Ring glassbreak sensors
+
 **Fixed Bugs**
 - Use atomic writes for updating state/config file.  Hopefully this will fix the occassional report of corrupted state file
 
+**Breaking Changes**
+- Docker users are now *REQUIRED* to map a persistent volume for storing state.  This was always highly recommended, and I'm guessing most users already configured one so it probably won't break in many cases, but theoretically it was possible to run without it.
+- For Docker users, the initial refresh token can no longer be set via the RINGTOKEN environment variable.  To supply a new token users must use ring-auth-cli.js to generate a refresh token a new state file.
+- For Standard install users, the config file no longer contains the refresh token and is no longer updated with new tokens.  After upgrade a new ring-state.json file will be created in the ring-mqtt directory to store state (same method as Docker installs).  The token from the config file will be used for this initial startup, the new token saved in the ring-state.json file and the remaining token removed from the config file permanently. Note that Standard installs are considered self-supported and I highly recommend the Docker/Addon install options for the vast majority of users.
+
 **Other Changes**
-- Standardized discovery logic for parent/child devices.  The child discovery logic is now contained completely in the code for each device.  Previously this logic was implemented as hard coded exceptions in the common discovery loop which was pretty ugly and risked breaking other devices.  Now such devices can be added with no significant changes to the common code
+- Standardized discovery logic for parent/child devices.  The child discovery logic is now contained completely in device level code.  Previously this logic was implemented as hard coded exceptions in the common discovery loop which was pretty ugly and risked breaking other devices.  Now such devices can be added with no significant changes to the common code although further improvements are still needed here.
 
 ## v4.9.1
 **New Features**

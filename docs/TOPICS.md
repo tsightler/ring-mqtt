@@ -161,6 +161,7 @@ ring/<location_id>/alarm/<device_id>/thermostat/mode_state               <-- Cur
                                                                              - off
                                                                              - cool
                                                                              - heat
+                                                                             - auto
 ring/<location_id>/alarm/<device_id>/thermostat/mode_command             <-- Set operating mode
 ring/<location_id>/alarm/<device_id>/thermostat/action_state             <-- Current action
                                                                              - off
@@ -168,8 +169,13 @@ ring/<location_id>/alarm/<device_id>/thermostat/action_state             <-- Cur
                                                                              - cooling
                                                                              - heating
                                                                              - fan
-ring/<location_id>/alarm/<device_id>/thermostat/temerature_state         <-- Current target temperature °C
-ring/<location_id>/alarm/<device_id>/thermostat/temerature_state         <-- Set target temperature °C
+ring/<location_id>/alarm/<device_id>/thermostat/temerature_state         <-- Current target temperature °C (heat/cool mode)
+ring/<location_id>/alarm/<device_id>/thermostat/temerature_command       <-- Set target temperature °C (heat/cool mode)
+ring/<location_id>/alarm/<device_id>/thermostat/temerature_low_state     <-- Current range low temperature °C (auto mode)
+ring/<location_id>/alarm/<device_id>/thermostat/temerature_low_command   <-- Set range low temperature °C (auto mode)
+ring/<location_id>/alarm/<device_id>/thermostat/temerature_high_state    <-- Current range high temperature °C (auto mode)
+ring/<location_id>/alarm/<device_id>/thermostat/temerature_high_command  <-- Set range high temperature °C (auto mode)
+
 ring/<location_id>/alarm/<device_id>/thermostat/current_temerature_state <-- Current temperature °C
 ring/<location_id>/alarm/<device_id>/thermostat/fan_mode_state           <-- Current fan operating mode
                                                                              Exact modes vary with different thermostat devices, common modes are
