@@ -73,9 +73,10 @@ class Thermostat extends RingSocketDevice {
         const mode = this.data.mode()
         if (mode !== this.data.priorMode) {
             if (mode === 'auto' || this.data.priorMode === 'auto') {
-                this.offline()
-                await utils.sleep(1)
-                this.online()
+                this.entity.modes = Object.keys(this.device.data.modeSetpoints).filter(mode => ["off", "cool", "heat"].includes(mode))
+                this.publishDiscovery()
+                this.entity.modes = Object.keys(this.device.data.modeSetpoints).filter(mode => ["off", "cool", "heat", "auto"].includes(mode))
+                this.publishDiscovery()
             }
             this.data.priorMode = mode
         }
