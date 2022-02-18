@@ -196,6 +196,7 @@ class RingDevice {
 
     // Publish state messages with debug
     publishMqtt(topic, message, debugType) {
+        message = (typeof message === 'number') ? message.toString() : message 
         if (debugType !== false) {
             this.debug(colors.blue(`${topic} `)+colors.cyan(`${message}`), debugType)
         }
