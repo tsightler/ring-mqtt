@@ -187,12 +187,12 @@ class Thermostat extends RingSocketDevice {
                 this.debug('Recevied set target temperature but thermostat is in dual setpoint (auto) mode')
                 break;
             default:
-                this.debug(`Received set target temperature to ${value}`)
                 if (isNaN(value)) {
-                    this.debug('Received set target temperature but value is not a number!')
+                    this.debug(`Received set target temperature to ${value} which is not a number`)
                 } else if (!(value >= 10 && value <= 37.22223)) {
-                    this.debug('Received set target temperature but value is out of allowed range (10-37.22223°C)!')
+                    this.debug(`Received set target temperature to ${value} which is out of allowed range (10-37.22223°C)`)
                 } else {
+                    this.debug(`Received set target temperature to ${value}`)
                     this.device.setInfo({ device: { v1: { setPoint: Number(value) } } })
                     this.publishMqtt(this.entity.thermostat.temperature_state_topic, value)
                 }
@@ -206,15 +206,15 @@ class Thermostat extends RingSocketDevice {
                 this.debug(`Recevied set auto range ${type} temperature but current thermostat mode is off`)
                 break;
             case 'auto':
-                this.debug(`Received set auto range ${type} temperature to ${value}`)
                 // Home Assistant always sends both low/high temps even when only one had changed.
                 // This lock prevents concurrent updates overwriting each other and instead
                 // waits 50ms to give time for the second value to be updated
                 if (isNaN(value)) {
-                    this.debug(`Received set auto range ${type} temperature but value is not a number!`)
+                    this.debug(`Received set auto range ${type} temperature to ${value} which is not a number`)
                 } else if (!(value >= 10 && value <= 37.22223)) {
-                    this.debug(`Received set auto range ${type} temperature but value is out of allowed range (10-37.22223°C)!`)
+                    this.debug(`Received set auto range ${type} temperature to ${value} which is out of allowed range (10-37.22223°C)`)
                 } else {
+                    this.debug(`Received set auto range ${type} temperature to ${value}`)
                     this.data.autoSetPoint[type] = Number(value)
                     if (!this.data.setPointInProgress) {
                         this.data.setPointInProgress = true
