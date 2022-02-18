@@ -127,39 +127,20 @@ class Thermostat extends RingSocketDevice {
 
     // Process messages from MQTT command topic
     processCommand(message, componentCommand) {
-        const mode = this.data.mode()
         switch (componentCommand) {
             case 'thermostat/mode_command':
                 this.setMode(message)
                 break;
             case 'thermostat/temperature_command':
-                if (mode !== 'auto') {
-                    this.setSetPoint(message)
-                } else if (mode === 'off') {
-                    debug('Recevied set primary temperature but thermostat is off')
-                } else {
-                    debug('Recevied set primary temperature but thermostat is in dual setpoint (auto) mode')
-                }
+                this.setSetPoint(message)
                 break;
             case 'thermostat/temperature_low_command':
-                if (mode === 'auto') {
-                    this.setAutoSetPoint(message, 'low')
-                } else if (mode === 'off') {
-                    debug('Recevied set primary temperature but thermostat is off')
-                } else {
-                    debug('Received set low temperature but thermostat is not in single setpoint (cool/heat) mode')
-                }
+                this.setAutoSetPoint(message, 'low')
                 break;
             case 'thermostat/temperature_high_command':
-                if (mode === 'auto') {
-                    this.setAutoSetPoint(message, 'high')
-                } else if (mode === 'off') {
-                    debug('Recevied set primary temperature but thermostat is off')
-                } else {
-                    debug('Received set low temperature but thermostat is not in single setpoint (cool/heat) mode')
-                }
+                this.setAutoSetPoint(message, 'high')
                 break;
-                case 'thermostat/fan_mode_command':
+            case 'thermostat/fan_mode_command':
                 this.setFanMode(message)
                 break;
             case 'thermostat/aux_command':
@@ -191,59 +172,77 @@ class Thermostat extends RingSocketDevice {
     }
     
     async setSetPoint(value) {
-        this.debug(`Received set target temperature to ${value}`)
-        if (isNaN(value)) {
-            this.debug('New temperature set point received but is not a number!')
-        } else if (!(value >= 10 && value <= 37.22223)) {
-            this.debug('New temperature set point received but is out of range (10-37.22223°C)!')
-        } else {
-            this.device.setInfo({ device: { v1: { setPoint: Number(value) } } })
-            this.publishMqtt(this.entity.thermostat.temperature_state_topic, value)
+        const mode = this.data.mode()
+        switch(mode) {
+            case 'off':
+                debug('Recevied set target temperature but current thermostat mode is off')
+                break;
+            case 'auto':
+                debug('Recevied set target temperature but thermostat is in dual setpoint (auto) mode')
+                break;
+            default:
+                this.debug(`Received set target temperature to ${value}`)
+                if (isNaN(value)) {
+                    this.debug('New temperature set target received but is not a number!')
+                } else if (!(value >= 10 && value <= 37.22223)) {
+                    this.debug('New temperature set target received but is out of range (10-37.22223°C)!')
+                } else {
+                    this.device.setInfo({ device: { v1: { setPoint: Number(value) } } })
+                    this.publishMqtt(this.entity.thermostat.temperature_state_topic, value)
+                }
         }
     }
 
     async setAutoSetPoint(value, type) {
-        this.debug(`Received set target ${type} temperature to ${value}`)
-        // Home Assistant always sends both low/high temps even when only one had changed.
-        // This lock prevents concurrent updates overwriting each other and instead
-        // waits 50ms to give time for the second value to be updated
-        if (!this.data.setPointInProgress) {
-            this.data.setPointInProgress = true
-            if (isNaN(value)) {
-                this.debug(`New ${type} temperature set point received but is not a number!`)
-            } else if (!(value >= 10 && value <= 37.22223)) {
-                this.debug(`New ${type} temperature set point received but is out of range (10-37.22223°C)!`)
-            } else {
-                this.data.autoSetPoint[type] = Number(value)
+        const mode = this.data.mode()
+        switch(mode) {
+            case 'off':
+                debug(`Recevied set auto range ${type} temperature but current thermostat mode is off`)
+                break;
+            case 'auto':
+                this.debug(`Received set auto range ${type} temperature to ${value}`)
+                // Home Assistant always sends both low/high temps even when only one had changed.
+                // This lock prevents concurrent updates overwriting each other and instead
+                // waits 50ms to give time for the second value to be updated
+                if (isNaN(value)) {
+                    this.debug(`New auto range ${type} temperature received but is not a number!`)
+                } else if (!(value >= 10 && value <= 37.22223)) {
+                    this.debug(`New auto range ${type} temperature received but is out of range (10-37.22223°C)!`)
+                } else if (this.data.setPointInProgress) {
+                    this.data.autoSetPoint[type] = Number(value)
+                } else {
+                    this.data.setPointInProgress = true
+                    if (isNaN(value)) {
+                        this.debug(`New auto range ${type} temperature received but is not a number!`)
+                    } else if (!(value >= 10 && value <= 37.22223)) {
+                        this.debug(`New auto range ${type} temperature received but is out of range (10-37.22223°C)!`)
+                    } else {
+                        this.data.autoSetPoint[type] = Number(value)
 
-                // Home Assistant always sends both low/high values when changing temp so wait
-                // a few milliseconds for the other temperature value to be updated
-                await utils.msleep(100)
+                        // Home Assistant always sends both low/high values when changing temp so wait
+                        // a few milliseconds for the other temperature value to be updated
+                        await utils.msleep(100)
 
-                const setPoint = (this.data.autoSetPoint.low+this.data.autoSetPoint.high)/2
-                let deadBand = this.data.autoSetPoint.high-setPoint
+                        const setPoint = (this.data.autoSetPoint.low+this.data.autoSetPoint.high)/2
+                        let deadBand = this.data.autoSetPoint.high-setPoint
 
-                if (deadBand < this.data.deadBandMin) {
-                    this.debug(`New temperature set points would be below the allowed deadBand range ${this.data.deadBandMin}`)
-                    deadBand = this.data.deadBandMin
-                    this.data.autoSetPoint.low = setPoint-deadBand
-                    this.data.autoSetPoint.high = setPoint+deadBand
-                    this.debug(`Setting low temperature to ${this.data.autoSetPoint.low} and high temperature to ${this.data.autoSetPoint.high}`)
+                        if (deadBand < this.data.deadBandMin) {
+                            deadBand = this.data.deadBandMin
+                            this.data.autoSetPoint.low = setPoint-deadBand
+                            this.data.autoSetPoint.high = setPoint+deadBand
+                            this.debug(`New auto range temerature would be below the minimum allowed deadBand range of ${this.data.deadBandMin}`)
+                            this.debug(`Setting auto range low temperature to ${this.data.autoSetPoint.low} and high temperature to ${this.data.autoSetPoint.high}`)
+                        }
+
+                        this.device.setInfo({ device: { v1: { setPoint, deadBand } } })
+                        this.publishMqtt(this.entity.thermostat.temperature_low_state_topic, this.data.autoSetPoint.low)
+                        this.publishMqtt(this.entity.thermostat.temperature_high_state_topic, this.data.autoSetPoint.high)
+                    }
+                    this.data.setPointInProgress = false
                 }
-
-                this.device.setInfo({ device: { v1: { setPoint, deadBand } } })
-                this.publishMqtt(this.entity.thermostat.temperature_low_state_topic, this.data.autoSetPoint.low)
-                this.publishMqtt(this.entity.thermostat.temperature_high_state_topic, this.data.autoSetPoint.high)
-            }
-            this.data.setPointInProgress = false
-        } else {
-            if (isNaN(value)) {
-                this.debug(`New ${type} temperature set point received but is not a number!`)
-            } else if (!(value >= 10 && value <= 37.22223)) {
-                this.debug(`New ${type} temperature set point received but is out of range (10-37.22223°C)!`)
-            } else {
-                this.data.autoSetPoint[type] = Number(value)
-            }
+                break;
+            default:
+                debug(`Received set ${type} temperature but thermostat is in single setpoint (cool/heat) mode`)
         }
     }
 
