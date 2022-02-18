@@ -69,16 +69,15 @@ class Thermostat extends RingSocketDevice {
     async publishData(data) {
         const isPublish = data === undefined ? true : false
 
-        console.log(this.device.data)
         // If auto mode is every used, then always publish multiple setPoints
         const mode = this.data.mode()
         if (mode !== this.data.priorMode) {
             if (mode === 'auto' || this.data.priorMode === 'auto') {
-                const supportedModes = this.entity.thermostat.modes
-                this.entity.thermostat.modes = ["off", "cool", "heat"]
+                // const supportedModes = this.entity.thermostat.modes
+                // this.entity.thermostat.modes = ["off", "cool", "heat"]
                 await this.publishDiscovery()
-                this.entity.thermostat.modes = supportedModes
-                await this.publishDiscovery()
+                // this.entity.thermostat.modes = supportedModes
+                // await this.publishDiscovery()
             }
             this.data.priorMode = mode
         }

@@ -27,6 +27,8 @@ class RingPolledDevice extends RingDevice {
     // Publish device discovery, set online, and send all state data
     async publish() {
         await this.publishDiscovery()
+        // Sleep for a few seconds to give HA time to process discovery message
+        await utils.sleep(2)
         await this.online()
         this.publishData()
     }

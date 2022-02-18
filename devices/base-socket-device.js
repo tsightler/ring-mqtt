@@ -24,6 +24,8 @@ class RingSocketDevice extends RingDevice {
     async publish(locationConnected) {
         if (locationConnected) {
             await this.publishDiscovery()
+            // Sleep for a few seconds to give HA time to process discovery message
+            await utils.sleep(2)
             await this.online()
             this.publishData()
         }

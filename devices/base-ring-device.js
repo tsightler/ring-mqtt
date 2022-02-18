@@ -164,8 +164,6 @@ class RingDevice {
                 })
             }
         })
-        // Sleep for a few seconds to give HA time to process discovery message
-        await utils.sleep(2)
     }
 
     // Refresh device info attributes on a sechedule
