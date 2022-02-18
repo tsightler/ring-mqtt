@@ -185,7 +185,8 @@ class Thermostat extends RingSocketDevice {
                 await utils.msleep(50)
                 const targetSetpoint = (this.data.targetHighSetpoint+this.data.targetLowSetpoint)/2
                 const targetDeadBand = this.data.targetHighSetpoint-targetSetpoint
-                this.debug(this.device.data.modeSetpoints.auto)
+                this.debug(targetDeadBand)
+                this.debug(this.device.data.modeSetpoints.auto.deadBandMin)
 
                 if (targetDeadBand >= this.device.data.modeSetpoints.auto.deadBandMin) {
                     this.device.setInfo({ device: { v1: { setPoint: Number(targetSetpoint), deadBand: Number(targetDeadBand) } } })
