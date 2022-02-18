@@ -24,6 +24,7 @@ class Thermostat extends RingSocketDevice {
 
         this.data = {
             mode: (() => { return this.device.data.mode === 'aux' ? 'heat' : this.device.data.mode }),
+            priorMode: this.device.data.mode === 'aux' ? 'heat' : this.device.data.mode,
             fanMode: (() => { return this.device.data.fanMode.replace(/^./, str => str.toUpperCase()) }),
             auxMode: (() => { return this.device.data.mode === 'aux' ? 'ON' : 'OFF' }),
             setPoint: (() => {
@@ -70,8 +71,15 @@ class Thermostat extends RingSocketDevice {
 
         // If auto mode is every used, then always publish multiple setPoints
         const mode = this.data.mode()
-
+        if (mode !== this.data.priorMode) {
+            if (mode === 'auto' || this.data.priorMode === 'auto') {
+                this.offline()
+                this.online()
+            }
+            this.data.priorMode === mode
+        }
         this.publishMqtt(this.entity.thermostat.mode_state_topic, mode)
+
         this.publishSetpoints(mode)
         this.publishMqtt(this.entity.thermostat.fan_mode_state_topic, this.data.fanMode())
         this.publishMqtt(this.entity.thermostat.aux_state_topic, this.data.auxMode())
@@ -82,24 +90,15 @@ class Thermostat extends RingSocketDevice {
     }
 
     publishSetpoints(mode) {
-        // Always publish primary setpoint
-        const setPoint = this.data.setPoint()
-        if (false) {
-            // Thermostats with auto mode have dual setpoints
-            if (mode === 'auto') {
-                // When in auto mode publish separate low/high set point values
-                const deadBand = this.device.data.modeSetpoints.auto.deadBand ? this.device.data.modeSetpoints.auto.deadBand : 1.5
-                this.data.autoLowSetpoint = this.device.data.modeSetpoints.auto.setPoint-deadBand
-                this.data.autoHighSetpoint = this.device.data.modeSetpoints.auto.setPoint+deadBand
-                this.publishMqtt(this.entity.thermostat.temperature_low_state_topic, this.data.autoLowSetpoint)
-                this.publishMqtt(this.entity.thermostat.temperature_high_state_topic, this.data.autoHighSetpoint)
-            } else {
-                // In other modes publish same setpoint for both
-                this.publishMqtt(this.entity.thermostat.temperature_low_state_topic, setPoint)
-                this.publishMqtt(this.entity.thermostat.temperature_high_state_topic, setPoint)
-            }
+        if (mode === 'auto') {
+            // When in auto mode publish separate low/high set point values
+            const deadBand = this.device.data.modeSetpoints.auto.deadBand ? this.device.data.modeSetpoints.auto.deadBand : 1.5
+            this.data.autoLowSetpoint = this.device.data.modeSetpoints.auto.setPoint-deadBand
+            this.data.autoHighSetpoint = this.device.data.modeSetpoints.auto.setPoint+deadBand
+            this.publishMqtt(this.entity.thermostat.temperature_low_state_topic, this.data.autoLowSetpoint)
+            this.publishMqtt(this.entity.thermostat.temperature_high_state_topic, this.data.autoHighSetpoint)
         } else {
-            this.publishMqtt(this.entity.thermostat.temperature_state_topic, setPoint)
+            this.publishMqtt(this.entity.thermostat.temperature_state_topic, this.data.setPoint())
         }
     }
 
