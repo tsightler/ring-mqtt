@@ -214,17 +214,19 @@ class Thermostat extends RingSocketDevice {
                 } else {
                     this.debug(`Received set auto range ${type} temperature to ${value}`)
                     this.data.autoSetPoint[type] = Number(value)
+                    // Home Assistant always sends both low/high values when changing range on dual-setpoint mode
+                    // so this function will be called twice for every change.  The code below locks for 100 milliseconds
+                    // to allow time for the second value to be updated before proceeding to call the set function once.  
                     if (!this.data.setPointInProgress) {
                         this.data.setPointInProgress = true
-
-                        // Home Assistant always sends both low/high values when changing temp so wait
-                        // a few milliseconds for the other temperature value to be updated
                         await utils.msleep(100)
 
                         const setPoint = (this.data.autoSetPoint.low+this.data.autoSetPoint.high)/2
                         let deadBand = this.data.autoSetPoint.high-setPoint
 
                         if (deadBand < this.data.deadBandMin) {
+                            // If the difference between the two temps is less than the allowed deadband take the
+                            // setPoint average and add the minimum deadband to the low and high values
                             deadBand = this.data.deadBandMin
                             this.data.autoSetPoint.low = setPoint-deadBand
                             this.data.autoSetPoint.high = setPoint+deadBand

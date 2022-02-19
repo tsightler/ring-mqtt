@@ -12,7 +12,7 @@
 - For Standard install users, the config file no longer contains the refresh token and is no longer updated with new tokens.  After upgrade a new ring-state.json file will be created in the ring-mqtt directory to store state (same method as Docker installs).  The token from the config file will be used for this initial startup, the new token saved in the ring-state.json file and the remaining token removed from the config file permanently. Note that Standard installs are considered self-supported and I highly recommend the Docker/Addon install options for the vast majority of users.
 
 **Other Changes**
-- Standardized discovery logic for parent/child devices.  The child discovery logic is now contained completely in device level code.  Previously this logic was implemented as hard coded exceptions in the common discovery loop which was pretty ugly and risked breaking other devices.  Now such devices can be added with no significant changes to the common code although further improvements are still needed here.
+- Standardized discovery logic for multi-component devices.  The child discovery logic is now contained completely within the device level code.  Previously this logic was implemented as hard coded exceptions in the common discovery loop which was pretty ugly and risked breaking other devices any time a new device was added.  Now multi-component devices can be added with no significant changes to the common code although further improvements are still needed here.
 
 ## v4.9.1
 **New Features**
