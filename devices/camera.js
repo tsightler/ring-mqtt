@@ -1,7 +1,7 @@
 const utils = require( '../lib/utils' )
 const colors = require('colors/safe')
 const RingPolledDevice = require('./base-polled-device')
-const { clientApi } = require('../node_modules/ring-client-api/lib/api/rest-client')
+const { clientApi } = require('../node_modules/@tsightler/ring-client-api/lib/api/rest-client')
 const P2J = require('pipe2jpeg')
 const net = require('net');
 const getPort = require('get-port')

@@ -3,7 +3,7 @@
 // Defines
 const config = require('./lib/config')
 const state = require('./lib/state')
-const { RingApi, RingDeviceType, RingCamera, RingChime } = require('ring-client-api')
+const { RingApi, RingDeviceType, RingCamera, RingChime } = require('@tsightler/ring-client-api')
 const mqttApi = require('mqtt')
 const isOnline = require('is-online')
 const debug = require('debug')('ring-mqtt')
