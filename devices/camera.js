@@ -527,14 +527,14 @@ class Camera extends RingPolledDevice {
         }
 
         let newSnapshot
-            if (type === 'motion') { 
-                this.debug('Motion event detected for line powered camera, forcing a non-cached snapshot update')                
+            if (type === 'motion') {
+                this.debug('Motion event detected for line powered camera, forcing a non-cached snapshot update')
             }
-            this.debug('Requesting updated snapshot')
             try {
-                newSnapshot = await this.device.getNextSnapshot({
-                    force: true
-                })
+                this.debug('Requesting updated snapshot')
+                newSnapshot = (type === 'motion') 
+                    ? await this.device.getNextSnapshot({ force: true })
+                    : await this.device.getSnapshot()
             } catch (error) {
                 this.debug(error) 
                 this.debug('Failed to retrieve updated snapshot')
