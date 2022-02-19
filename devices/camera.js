@@ -533,8 +533,6 @@ class Camera extends RingPolledDevice {
             this.debug('Requesting updated snapshot')
             try {
                 newSnapshot = await this.device.getNextSnapshot({
-                    afterMs: Date.now(),
-                    maxWaitMs: 5000,
                     force: true
                 })
             } catch (error) {
