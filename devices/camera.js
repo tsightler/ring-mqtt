@@ -531,20 +531,15 @@ class Camera extends RingPolledDevice {
                 this.debug('Motion event detected for line powered camera, forcing a non-cached snapshot update')                
             }
             this.debug('Requesting updated snapshot')
-            await this.device.requestSnapshotUpdate()
-
-            let retries = 6
-            while (retries-- > 0 && !newSnapshot) {
-                await utils.sleep(1) // Give time for the snapshot to actually update
-                try {
-                    newSnapshot = await this.device.restClient.request({
-                        url: clientApi(`snapshots/image/${this.device.id}`),
-                        responseType: 'buffer'
-                    })
-                } catch (error) {
-                    this.debug(error) 
-                    this.debug('Failed to retrieve updated snapshot, retrying in 1 second...')
-                }
+            try {
+                newSnapshot = await this.device.getNextSnapshot({
+                    afterMs: Date.now(),
+                    maxWaitMs: 5000,
+                    force: true
+                })
+            } catch (error) {
+                this.debug(error) 
+                this.debug('Failed to retrieve updated snapshot')
             }
 
         if (newSnapshot) {
@@ -552,8 +547,6 @@ class Camera extends RingPolledDevice {
             this.data.snapshot.currentImage = newSnapshot
             this.data.snapshot.timestamp = Math.round(Date.now()/1000)
             this.publishSnapshot()
-        } else {
-            this.debug('Failed to retrieve updated snapshot after all retries')
         }
     }
 
