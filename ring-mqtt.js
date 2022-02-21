@@ -416,7 +416,6 @@ function startMqtt(mqttClient, ringClient) {
 
 // Main code loop
 const main = async(generatedToken) => {
-    let ringAuth = new Object()
     let ringClient
     let mqttClient
     if (!state.valid) { 
@@ -437,16 +436,14 @@ const main = async(generatedToken) => {
     }
     
     // If no refresh tokens were found, either exit or start Web UI for token generator
-    if (!config.data.ring_token && !state.data.ring_token) {
+    if (!state.data.ring_token) {
         if (config.runMode === 'docker') {
-            debug(colors.brightRed('No refresh token was found in state file and RINGTOKEN is not configured.'))
+            debug(colors.brightRed('No refresh token was found in state file, please generate a token with ring-auth-cli.js.'))
             process.exit(2)
         } else {
-            if (config.runMode === 'addon') {
-                debug(colors.brightRed('No refresh token was found in saved state file or config file.'))
-                debug(colors.brightRed('Use the web interface to generate a new token.'))
-            } else {
-                debug(colors.brightRed('Use the web interface to generate a new token.'))
+            debug(colors.brightRed('No refresh token was found in saved state file.'))
+            debug(colors.brightRed('Use the web interface to generate a new token.'))
+            if (config.runMode === 'standard') {
                 tokenApp.start()
             }
         }
@@ -458,26 +455,27 @@ const main = async(generatedToken) => {
             await utils.sleep(10)
         }
 
-        // Define some basic parameters for connection to Ring API
-        if (config.data.enable_cameras) {
-            ringAuth = { 
-                cameraStatusPollingSeconds: 20,
-                cameraDingsPollingSeconds: 2
-            }
-        }
-
-        if (config.data.enable_modes) { ringAuth.locationModePollingSeconds = 20 }
-        if (!(config.data.location_ids === undefined || config.data.location_ids == 0)) {
-            ringAuth.locationIds = config.data.location_ids
-        }
-        ringAuth.controlCenterDisplayName = (config.runMode === 'addon') ? 'ring-mqtt-addon' : 'ring-mqtt'
-
         // If there is a saved or generated refresh token, try to connect using it first
         if (state.data.ring_token) {
+            const ringAuth = {
+                refreshToken: state.data.ring_token,
+                systemId: state.data.systemId,
+                controlCenterDisplayName: (config.runMode === 'addon') ? 'ring-mqtt-addon' : 'ring-mqtt',
+                ...config.data.enable_cameras ? {
+                    cameraStatusPollingSeconds: 20,
+                    cameraDingsPollingSeconds: 2
+                } : {},
+                ...config.data.enable_modes ? {
+                    locationModePollingSeconds: 20
+                } : {},
+                ...(!(config.data.location_ids === undefined || config.data.location_ids == 0)) ? {
+                    locationIds: config.data.location_ids
+                } : {},
+            }
+    
             const tokenSource = generatedToken ? "generated" : "saved"
-            debug('Attempting connection to Ring API using '+tokenSource+' refresh token.')
-            ringAuth.refreshToken = state.data.ring_token
-            ringAuth.systemId = state.data.systemId
+            debug(`Attempting connection to Ring API using ${generatedToken ? "generated" : "saved"} refresh token.`)
+
             try {
                 ringClient = new RingApi(ringAuth)
                 await ringClient.getProfile()
@@ -485,37 +483,6 @@ const main = async(generatedToken) => {
                 ringClient = null
                 debug(colors.brightYellow(error.message))
                 debug(colors.brightYellow('Unable to connect to Ring API using '+tokenSource+' refresh token.'))
-            }
-        }
-
-        // If Ring API is not already connected, try using refresh token from config file or RINGTOKEN variable
-        if (!ringClient && config.data.ring_token) {
-            const debugMsg = config.runMode === 'docker' ? 'RINGTOKEN environment variable.' : 'refresh token from file: '+config.file
-            debug('Attempting connection to Ring API using '+debugMsg)
-            ringAuth.refreshToken = config.data.ring_token
-            try {
-                ringClient = new RingApi(ringAuth)
-                await ringClient.getProfile()
-            } catch(error) {
-                ringClient = null
-                debug(colors.brightRed(error.message))
-                debug(colors.brightRed('Could not create the API instance. This could be because the Ring servers are down/unreachable'))
-                debug(colors.brightRed('or maybe all available refresh tokens are invalid.'))
-                if (config.runMode === 'addon') {
-                    debug('Restart the addon to try again or use the web interface to generate a new token.')
-                } else {
-                    debug('Please check the configuration and network settings, or generate a new refresh token, and try again.')
-                    process.exit(2)
-                }
-            }
-        } else if (!ringClient && !config.data.ring_token) {
-            // No connection with Ring API using saved token and no configured token to try
-            if (config.runMode === 'docker') {
-                debug(colors.brightRed('Could not connect with saved refresh token and RINGTOKEN is not configured.'))
-                process.exit(2)
-            } else if (config.runMode === 'addon') {
-                debug(colors.brightRed('Could not connect with saved refresh token and no refresh token exist in config file.'))
-                debug(colors.brightRed('Please use the web interface to generate a new token or restart the addon to try the existing token again.'))
             }
         }
     }
@@ -550,6 +517,14 @@ const main = async(generatedToken) => {
             debug(error)
             debug( colors.red('Couldn\'t authenticate to MQTT broker. Please check the broker and configuration settings.'))
             process.exit(1)
+        }
+    } else {
+        debug(colors.brightRed('Failed to connect to Ring API using the refresh token in the saved state file.'))
+        if (config.runMode === 'docker') {
+            debug(colors.brightRed('Restart the container to try again or generate a new token with ring-auth-cli.js.'))
+            process.exit(2)
+        } else {
+            debug(colors.brightRed(`Use the web UI to generate a new token or restart the ${this.runMode === 'addon' ? 'addon' : 'script'} to try again with the existing token.`))
         }
     }
 }
