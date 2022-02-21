@@ -72,8 +72,8 @@ No variable is absolutely required, but, in practice, at least **MQTTHOST** will
 ### Authentication
 Ring has made two factor authentication (2FA) mandatory thus the script now only supports this authentication method.  Using 2FA requires acquiring a refresh token for your Ring account which can be done by running the included get-ring-token.js CLI tool which will prompt for the required account information and 2FA code, and then acquire the token and save it to the ring-state.json file where it will be updated automatically going forward.  Below is an example of running this command, note that you must map the same persistent volume used for running the primary container image as well:
 
-#### Primary Method
-Run the bundled ring-auth-cli utility directly via the Docker command line to acquire the token:
+#### Acquire a token for the Docker image
+Run the bundled get-ring-token.js utility directly via the Docker command line to acquire the token:
 ```
 docker run -it --rm --mount type=bind,source=/etc/ring-mqtt,target=/data --entrypoint /app/ring-mqtt/get-ring-token.js tsightler/ring-mqtt
 ```

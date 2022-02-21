@@ -1,5 +1,5 @@
 ## Standard Install 
-Stanard installation is possible, however, this method is not regularly tested and this you will mostly on your own to solve any installation problems if you choose to use this method.
+Standard installation is possible, however, this method is not regularly tested and you will mostly on your own to solve any installation problems if you choose to use this method.  Installing using this method is not complex, but it assumes you have basic Linux admin knowledge such as working with unit files, manually installing binary files and a basic understanding of permissions, etc.  If you do not have this knowledge then I highly recommend using the Docker install method instead.
 
 ### Installation
 #### Pre-requisites
@@ -19,7 +19,7 @@ chmod +x ring-mqtt.js
 npm install
 ```
 
-This will install all of the required node dependencies.  Now edit the config.js file to configure your Ring refresh token and MQTT broker connection information and any other settings (see [Configuration Options](#configuration-options) below).  Note that the user the script runs as will need permission to write the config.json file as updated refresh tokens are written back directly to this file when running via standard install.
+This will install all of the required node dependencies.  Now edit the config.js file to configure your Ring refresh token and MQTT broker connection information and any other settings (see [Configuration Options](#configuration-options) below).  Note that the user the script runs as will need permissions to write to the directory where ring-mqtt is installed as updated refresh tokens are written into a saved state file (ring-state.json) in this directory.
 
 #### Configuration Options
 | Config Option | Description | Default |
