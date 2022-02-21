@@ -38,7 +38,7 @@ RUN apk add --no-cache tar git libcrypto1.1 libssl1.1 musl-utils musl bash curl 
             echo >&2 "ERROR: Unsupported architecture '$APKARCH'" \
             exit 1;; \
     esac && \
-    curl -L -s "https://github.com/aler9/rtsp-simple-server/releases/download/v0.17.13/rtsp-simple-server_v0.17.13_linux_${RSSARCH}.tar.gz" | tar zxf - -C /usr/local/bin rtsp-simple-server && \
+    curl -L -s "https://github.com/aler9/rtsp-simple-server/releases/download/v0.17.17/rtsp-simple-server_v0.17.17_linux_${RSSARCH}.tar.gz" | tar zxf - -C /usr/local/bin rtsp-simple-server && \
     curl -J -L -o /tmp/bashio.tar.gz "https://github.com/hassio-addons/bashio/archive/v0.14.3.tar.gz" && \
     mkdir /tmp/bashio && \
     tar zxvf /tmp/bashio.tar.gz --strip 1 -C /tmp/bashio && \

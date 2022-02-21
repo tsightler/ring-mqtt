@@ -24,7 +24,6 @@ This will install all of the required node dependencies.  Now edit the config.js
 #### Configuration Options
 | Config Option | Description | Default |
 | --- | --- | --- |
-| ring_token | The refresh token received after authenticating with 2FA, see [Authentication](#authentication) section for details | blank
 | host | Hostname for MQTT broker | localhost |
 | port | Port number for MQTT broker | 1883 |
 | mqtt_user | Username for MQTT broker | blank |
@@ -49,17 +48,17 @@ systemctl start ring-mqtt
 ```
 
 ### Authentication
-Ring has made two factor authentication (2FA) mandatory thus the script now only supports this authentication method.  Using 2FA requires manually acquiring a refresh token for your Ring account and setting the ring_token parameter in the config file.  From this point new tokens are acquired automatically and updated directly in the config file for use during future startups.  The two following methods are available for acquiring a token:
+Ring has made two factor authentication (2FA) mandatory thus the script now only supports this authentication method.  Using 2FA requires acquiring a refresh token using either the built-in web UI or the provided get-ring-token.js CLI tool.  Either method will prompt for account information and 2FA code, acquire the token and save it to the ring-state.json file.  From this point new tokens are updated automatically in the state file.  The two following methods are available for acquiring a token:
 
 There are two primary ways to acquire this token:
 
 #### Primary Method  
-If the script is started and the ring_token config parameter is empty, it will start a small web service at http://<ip_of_server>:55123.  Simply navigate to this URL with your browser, enter your Ring account username/password and then 2FA code, and the web browser will display the Ring refresh token that you can just copy/paste into the config file.  After copy/paste simply restart ring-mqtt and it should connect.
+If the script is started and the ring_token config parameter is empty, it will start a small web service at http://<ip_of_server>:55123.  Simply navigate to this URL with your browser, enter your Ring account username/password and then 2FA code, and, if authentication is successful, the token will be saved and the script will connect to Ring and continue.
 
 #### Alternative Method
-Use ring-auth-cli from any system with NodeJS and NPM installed via npx, which downloads and runs ring-auth-cli on demand:
+Use the get-ring-token.js CLI utility which will prompt for your account information and 2FA code and the acquire the token and save it to the state file:
 ```
-npx -p ring-client-api ring-auth-cli
+node ./get-ring-token.js
 ```
 
 **!!! Important Note regarding the security of your refresh token !!!**  

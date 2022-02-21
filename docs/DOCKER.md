@@ -7,11 +7,11 @@ docker pull tsightler/ring-mqtt
 ### Docker Run
 You can issue "docker run" and Docker will automatically pull the image, if it doesn't already exist locally, and then run the script.  The command line below is an example, please see the [Environment Variables](#environment-variables) section for all available configuration options:
 ```
-docker run --rm -e "MQTTHOST=host_name" -e "MQTTPORT=host_port"  -e "MQTTUSER=mqtt_user" -e "MQTTPASSWORD=mqtt_pw" -e "RINGTOKEN=ring_refreshToken" -e "ENABLECAMERAS=true-or-false" -e "RINGLOCATIONIDS=comma-separated_location_IDs" tsightler/ring-mqtt
+docker run --rm -e "MQTTHOST=host_name" -e "MQTTPORT=host_port"  -e "MQTTUSER=mqtt_user" -e "MQTTPASSWORD=mqtt_pw" -e "ENABLECAMERAS=true-or-false" -e "RINGLOCATIONIDS=comma-separated_location_IDs" tsightler/ring-mqtt
 ```
 
 #### Storing Updated Refresh Tokens
-The Docker container uses a bind mount to provide persistent storage.  While the Docker container will run without this storage, using the bind mount is highly recommended as, otherwise, it will sometimes be required to generate a new token when the container restarts since tokens eventually expire and there will be no way for an updated token to be stored in a persistent fashion. For more details on acquiring an initial refresh token please see ([Authentication](#authentication)).
+The Docker container requires a bind mount to provide persistent storage for various state information, including refresh tokens as they are updated. For more details on acquiring an initial refresh token please see ([Authentication](#authentication)).
 
 You can use any directory on the host for this persistent store, but it must be mounted to /data in the container.  The following is an example docker run command using a bind mount to mount the host directory /etc/ring-mqtt to the container path /data:
 ```
@@ -35,7 +35,6 @@ services:
     volumes:
       - /etc/ring-mqtt:/data           # Mapping of local folder to provide persistant storage
     environment:                       
-      - RINGTOKEN=                     # Required for initial startup, see: https://github.com/tsightler/ring-mqtt/blob/main/docs/DOCKER.md#authentication
       - MQTTHOST=localhost             # Hostname or IP of MQTT Broker
       - MQTTPORT=1883                  # TCP port for MQTT Broker
       - MQTTUSER=mqtt_user             # CHANGE ME -- Username for MQTT Broker (remove for anonymous)
@@ -51,11 +50,10 @@ services:
  ```
 
 ### Environment Variables
-The only absolutely required parameter for initial startup is **RINGTOKEN** but, in practice, at least **MQTTHOST** will likely be required as well, and **MQTTUSER/MQTTPASSWORD** will be required if the MQTT broker does not accept anonymous connections.  Default values for the environment values if they are not defined are as follows:
+No variable is absolutely required, but, in practice, at least **MQTTHOST** will likely be required and **MQTTUSER/MQTTPASSWORD** will be required if the MQTT broker does not accept anonymous connections.  Default values for the environment values if they are not defined are as follows:
 
 | Environment Variable Name | Description | Default |
 | --- | --- | --- |
-| RINGTOKEN | The refresh token received after authenticating with 2FA, see [Authentication](#authentication) section for details | blank - must be set for first run |
 | MQTTHOST | Hostname for MQTT broker | localhost |
 | MQTTPORT | Port number for MQTT broker | 1883 |
 | MQTTUSER | Username for MQTT broker | blank - Use anonymous connection |
@@ -72,18 +70,12 @@ The only absolutely required parameter for initial startup is **RINGTOKEN** but,
 | BRANCH | During startup pull latest master/dev branch from Github instead of running local copy, see [Branch Feature](#branch-feature) for details. | blank |
 
 ### Authentication
-Ring has made two factor authentication (2FA) mandatory thus the script now only supports this authentication method.  Using 2FA requires acquiring a refresh token for your Ring account and passing the token with the RINGTOKEN environment variable on initial startup.  From this point new tokens are acquired automatically and stored in the ring-state file for use during future startups.  The two following methods are available for acquiring a token:
+Ring has made two factor authentication (2FA) mandatory thus the script now only supports this authentication method.  Using 2FA requires acquiring a refresh token for your Ring account which can be done by running the included get-ring-token.js CLI tool which will prompt for the required account information and 2FA code, and then acquire the token and save it to the ring-state.json file where it will be updated automatically going forward.  Below is an example of running this command, note that you must map the same persistent volume used for running the primary container image as well:
 
 #### Primary Method
 Run the bundled ring-auth-cli utility directly via the Docker command line to acquire the token:
 ```
-docker run -it --rm --entrypoint /app/ring-mqtt/node_modules/ring-client-api/ring-auth-cli.js tsightler/ring-mqtt
-```
-
-#### Alternative Method
-Use ring-auth-cli from any system with NodeJS and NPM installed via npx, which downloads and runs ring-auth-cli on demand:
-```
-npx -p ring-client-api ring-auth-cli
+docker run -it --rm --mount type=bind,source=/etc/ring-mqtt,target=/data --entrypoint /app/ring-mqtt/get-ring-token.js tsightler/ring-mqtt
 ```
 
 **!!! Important Note regarding the security of your refresh token !!!**  

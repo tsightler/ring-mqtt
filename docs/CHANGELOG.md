@@ -1,18 +1,25 @@
 ## v5.0.0
 **New Features**
-- Add support for thermostats with "auto" operating mode with low/high temperature range setting
 - Add support for Ring glassbreak sensors
+- Add support for Ring Floodlight Pro security cameras
+- Add support for thermostat "auto" operating mode with low/high (dual setpoint) temperature range settings
 
 **Fixed Bugs**
 - Use atomic writes for updating state/config file.  Hopefully this will fix the occassional report of corrupted state file
 
 **Breaking Changes**
-- Docker users are now *REQUIRED* to map a persistent volume for storing state.  This was always highly recommended, and I'm guessing most users already configured one so it probably won't break in many cases, but theoretically it was possible to run without it.
-- For Docker users, the initial refresh token can no longer be set via the RINGTOKEN environment variable.  To supply a new token users must use ring-auth-cli.js to generate a refresh token a new state file.
-- For Standard install users, the config file no longer contains the refresh token and is no longer updated with new tokens.  After upgrade a new ring-state.json file will be created in the ring-mqtt directory to store state (same method as Docker installs).  The token from the config file will be used for this initial startup, the new token saved in the ring-state.json file and the remaining token removed from the config file permanently. Note that Standard installs are considered self-supported and I highly recommend the Docker/Addon install options for the vast majority of users.
+The primary goal of the 5.x versions is to standardize operations across the 3 different install methods (Addon, Docker, and Standard), which significantly simplifies the initialization code allowing for easier maintenance going forward.  A second goal was to provide a framework for device state management which will allow for implementation of device-level settings in future 5.x releases.  Efforts were made to keep these changes from breaking existing setups, but there are a few places where this might not be possible as noted below:
+
+- Docker installs now *REQUIRE* a mapped persistent volume for storing the state file.  This was practically required anyway because of refresh token expiration, so I'm guessing most users already used a persistent volume, but, at least theoretically, it was previously possible to run without this, so if you didn't have a persistent volume previously, you'll need to modify your Docker setup to provide one.
+- Also for Docker installs, the initial refresh token can no longer be set via the RINGTOKEN environment variable, nor is it used as a fallback, only the token in the state file is considered valid.  Creating an initial or updated refresh token requires running the new ring-auth-cli.js command which will prompt for authentication information and automatically save the generated token to the state file on the persistent volume.
+- For standard, non-Docker installs, these will now also use a ring-state.json file while previously the refresh token was stored and updated directly in the config file.  On the first run of v5.0.0, the previous token will be read from the config file and saved into a new ring-state.json file while the config file will be updated to remove the token.  Please note that I provide limited support for standard installs and highly recommend the Docker/Addon install methods for the vast majority of users, but, if you are comfortable with installing software by hand then I'll continue to provide the steps for doing so.
 
 **Other Changes**
-- Standardized discovery logic for multi-component devices.  The child discovery logic is now contained completely within the device level code.  Previously this logic was implemented as hard coded exceptions in the common discovery loop which was pretty ugly and risked breaking other devices any time a new device was added.  Now multi-component devices can be added with no significant changes to the common code although further improvements are still needed here.
+- Standardized discovery logic for multi-component devices.  The child component discovery logic is now contained completely within the device level code.  Previously this logic was implemented as hard coded exceptions in the common discovery loop which was pretty ugly and exposed risk of breaking other devices any time a new multi-component device was added.
+
+**Dependency Updates**
+- Bump ring-client-api to 10.0.0 which adds support for new devices and uses updated APIs for snapshots and video streaming.
+- Update rtsp-simple-server to 0.17.17
 
 ## v4.9.1
 **New Features**
