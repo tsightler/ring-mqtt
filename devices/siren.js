@@ -6,6 +6,12 @@ class Siren extends RingSocketDevice {
 
         if (this.device.data.deviceType === 'siren.outdoor-strobe') {
             this.deviceData.mdl = 'Outdoor Siren'
+            this.entity.volume = {
+                component: 'number',
+                min: 0,
+                max: 4,
+                icon: 'hass:volume-high'
+            }
         } else {
             this.deviceData.mdl = 'Siren'
         }
@@ -24,6 +30,12 @@ class Siren extends RingSocketDevice {
             this.publishMqtt('homeassistant/binary_sensor/'+this.locationId+'/'+this.deviceId+'_siren/config', '', false)
         }
 
+        if (this.device.data.deviceType === 'siren.outdoor-strobe') {
+            const currentVolume = (this.device.data.volume && !isNaN(this.device.data.volume) ? Math.round(1 * this.device.data.volume) : 0)
+            this.publishMqtt(this.entity.volume.state_topic, currentVolume.toString())
+            this.publishAttributes()
+        }
+
         const sirenState = this.device.data.sirenStatus === 'active' ? 'ON' : 'OFF'
         this.publishMqtt(this.entity.siren.state_topic, sirenState)
         this.publishAttributes()
@@ -34,6 +46,9 @@ class Siren extends RingSocketDevice {
         switch (componentCommand) {
             case 'siren/command':
                 this.setSirenState(message)
+                break;
+            case 'volume/command':
+                this.setVolumeLevel(message)
                 break;
             default:
                 this.debug(`Received message to unknown command topic: ${componentCommand}`)
@@ -54,6 +69,19 @@ class Siren extends RingSocketDevice {
                 break;
             default:
                 this.debug('Received invalid siren state command')
+        }
+    }
+
+    // Set volume level on received MQTT command message
+    setVolumeLevel(message) {
+        const volume = message / 1
+        this.debug(`Received set volume level to ${volume}`)
+        if (isNaN(message)) {
+            this.debug('Volume command received but value is not a number')
+        } else if (!(message >= 0 && message <= 4)) {
+            this.debug('Volume command received but out of range (0-4)')
+        } else {
+            this.device.setInfo({ device: { v1: { volume } } })
         }
     }
 }
