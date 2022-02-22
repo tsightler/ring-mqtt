@@ -6,6 +6,7 @@ class Siren extends RingSocketDevice {
 
         this.deviceData.mdl = (this.device.data.deviceType === 'siren.outdoor-strobe') ? 'Outdoor Siren' : 'Siren'        
         this.entity = {
+            ...this.entity,
             siren: {
                 component: 'switch',
                 icon: 'mdi:alarm-light',
