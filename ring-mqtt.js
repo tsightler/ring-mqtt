@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-// Defines
 const config = require('./lib/config')
 const state = require('./lib/state')
 const ring = require('./lib/ring')
@@ -129,6 +128,7 @@ const main = async(generatedToken) => {
     }
 }
 
+// Subscribe to token updates from token Web UI
 tokenApp.token.registerListener(function(generatedToken) {
     main(generatedToken)
 })
