@@ -4,22 +4,21 @@ class Siren extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'alarm')
 
-        if (this.device.data.deviceType === 'siren.outdoor-strobe') {
-            this.deviceData.mdl = 'Outdoor Siren'
-            this.entity.volume = {
-                component: 'number',
-                min: 0,
-                max: 4,
-                icon: 'hass:volume-high'
-            }
-        } else {
-            this.deviceData.mdl = 'Siren'
-        }
-        
-        this.entity.siren = {
-            component: 'switch',
-            icon: 'mdi:alarm-light',
-            isLegacyEntity: true  // Legacy compatibility
+        this.deviceData.mdl = (this.device.data.deviceType === 'siren.outdoor-strobe') ? 'Outdoor Siren' : 'Siren'        
+        this.entity = {
+            siren: {
+                component: 'switch',
+                icon: 'mdi:alarm-light',
+                isLegacyEntity: true  // Legacy compatibility
+            },
+            ...(this.device.data.deviceType === 'siren.outdoor-strobe') ? {
+                volume: {
+                    component: 'number',
+                    min: 0,
+                    max: 4,
+                    icon: 'hass:volume-high'
+                }
+            } : {}
         }
     }
 
@@ -30,14 +29,12 @@ class Siren extends RingSocketDevice {
             this.publishMqtt('homeassistant/binary_sensor/'+this.locationId+'/'+this.deviceId+'_siren/config', '', false)
         }
 
-        if (this.device.data.deviceType === 'siren.outdoor-strobe') {
-            const currentVolume = (this.device.data.volume && !isNaN(this.device.data.volume) ? Math.round(1 * this.device.data.volume) : 0)
-            this.publishMqtt(this.entity.volume.state_topic, currentVolume.toString())
-            this.publishAttributes()
-        }
-
         const sirenState = this.device.data.sirenStatus === 'active' ? 'ON' : 'OFF'
         this.publishMqtt(this.entity.siren.state_topic, sirenState)
+        if (this.entity.hasOwnProperty('volume')) {
+            const currentVolume = (this.device.data.volume && !isNaN(this.device.data.volume) ? Math.round(1 * this.device.data.volume) : 0)
+            this.publishMqtt(this.entity.volume.state_topic, currentVolume)
+        }
         this.publishAttributes()
     }
 
@@ -48,7 +45,9 @@ class Siren extends RingSocketDevice {
                 this.setSirenState(message)
                 break;
             case 'volume/command':
-                this.setVolumeLevel(message)
+                if (this.entity.hasOwnProperty('volume')) {
+                    this.setVolumeLevel(message)
+                }
                 break;
             default:
                 this.debug(`Received message to unknown command topic: ${componentCommand}`)
