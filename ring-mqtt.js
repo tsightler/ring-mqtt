@@ -10,7 +10,6 @@ const debug = require('debug')('ring-mqtt')
 const colors = require('colors/safe')
 const utils = require('./lib/utils.js')
 const tokenApp = require('./lib/tokenapp.js')
-const rss = require('./lib/rtsp-simple-server.js')
 
 // Setup Exit Handlers
 process.on('exit', processExit.bind(null, 0))
@@ -40,7 +39,7 @@ process.on('unhandledRejection', function(err) {
 async function processExit(exitCode) {
     await utils.sleep(1)
     debug('The ring-mqtt process is shutting down...')
-    rss.shutdown()
+    await ring.rssShutdown()
     if (ring.devices.length > 0) {
         debug('Setting all devices offline...')
         await utils.sleep(1)
@@ -111,7 +110,7 @@ const main = async(generatedToken) => {
             ...!(config.data.location_ids === undefined || config.data.location_ids == 0) ? { locationIds: config.data.location_ids } : {}
         }
 
-        if (await ring.init(ringAuth, config.data, rss, generatedToken ? 'generated' : 'saved')) {
+        if (await ring.init(ringAuth, config.data, generatedToken ? 'generated' : 'saved')) {
             debug('Successfully established connection to Ring API')
 
             // Update the web app with current connected refresh token
