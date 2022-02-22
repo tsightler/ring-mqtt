@@ -2,10 +2,10 @@ const RingSocketDevice = require('./base-socket-device')
 const { RingDeviceType } = require('@tsightler/ring-client-api')
 
 class CoAlarm extends RingSocketDevice {
-    constructor(deviceInfo, allDevices) {
+    constructor(deviceInfo) {
         super(deviceInfo, 'alarm')
         this.deviceData.mdl = 'CO Alarm'
-        const parentDevice = allDevices.find(d => d.id === this.device.data.parentZid && d.deviceType === RingDeviceType.SmokeAlarm)
+        const parentDevice = deviceInfo.allDevices.find(d => d.id === this.device.data.parentZid && d.deviceType === RingDeviceType.SmokeAlarm)
         this.deviceData.mf = (parentDevice && parentDevice.data && parentDevice.data.manufacturerName) 
             ? parentDevice.data.manufacturerName 
             : 'Ring'

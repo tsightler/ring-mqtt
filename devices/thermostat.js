@@ -3,13 +3,13 @@ const { RingDeviceType } = require('@tsightler/ring-client-api')
 const utils = require( '../lib/utils' )
 
 class Thermostat extends RingSocketDevice {
-    constructor(deviceInfo, allDevices) {
+    constructor(deviceInfo) {
         super(deviceInfo, 'alarm')
         this.deviceData.mdl = 'Thermostat'
 
         this.childDevices = {
-            operatingStatus: allDevices.find(d => d.data.parentZid === this.device.id && d.deviceType === 'thermostat-operating-status'),
-            temperatureSensor: allDevices.find(d => d.data.parentZid === this.device.id && d.deviceType === RingDeviceType.TemperatureSensor)
+            operatingStatus: deviceInfo.allDevices.find(d => d.data.parentZid === this.device.id && d.deviceType === 'thermostat-operating-status'),
+            temperatureSensor: deviceInfo.allDevices.find(d => d.data.parentZid === this.device.id && d.deviceType === RingDeviceType.TemperatureSensor)
         }
 
         this.entity.thermostat = {

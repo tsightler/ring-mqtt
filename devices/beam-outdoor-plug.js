@@ -2,13 +2,13 @@ const RingSocketDevice = require('./base-socket-device')
 const { RingDeviceType } = require('@tsightler/ring-client-api')
 
 class BeamOutdoorPlug extends RingSocketDevice {
-    constructor(deviceInfo, allDevices) {
+    constructor(deviceInfo) {
         super(deviceInfo, 'lighting')
         this.deviceData.mdl = 'Outdoor Smart Plug'
 
         this.childDevices = {
-            outlet1: allDevices.find(d => d.data.parentZid === this.device.id && d.deviceType === RingDeviceType.BeamsSwitch && d.data.relToParentZid === "1"),
-            outlet2: allDevices.find(d => d.data.parentZid === this.device.id && d.deviceType === RingDeviceType.BeamsSwitch && d.data.relToParentZid === "2")
+            outlet1: deviceInfo.allDevices.find(d => d.data.parentZid === this.device.id && d.deviceType === RingDeviceType.BeamsSwitch && d.data.relToParentZid === "1"),
+            outlet2: deviceInfo.allDevices.find(d => d.data.parentZid === this.device.id && d.deviceType === RingDeviceType.BeamsSwitch && d.data.relToParentZid === "2")
         }
         
         this.entity.outlet1 = {
