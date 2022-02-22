@@ -54,15 +54,6 @@ async function processExit(exitCode) {
     if (exitCode || exitCode === 0) debug(`Exit code: ${exitCode}`);
     process.exit()
 }
-
-async function startTokenApp(runMode) {
-    if (!tokenApp.listener) {
-        tokenApp.start(runMode)
-        tokenApp.token.registerListener(function(generatedToken) {
-            main(generatedToken)
-        })
-    }
-}
  
 /* End Functions */
 
@@ -73,7 +64,7 @@ const main = async(generatedToken) => {
     }
 
     if (config.runMode === 'addon') {
-        startTokenApp(config.runMode)
+        tokenApp.start(config.runMode)
     }
 
     // If refresh token was generated via web UI, use it, otherwise attempt to get latest token from state file
@@ -90,7 +81,7 @@ const main = async(generatedToken) => {
         } else {
             debug(colors.brightRed('No refresh token was found in state file, generate a token using the Web UI.'))
             if (config.runMode === 'standard') {
-                startTokenApp(config.runMode)
+                tokenApp.start(config.runMode)
             }
         }
     } else {
@@ -131,11 +122,15 @@ const main = async(generatedToken) => {
             } else {
                 debug(colors.brightRed(`Restart the ${this.runMode === 'addon' ? 'addon' : 'script'} or generate a new token using the Web UI.`))
                 if (config.runMode === 'standard') {
-                    startTokenApp(config.runMode)
+                    tokenApp.start(config.runMode)
                 }
             }
         }
     }
 }
+
+tokenApp.token.registerListener(function(generatedToken) {
+    main(generatedToken)
+})
 
 main()
