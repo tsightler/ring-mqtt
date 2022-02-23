@@ -61,15 +61,9 @@ const main = async(generatedToken) => {
     if (!state.valid) { 
         await state.init(config)
     }
-
-    // If refresh token was generated via web UI, use it, otherwise attempt to get latest token from state file
-    if (generatedToken) {
-        debug(state.valid ? 'Updating state data with token generated via web UI.' : 'Using refresh token generated via web UI.')
-        state.data.ring_token = generatedToken
-    }
         
-    if (state.data.ring_token) {
-        // There is either web UI generated or saved state refresh token available
+    // Is there any usable token?
+    if (state.data.ring_token || generatedToken) {
         // Wait for the network to be online and then attempt to connect to the Ring API using the token
         while (!(await isOnline())) {
             debug(colors.brightYellow('Network is offline, waiting 10 seconds to check again...'))
@@ -77,7 +71,7 @@ const main = async(generatedToken) => {
         }
 
         const ringAuth = {
-            refreshToken: state.data.ring_token,
+            refreshToken: generatedToken ? generatedToken : state.data.ring_token,
             systemId: state.data.systemId,
             controlCenterDisplayName: (config.runMode === 'addon') ? 'ring-mqtt-addon' : 'ring-mqtt',
             ...config.data.enable_cameras ? { cameraStatusPollingSeconds: 20, cameraDingsPollingSeconds: 2 } : {},
@@ -85,26 +79,28 @@ const main = async(generatedToken) => {
             ...!(config.data.location_ids === undefined || config.data.location_ids == 0) ? { locationIds: config.data.location_ids } : {}
         }
 
-        if (await ring.init(ringAuth, config.data, generatedToken ? 'generated' : 'saved')) {
-            debug('Successfully established connection to Ring API')
+        const tokenSource = generatedToken ? 'generated' : 'saved'
+        if (await ring.init(ringAuth, config.data, tokenSource)) {
+            debug(`Successfully established connection to Ring API using ${tokenSource} token`)
 
-            // Update the web app with current connected refresh token
-            const currentAuth = await ring.client.restClient.authPromise
-            tokenApp.updateConnectedToken(currentAuth.refresh_token)
-            if (config.runMode !== 'addon') {
-                tokenApp.stop()
-            }
-
-            // Subscribed to token update events and save new token
+            // Subscribe to token update events and save new tokens to state file
             ring.client.onRefreshTokenUpdated.subscribe(({ newRefreshToken, oldRefreshToken }) => {
                 state.updateToken(newRefreshToken, oldRefreshToken)
             })
 
+            // Only leave the web UI active if this is the addon
+            if (config.runMode !== 'addon') {
+                tokenApp.stop()
+            }
+
+            // Connection to Ring API is successful, attempt to connect to MQTT and start publishing
             mqtt.init(ring, config.data)
         } else {
-            debug(colors.brightRed('Failed to connect to Ring API using saved token, a new token can be generated with the web UI.'))
-            debug(color.brightRed('Authentication will be automatically retried in 60 seconds using the existing token.'))
+            debug(colors.brightRed('Failed to connect to Ring API using saved token, generate a new token using the Web UI.'))
+            debug(colors.brightRed('Authentication will be automatically retried in 60 seconds using the existing token.'))
             tokenApp.start(config.runMode)
+            await utils.sleep(60)
+            main()
         }
     } else {
         // If a refresh token was not found, start Web UI for token generator
