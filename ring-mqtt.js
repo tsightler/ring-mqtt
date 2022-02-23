@@ -62,28 +62,13 @@ const main = async(generatedToken) => {
         await state.init(config)
     }
 
-    if (config.runMode === 'addon') {
-        tokenApp.start(config.runMode)
-    }
-
     // If refresh token was generated via web UI, use it, otherwise attempt to get latest token from state file
     if (generatedToken) {
         debug(state.valid ? 'Updating state data with token generated via web UI.' : 'Using refresh token generated via web UI.')
         state.data.ring_token = generatedToken
     }
-    
-    // If no refresh tokens were found, either exit or start Web UI for token generator
-    if (!state.data.ring_token) {
-        if (config.runMode === 'docker') {
-            debug(colors.brightRed('No refresh token was found in state file, generate a token using get-ring-token.js.'))
-            process.exit(2)
-        } else {
-            debug(colors.brightRed('No refresh token was found in state file, generate a token using the Web UI.'))
-            if (config.runMode === 'standard') {
-                tokenApp.start(config.runMode)
-            }
-        }
-    } else {
+        
+    if (state.data.ring_token) {
         // There is either web UI generated or saved state refresh token available
         // Wait for the network to be online and then attempt to connect to the Ring API using the token
         while (!(await isOnline())) {
@@ -106,6 +91,9 @@ const main = async(generatedToken) => {
             // Update the web app with current connected refresh token
             const currentAuth = await ring.client.restClient.authPromise
             tokenApp.updateConnectedToken(currentAuth.refresh_token)
+            if (config.runMode !== 'addon') {
+                tokenApp.stop()
+            }
 
             // Subscribed to token update events and save new token
             ring.client.onRefreshTokenUpdated.subscribe(({ newRefreshToken, oldRefreshToken }) => {
@@ -114,18 +102,19 @@ const main = async(generatedToken) => {
 
             mqtt.init(ring, config.data)
         } else {
-            debug(colors.brightRed('Failed to connect to Ring API using the refresh token in the saved state file.'))
-            if (config.runMode === 'docker') {
-                debug(colors.brightRed('Restart the container to try again or generate a new token using get-ring-token.js.'))
-                process.exit(2)
-            } else {
-                debug(colors.brightRed(`Restart the ${this.runMode === 'addon' ? 'addon' : 'script'} or generate a new token using the Web UI.`))
-                if (config.runMode === 'standard') {
-                    tokenApp.start(config.runMode)
-                }
-            }
+            debug(colors.brightRed('Failed to connect to Ring API using saved token, a new token can be generated with the web UI.'))
+            debug(color.brightRed('Authentication will be automatically retried in 60 seconds using the existing token.'))
+            tokenApp.start(config.runMode)
         }
+    } else {
+        // If a refresh token was not found, start Web UI for token generator
+        debug(colors.brightRed('No refresh token was found in state file, generate a token using the Web UI.'))
+        tokenApp.start(config.runMode)
     }
+}
+
+if (config.runMode === 'addon') {
+    tokenApp.start(config.runMode)
 }
 
 // Subscribe to token updates from token Web UI

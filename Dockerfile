@@ -55,18 +55,19 @@ RUN apk add --no-cache tar git libcrypto1.1 libssl1.1 musl-utils musl bash curl 
 ENTRYPOINT [ "/init" ]
 
 EXPOSE 8554/tcp
+EXPOSE 55123/tcp
 
 ARG BUILD_VERSION
 ARG BUILD_DATE
 
 LABEL \
-    io.hass.name="Ring Device Integration via MQTT" \
+    io.hass.name="Ring-MQTT with Video Streaming" \
     io.hass.description="Home Assistant Community Add-on for Ring Devices" \
     io.hass.type="addon" \
     io.hass.version=${BUILD_VERSION} \
     maintainer="Tom Sightler <tsightler@gmail.com>" \
-    org.opencontainers.image.title="Ring Device Integration via MQTT" \
-    org.opencontainers.image.description="Home Assistant Community Add-on for Ring Devices" \
+    org.opencontainers.image.title="Ring-MQTT with Video Streaming" \
+    org.opencontainers.image.description="Intergrate wtih Ring devices using MQTT/RTSP" \
     org.opencontainers.image.authors="Tom Sightler <tsightler@gmail.com> (and various other contributors)" \
     org.opencontainers.image.licenses="MIT" \
     org.opencontainers.image.source="https://github.com/tsightler/ring-mqtt" \
