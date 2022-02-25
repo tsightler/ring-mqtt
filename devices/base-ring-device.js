@@ -168,11 +168,12 @@ class RingDevice {
 
     // Refresh device info attributes on a sechedule
     async schedulePublishAttributes() {
-        await utils.sleep(this.availabilityState === 'offline' ? 60 : 300)
-        if (this.availabilityState === 'online') {
-            this.publishAttributes()
-        }
-        this.schedulePublishAttributes()
+        setTimeout(() => {
+            if (this.availabilityState === 'online') {
+                this.publishAttributes()
+            }
+            this.schedulePublishAttributes()
+        }, this.availabilityState === 'offline' ? 60000 : 300000)
     }
 
     publishAttributeEntities(attributes) {

@@ -31,7 +31,7 @@ ctrl_c() {
     fi
     # There should only ever be one process per client active at any time so this works for now
     mosquitto_pid=`ps -ef | grep mosquitto_sub | grep "${client_id}" | tr -s ' ' | cut -d ' ' -f2`
-    [ ! -z ${mosquitto_pid} ] && kill ${mosquitto_pid}
+    [ ! -z ${mosquitto_pid} ] && kill -9 ${mosquitto_pid}
     exit 0
 }
 
