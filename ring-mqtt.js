@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-'use strict';
 
 const config = require('./lib/config')
 const state = require('./lib/state')
