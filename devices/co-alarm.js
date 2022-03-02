@@ -5,9 +5,8 @@ class CoAlarm extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'alarm')
         this.deviceData.mdl = 'CO Alarm'
-        const parentDevice = deviceInfo.allDevices.find(d => d.id === this.device.data.parentZid && d.deviceType === RingDeviceType.SmokeAlarm)
-        this.deviceData.mf = (parentDevice && parentDevice.data && parentDevice.data.manufacturerName) 
-            ? parentDevice.data.manufacturerName 
+        this.deviceData.mf = (deviceInfo.hasOwnProperty('parentDevice') && deviceInfo.parentDevice.data && deviceInfo.parentDevice.data.hasOwnProperty('manufacturerName'))
+            ? deviceInfo.parentDevice.data.manufacturerName 
             : 'Ring'
 
         this.entity.co = {

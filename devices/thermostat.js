@@ -8,8 +8,8 @@ class Thermostat extends RingSocketDevice {
         this.deviceData.mdl = 'Thermostat'
 
         this.childDevices = {
-            operatingStatus: deviceInfo.allDevices.find(d => d.data.parentZid === this.device.id && d.deviceType === 'thermostat-operating-status'),
-            temperatureSensor: deviceInfo.allDevices.find(d => d.data.parentZid === this.device.id && d.deviceType === RingDeviceType.TemperatureSensor)
+            operatingStatus: deviceInfo.childDevices.find(d => d.deviceType === 'thermostat-operating-status'),
+            temperatureSensor: deviceInfo.childDevices.find(d => d.deviceType === RingDeviceType.TemperatureSensor)
         }
 
         this.entity.thermostat = {

@@ -1,9 +1,9 @@
 #!/usr/bin/env node
+'use strict';
 
 const config = require('./lib/config')
 const state = require('./lib/state')
 const ring = require('./lib/ring')
-const mqtt = require('./lib/mqtt')
 const isOnline = require('is-online')
 const debug = require('debug')('ring-mqtt')
 const colors = require('colors/safe')
@@ -93,8 +93,9 @@ const main = async(generatedToken) => {
                 tokenApp.stop()
             }
 
-            // Connection to Ring API is successful, attempt to connect to MQTT and start publishing
-            mqtt.init(ring, config.data)
+            // Connection to Ring API is successful, pause for a few seconds and then initialize MQTT connection
+            await utils.sleep(2)
+            ring.initMqtt()
         } else {
             debug(colors.brightRed('Failed to connect to Ring API using saved token, generate a new token using the Web UI.'))
             debug(colors.brightRed('Authentication will be automatically retried in 60 seconds using the existing token.'))

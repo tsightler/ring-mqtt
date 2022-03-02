@@ -493,23 +493,20 @@ class Camera extends RingPolledDevice {
             }
         }, this.data.snapshot.interval * 1000)
     }
-    
-    refreshSnapshot(type) {        
+
+    refreshSnapshot(type) {
         if (this.device.operatingOnBattery) {
-            // Battery cameras can't take snapshots while streaming
-            // Call the function to deal with those cases
+            // Battery cameras can't take snapshots while streaming so check if there's an active stream
             if (type === 'interval' && this.data.stream.live.status.match(/^(inactive|failed)$/)) {
-                // It's an interval snapshot and there's no active local stream so assume
-                // a standard snapshot will work
+                // It's an interval snapshot and no active local stream, assume a standard snapshot will work
                 this.updateSnapshot(type)
             } else {
-                // There's a local live stream already active or it's a motion snapshot
-                // which means a recording is in progress, update snapshot from stream
+                // If a local live stream active, or it's a motion snapshot, grab an image from the stream
                 this.data.snapshot.update = true
                 if (type === 'motion') {
                     this.debug('Motion event detected on battery powered camera snapshot will be updated from live stream')
                 }
-                // Start the snapshot stream if not already active
+                // If it's a motion event, and there's no active stream, start one so that snapshots can be grabbed from it
                 if (!this.data.stream.snapshot.active) {
                     this.startRtspReadStream('snapshot', this.data.stream.snapshot.duration)
                 }
@@ -521,24 +518,26 @@ class Camera extends RingPolledDevice {
     }
 
     async updateSnapshot(type) {
+        let newSnapshot
+
         if (this.device.snapshotsAreBlocked) {
             this.debug('Snapshots are unavailable, check if motion capture is disabled manually or via modes settings')
             return
         }
 
-        let newSnapshot
-            if (type === 'motion') {
-                this.debug('Motion event detected for line powered camera, forcing a non-cached snapshot update')
-            }
-            try {
-                this.debug('Requesting updated snapshot')
-                newSnapshot = (type === 'motion') 
-                    ? await this.device.getNextSnapshot({ force: true })
-                    : await this.device.getSnapshot()
-            } catch (error) {
-                this.debug(error) 
-                this.debug('Failed to retrieve updated snapshot')
-            }
+        if (type === 'motion') {
+            this.debug('Motion event detected for line powered camera, forcing a non-cached snapshot update')
+        }
+
+        try {
+            this.debug('Requesting updated snapshot')
+            newSnapshot = (type === 'motion') 
+                ? await this.device.getNextSnapshot({ force: true })
+                : await this.device.getSnapshot()
+        } catch (error) {
+            this.debug(error) 
+            this.debug('Failed to retrieve updated snapshot')
+        }
 
         if (newSnapshot) {
             this.debug('Succesfully retrieved updated snapshot')

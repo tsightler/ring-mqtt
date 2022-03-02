@@ -21,7 +21,7 @@ class RingDevice {
         }
         this.debug = (message, debugType) => {
             debugType = debugType ? debugType : 'mqtt'
-            debug[debugType](colors.green(`[${this.deviceData.name}] `)+message)
+            debug[debugType](colors.green(`[${this.device.name}] `)+message)
         }
         // Build device base and availability topic
         this.deviceTopic = `${this.config.ring_topic}/${this.locationId}/${category}/${this.deviceId}`
@@ -168,12 +168,12 @@ class RingDevice {
 
     // Refresh device info attributes on a sechedule
     async schedulePublishAttributes() {
-        setTimeout(() => {
+        while (true) {
+            await utils.sleep(this.availabilityState === 'offline' ? 60 : 300)
             if (this.availabilityState === 'online') {
                 this.publishAttributes()
             }
-            this.schedulePublishAttributes()
-        }, this.availabilityState === 'offline' ? 60000 : 300000)
+        }
     }
 
     publishAttributeEntities(attributes) {
@@ -195,11 +195,10 @@ class RingDevice {
 
     // Publish state messages with debug
     publishMqtt(topic, message, debugType) {
-        message = (typeof message === 'number') ? message.toString() : message 
         if (debugType !== false) {
             this.debug(colors.blue(`${topic} `)+colors.cyan(`${message}`), debugType)
         }
-        this.mqttClient.publish(topic, message, { qos: 1 })
+        this.mqttClient.publish(topic, (typeof message === 'number') ? message.toString() : message, { qos: 1 })
     }
 
     // Set state topic online
