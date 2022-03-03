@@ -4,15 +4,15 @@
   "description": "Ring Devices via MQTT",
   "main": "ring-mqtt.js",
   "dependencies": {
-    "body-parser": "^1.19.1",
+    "body-parser": "^1.19.2",
     "debug": "^4.3.3",
-    "express": "^4.17.2",
+    "express": "^4.17.3",
     "get-port": "^5.1.1",
     "got": "^11.8.3",
     "ip": "^1.1.5",
     "is-online": "^9.0.1",
     "write-file-atomic": "^4.0.0",
-    "mqtt": "^4.3.4",
+    "mqtt": "4.3.4",
     "pipe2jpeg": "^0.3.1",
     "@tsightler/ring-client-api": "10.0.0-beta.1"
   },
