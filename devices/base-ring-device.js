@@ -26,9 +26,9 @@ class RingDevice {
     }
 
     // This function loops through each entity of the device, creates a unique
-    // device ID for each one, and builds state, command, and attribute topics.
-    // Finally it generates a Home Assistant MQTT discovery message for the entity
-    // and publishes this message to the Home Assistant config topic
+    // device ID for each one, builds the required state, command, and attribute
+    // topics and, finally, generates a Home Assistant MQTT discovery message for
+    // the entity and publishes this message to the Home Assistant config topic
     async publishDiscovery() {
         const debugMsg = (this.availabilityState === 'unpublished') ? 'Publishing new ' : 'Republishing existing '
         this.debug(debugMsg+'device id: '+this.deviceId, 'disc')
@@ -37,7 +37,7 @@ class RingDevice {
             const entity = this.entity[entityKey]
             const entityTopic = `${this.deviceTopic}/${entityKey}`
 
-            // If this entity uses state values from the attributes of a parent entity set that here,
+            // If this entity uses state values from the JSON attributes of a parent entity use that topic,
             // otherwise use standard state topic for entity ('image' for camera, 'state' for all others)
             const entityStateTopic = entity.hasOwnProperty('parent_state_topic')
                 ? `${this.deviceTopic}/${entity.parent_state_topic}`
