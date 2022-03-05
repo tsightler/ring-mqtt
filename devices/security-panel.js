@@ -25,7 +25,7 @@ class SecurityPanel extends RingSocketDevice {
                 state: false,
                 icon: 'mdi:transit-skip'
             },
-            ...this.config.enable_panic ? {
+            ...utils.config.enable_panic ? {
                 police: { 
                     component: 'switch',
                     name: `${this.device.location.name} Panic - Police`,
@@ -68,15 +68,15 @@ class SecurityPanel extends RingSocketDevice {
                     alarmMode = 'unknown'
             }
         }
-        this.publishMqtt(this.entity.alarm.state_topic, alarmMode)
+        this.mqttPublish(this.entity.alarm.state_topic, alarmMode)
 
         const sirenState = (this.device.data.siren && this.device.data.siren.state === 'on') ? 'ON' : 'OFF'
-        this.publishMqtt(this.entity.siren.state_topic, sirenState)
+        this.mqttPublish(this.entity.siren.state_topic, sirenState)
 
         const bypassState = this.entity.bypass.state ? 'ON' : 'OFF'
-        this.publishMqtt(this.entity.bypass.state_topic, bypassState)
+        this.mqttPublish(this.entity.bypass.state_topic, bypassState)
 
-        if (this.config.enable_panic) {
+        if (utils.config.enable_panic) {
             let policeState = 'OFF'
             let fireState = 'OFF'
             const alarmState = this.device.data.alarmInfo ? this.device.data.alarmInfo.state : ''
@@ -93,8 +93,8 @@ class SecurityPanel extends RingSocketDevice {
                     fireState = 'ON'
                     this.debug('Fire alarm is active for '+this.device.location.name)
             }
-            this.publishMqtt(this.entity.police.state_topic, policeState)
-            this.publishMqtt(this.entity.fire.state_topic, fireState)
+            this.mqttPublish(this.entity.police.state_topic, policeState)
+            this.mqttPublish(this.entity.fire.state_topic, fireState)
         }
 
         this.publishAttributes()
@@ -106,7 +106,7 @@ class SecurityPanel extends RingSocketDevice {
             exitDelayMs = this.device.data.transitionDelayEndTimestamp - Date.now()
             if (exitDelayMs <= 0) {
                 // Publish device sensor state
-                this.publishMqtt(this.entity.alarm.state_topic, 'armed_away')
+                this.mqttPublish(this.entity.alarm.state_topic, 'armed_away')
             }
         }
     }

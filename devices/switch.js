@@ -13,7 +13,7 @@ class Switch extends RingSocketDevice {
     }
 
     publishData() {
-        this.publishMqtt(this.entity[this.component].state_topic, this.device.data.on ? "ON" : "OFF")
+        this.mqttPublish(this.entity[this.component].state_topic, this.device.data.on ? "ON" : "OFF")
         this.publishAttributes()
     }
 

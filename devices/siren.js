@@ -27,14 +27,14 @@ class Siren extends RingSocketDevice {
         const isPublish = data === undefined ? true : false
         if (isPublish) {
             // Eventually remove this but for now this attempts to delete the old siren binary_sensor
-            this.publishMqtt('homeassistant/binary_sensor/'+this.locationId+'/'+this.deviceId+'_siren/config', '', false)
+            this.mqttPublish('homeassistant/binary_sensor/'+this.locationId+'/'+this.deviceId+'_siren/config', '', false)
         }
 
         const sirenState = this.device.data.sirenStatus === 'active' ? 'ON' : 'OFF'
-        this.publishMqtt(this.entity.siren.state_topic, sirenState)
+        this.mqttPublish(this.entity.siren.state_topic, sirenState)
         if (this.entity.hasOwnProperty('volume')) {
             const currentVolume = (this.device.data.volume && !isNaN(this.device.data.volume) ? Math.round(1 * this.device.data.volume) : 0)
-            this.publishMqtt(this.entity.volume.state_topic, currentVolume)
+            this.mqttPublish(this.entity.volume.state_topic, currentVolume)
         }
         this.publishAttributes()
     }

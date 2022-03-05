@@ -33,13 +33,13 @@ class Fan extends RingSocketDevice {
         // Publish device state
         // targetFanPercent is a small hack to work around Home Assistant UI behavior
         if (this.data.targetFanPercent && this.data.targetFanPercent !== fanPercent) {
-            this.publishMqtt(this.entity.fan.percentage_state_topic, this.data.targetFanPercent.toString())
+            this.mqttPublish(this.entity.fan.percentage_state_topic, this.data.targetFanPercent.toString())
             this.data.targetFanPercent = undefined
         } else {
-            this.publishMqtt(this.entity.fan.percentage_state_topic, fanPercent.toString())
+            this.mqttPublish(this.entity.fan.percentage_state_topic, fanPercent.toString())
         }
-        this.publishMqtt(this.entity.fan.state_topic, fanState)
-        this.publishMqtt(this.entity.fan.preset_mode_state_topic, fanPreset)
+        this.mqttPublish(this.entity.fan.state_topic, fanState)
+        this.mqttPublish(this.entity.fan.preset_mode_state_topic, fanPreset)
 
         // Publish device attributes (batterylevel, tamper status)
         this.publishAttributes()

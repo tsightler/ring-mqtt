@@ -37,7 +37,7 @@ class ModesPanel extends RingPolledDevice {
                 default:
                     mqttMode = 'disarmed'
             }
-            this.publishMqtt(this.entity.mode.state_topic, mqttMode)
+            this.mqttPublish(this.entity.mode.state_topic, mqttMode)
         }
     }
 

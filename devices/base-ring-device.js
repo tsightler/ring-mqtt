@@ -1,8 +1,3 @@
-const debug = {
-    mqtt: require('debug')('ring-mqtt'),
-    attr: require('debug')('ring-attr'),
-    disc: require('debug')('ring-disc')
-}
 const utils = require('../lib/utils')
 const colors = require('colors/safe')
 
@@ -10,8 +5,6 @@ const colors = require('colors/safe')
 class RingDevice {
     constructor(deviceInfo, category, primaryAttribute, deviceId, locationId) {
         this.device = deviceInfo.device
-        this.mqttClient = deviceInfo.mqttClient
-        this.config = deviceInfo.config
         this.deviceId = deviceId
         this.locationId = locationId
         this.availabilityState = 'unpublished'
@@ -20,11 +13,10 @@ class RingDevice {
             return this.availabilityState === 'online' ? true : false 
         }
         this.debug = (message, debugType) => {
-            debugType = debugType ? debugType : 'mqtt'
-            debug[debugType](colors.green(`[${this.device.name}] `)+message)
+            utils.debug(debugType === 'disc' ? message : colors.green(`[${this.device.name}] `)+message, debugType ? debugType : 'mqtt')
         }
         // Build device base and availability topic
-        this.deviceTopic = `${this.config.ring_topic}/${this.locationId}/${category}/${this.deviceId}`
+        this.deviceTopic = `${utils.config.ring_topic}/${this.locationId}/${category}/${this.deviceId}`
         this.availabilityTopic = `${this.deviceTopic}/status`
 
         if (primaryAttribute !== 'disable') {
@@ -39,7 +31,7 @@ class RingDevice {
     // and publishes this message to the Home Assistant config topic
     async publishDiscovery() {
         const debugMsg = (this.availabilityState === 'unpublished') ? 'Publishing new ' : 'Republishing existing '
-        debug.disc(debugMsg+'device id: '+this.deviceId, 'disc')
+        this.debug(debugMsg+'device id: '+this.deviceId, 'disc')
 
         Object.keys(this.entity).forEach(entityKey => {
             const entity = this.entity[entityKey]
@@ -102,8 +94,8 @@ class RingDevice {
                     ? { icon: entity.icon } 
                     : entityKey === "info" 
                         ? { icon: 'mdi:information-outline' } : {},
-                ... entity.component === 'alarm_control_panel' && this.config.disarm_code
-                    ? { code: this.config.disarm_code.toString(),
+                ... entity.component === 'alarm_control_panel' && utils.config.disarm_code
+                    ? { code: utils.config.disarm_code.toString(),
                         code_arm_required: false,
                         code_disarm_required: true } : {},
                 ... entity.hasOwnProperty('brightness_scale')
@@ -149,9 +141,9 @@ class RingDevice {
             }
 
             const configTopic = `homeassistant/${entity.component}/${this.locationId}/${this.deviceId}_${entityKey}/config`
-            debug.disc(`HASS config topic: ${configTopic}`)
-            debug.disc(discoveryMessage)
-            this.publishMqtt(configTopic, JSON.stringify(discoveryMessage), false)
+            this.debug(`HASS config topic: ${configTopic}`, 'disc')
+            this.debug(discoveryMessage, 'disc')
+            this.mqttPublish(configTopic, JSON.stringify(discoveryMessage), false)
 
             // On first publish store generated topics in entities object and subscribe to command topics
             if (!this.entity[entityKey].hasOwnProperty('published')) {
@@ -159,7 +151,7 @@ class RingDevice {
                 Object.keys(discoveryMessage).filter(property => property.match('topic')).forEach(topic => {
                     this.entity[entityKey][topic] = discoveryMessage[topic]
                     if (topic.match('command_topic')) {
-                        this.mqttClient.subscribe(discoveryMessage[topic])
+                        utils.event.emit('mqttSubscribe', discoveryMessage[topic])
                     }
                 })
             }
@@ -187,18 +179,18 @@ class RingDevice {
                         return filteredAttributes
                     }, {})
                 if (Object.keys(entityAttributes).length > 0) {
-                    this.publishMqtt(this.entity[entityKey].json_attributes_topic, JSON.stringify(entityAttributes), 'attr')
+                    this.mqttPublish(this.entity[entityKey].json_attributes_topic, JSON.stringify(entityAttributes), 'attr')
                 }
             }
         })
     }
 
     // Publish state messages with debug
-    publishMqtt(topic, message, debugType) {
+    mqttPublish(topic, message, debugType) {
         if (debugType !== false) {
             this.debug(colors.blue(`${topic} `)+colors.cyan(`${message}`), debugType)
         }
-        this.mqttClient.publish(topic, (typeof message === 'number') ? message.toString() : message, { qos: 1 })
+        utils.event.emit('mqttPublish', topic, message)
     }
 
     // Set state topic online
@@ -206,7 +198,7 @@ class RingDevice {
         if (this.shutdown) { return } // Supress any delayed online state messages if ring-mqtt is shutting down
         const debugType = (this.availabilityState === 'online') ? false : 'mqtt'
         this.availabilityState = 'online'
-        this.publishMqtt(this.availabilityTopic, this.availabilityState, debugType)
+        this.mqttPublish(this.availabilityTopic, this.availabilityState, debugType)
         await utils.sleep(2)
     }
 
@@ -214,7 +206,7 @@ class RingDevice {
     offline() {
         const debugType = (this.availabilityState === 'offline') ? false : 'mqtt'
         this.availabilityState = 'offline'
-        this.publishMqtt(this.availabilityTopic, this.availabilityState, debugType)
+        this.mqttPublish(this.availabilityTopic, this.availabilityState, debugType)
     }
 }
 

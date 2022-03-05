@@ -1,7 +1,6 @@
+const RingPolledDevice = require('./base-polled-device')
 const utils = require( '../lib/utils' )
 const colors = require('colors/safe')
-const RingPolledDevice = require('./base-polled-device')
-const { clientApi } = require('../node_modules/@tsightler/ring-client-api/lib/api/rest-client')
 const P2J = require('pipe2jpeg')
 const net = require('net');
 const getPort = require('get-port')
@@ -47,8 +46,8 @@ class Camera extends RingPolledDevice {
                     status: 'inactive',
                     publishedStatus: '',
                     session: false,
-                    rtspPublishUrl: (this.config.livestream_user && this.config.livestream_pass)
-                        ? `rtsp://${this.config.livestream_user}:${this.config.livestream_pass}@localhost:8554/${this.deviceId}_live`
+                    rtspPublishUrl: (utils.config.livestream_user && utils.config.livestream_pass)
+                        ? `rtsp://${utils.config.livestream_user}:${utils.config.livestream_pass}@localhost:8554/${this.deviceId}_live`
                         : `rtsp://localhost:8554/${this.deviceId}_live`
                 },
                 event: {
@@ -60,8 +59,8 @@ class Camera extends RingPolledDevice {
                     recordingUrl: null,
                     recordingUrlExpire: null,
                     pollCycle: 0,
-                    rtspPublishUrl: (this.config.livestream_user && this.config.livestream_pass)
-                        ? `rtsp://${this.config.livestream_user}:${this.config.livestream_pass}@localhost:8554/${this.deviceId}_event`
+                    rtspPublishUrl: (utils.config.livestream_user && utils.config.livestream_pass)
+                        ? `rtsp://${utils.config.livestream_user}:${utils.config.livestream_pass}@localhost:8554/${this.deviceId}_event`
                         : `rtsp://localhost:8554/${this.deviceId}_event`
                 },
                 snapshot: {
@@ -93,10 +92,10 @@ class Camera extends RingPolledDevice {
             } : {}
         }
 
-        if (this.config.snapshot_mode.match(/^(motion|interval|all)$/)) {
-            this.data.snapshot.motion = (this.config.snapshot_mode.match(/^(motion|all)$/)) ? true : false
+        if (utils.config.snapshot_mode.match(/^(motion|interval|all)$/)) {
+            this.data.snapshot.motion = (utils.config.snapshot_mode.match(/^(motion|all)$/)) ? true : false
 
-            if (this.config.snapshot_mode.match(/^(interval|all)$/)) {
+            if (utils.config.snapshot_mode.match(/^(interval|all)$/)) {
                 this.data.snapshot.autoInterval = true
                 if (this.device.operatingOnBattery) {
                     if (this.device.data.settings.hasOwnProperty('lite_24x7') && this.device.data.settings.lite_24x7.enabled) {
@@ -252,8 +251,8 @@ class Camera extends RingPolledDevice {
 
         // Set some helper attributes for streaming
         this.data.stream.live.stillImageURL = `https://${stillImageUrlBase}:8123{{ states.camera.${this.device.name.toLowerCase().replace(" ","_")}_snapshot.attributes.entity_picture }}`,
-        this.data.stream.live.streamSource = (this.config.livestream_user && this.config.livestream_pass)
-            ? `rtsp://${this.config.livestream_user}:${this.config.livestream_pass}@${streamSourceUrlBase}:8554/${this.deviceId}_live`
+        this.data.stream.live.streamSource = (utils.config.livestream_user && utils.config.livestream_pass)
+            ? `rtsp://${utils.config.livestream_user}:${utils.config.livestream_pass}@${streamSourceUrlBase}:8554/${this.deviceId}_live`
             : `rtsp://${streamSourceUrlBase}:8554/${this.deviceId}_live`
     }
 
@@ -357,7 +356,7 @@ class Camera extends RingPolledDevice {
     // Publish ding state and attributes
     publishDingState(dingKind) {
         const dingState = this.data[dingKind].active_ding ? 'ON' : 'OFF'
-        this.publishMqtt(this.entity[dingKind].state_topic, dingState)
+        this.mqttPublish(this.entity[dingKind].state_topic, dingState)
 
         if (dingKind === 'motion') {
             this.publishMotionAttributes()
@@ -376,7 +375,7 @@ class Camera extends RingPolledDevice {
             this.data.motion.detection_enabled = this.device.data.settings.motion_detection_enabled
             attributes.motionDetectionEnabled = this.data.motion.detection_enabled
         }
-        this.publishMqtt(this.entity.motion.json_attributes_topic, JSON.stringify(attributes), 'attr')
+        this.mqttPublish(this.entity.motion.json_attributes_topic, JSON.stringify(attributes), 'attr')
     }
 
     publishDingAttributes() {
@@ -384,7 +383,7 @@ class Camera extends RingPolledDevice {
             lastDing: this.data.ding.last_ding,
             lastDingTime: this.data.ding.last_ding_time
         }
-        this.publishMqtt(this.entity.ding.json_attributes_topic, JSON.stringify(attributes), 'attr')
+        this.mqttPublish(this.entity.ding.json_attributes_topic, JSON.stringify(attributes), 'attr')
     }
 
     // Publish camera state for polled attributes (light/siren state, etc)
@@ -395,14 +394,14 @@ class Camera extends RingPolledDevice {
             const lightState = this.device.data.led_status === 'on' ? 'ON' : 'OFF'
             if ((lightState !== this.data.light.state && Date.now()/1000 - this.data.light.setTime > 30) || isPublish) {
                 this.data.light.state = lightState
-                this.publishMqtt(this.entity.light.state_topic, this.data.light.state)
+                this.mqttPublish(this.entity.light.state_topic, this.data.light.state)
             }
         }
         if (this.device.hasSiren) {
             const sirenState = this.device.data.siren_status.seconds_remaining > 0 ? 'ON' : 'OFF'
             if (sirenState !== this.data.siren.state || isPublish) {
                 this.data.siren.state = sirenState
-                this.publishMqtt(this.entity.siren.state_topic, this.data.siren.state)
+                this.mqttPublish(this.entity.siren.state_topic, this.data.siren.state)
             }
         }
 
@@ -430,14 +429,14 @@ class Camera extends RingPolledDevice {
             }
             attributes.stream_Source = this.data.stream.live.streamSource
             attributes.still_Image_URL = this.data.stream.live.stillImageURL
-            this.publishMqtt(this.entity.info.state_topic, JSON.stringify(attributes), 'attr')
+            this.mqttPublish(this.entity.info.state_topic, JSON.stringify(attributes), 'attr')
             this.publishAttributeEntities(attributes)
         }
     }
 
     publishSnapshotInterval(isPublish) {
         if (isPublish) {
-            this.publishMqtt(this.entity.snapshot_interval.state_topic, this.data.snapshot.interval.toString())
+            this.mqttPublish(this.entity.snapshot_interval.state_topic, this.data.snapshot.interval.toString())
         } else {
             // Update snapshot frequency in case it's changed
             if (this.data.snapshot.autoInterval && this.data.snapshot.interval !== this.device.data.settings.lite_24x7.frequency_secs) {
@@ -445,7 +444,7 @@ class Camera extends RingPolledDevice {
                 clearTimeout(this.data.snapshot.intervalTimerId)
                 this.scheduleSnapshotRefresh()
             }
-            this.publishMqtt(this.entity.snapshot_interval.state_topic, this.data.snapshot.interval.toString())
+            this.mqttPublish(this.entity.snapshot_interval.state_topic, this.data.snapshot.interval.toString())
         }
     }
 
@@ -455,13 +454,13 @@ class Camera extends RingPolledDevice {
             const streamState = (this.data.stream[type].status === 'active' || this.data.stream[type].status === 'activating') ? 'ON' : 'OFF'
             if (streamState !== this.data.stream[type].state || isPublish) {
                 this.data.stream[type].state = streamState
-                this.publishMqtt(this.entity[entityProp].state_topic, this.data.stream[type].state)
+                this.mqttPublish(this.entity[entityProp].state_topic, this.data.stream[type].state)
             }
 
             if (this.data.stream[type].publishedStatus !== this.data.stream[type].status || isPublish) {
                 this.data.stream[type].publishedStatus = this.data.stream[type].status
                 const attributes = { status: this.data.stream[type].status }
-                this.publishMqtt(this.entity[entityProp].json_attributes_topic, JSON.stringify(attributes), 'attr')
+                this.mqttPublish(this.entity[entityProp].json_attributes_topic, JSON.stringify(attributes), 'attr')
             } 
         })
     }
@@ -469,20 +468,20 @@ class Camera extends RingPolledDevice {
     publishStreamSelectState(isPublish) {
         if (this.data.event_select.state !== this.data.event_select.publishedState || isPublish) {
             this.data.event_select.publishedState = this.data.event_select.state
-            this.publishMqtt(this.entity.event_select.state_topic, this.data.event_select.state)
+            this.mqttPublish(this.entity.event_select.state_topic, this.data.event_select.state)
         }
         const attributes = { 
             recordingUrl: this.data.stream.event.recordingUrl,
             eventId: this.data.stream.event.dingId
         }
-        this.publishMqtt(this.entity.event_select.json_attributes_topic, JSON.stringify(attributes), 'attr')
+        this.mqttPublish(this.entity.event_select.json_attributes_topic, JSON.stringify(attributes), 'attr')
     }
 
     // Publish snapshot image/metadata
     publishSnapshot() {
         this.debug(colors.blue(`${this.entity.snapshot.topic}`)+' '+colors.cyan('<binary_image_data>'))
-        this.publishMqtt(this.entity.snapshot.topic, this.data.snapshot.currentImage, false)
-        this.publishMqtt(this.entity.snapshot.json_attributes_topic, JSON.stringify({ timestamp: this.data.snapshot.timestamp }), 'attr')
+        this.mqttPublish(this.entity.snapshot.topic, this.data.snapshot.currentImage, false)
+        this.mqttPublish(this.entity.snapshot.json_attributes_topic, JSON.stringify({ timestamp: this.data.snapshot.timestamp }), 'attr')
     }
 
     // Refresh snapshot on scheduled interval
@@ -495,45 +494,42 @@ class Camera extends RingPolledDevice {
     }
 
     refreshSnapshot(type) {
-        if (this.device.operatingOnBattery) {
-            // Battery cameras can't take snapshots while streaming so check if there's an active stream
-            if (type === 'interval' && this.data.stream.live.status.match(/^(inactive|failed)$/)) {
-                // It's an interval snapshot and no active local stream, assume a standard snapshot will work
-                this.updateSnapshot(type)
-            } else {
-                // If a local live stream active, or it's a motion snapshot, grab an image from the stream
-                this.data.snapshot.update = true
-                if (type === 'motion') {
-                    this.debug('Motion event detected on battery powered camera snapshot will be updated from live stream')
-                }
-                // If it's a motion event, and there's no active stream, start one so that snapshots can be grabbed from it
-                if (!this.data.stream.snapshot.active) {
-                    this.startRtspReadStream('snapshot', this.data.stream.snapshot.duration)
-                }
-            }
-        } else {
-            // Line powered cameras can take snapshots all the time
+        if (!this.device.operatingOnBattery || (type === 'interval' && this.data.stream.live.status.match(/^(inactive|failed)$/))) {
+            // For line powered cameras, or battery cameras with no active stream,
+            // assume a regular snapshot update request will work
             this.updateSnapshot(type)
+        } else {
+            this.data.snapshot.update = true
+
+            // Battery powered cameras can take a snapshot while recording so, if it's a motion
+            // event or there's an active local stream, grab a key frame to use for the snapshot
+            if (type === 'motion') {
+                this.debug('Motion event detected on battery powered camera, snapshot will be updated from live stream')
+            }
+
+            // If there's no existing active local stream, start one as it's required to get a snapshot 
+            if (!this.data.stream.snapshot.active) {
+                this.startRtspReadStream('snapshot', this.data.stream.snapshot.duration)
+            }
         }
     }
 
     async updateSnapshot(type) {
-        let newSnapshot
+        let newSnapshot = false
 
         if (this.device.snapshotsAreBlocked) {
             this.debug('Snapshots are unavailable, check if motion capture is disabled manually or via modes settings')
             return
         }
 
-        if (type === 'motion') {
-            this.debug('Motion event detected for line powered camera, forcing a non-cached snapshot update')
-        }
-
         try {
-            this.debug('Requesting updated snapshot')
-            newSnapshot = (type === 'motion') 
-                ? await this.device.getNextSnapshot({ force: true })
-                : await this.device.getSnapshot()
+            if (type === 'motion') {
+                this.debug('Requesting an updated motion snapshot')
+                newSnapshot = await this.device.getNextSnapshot({ force: true })
+            } else {
+                this.debug('Requesting an updated interval snapshot')
+                newSnapshot = await this.device.getSnapshot()
+            }
         } catch (error) {
             this.debug(error) 
             this.debug('Failed to retrieve updated snapshot')
@@ -827,7 +823,7 @@ class Camera extends RingPolledDevice {
                 this.data.light.setTime = Math.floor(Date.now()/1000)
                 await this.device.setLight(command === 'on' ? true : false)
                 this.data.light.state = command === 'on' ? 'ON' : 'OFF'
-                this.publishMqtt(this.entity.light.state_topic, this.data.light.state)
+                this.mqttPublish(this.entity.light.state_topic, this.data.light.state)
                 break;
             default:
                 this.debug('Received unknown command for light')

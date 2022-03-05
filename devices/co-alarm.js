@@ -1,5 +1,4 @@
 const RingSocketDevice = require('./base-socket-device')
-const { RingDeviceType } = require('@tsightler/ring-client-api')
 
 class CoAlarm extends RingSocketDevice {
     constructor(deviceInfo) {
@@ -18,7 +17,7 @@ class CoAlarm extends RingSocketDevice {
 
     publishData() {
         const coState = this.device.data.alarmStatus === 'active' ? 'ON' : 'OFF'
-        this.publishMqtt(this.entity.co.state_topic, coState)
+        this.mqttPublish(this.entity.co.state_topic, coState)
         this.publishAttributes()
     }
 }

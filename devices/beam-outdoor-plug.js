@@ -37,11 +37,11 @@ class BeamOutdoorPlug extends RingSocketDevice {
     }
 
     publishOutlet1State() {
-        this.publishMqtt(this.entity.outlet1.state_topic, this.childDevices.outlet1.data.on ? "ON" : "OFF")
+        this.mqttPublish(this.entity.outlet1.state_topic, this.childDevices.outlet1.data.on ? "ON" : "OFF")
     }
 
     publishOutlet2State() {
-        this.publishMqtt(this.entity.outlet2.state_topic, this.childDevices.outlet2.data.on ? "ON" : "OFF")
+        this.mqttPublish(this.entity.outlet2.state_topic, this.childDevices.outlet2.data.on ? "ON" : "OFF")
     }
 
     // Process messages from MQTT command topic
