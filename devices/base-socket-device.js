@@ -7,7 +7,6 @@ class RingSocketDevice extends RingDevice {
         super(deviceInfo, category, primaryAttribute, deviceInfo.device.id, deviceInfo.device.location.locationId)
 
         // Set default device data for Home Assistant device registry
-        // Values may be overridden by individual devices
         this.deviceData = { 
             ids: [ this.deviceId ],
             name: this.device.name,

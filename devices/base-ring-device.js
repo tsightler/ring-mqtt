@@ -47,10 +47,10 @@ class RingDevice {
             
             // ***** Build a Home Assistant style MQTT discovery message *****
             // Legacy versions of ring-mqtt created entity names and IDs for single function devices
-            // without using any type of suffix. To maintain compatibility with older version, entities
-            // can pass their unique_id in the entity definition. If this is detected then the device
-            // will also get legacy device name generation (i.e. no name suffix either). However,
-            // automatic name generation can also be completely overridden with entity 'name' parameter.
+            // without using any type of suffix. To maintain compatibility with older versions, entities
+            // can set the "isLegacyEntity" flag in the entity definition. In this case the device will
+            // also get legacy device name generation (i.e. no name suffix either). However, automatic
+            // name generation can also be completely overridden by the entity 'name' parameter.
             //
             // I know the code below will offend the sensibilities of some people, especially with
             // regards to formatting and nested ternaries, but, for whatever reason, my brain reads

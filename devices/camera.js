@@ -654,19 +654,17 @@ class Camera extends RingPolledDevice {
         this.debug('Establishing connection to live stream')
         try {
             this.data.stream.live.session = await this.device.streamVideo({
-                audio: [], video: [],
                 // The below takes the native AVC video stream from Rings servers and just 
-                // copies the video stream to the RTPS server unmodified.  However, for
+                // copies the video stream to the RTSP server unmodified.  However, for
                 // audio it splits the G.711 μ-law stream into two output streams one
                 // being converted to AAC audio, and the other just the raw G.711 stream.
                 // This allows support for playback methods that either don't support AAC
                 // (e.g. native browser based WebRTC) and provides stong compatibility across
                 // the various playback technolgies with minimal processing overhead. 
+                video: false,
                 output: [
-                    '-map', '0:v:0',
                     '-map', '0:a:0',
                     '-map', '0:a:0',
-                    '-c:v', 'copy',
                     '-c:a:0', 'aac',
                     '-c:a:1', 'copy',
                     '-f', 'rtsp',
