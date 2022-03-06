@@ -6,6 +6,7 @@ Standard installation is possible, however, this method is not regularly tested 
 - NodeJS version must be at least 14.17.0 (latest LTS is recommended)
 - [rtsp-simple-server](https://github.com/aler9/rtsp-simple-server) v0.17.4 or later must be installed and available in the system path.
 - The mosquitto clients package (mosquitto_sub/mosquitto_pub) must be available in the system path
+- The jq package must be installed.  This is usually available via the OS package manager (Ubuntu: "sudo apt install jq").
 
 #### Perform Install
 Once the pre-requisites have been met simply clone this project from Github into a directory of your choice (the included systemd unit file below assumes /opt but can be easily modified):
