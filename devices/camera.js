@@ -661,7 +661,7 @@ class Camera extends RingPolledDevice {
                 // This allows support for playback methods that either don't support AAC
                 // (e.g. native browser based WebRTC) and provides stong compatibility across
                 // the various playback technolgies with minimal processing overhead. 
-                video: [],
+                audio: [], video: [],
                 output: [
                     '-map', '0:v:0',
                     '-map', '0:a:0',
