@@ -661,14 +661,8 @@ class Camera extends RingPolledDevice {
                 // This allows support for playback methods that either don't support AAC
                 // (e.g. native browser based WebRTC) and provides stong compatibility across
                 // the various playback technolgies with minimal processing overhead. 
-                audio: [], video: [],
+                audio: [], video: false,
                 output: [
-                    '-map', '0:v:0',
-                    '-map', '0:a:0',
-                    '-map', '0:a:0',
-                    '-c:v', 'copy',
-                    '-c:a:0', 'aac',
-                    '-c:a:1', 'copy',
                     '-f', 'rtsp',
                     '-rtsp_transport', 'tcp',
                     this.data.stream.live.rtspPublishUrl
