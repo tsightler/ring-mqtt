@@ -663,6 +663,12 @@ class Camera extends RingPolledDevice {
                 // the various playback technolgies with minimal processing overhead. 
                 video: false,
                 output: [
+                    '-map', '0:v:0',
+                    '-map', '0:a:0',
+                    '-map', '0:a:0',
+                    '-c:v', 'copy',
+                    '-c:a:0', 'aac',
+                    '-c:a:1', 'copy',
                     '-f', 'rtsp',
                     '-rtsp_transport', 'tcp',
                     this.data.stream.live.rtspPublishUrl
