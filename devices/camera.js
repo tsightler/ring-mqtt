@@ -662,12 +662,14 @@ class Camera extends RingPolledDevice {
                 // (e.g. native browser based WebRTC) and provides stong compatibility across
                 // the various playback technolgies with minimal processing overhead. 
                 audio: [
-                    '-acodec', 
-                    'aac'
+                    '-map', '0:a:0',
+                    '-map', '0:a:0',
+                    '-c:a:0', 'aac',
+                    '-c:a:1', 'copy',
                 ],
                 video: [
-                    '-vcodec',
-                    'copy'
+                    '-map', '0:v:0',
+                    '-c:v', 'copy',
                 ],
                 output: [
                     '-f', 'rtsp',
