@@ -187,6 +187,7 @@ class Camera extends RingPolledDevice {
             this.scheduleSnapshotRefresh()
         }
 
+        this.initLiveStreamWorker()
     }
 
     // Build standard and optional entities for device
@@ -255,6 +256,42 @@ class Camera extends RingPolledDevice {
         this.data.stream.live.streamSource = (utils.config.livestream_user && utils.config.livestream_pass)
             ? `rtsp://${utils.config.livestream_user}:${utils.config.livestream_pass}@${streamSourceUrlBase}:8554/${this.deviceId}_live`
             : `rtsp://${streamSourceUrlBase}:8554/${this.deviceId}_live`
+    }
+
+    initLiveStreamWorker() {
+        this.liveStreamWorker = new Worker('./lib/livestream.js', { 
+            workerData: {
+                ringAuth: this.device.restClient.authOptions,
+                locationId: this.locationId,
+                deviceId: this.deviceId,
+                rtspPublishUrl: this.data.stream.live.rtspPublishUrl
+            }
+        })
+
+        this.liveStreamWorker.on('message', (data) => {
+            switch (data) {
+                case 'active':
+                    if (this.data.stream.live.status !== 'active') {
+                        this.debug('Live stream has been successfully activated')
+                    }
+                    this.data.stream.live.session = true
+                    this.data.stream.live.status = 'active'
+                    break;
+                case 'inactive':
+                    if (this.data.stream.live.status !== 'inactive') {
+                        this.debug('Live stream has been successfully deactivated')
+                    }
+                    this.data.stream.live.session = false
+                    this.data.stream.live.status = 'inactive'
+                    break;
+                case 'failed':
+                    this.debug('Live stream failed to activate')
+                    this.data.stream.live.session = false
+                    this.data.stream.live.status = 'failed'
+                    break;
+            }
+            this.publishStreamState()
+        })
     }
 
     // Publish camera capabilities and state and subscribe to events
@@ -650,53 +687,6 @@ class Camera extends RingPolledDevice {
         this.data.stream[type].active = false
     }
 
-    async startLiveStream() {
-        new Worker('./lib/livestream.js', this.device);
-        // Start and publish stream to rtsp-simple-server 
-        this.debug('Establishing connection to live stream')
-        try {
-            this.data.stream.live.session = await this.device.streamVideo({
-                // The below takes the native AVC video stream from Rings servers and just 
-                // copies the video stream to the RTSP server unmodified.  However, for
-                // audio it splits the G.711 μ-law stream into two output streams one
-                // being converted to AAC audio, and the other just the raw G.711 stream.
-                // This allows support for playback methods that either don't support AAC
-                // (e.g. native browser based WebRTC) and provides stong compatibility across
-                // the various playback technolgies with minimal processing overhead. 
-                audio: [
-                    '-map', '0:a:0',
-                    '-map', '0:a:0',
-                    '-c:a:0', 'aac',
-                    '-c:a:1', 'copy',
-                ],
-                video: [
-                    '-map', '0:v:0',
-                    '-vcodec', 'copy',
-                ],
-                output: [
-                    '-f', 'rtsp',
-                    '-rtsp_transport', 'tcp',
-                    this.data.stream.live.rtspPublishUrl
-                ]
-            })
-
-            this.data.stream.live.status = 'active'
-            this.publishStreamState()
-
-            this.data.stream.live.session.onCallEnded.subscribe(() => {
-                this.debug('Live video stream ended')
-                this.data.stream.live.status = 'inactive'
-                this.data.stream.live.session = false
-                this.publishStreamState()
-            })
-        } catch(e) {
-            this.debug(e)
-            this.data.stream.live.status = 'failed'
-            this.data.stream.live.session = false
-            this.publishStreamState()
-        }
-    }
-
     async startEventStream() {
         if (await this.updateEventStreamUrl()) {
             this.publishStreamSelectState()
@@ -889,7 +879,8 @@ class Camera extends RingPolledDevice {
                     this.data.stream[type].status = 'activating'
                     this.publishStreamState()
                     if (type === 'live') {
-                        this.startLiveStream()
+                        this.debug('Establishing connection to live stream via Ring API...')
+                        this.liveStreamWorker.postMessage('start')
                     } else {
                         this.startEventStream()
                     }
@@ -897,7 +888,7 @@ class Camera extends RingPolledDevice {
                 break;
             case 'off':
                 if (type === 'live' && this.data.stream[type].session) {
-                    this.data.stream[type].session.stop()
+                    this.liveStreamWorker.postMessage('stop')
                 } else if (type === 'event' && this.data.stream[type].session) {
                     this.data.stream[type].session.kill()
                 } else {

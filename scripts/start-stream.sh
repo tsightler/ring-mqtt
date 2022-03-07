@@ -52,7 +52,7 @@ while read -u 10 message
 do
     # If start message received, publish the command to start stream
     if [ ${message} = "START" ]; then
-        echo -e "${green}[${client_name}]${reset} Activating ${type} stream via topic ${blue}${command_topic}${reset}"
+        echo -e "${green}[${client_name}]${reset} Activating ${type} stream via MQTT topic ${blue}${command_topic}${reset}"
         mosquitto_pub -i "${client_id}_pub" -u "${MQTTUSER}" -P "${MQTTPASSWORD}" -h "${MQTTHOST}" -p "${MQTTPORT}" -t "${command_topic}" -m "ON-DEMAND"
     else
         # Otherwise it should be a JSON message from the stream state attribute topic so extract the detailed stream state
@@ -60,27 +60,27 @@ do
         case ${stream_state,,} in
             activating)
                 if [ ${activated} = "false" ]; then
-                    echo -e "${green}[${client_name}]${reset} ${type^} stream is activating..."
+                    echo -e "${green}[${client_name}]${reset} MQTT message indicates that ${type} stream is activating..."
                 fi
                 ;;
             active)
                 if [ ${activated} = "false" ]; then
-                    echo -e "${green}[${client_name}]${reset} ${type^} stream is active!"
+                    echo -e "${green}[${client_name}]${reset} MQTT message indicates that ${type} stream is active"
                     activated="true"
                 fi
                 ;;
             inactive)
-                echo -e "${green}[${client_name}]${yellow} ${type^} stream has gone inactive, exiting...${reset}"
+                echo -e "${green}[${client_name}]${yellow} MQTT message indicates that ${type} stream has gone inactive, exiting...${reset}"
                 reason='inactive'
                 ctrl_c
                 ;;
             failed)
-                echo -e "${green}[${client_name}]${red} ERROR - ${type^} stream failed to activate, exiting...${reset}"
+                echo -e "${green}[${client_name}]${red} ERROR - MQTT message indicates that ${type} stream failed to activate, exiting...${reset}"
                 reason='failed'
                 ctrl_c
                 ;;
             *)
-                echo -e "${green}[${client_name}]${red} ERROR - Unknown ${type} stream state received on topic ${blue}${json_attribute_topic}${reset}"
+                echo -e "${green}[${client_name}]${red} ERROR - Unknown MQTT ${type} stream state received on topic ${blue}${json_attribute_topic}${reset}"
                 ;;
         esac
     fi

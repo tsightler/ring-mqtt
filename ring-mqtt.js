@@ -35,7 +35,7 @@ const main = async(generatedToken) => {
             debug(colors.red('No refresh token was found in state file, generate a token using the addon Web UI'))
         } else {
             tokenApp.start()
-            debug(colors.red('No refresh token we found in the state file, use the Web UI at http://<host_ip_address>:55123/ to generate a token.'))
+            debug(colors.red('No refresh token was found in the state file, use the Web UI at http://<host_ip_address>:55123/ to generate a token.'))
         }
     }
 }
