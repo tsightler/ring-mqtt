@@ -6,7 +6,6 @@ const net = require('net');
 const getPort = require('get-port')
 const pathToFfmpeg = require('ffmpeg-for-homebridge')
 const { spawn } = require('child_process')
-const { Worker } = require('worker_threads')
 const rss = require('../lib/rtsp-simple-server')
 
 class Camera extends RingPolledDevice {
@@ -650,7 +649,6 @@ class Camera extends RingPolledDevice {
     }
 
     async startLiveStream() {
-        new Worker('./lib/livestream.js', this.device);
         // Start and publish stream to rtsp-simple-server 
         this.debug('Establishing connection to live stream')
         try {
