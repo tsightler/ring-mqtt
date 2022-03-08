@@ -4,3 +4,4 @@
 node_modules
 config.dev.json
 ring-state.json
+ring-test.js
