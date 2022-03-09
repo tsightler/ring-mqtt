@@ -12,7 +12,7 @@
     "ip": "^1.1.5",
     "is-online": "^9.0.1",
     "write-file-atomic": "^4.0.0",
-    "mqtt": "4.3.4",
+    "mqtt": "4.3.6",
     "pipe2jpeg": "^0.3.1",
     "@tsightler/ring-client-api": "9.25.0-custom.0"
   },
