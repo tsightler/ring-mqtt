@@ -650,7 +650,7 @@ class Camera extends RingPolledDevice {
 
     async startLiveStream() {
         // Start and publish stream to rtsp-simple-server 
-        this.debug('Establishing connection to live stream')
+        this.debug('Establishing connection to live stream via Ring API')
         try {
             this.data.stream.live.session = await this.device.streamVideo({
                 // The below takes the native AVC video stream from Rings servers and just 
@@ -886,7 +886,6 @@ class Camera extends RingPolledDevice {
                     this.data.stream[type].status = 'activating'
                     this.publishStreamState()
                     if (type === 'live') {
-                        this.debug('Establishing connection to live stream via Ring API...')
                         this.startLiveStream()
                     } else {
                         this.startEventStream()

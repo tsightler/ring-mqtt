@@ -52,7 +52,7 @@ while read -u 10 message
 do
     # If start message received, publish the command to start stream
     if [ ${message} = "START" ]; then
-        echo -e "${green}[${client_name}]${reset} Activating ${type} stream via MQTT topic ${blue}${command_topic}${reset}"
+        echo -e "${green}[${client_name}]${reset} Requesting activation of ${type} stream via MQTT"
         mosquitto_pub -i "${client_id}_pub" -u "${MQTTUSER}" -P "${MQTTPASSWORD}" -h "${MQTTHOST}" -p "${MQTTPORT}" -t "${command_topic}" -m "ON-DEMAND"
     else
         # Otherwise it should be a JSON message from the stream state attribute topic so extract the detailed stream state
@@ -60,7 +60,7 @@ do
         case ${stream_state,,} in
             activating)
                 if [ ${activated} = "false" ]; then
-                    echo -e "${green}[${client_name}]${reset} MQTT message indicates that ${type} stream is activating..."
+                    echo -e "${green}[${client_name}]${reset} MQTT message indicates that ${type} stream is activating"
                 fi
                 ;;
             active)
@@ -70,12 +70,12 @@ do
                 fi
                 ;;
             inactive)
-                echo -e "${green}[${client_name}]${yellow} MQTT message indicates that ${type} stream has gone inactive, exiting...${reset}"
+                echo -e "${green}[${client_name}]${yellow} MQTT message indicates that ${type} stream has gone inactive, exiting${reset}"
                 reason='inactive'
                 ctrl_c
                 ;;
             failed)
-                echo -e "${green}[${client_name}]${red} ERROR - MQTT message indicates that ${type} stream failed to activate, exiting...${reset}"
+                echo -e "${green}[${client_name}]${red} ERROR - MQTT message indicates that ${type} stream failed to activate, exiting${reset}"
                 reason='failed'
                 ctrl_c
                 ;;
