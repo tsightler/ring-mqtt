@@ -40,8 +40,8 @@ class Siren extends RingSocketDevice {
     }
 
     // Process messages from MQTT command topic
-    processCommand(message, componentCommand) {
-        switch (componentCommand) {
+    processCommand(command, message) {
+        switch (command) {
             case 'siren/command':
                 this.setSirenState(message)
                 break;
@@ -51,7 +51,7 @@ class Siren extends RingSocketDevice {
                 }
                 break;
             default:
-                this.debug(`Received message to unknown command topic: ${componentCommand}`)
+                this.debug(`Received message to unknown command topic: ${command}`)
         }
     }
 

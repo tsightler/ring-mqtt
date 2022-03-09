@@ -45,9 +45,9 @@ class BeamOutdoorPlug extends RingSocketDevice {
     }
 
     // Process messages from MQTT command topic
-    processCommand(message, componentCommand) {
-        const entityKey = componentCommand.split('/')[0]
-        switch (componentCommand) {
+    processCommand(command, message) {
+        const entityKey = command.split('/')[0]
+        switch (command) {
             case 'outlet1/command':
                 if (this.entity.hasOwnProperty(entityKey)) {
                     this.setOutletState(message, 'outlet1')
@@ -59,7 +59,7 @@ class BeamOutdoorPlug extends RingSocketDevice {
                 }
                 break;
             default:
-                this.debug(`Received message to unknown command topic: ${componentCommand}`)
+                this.debug(`Received message to unknown command topic: ${command}`)
         }
     }
 

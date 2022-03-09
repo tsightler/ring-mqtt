@@ -112,9 +112,9 @@ class SecurityPanel extends RingSocketDevice {
     }
 
     // Process messages from MQTT command topic
-    processCommand(message, componentCommand) {
-        const entityKey = componentCommand.split('/')[0]
-        switch (componentCommand) {
+    processCommand(command, message) {
+        const entityKey = command.split('/')[0]
+        switch (command) {
             case 'alarm/command':
                 this.setAlarmMode(message)
                 break;
@@ -135,7 +135,7 @@ class SecurityPanel extends RingSocketDevice {
                 }
                 break;
             default:
-                this.debug(`Received message to unknown command topic: ${componentCommand}`)
+                this.debug(`Received message to unknown command topic: ${command}`)
         }
     }
 

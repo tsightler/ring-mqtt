@@ -42,13 +42,13 @@ class ModesPanel extends RingPolledDevice {
     }
 
     // Process messages from MQTT command topic
-    processCommand(message, componentCommand) {
-        switch (componentCommand) {
+    processCommand(command, message) {
+        switch (command) {
             case 'mode/command':
                 this.setLocationMode(message)
                 break;
             default:
-                this.debug(`Received message to unknown command topic: ${componentCommand}`)
+                this.debug(`Received message to unknown command topic: ${command}`)
         }
     }
     

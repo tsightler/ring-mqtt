@@ -21,8 +21,8 @@ class MultiLevelSwitch extends RingSocketDevice {
     }
     
     // Process messages from MQTT command topic
-    processCommand(message, componentCommand) {
-        switch (componentCommand) {
+    processCommand(command, message) {
+        switch (command) {
             case 'light/command':
                 this.setSwitchState(message)
                 break;
@@ -30,7 +30,7 @@ class MultiLevelSwitch extends RingSocketDevice {
                 this.setSwitchLevel(message)
                 break;
             default:
-                this.debug(`Received message to unknown command topic: ${componentCommand}`)
+                this.debug(`Received message to unknown command topic: ${command}`)
         }
     }
 

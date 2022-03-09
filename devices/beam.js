@@ -78,9 +78,9 @@ class Beam extends RingSocketDevice {
     }
 
     // Process messages from MQTT command topic
-    processCommand(message, componentCommand) {
-        const entityKey = componentCommand.split('/')[0]
-        switch (componentCommand) {
+    processCommand(command, message) {
+        const entityKey = command.split('/')[0]
+        switch (command) {
             case 'light/command':
                 if (this.entity.hasOwnProperty(entityKey)) {
                     this.setLightState(message)
@@ -97,7 +97,7 @@ class Beam extends RingSocketDevice {
                 }
                 break;
             default:
-                this.debug(`Received message to unknown command topic: ${componentCommand}`)
+                this.debug(`Received message to unknown command topic: ${command}`)
         }
     }
 

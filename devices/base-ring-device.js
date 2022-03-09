@@ -23,6 +23,10 @@ class RingDevice {
             this.initAttributeEntities(primaryAttribute)
             this.schedulePublishAttributes()
         }
+
+        utils.event.on(`${this.locationId}_${this.deviceId}`, (command, message) => {
+            this.processCommand(command, message)
+        })
     }
 
     // This function loops through each entity of the device, creates a unique

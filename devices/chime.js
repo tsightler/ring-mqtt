@@ -107,8 +107,8 @@ class Chime extends RingPolledDevice {
     }
 
     // Process messages from MQTT command topic
-    processCommand(message, topic) {
-        switch (topic.split("/").slice(-2).join("/")) {
+    processCommand(command, message) {
+        switch (command) {
             case 'snooze/command':
                 this.setSnoozeState(message)
                 break;
@@ -125,7 +125,7 @@ class Chime extends RingPolledDevice {
                 this.playSound(message, 'motion')
                 break;
             default:
-                this.debug(`Received message to unknown command topic: ${componentCommand}`)
+                this.debug(`Received message to unknown command topic: ${command}`)
         }
     }
 
