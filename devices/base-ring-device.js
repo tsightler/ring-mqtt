@@ -23,10 +23,6 @@ class RingDevice {
             this.initAttributeEntities(primaryAttribute)
             this.schedulePublishAttributes()
         }
-
-        utils.event.on(`${this.locationId}_${this.deviceId}`, (command, message) => {
-            this.processCommand(command, message)
-        })
     }
 
     // This function loops through each entity of the device, creates a unique
@@ -151,13 +147,22 @@ class RingDevice {
 
             // On first publish store generated topics in entities object and subscribe to command topics
             if (!this.entity[entityKey].hasOwnProperty('published')) {
+                let hasCommandTopic = false
                 this.entity[entityKey].published = true
                 Object.keys(discoveryMessage).filter(property => property.match('topic')).forEach(topic => {
                     this.entity[entityKey][topic] = discoveryMessage[topic]
                     if (topic.match('command_topic')) {
+                        hasCommandTopic = true
                         utils.event.emit('mqttSubscribe', discoveryMessage[topic])
                     }
                 })
+
+                // If device has any command topic listen for device events 
+                if (hasCommandTopic) {
+                    utils.event.on(`${this.locationId}_${this.deviceId}`, (command, message) => {
+                        this.processCommand(command, message)
+                    })
+                }
             }
         })
     }
