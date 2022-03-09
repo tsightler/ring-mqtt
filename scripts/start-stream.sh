@@ -70,12 +70,12 @@ do
                 fi
                 ;;
             inactive)
-                echo -e "${green}[${client_name}]${yellow} MQTT message indicates that ${type} stream has gone inactive, exiting${reset}"
+                echo -e "${green}[${client_name}]${yellow} MQTT message indicates that ${type} stream has gone inactive${reset}"
                 reason='inactive'
                 ctrl_c
                 ;;
             failed)
-                echo -e "${green}[${client_name}]${red} ERROR - MQTT message indicates that ${type} stream failed to activate, exiting${reset}"
+                echo -e "${green}[${client_name}]${red} ERROR - MQTT message indicates that ${type} stream failed to activate${reset}"
                 reason='failed'
                 ctrl_c
                 ;;
