@@ -1,7 +1,7 @@
 const RingSocketDevice = require('./base-socket-device')
 const { RingDeviceType } = require('@tsightler/ring-client-api')
 
-class ContactSensor extends RingSocketDevice {
+class BinarySensor extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'alarm')
 
@@ -13,6 +13,11 @@ class ContactSensor extends RingSocketDevice {
                 this.entityName = 'contact'
                 this.deviceData.mdl = 'Contact Sensor'
                 device_class = (this.device.data.subCategoryId == 2) ? 'window' : 'door'
+                break;
+            case RingDeviceType.MotionSensor:
+                this.entityName = 'motion'
+                this.deviceData.mdl = 'Motion Sensor',
+                device_class = 'motion'
                 break;
             case RingDeviceType.RetrofitZone:
                 this.entityName = 'zone'
@@ -30,9 +35,15 @@ class ContactSensor extends RingSocketDevice {
                 device_class = 'safety'
                 break;
             default:
-                this.entityName = 'binary_sensor'
-                this.deviceData.mdl = 'Generic Binary Sensor'
-                device_class = 'None'
+                if (this.device.name.toLowerCase().includes('motion')) {
+                    this.entityName = 'motion'
+                    this.deviceData.mdl = 'Motion Sensor',
+                    device_class = 'motion'
+                } else {
+                    this.entityName = 'binary_sensor'
+                    this.deviceData.mdl = 'Generic Binary Sensor'
+                    device_class = 'None'
+                }
         }
 
         this.entity[this.entityName] = {
@@ -49,4 +60,4 @@ class ContactSensor extends RingSocketDevice {
     }
 }
 
-module.exports = ContactSensor
+module.exports = BinarySensor
