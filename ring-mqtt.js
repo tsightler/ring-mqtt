@@ -384,13 +384,32 @@ async function processMqttMessage(topic, message, mqttClient, ringClient) {
 function initMqtt() {
     const mqtt_user = CONFIG.mqtt_user ? CONFIG.mqtt_user : null
     const mqtt_pass = CONFIG.mqtt_pass ? CONFIG.mqtt_pass : null
-    const mqtt = mqttApi.connect({
+
+    if (CONFIG.mqtt_URL === undefined || CONFIG.mqtt_URL == '') {
+        debug('CONFIG.mqtt_URL undefined')
+        const mqtt = mqttApi.connect({
         host:CONFIG.host,
         port:CONFIG.port,
         username: mqtt_user,
         password: mqtt_pass
-    });
-    return mqtt
+        }); 
+        return mqtt
+
+    } else { 
+
+        const mqtt_url  = CONFIG.mqtt_URL
+        const mqtt_clientId = CONFIG.mqtt_clientId ? CONFIG.mqtt_clientId : 'ring2mqtt_' + Math.random().toString(16).substr(2, 8)
+        const mqtt_rejectUnauthorized = CONFIG.mqtt_rejectUnauthorized ? CONFIG.mqtt_rejectUnauthorized : true
+        const mqtt_options = { username: mqtt_user,
+                               password: mqtt_pass,
+                               clientId: mqtt_clientId,
+                               rejectUnauthorized: mqtt_rejectUnauthorized
+                             };
+
+        const mqtt = mqttApi.connect(mqtt_url,mqtt_options)
+        return mqtt
+    }
+
 }
 
 // MQTT initialization successful, setup actions for MQTT events
