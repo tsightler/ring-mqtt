@@ -1,7 +1,6 @@
 const RingPolledDevice = require('./base-polled-device')
 const utils = require( '../lib/utils' )
 const colors = require('colors/safe')
-const { Worker } = require('worker_threads')
 const P2J = require('pipe2jpeg')
 const net = require('net');
 const getPort = require('get-port')
@@ -46,7 +45,7 @@ class Camera extends RingPolledDevice {
                     state: 'OFF',
                     status: 'inactive',
                     publishedStatus: '',
-                    session: false,
+                    sessionId: 0,
                     rtspPublishUrl: (utils.config.livestream_user && utils.config.livestream_pass)
                         ? `rtsp://${utils.config.livestream_user}:${utils.config.livestream_pass}@localhost:8554/${this.deviceId}_live`
                         : `rtsp://localhost:8554/${this.deviceId}_live`
@@ -187,34 +186,25 @@ class Camera extends RingPolledDevice {
             this.scheduleSnapshotRefresh()
         }
 
-        this.liveCallWorker = new Worker('./lib/livecall.js', { 
-            workerData: {
-                camera: {
-                    name: this.device.name
-                },
-                rtspPublishUrl: this.data.stream.live.rtspPublishUrl
-            }
-        })
-
-        this.liveCallWorker.on('message', (data) => {
-            switch (data) {
+        utils.event.on(`${this.deviceId}_livestream`, (state, sessionId) => {
+            switch (state) {
                 case 'active':
                     if (this.data.stream.live.status !== 'active') {
                         this.debug('Live stream has been successfully activated')
                     }
-                    this.data.stream.live.session = true
+                    this.data.stream.live.sessionId = sessionId
                     this.data.stream.live.status = 'active'
                     break;
                 case 'inactive':
                     if (this.data.stream.live.status !== 'inactive') {
                         this.debug('Live stream has been successfully deactivated')
                     }
-                    this.data.stream.live.session = false
+                    this.data.stream.live.sessionId = 0
                     this.data.stream.live.status = 'inactive'
                     break;
                 case 'failed':
                     this.debug('Live stream failed to activate')
-                    this.data.stream.live.session = false
+                    this.data.stream.live.sessionId = 0
                     this.data.stream.live.status = 'failed'
                     break;
             }
@@ -692,9 +682,10 @@ class Camera extends RingPolledDevice {
         try {
             liveCall = await this.device.restClient.request({
                 method: 'POST',
-                url: this.device.doorbotUrl('live_call'),
+                url: this.device.doorbotUrl('live_call')
             })
-            this.liveCallWorker.postMessage(['start', liveCall.data.session_id])
+            this.data.stream.live.sessionId = liveCall.data.session_id
+            utils.event.emit('start_livestream', this.deviceId, this.device.name, liveCall.data.session_id, this.data.stream.live.rtspPublishUrl)
         } catch(error) {
             console.log(error)
             if (error.response.statusCode === 403) {
@@ -902,8 +893,8 @@ class Camera extends RingPolledDevice {
                 }
                 break;
             case 'off':
-                if (type === 'live' && this.data.stream.live.session) {
-                    this.liveCallWorker.postMessage(['stop'])
+                if (type === 'live' && this.data.stream.live.sessionId) {
+                    utils.event.emit('stop_livestream', this.data.stream.live.sessionId)
                 } else if (type === 'event' && this.data.stream.event.session) {
                     this.data.stream[type].session.kill()
                 } else {
