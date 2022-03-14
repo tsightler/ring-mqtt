@@ -687,10 +687,10 @@ class Camera extends RingPolledDevice {
             this.data.stream.live.sessionId = liveCall.data.session_id
             utils.event.emit('start_livestream', this.deviceId, this.device.name, liveCall.data.session_id, this.data.stream.live.rtspPublishUrl)
         } catch(error) {
-            console.log(error)
             if (error.response.statusCode === 403) {
                 this.debug(`Camera returned 403 when starting a live stream.  This usually indicates that live streaming is blocked by Modes settings.  Check your Ring app and verify that you are able to stream from this camera with the current Modes settings.`)
             }
+            this.debug(error)
         }
     }
 
