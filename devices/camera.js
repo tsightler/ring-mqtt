@@ -50,9 +50,8 @@ class Camera extends RingPolledDevice {
                         ? `rtsp://${utils.config.livestream_user}:${utils.config.livestream_pass}@localhost:8554/${this.deviceId}_live`
                         : `rtsp://localhost:8554/${this.deviceId}_live`,
                     rtmpPublishUrl: (utils.config.livestream_user && utils.config.livestream_pass)
-                        ? `rtmp://${utils.config.livestream_user}:${utils.config.livestream_pass}@localhost:1935/${this.deviceId}_live`
+                        ? `rtmp://localhost:1935/${this.deviceId}_live?user=${utils.config.livestream_user}&pass=${utils.config.livestream_pass}`
                         : `rtmp://localhost:1935/${this.deviceId}_live`
-
                 },
                 event: {
                     state: 'OFF',
