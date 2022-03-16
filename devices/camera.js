@@ -48,7 +48,11 @@ class Camera extends RingPolledDevice {
                     sessionId: 0,
                     rtspPublishUrl: (utils.config.livestream_user && utils.config.livestream_pass)
                         ? `rtsp://${utils.config.livestream_user}:${utils.config.livestream_pass}@localhost:8554/${this.deviceId}_live`
-                        : `rtsp://localhost:8554/${this.deviceId}_live`
+                        : `rtsp://localhost:1935/${this.deviceId}_live`,
+                    rtmpPublishUrl: (utils.config.livestream_user && utils.config.livestream_pass)
+                        ? `rtmp://${utils.config.livestream_user}:${utils.config.livestream_pass}@localhost:8554/${this.deviceId}_live`
+                        : `rtmp://localhost:1935/${this.deviceId}_live`
+
                 },
                 event: {
                     state: 'OFF',
@@ -685,7 +689,7 @@ class Camera extends RingPolledDevice {
                 url: this.device.doorbotUrl('live_call')
             })
             this.data.stream.live.sessionId = liveCall.data.session_id
-            utils.event.emit('start_livestream', this.deviceId, this.device.name, liveCall.data.session_id, this.data.stream.live.rtspPublishUrl)
+            utils.event.emit('start_livestream', this.deviceId, this.device.name, liveCall.data.session_id, this.data.stream.live.rtmpPublishUrl)
         } catch(error) {
             if (error.hasOwnProperty('response') && error.response.hasOwnProperty('statusCode') && error.response.statusCode === 403) {
                 this.debug(`Camera returned 403 when starting a live stream.  This usually indicates that live streaming is blocked by Modes settings.  Check your Ring app and verify that you are able to stream from this camera with the current Modes settings.`)
