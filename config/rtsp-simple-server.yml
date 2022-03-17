@@ -2,7 +2,7 @@ readTimeout: 10s
 readBufferCount: 32768
 
 rtspDisable: no
-protocols: [tcp, udp]
+protocols: [tcp]
 rtspAddress: 0.0.0.0:8554
 
 rtmpDisable: yes
