@@ -7,7 +7,8 @@ ENV LANG="C.UTF-8" \
     TERM="xterm-256color"
     
 COPY . /app/ring-mqtt
-RUN apt install git curl jq mosquitto-clients && \
+RUN apt-get update && \
+    apt-get install git curl jq mosquitto-clients && \
     DPKGARCH="$(dpkg --print-architecture)" && \
     case "${DPKGARCH}" in \
         aarch64|armhf) \
