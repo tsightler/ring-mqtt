@@ -1,4 +1,4 @@
-FROM alpine:3.15
+FROM node:16
 
 ENV LANG="C.UTF-8" \
     PS1="$(whoami)@$(hostname):$(pwd)$ " \
@@ -7,17 +7,17 @@ ENV LANG="C.UTF-8" \
     TERM="xterm-256color"
     
 COPY . /app/ring-mqtt
-RUN apk add --no-cache tar git libcrypto1.1 libssl1.1 musl-utils musl bash curl jq tzdata nodejs npm mosquitto-clients && \
-    APKARCH="$(apk --print-arch)" && \
-    case "${APKARCH}" in \
+RUN apt install git curl jq mosquitto-clients && \
+    DPKGARCH="$(dpkg --print-architecture)" && \
+    case "${DPKGARCH}" in \
         aarch64|armhf) \
-            S6ARCH="${APKARCH}";; \
+            S6ARCH="${DPKGARCH}";; \
         x86_64) \
             S6ARCH="amd64";; \
         armv7) \
             S6ARCH="arm";; \
         *) \
-            echo >&2 "ERROR: Unsupported architecture '$APKARCH'" \
+            echo >&2 "ERROR: Unsupported architecture '$DPKGARCH'" \
             exit 1;; \
     esac && \
     curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/v2.2.0.3/s6-overlay-${S6ARCH}.tar.gz" | tar zxf - -C / && \
@@ -25,7 +25,7 @@ RUN apk add --no-cache tar git libcrypto1.1 libssl1.1 musl-utils musl bash curl 
     mkdir -p /etc/services.d && \
     cp -a /app/ring-mqtt/init/s6/* /etc/. && \
     rm -Rf /app/ring-mqtt/init && \ 
-    case "${APKARCH}" in \
+    case "${DPKGARCH}" in \
         x86_64) \
             RSSARCH="amd64";; \
         aarch64) \
@@ -35,7 +35,7 @@ RUN apk add --no-cache tar git libcrypto1.1 libssl1.1 musl-utils musl bash curl 
         armhf) \
             RSSARCH="armv6";; \
         *) \
-            echo >&2 "ERROR: Unsupported architecture '$APKARCH'" \
+            echo >&2 "ERROR: Unsupported architecture '$DPKGARCH'" \
             exit 1;; \
     esac && \
     curl -L -s "https://github.com/aler9/rtsp-simple-server/releases/download/v0.17.17/rtsp-simple-server_v0.17.17_linux_${RSSARCH}.tar.gz" | tar zxf - -C /usr/local/bin rtsp-simple-server && \
