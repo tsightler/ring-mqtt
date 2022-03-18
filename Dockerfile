@@ -11,11 +11,11 @@ RUN apt-get update && \
     apt-get install -y git curl jq mosquitto-clients && \
     DPKGARCH="$(dpkg --print-architecture)" && \
     case "${DPKGARCH}" in \
-        aarch64|armhf) \
-            S6ARCH="${DPKGARCH}";; \
-        x86_64) \
+        amd64) \
             S6ARCH="amd64";; \
-        armv7) \
+        arm64) \
+            S6ARCH="aarch64";;\
+        armv7|armhf) \
             S6ARCH="arm";; \
         *) \
             echo >&2 "ERROR: Unsupported architecture '$DPKGARCH'" \
@@ -27,9 +27,9 @@ RUN apt-get update && \
     cp -a /app/ring-mqtt/init/s6/* /etc/. && \
     rm -Rf /app/ring-mqtt/init && \ 
     case "${DPKGARCH}" in \
-        x86_64) \
+        amd64) \
             RSSARCH="amd64";; \
-        aarch64) \
+        arm64) \
             RSSARCH="arm64v8";; \
         armv7) \
             RSSARCH="armv7";; \
