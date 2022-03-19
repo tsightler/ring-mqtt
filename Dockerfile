@@ -1,4 +1,4 @@
-FROM node:16
+FROM node:16-slim
 
 ENV LANG="C.UTF-8" \
     PS1="$(whoami)@$(hostname):$(pwd)$ " \
@@ -16,7 +16,7 @@ RUN apt-get update && \
         arm64) \
             S6ARCH="aarch64";;\
         armhf) \
-            S6ARCH="armhf";; \
+            S6ARCH="arm";; \
         *) \
             echo >&2 "ERROR: Unsupported architecture '$DPKGARCH'" \
             exit 1;; \
@@ -32,7 +32,7 @@ RUN apt-get update && \
         arm64) \
             RSSARCH="arm64v8";; \
         armhf) \
-            RSSARCH="armv7";; \
+            RSSARCH="armv6";; \
         *) \
             echo >&2 "ERROR: Unsupported architecture '$DPKGARCH'" \
             exit 1;; \
