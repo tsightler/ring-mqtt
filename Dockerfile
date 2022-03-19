@@ -15,8 +15,8 @@ RUN apt-get update && \
             S6ARCH="amd64";; \
         arm64) \
             S6ARCH="aarch64";;\
-        armhf) \
-            S6ARCH="arm";; \
+        armv7|armhf) \
+            S6ARCH="armhf";; \
         *) \
             echo >&2 "ERROR: Unsupported architecture '$DPKGARCH'" \
             exit 1;; \
@@ -31,8 +31,8 @@ RUN apt-get update && \
             RSSARCH="amd64";; \
         arm64) \
             RSSARCH="arm64v8";; \
-        armhf) \
-            RSSARCH="armv6";; \
+        armv7|armhf) \
+            RSSARCH="armv7";; \
         *) \
             echo >&2 "ERROR: Unsupported architecture '$DPKGARCH'" \
             exit 1;; \
