@@ -30,10 +30,8 @@ RUN apk add --no-cache tar git libcrypto1.1 libssl1.1 musl-utils musl bash curl 
             RSSARCH="amd64";; \
         aarch64) \
             RSSARCH="arm64v8";; \
-        armv7) \
+        armv7|armhf) \
             RSSARCH="armv7";; \
-        armhf) \
-            RSSARCH="armv6";; \
         *) \
             echo >&2 "ERROR: Unsupported architecture '$APKARCH'" \
             exit 1;; \
