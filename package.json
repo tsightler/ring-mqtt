@@ -4,6 +4,7 @@
   "description": "Ring Devices via MQTT",
   "main": "ring-mqtt.js",
   "dependencies": {
+    "ring-client-api": "10.0.0-beta.2",
     "body-parser": "^1.19.2",
     "debug": "^4.3.3",
     "express": "^4.17.3",
@@ -11,10 +12,10 @@
     "got": "^11.8.3",
     "ip": "^1.1.5",
     "is-online": "^9.0.1",
-    "write-file-atomic": "^4.0.0",
     "mqtt": "4.3.6",
     "pipe2jpeg": "^0.3.1",
-    "@tsightler/ring-client-api": "10.0.0-beta.1.custom.3"
+    "write-file-atomic": "^4.0.0",
+    "@koush/wrtc": "^0.5.2"
   },
   "devDependencies": {
     "eslint": "^7.19.0"

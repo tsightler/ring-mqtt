@@ -1,5 +1,5 @@
 const RingSocketDevice = require('./base-socket-device')
-const { RingDeviceType } = require('@tsightler/ring-client-api')
+const { RingDeviceType } = require('ring-client-api')
 const utils = require( '../lib/utils' )
 
 class Thermostat extends RingSocketDevice {
