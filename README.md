@@ -168,6 +168,6 @@ docker run -it --rm --mount type=bind,source=/etc/ring-mqtt,target=/data -e "MQT
 `DEBUG=ring-mqtt ./ring-mqtt`
 
 ## Thanks
-Many thanks to @dgrief and his excellent [ring-client-api API](https://github.com/dgreif/ring/) as well as his homebridge plugin, from which I've learned a lot.  Without his work it would have taken far more effort and time, probably more time than I had, to get this working.
+Many thanks to @dgreif and his excellent [ring-client-api API](https://github.com/dgreif/ring/) as well as his homebridge plugin, from which I've learned a lot.  Without his work it would have taken far more effort and time, probably more time than I had, to get this working.
 
 Also, thanks to [acolytec3](https://community.home-assistant.io/u/acolytec3) on the Home Assistant community forums for the original Ring Alarm MQTT script.  Having an already functioning script with support for MQTT discovery saved me quite a bit of time in developing this script.
