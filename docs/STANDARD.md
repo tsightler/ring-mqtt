@@ -1,20 +1,22 @@
 ## Standard Install 
-Stanard installation is possible, however, this method is not regularly tested and this you will mostly on your own to solve any installation problems if you choose to use this method.
+Standard installation is possible, however, this method is not regularly tested and this you will mostly on your own to solve any installation problems if you choose to use this method.
 
 ### Installation
 #### Pre-requisites
 - NodeJS version must be at least 14.17.0 (latest LTS is recommended)
 - [rtsp-simple-server](https://github.com/aler9/rtsp-simple-server) v0.17.4 or later must be installed and available in the system path.
-- The mosquitto clients package (mosquitto_sub/mosquitto_pub) must be available in the system path
+- The Mosquitto clients package (mosquitto_sub/mosquitto_pub) must be available in the system path
 
 #### Perform Install
-Once the pre-requisites have been met simply clone this project from Github into a directory of your choice (the included systemd unit file below assumes /opt but can be easily modified):
+Once the pre-requisites have been met simply clone this project from GitHub into a directory of your choice (the included systemd unit file below assumes /opt but can be easily modified):
 
-`git clone https://github.com/tsightler/ring-mqtt.git`
+```bash
+git clone https://github.com/tsightler/ring-mqtt.git
+```
 
 Then switch to the ring-mqtt directory and run:
 
-```
+```bash
 chmod +x ring-mqtt.js
 npm install
 ```
@@ -31,8 +33,8 @@ This will install all of the required node dependencies.  Now edit the config.js
 | mqtt_pass | Password for MQTT broker | blank |
 | enable_cameras | Default false since the native Ring component for Home Assistant supports cameras, set to true to enable camera/chime support in this add-on.  Access to Chimes cannot be granted to shared users so Chime support requires use of the primary Ring account. | false |
 | snapshot_mode | Enable still snapshot image updates from camera, see [Snapshot Options](#snapshot-options) for details | 'disabled' |
-| livestream_user | Specifiy a password for RTSP connections.  Highly recommended if the RTSP port for external media player access is enabled.  The livestream_password option must also be defined or this option is ignored. | blank |
-| livestream_pass | Specifiy a password for RTSP connections.  Highly recommended if the RTSP port for external media player access is enabled.  The livestream_user option must also be defined or this option is ignored. | blank |
+| livestream_user | Specify a password for RTSP connections.  Highly recommended if the RTSP port for external media player access is enabled.  The livestream_password option must also be defined or this option is ignored. | blank |
+| livestream_pass | Specify a password for RTSP connections.  Highly recommended if the RTSP port for external media player access is enabled.  The livestream_user option must also be defined or this option is ignored. | blank |
 | enable_modes | Enable support for Location Modes for sites without a Ring Alarm Panel | false |
 | enable_panic | Enable panic buttons on Alarm Control Panel device | false |
 | beam_duration | Set a default duration in seconds for Smart Lights when turned on via this integration.  The default value of 0 will attempt to detect the last used duration or default to 60 seconds for light groups.  This value can be overridden for individual lights using the duration feature but must be set before the light is turned on. | 0 |
@@ -40,9 +42,9 @@ This will install all of the required node dependencies.  Now edit the config.js
 | location_ids | Array of location Ids in format: ["loc-id", "loc-id2"], see [Limiting Locations](#limiting-locations) for details | blank |
 
 #### Starting ring-mqtt during boot
-For standalone installs the repo includes a sample systemd unit file, named ring-mqtt.service and located in the ring-mqtt/init/systemd folder, which can be used to automaticlly start the script during system boot.  The unit file assumes that the script is installed in /opt/ring-mqtt and it runs the script as the root user (to make sure it has permissions to write config.json), but you can easily modify this to any path and user you'd like.  Just edit the file as required and drop it in /lib/systemd/system then run the following:
+For standalone installs the repo includes a sample systemd unit file, named ring-mqtt.service and located in the ring-mqtt/init/systemd folder, which can be used to automatically start the script during system boot.  The unit file assumes that the script is installed in /opt/ring-mqtt and it runs the script as the root user (to make sure it has permissions to write config.json), but you can easily modify this to any path and user you'd like.  Just edit the file as required and drop it in /lib/systemd/system then run the following:
 
-```
+```bash
 systemctl daemon-reload
 systemctl enable ring-mqtt
 systemctl start ring-mqtt
@@ -58,11 +60,11 @@ If the script is started and the ring_token config parameter is empty, it will s
 
 #### Alternative Method
 Use ring-auth-cli from any system with NodeJS and NPM installed via npx, which downloads and runs ring-auth-cli on demand:
-```
+```bash
 npx -p ring-client-api ring-auth-cli
 ```
 
 **!!! Important Note regarding the security of your refresh token !!!**  
-Using 2FA authentication opens up the possibility that, if the environment runinng ring-mqtt is comporomised, an attacker can acquire the refresh token and use this to authenticate to your Ring account without knowing your username/password and completely bypassing the standard 2FA protections.  Please secure your environment carefully.
+Using 2FA authentication opens up the possibility that, if the environment running ring-mqtt is compromised, an attacker can acquire the refresh token and use this to authenticate to your Ring account without knowing your username/password and completely bypassing the standard 2FA protections.  Please secure your environment carefully.
 
 Because of this added risk, it can be a good idea to create a second account dedicated for use with ring-mqtt and provide access to the devices you would like that account to be able to control.  This allows actions performed by this script to be easily audited since they will show up in activity logs with their own name instead of that of the primary account.  However, if do choose to use a secondary, shared account there are some limitations as Ring does not allow certain devices and functions to be granted access to shared accounts.  When using a secondary account support for Chimes, Smart Lighting groups, and Base Station volume control will not function.
