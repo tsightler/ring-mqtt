@@ -1,12 +1,12 @@
 ## Docker Install
 For Docker installation details, please read this section entirely.  While it is possible to build the image locally from the included Dockerfile, it is recommended to install and update by pulling the official image directly from Docker Hub.  You can pull the image with the following command:
-```
+```bash
 docker pull tsightler/ring-mqtt
 ```
 
 ### Docker Run
 You can issue "docker run" and Docker will automatically pull the image, if it doesn't already exist locally, and then run the script.  The command line below is an example, please see the [Environment Variables](#environment-variables) section for all available configuration options:
-```
+```bash
 docker run --rm -e "MQTTHOST=host_name" -e "MQTTPORT=host_port"  -e "MQTTUSER=mqtt_user" -e "MQTTPASSWORD=mqtt_pw" -e "RINGTOKEN=ring_refreshToken" -e "ENABLECAMERAS=true-or-false" -e "RINGLOCATIONIDS=comma-separated_location_IDs" tsightler/ring-mqtt
 ```
 
@@ -14,7 +14,7 @@ docker run --rm -e "MQTTHOST=host_name" -e "MQTTPORT=host_port"  -e "MQTTUSER=mq
 The Docker container uses a bind mount to provide persistent storage.  While the Docker container will run without this storage, using the bind mount is highly recommended as, otherwise, it will sometimes be required to generate a new token when the container restarts since tokens eventually expire and there will be no way for an updated token to be stored in a persistent fashion. For more details on acquiring an initial refresh token please see ([Authentication](#authentication)).
 
 You can use any directory on the host for this persistent store, but it must be mounted to /data in the container.  The following is an example docker run command using a bind mount to mount the host directory /etc/ring-mqtt to the container path /data:
-```
+```bash
 docker run --rm --mount type=bind,source=/etc/ring-mqtt,target=/data -e "MQTTHOST=host_name" -e "MQTTUSER=mqtt_user" -e "MQTTPASSWORD=mqtt_pw" -e "RINGTOKEN=ring_refreshToken" tsightler/ring-mqtt
 ```
 
@@ -33,7 +33,7 @@ services:
     ports:
       - 8554:8554                      # Enable RTSP port for external media player access
     volumes:
-      - /etc/ring-mqtt:/data           # Mapping of local folder to provide persistant storage
+      - /etc/ring-mqtt:/data           # Mapping of local folder to provide persistent storage
     environment:                       
       - RINGTOKEN=                     # Required for initial startup, see: https://github.com/tsightler/ring-mqtt/blob/main/docs/DOCKER.md#authentication
       - MQTTHOST=localhost             # Hostname or IP of MQTT Broker
@@ -62,32 +62,32 @@ The only absolutely required parameter for initial startup is **RINGTOKEN** but,
 | MQTTPASSWORD | Password for MQTT broker | blank - Use anonymous connection |
 | ENABLECAMERAS | Default false since the native Ring component for Home Assistant supports cameras, set to true to enable camera/chime support in this add-on.  Access to Chimes cannot be granted to shared users so Chime support requires use of the primary Ring account. | false |
 | SNAPSHOTMODE | Enable still snapshot image updates from camera, see [Snapshot Options](#snapshot-options) for details | 'disabled' |
-| LIVESTREAMUSER | Specifiy a password for RTSP connections.  Highly recommended if the RTSP port for external media player access is enabled.  The livestream_password option must also be defined or this option is ignored. | blank |
-| LIVESTREAMPASSWORD | Specifiy a password for RTSP connections.  Highly recommended if the RTSP port for external media player access is enabled.  The livestream_user option must also be defined or this option is ignored. | blank |
+| LIVESTREAMUSER | Specify a password for RTSP connections.  Highly recommended if the RTSP port for external media player access is enabled.  The livestream_password option must also be defined or this option is ignored. | blank |
+| LIVESTREAMPASSWORD | Specify a password for RTSP connections.  Highly recommended if the RTSP port for external media player access is enabled.  The livestream_user option must also be defined or this option is ignored. | blank |
 | ENABLEMODES | Enable support for Location Modes for sites without a Ring Alarm Panel | false |
 | ENABLEPANIC | Enable panic buttons on Alarm Control Panel device | false |
 | BEAMDURATION | Set a default duration in seconds for Smart Lights when turned on via this integration.  The default value of 0 will attempt to detect the last used duration or default to 60 seconds for light groups.  This value can be overridden for individual lights using the duration feature but must be set before the light is turned on. | 0 |
 | DISARMCODE | Used only with Home Assistant, when defined this option causes the Home Assistant Alarm Control Panel integration to require entering this code to disarm the alarm | blank |
 | RINGLOCATIONIDS | Array of location Ids in format: "loc-id","loc-id2", see [Limiting Locations](#limiting-locations) for details | blank |
-| BRANCH | During startup pull latest master/dev branch from Github instead of running local copy, see [Branch Feature](#branch-feature) for details. | blank |
+| BRANCH | During startup pull latest master/dev branch from GitHub instead of running local copy, see [Branch Feature](#branch-feature) for details. | blank |
 
 ### Authentication
 Ring has made two factor authentication (2FA) mandatory thus the script now only supports this authentication method.  Using 2FA requires acquiring a refresh token for your Ring account and passing the token with the RINGTOKEN environment variable on initial startup.  From this point new tokens are acquired automatically and stored in the ring-state file for use during future startups.  The two following methods are available for acquiring a token:
 
 #### Primary Method
 Run the bundled ring-auth-cli utility directly via the Docker command line to acquire the token:
-```
+```bash
 docker run -it --rm --entrypoint /app/ring-mqtt/node_modules/ring-client-api/ring-auth-cli.js tsightler/ring-mqtt
 ```
 
 #### Alternative Method
 Use ring-auth-cli from any system with NodeJS and NPM installed via npx, which downloads and runs ring-auth-cli on demand:
-```
+```bash
 npx -p ring-client-api ring-auth-cli
 ```
 
 **!!! Important Note regarding the security of your refresh token !!!**  
-Using 2FA authentication opens up the possibility that, if the environment runinng ring-mqtt is comporomised, an attacker can acquire the refresh token and use this to authenticate to your Ring account without knowing your username/password and completely bypassing the standard 2FA protections.  Please secure your environment carefully.
+Using 2FA authentication opens up the possibility that, if the environment running ring-mqtt is compromised, an attacker can acquire the refresh token and use this to authenticate to your Ring account without knowing your username/password and completely bypassing the standard 2FA protections.  Please secure your environment carefully.
 
 Because of this added risk, it can be a good idea to create a second account dedicated for use with ring-mqtt and provide access to the devices you would like that account to be able to control.  This allows actions performed by this script to be easily audited since they will show up in activity logs with their own name instead of that of the primary account.  However, if do choose to use a secondary, shared account there are some limitations as Ring does not allow certain devices and functions to be granted access to shared accounts.  When using a secondary account support for Chimes, Smart Lighting groups, and Base Station volume control will not function.
 
@@ -98,10 +98,10 @@ When using the camera support for video streaming the Docker container will also
 To expose the RTSP port externally simple add the standard Docker port options to your run command, something like "-p 8554:8554" would allow external media player clients to access the RTSP server on TCP port 8554.
 
 #### Branch Selection
-The Docker image includes a feature that allows for easy, temporary testing of the latest code from the master or dev branch of ring-mqtt from Github, without requiring the installation of a new image.  This feature was designed to simplify testing of newer code for users of the addon, but Docker users can leverage it as well.  When running the Docker image normally the local image copy of ring-mqtt is used, however, sometimes the latest code in the Github repo master branch may be a few versions ahead, while waiting on the code to stabilize, or a user may need to test code in the dev branch to see if it corrects a reported issue.  This feature allows this to be done very easily without having to push or build a new Docker image.  To use this feature simple add the **BRANCH** environment variable as follows:
+The Docker image includes a feature that allows for easy, temporary testing of the latest code from the master or dev branch of ring-mqtt from GitHub, without requiring the installation of a new image.  This feature was designed to simplify testing of newer code for users of the addon, but Docker users can leverage it as well.  When running the Docker image normally the local image copy of ring-mqtt is used, however, sometimes the latest code in the GitHub repo master branch may be a few versions ahead, while waiting on the code to stabilize, or a user may need to test code in the dev branch to see if it corrects a reported issue.  This feature allows this to be done very easily without having to push or build a new Docker image.  To use this feature simple add the **BRANCH** environment variable as follows:
 **BRANCH="latest"**
-When this option is set, upon starting the Docker container the startup script will use git to fetch the lastest code from the master branch before running
+When this option is set, upon starting the Docker container the startup script will use git to fetch the latest code from the master branch before running
 **BRANCH="dev"**
-When this option is set, upon starting the Docker container the startup script will use git to fetch the lastest code from the dev branch before running
+When this option is set, upon starting the Docker container the startup script will use git to fetch the latest code from the dev branch before running
 
 To revert to the code in the Docker image simply run the container without the BRANCH setting.
