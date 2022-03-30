@@ -108,4 +108,4 @@ if [ "${RUNMODE}" = "addon" ]; then
 fi
 
 echo "Running ring-mqtt..."
-exec node --turbo-instruction-scheduling ./ring-mqtt.js
+nice -n 19 node ./ring-mqtt.js
