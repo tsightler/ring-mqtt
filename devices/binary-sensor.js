@@ -1,5 +1,5 @@
 const RingSocketDevice = require('./base-socket-device')
-const { RingDeviceType } = require('ring-client-api')
+const { RingDeviceType } = require('@tsightler/ring-client-api')
 
 class BinarySensor extends RingSocketDevice {
     constructor(deviceInfo) {

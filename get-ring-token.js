@@ -2,8 +2,8 @@
 const fs = require('fs')
 const writeFileAtomic = require('write-file-atomic')
 const { createHash, randomBytes } = require('crypto')
-const { RingRestClient } = require('./node_modules/ring-client-api/lib/api/rest-client')
-const { requestInput } = require('./node_modules/ring-client-api/lib/api/util')
+const { RingRestClient } = require('./node_modules/@tsightler/ring-client-api/lib/api/rest-client')
+const { requestInput } = require('./node_modules/@tsightler/ring-client-api/lib/api/util')
 
 async function getRefreshToken() {
     let generatedToken

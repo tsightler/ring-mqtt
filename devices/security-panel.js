@@ -1,5 +1,5 @@
 const utils = require( '../lib/utils' )
-const { allAlarmStates, RingDeviceType } = require('ring-client-api')
+const { allAlarmStates, RingDeviceType } = require('@tsightler/ring-client-api')
 const RingSocketDevice = require('./base-socket-device')
 
 class SecurityPanel extends RingSocketDevice {
