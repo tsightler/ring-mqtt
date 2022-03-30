@@ -14,7 +14,7 @@
     "write-file-atomic": "^4.0.0",
     "mqtt": "4.3.6",
     "pipe2jpeg": "^0.3.1",
-    "@tsightler/ring-client-api": "10.0.0-beta.1.custom.3"
+    "@tsightler/ring-client-api": "10.0.0-beta.1.custom.5"
   },
   "devDependencies": {
     "eslint": "^7.19.0"
