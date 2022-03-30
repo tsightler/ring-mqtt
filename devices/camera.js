@@ -45,6 +45,7 @@ class Camera extends RingPolledDevice {
                     state: 'OFF',
                     status: 'inactive',
                     publishedStatus: '',
+                    sessionId: 0,
                     rtspPublishUrl: (utils.config.livestream_user && utils.config.livestream_pass)
                         ? `rtsp://${utils.config.livestream_user}:${utils.config.livestream_pass}@localhost:8554/${this.deviceId}_live`
                         : `rtsp://localhost:8554/${this.deviceId}_live`,
@@ -185,22 +186,25 @@ class Camera extends RingPolledDevice {
             this.scheduleSnapshotRefresh()
         }
 
-        utils.event.on(`${this.deviceId}_livestream`, (state) => {
+        utils.event.on(`${this.deviceId}_livestream`, (state, sessionId) => {
             switch (state) {
                 case 'active':
                     if (this.data.stream.live.status !== 'active') {
                         this.debug('Live stream has been successfully activated')
                     }
+                    this.data.stream.live.sessionId = sessionId
                     this.data.stream.live.status = 'active'
                     break;
                 case 'inactive':
                     if (this.data.stream.live.status !== 'inactive') {
                         this.debug('Live stream has been successfully deactivated')
                     }
+                    this.data.stream.live.sessionId = 0
                     this.data.stream.live.status = 'inactive'
                     break;
                 case 'failed':
                     this.debug('Live stream failed to activate')
+                    this.data.stream.live.sessionId = 0
                     this.data.stream.live.status = 'failed'
                     break;
             }
@@ -670,6 +674,27 @@ class Camera extends RingPolledDevice {
         this.data.stream[type].active = false
     }
 
+    async startLiveStream() {
+        // Start and publish stream to rtsp-simple-server 
+        let liveCall = false
+        this.debug('Requesting a live stream session via Ring API')
+
+        try {
+            liveCall = await this.device.restClient.request({
+                method: 'POST',
+                url: this.device.doorbotUrl('live_call')
+            })
+            this.data.stream.live.sessionId = liveCall.data.session_id
+            utils.event.emit('start_livestream', this.deviceId, this.device.name, liveCall.data.session_id, this.data.stream.live.rtspPublishUrl)
+        } catch(error) {
+            if (error.hasOwnProperty('response') && error.response.hasOwnProperty('statusCode') && error.response.statusCode === 403) {
+                this.debug(`Camera returned 403 when starting a live stream.  This usually indicates that live streaming is blocked by Modes settings.  Check your Ring app and verify that you are able to stream from this camera with the current Modes settings.`)
+            } else {
+                this.debug(error)
+            }
+        }
+    }
+
     async startEventStream() {
         if (await this.updateEventStreamUrl()) {
             this.publishStreamSelectState()
@@ -862,16 +887,15 @@ class Camera extends RingPolledDevice {
                     this.data.stream[type].status = 'activating'
                     this.publishStreamState()
                     if (type === 'live') {
-                        this.debug('Requesting a live stream via worker thread pool')
-                        utils.event.emit('start_livestream', this.deviceId, { name: this.device.name, id: this.device.id }, await this.device.restClient.getCurrentAuth().access_token, this.data.stream.live.rtspPublishUrl)
+                        this.startLiveStream()
                     } else {
                         this.startEventStream()
                     }
                 }
                 break;
             case 'off':
-                if (type === 'live' && this.data.stream.live.status === 'active') {
-                    utils.event.emit('stop_livestream', this.deviceId)
+                if (type === 'live' && this.data.stream.live.sessionId) {
+                    utils.event.emit('stop_livestream', this.data.stream.live.sessionId)
                 } else if (type === 'event' && this.data.stream.event.session) {
                     this.data.stream[type].session.kill()
                 } else {
