@@ -840,7 +840,7 @@ class Camera extends RingPolledDevice {
         }
     }
 
-    async setStreamState(type, message) {
+    setStreamState(type, message) {
         const command = message.toLowerCase()
         this.debug(`Received set ${type} stream state ${message}`)
         switch (command) {
@@ -863,8 +863,7 @@ class Camera extends RingPolledDevice {
                     this.publishStreamState()
                     if (type === 'live') {
                         this.debug('Requesting a live stream via worker thread pool')
-                        const auth = await this.device.restClient.getCurrentAuth()
-                        utils.event.emit('start_livestream', this.deviceId, { name: this.device.name, id: this.device.id }, auth.access_token, this.data.stream.live.rtspPublishUrl)
+                        utils.event.emit('start_livestream', this.deviceId, { name: this.device.name, id: this.device.id }, await this.device.restClient.getCurrentAuth().access_token, this.data.stream.live.rtspPublishUrl)
                     } else {
                         this.startEventStream()
                     }
