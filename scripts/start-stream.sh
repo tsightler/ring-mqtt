@@ -29,9 +29,9 @@ ctrl_c() {
         echo -e "${green}[${client_name}]${reset} Deactivating ${type} stream due to signal from RTSP server (no more active clients or publisher ended stream)"
         mosquitto_pub -i "${client_id}_pub" -u "${MQTTUSER}" -P "${MQTTPASSWORD}" -h "${MQTTHOST}" -p "${MQTTPORT}" -t "${command_topic}" -m "OFF"
     fi
-    # There should only ever be one process per client active at any time so this works for now
-    mosquitto_pid=`ps -ef | grep mosquitto_sub | grep "${client_id}" | tr -s ' ' | cut -d ' ' -f2`
-    [ ! -z ${mosquitto_pid} ] && kill -9 ${mosquitto_pid}
+    # There should never be more than one mosquitto_sub for any given camera ID/stream type combination
+    # so this scorched earth kill method should be OK 
+    ps aux | grep -ie "mosquitto_sub" | grep -ie "${client_id}" | awk '{print $2}' | xargs -r kill -9
     exit 0
 }
 
