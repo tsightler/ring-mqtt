@@ -3,19 +3,19 @@
 ## Description
 The ring-mqtt project acts as a bridge between alarm, smart lighting and camera devices sold by Ring LLC and an MQTT broker thus allowing any automation tools that can leverage the open standards based MQTT protocol to monitor and control these devices.  The project also supports video streaming by providing an RTSP gateway service that allows any media client supporting the RTSP protocol to connect to a Ring camera livestream or to play back recorded events (Ring Protect subscription required for event recording playback).  Please review the full list of [supported devices and features](#supported-devices-and-features) for more information on current capabilities.
 
-The code is written primarily in JavaScript and leverages the excellent [ring-client-api](https://github.com/dgreif/ring) for communicating with the same REST API used by the official Ring apps.  For video streaming ring-client-api establishes the RTP steam via a SIP session and forwards the packets to an FFmpeg which publishes the stream via RTSP to [rtsp-simple-server](https://github.com/aler9/rtsp-simple-server).  
+The code is written primarily in JavaScript and leverages the excellent [ring-client-api](https://github.com/dgreif/ring) for communicating with the same REST API used by the official Ring apps.  For video streaming ring-client-api establishes the RTP steam via a SIP session and forwards the packets to an FFmpeg which publishes the stream via RTSP to [rtsp-simple-server](https://github.com/aler9/rtsp-simple-server).
 
 Home Assistant style MQTT discovery is supported which allows for easy integration with minimal configuration (requires the Home Assistant Mosquitto/MQTT integration to be enabled).  For those using Home Assistant OS, or other supervised Home Assistant installations, there is a sister project providing a [Home Assistant Addon](https://github.com/tsightler/ring-mqtt-ha-addon) which allows installing Ring-MQTT directly via the native add-on store capabilities (not HACS).
 
 ## Installation
 Docker is the recommended installation method.  While it's completely possible to install this code manually as a service on Linux, it requires manually satisfying pre-requisites, copying systemd unit files and registering the service, etc.  I do not test the standard install method so if you go with this method you are mostly on your own to solve problems with versions and dependencies. Note that this project supports only Linux platforms and will not run properly on Windows.  Please read the documentation for your preferred install method below for details on the require installation steps and configuration:
 
-[Docker Install](docs/DOCKER.md)
+[Docker Install](https://github.com/tsightler/ring-mqtt/blob/main/docs/DOCKER.md)
 
-[Standard/Manual Install](docs/STANDARD.md)  **(DEPRECATED)**
+[Standard/Manual Install](https://github.com/tsightler/blob/main/ring-mqtt/docs/STANDARD.md)  **(DEPRECATED)**
 
 ### Camera video stream configuration
-Please read the detailed [camera documentation](docs/CAMERAS.md) for more information on video streaming configuration.
+Please read the detailed [camera documentation](https://github.com/tsightler/ring-mqtt/wiki/Video-Streaming-Support) for more information on video streaming configuration.
 
 **!!!! Important note regarding camera support !!!!**    
 The ring-mqtt project does not magically turn Ring cameras into 24x7/continuous streaming CCTV cameras.  Ring cameras are designed to work with Ring cloud servers for on-demand streaming based on detected events (motion/ding) or interactive viewing.  Even when using ring-mqtt, all streaming still goes through Ring cloud servers and is not local.  Attempting to leverage this project for continuous streaming is not a supported use case and attempts to do so will almost certainly end in disappointment, this includes use with NVR tools like Frigate or motionEye.
