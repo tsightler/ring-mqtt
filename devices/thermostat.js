@@ -64,7 +64,7 @@ class Thermostat extends RingSocketDevice {
         })
     }
 
-    async publishData(data) {
+    async publishState(data) {
         const isPublish = data === undefined ? true : false
 
         const mode = this.data.currentMode()

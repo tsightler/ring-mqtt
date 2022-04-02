@@ -13,7 +13,7 @@ class TemperatureSensor extends RingSocketDevice {
         }
     }
 
-    publishData() {
+    publishState() {
         const temperature = this.device.data.celsius.toString()
         this.mqttPublish(this.entity.temperature.state_topic, temperature)
         this.publishAttributes()

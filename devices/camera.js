@@ -178,14 +178,6 @@ class Camera extends RingPolledDevice {
             }
         }
 
-        this.onNewDingSubscription = this.device.onNewDing.subscribe(ding => {
-            if (this.isOnline()) { this.processDing(ding) }
-        })
-
-        if (this.data.snapshot.interval > 0) {
-            this.scheduleSnapshotRefresh()
-        }
-
         utils.event.on(`${this.deviceId}_livestream`, (state) => {
             switch (state) {
                 case 'active':
@@ -211,6 +203,56 @@ class Camera extends RingPolledDevice {
             this.publishStreamState()
         })
 
+        this.onNewDingSubscription = this.device.onNewDing.subscribe(ding => {
+            if (this.isOnline()) { this.processDing(ding) }
+        })
+
+        utils.event.on(`deviceState_${this.deviceId}`, (stateData) => {
+            this.initDeviceState(stateData)
+        })
+        utils.event.emit('getDeviceState', this.deviceId)
+    }
+
+    async initDeviceState(stateData) {
+        if (stateData) {
+            if (utils.config.snapshot_mode.match(/^(interval|all)$/)) {
+                if (stateData.hasOwnProperty('snapshot')) {
+                    this.data.snapshot.autoInterval = stateData.snapshot.hasOwnProperty('autoInterval')
+                        ? stateData.snapshot.autoInterval
+                        : this.data.snapshot.autoInterval
+                    if (!this.data.snapshot.autoInterval) {
+                        this.data.snapshot.interval = stateData.snapshot.hasOwnProperty('interval') 
+                            ? stateData.snapshot.interval
+                            : this.data.snapshot.interval
+                    }
+                }
+            }
+
+            if (stateData.hasOwnProperty('event_select')) {
+                this.data.event_select.state = stateData.event_select.hasOwnProperty('state')
+                    ? stateData.event_select.state
+                    : this.data.event_select.state
+            }
+        }
+
+        if (this.data.snapshot.interval > 0) {
+            this.scheduleSnapshotRefresh()
+        }
+
+        this.saveDeviceState()
+    }
+
+    saveDeviceState() {
+        const stateData = {
+            snapshot: {
+                autoInterval: this.data.snapshot.autoInterval,
+                interval: this.data.snapshot.interval
+            },
+            event_select: {
+                state: this.data.snapshot.state
+            }
+        }
+        utils.event.emit(`saveDeviceState`, this.deviceId, stateData)
     }
 
     // Build standard and optional entities for device
@@ -282,7 +324,7 @@ class Camera extends RingPolledDevice {
     }
 
     // Publish camera capabilities and state and subscribe to events
-    async publishData(data) {
+    async publishState(data) {
         const isPublish = data === undefined ? true : false
         this.publishPolledState(isPublish)
 
@@ -884,6 +926,7 @@ class Camera extends RingPolledDevice {
             this.scheduleSnapshotRefresh()
             this.publishSnapshotInterval()
             this.debug('Snapshot refresh interval has been set to '+this.data.snapshot.interval+' seconds')
+            this.saveDeviceState()
         }
     }
 
@@ -939,6 +982,7 @@ class Camera extends RingPolledDevice {
                 this.data.stream.event.session.kill()
             }
             this.data.event_select.state = message
+            this.saveDeviceState()
             if (await this.updateEventStreamUrl()) {
                 this.publishStreamSelectState()
             }

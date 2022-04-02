@@ -40,7 +40,7 @@ class SecurityPanel extends RingSocketDevice {
         }
     }
 
-    publishData() {
+    publishState() {
         var alarmMode
         const alarmInfo = this.device.data.alarmInfo ? this.device.data.alarmInfo : []
 
@@ -225,7 +225,7 @@ class SecurityPanel extends RingSocketDevice {
             default:
                 this.debug('Received invalid command for arming bypass mode!')
         }
-        this.publishData()
+        this.publishState()
     }
 
     async setSirenMode(message) {

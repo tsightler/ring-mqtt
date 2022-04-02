@@ -61,7 +61,7 @@ class Chime extends RingPolledDevice {
         }
     }
 
-    publishData(data) {
+    publishState(data) {
         const isPublish = data === undefined ? true : false
         const volumeState = this.device.data.settings.volume
         const snoozeState = Boolean(this.device.data.do_not_disturb.seconds_left) ? 'ON' : 'OFF'

@@ -30,7 +30,7 @@ class BeamOutdoorPlug extends RingSocketDevice {
         })
     }
 
-    publishData() {
+    publishState() {
         this.publishOutlet1State()
         this.publishOutlet2State()
         this.publishAttributes()

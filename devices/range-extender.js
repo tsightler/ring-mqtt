@@ -7,7 +7,7 @@ class RangeExtender extends RingSocketDevice {
         this.deviceData.name = this.device.location.name + ' Range Extender'
     }
 
-    publishData() {
+    publishState() {
         // This device only has attributes and attribute based entities
         this.publishAttributes()
     }

@@ -12,7 +12,7 @@ class SmokeAlarm extends RingSocketDevice {
         }
     }
 
-    publishData() {
+    publishState() {
         const smokeState = this.device.data.alarmStatus === 'active' ? 'ON' : 'OFF'
         this.mqttPublish(this.entity.smoke.state_topic, smokeState)
         this.publishAttributes()

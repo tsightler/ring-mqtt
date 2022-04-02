@@ -13,7 +13,7 @@ class Keypad extends RingSocketDevice {
         }
     }
 
-    publishData(data) {
+    publishState(data) {
         const isPublish = data === undefined ? true : false
         if (isPublish) {
             // Eventually remove this but for now this attempts to delete the old light component based volume control from Home Assistant

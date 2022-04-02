@@ -30,7 +30,7 @@ class BaseStation extends RingSocketDevice {
         }
     }
 
-    publishData(data) {
+    publishState(data) {
         const isPublish = data === undefined ? true : false
 
         if (this.entity.hasOwnProperty('volume')) {

@@ -17,7 +17,7 @@ class FloodFreezeSensor extends RingSocketDevice {
         }
     }
         
-    publishData() {
+    publishState() {
         const floodState = this.device.data.flood && this.device.data.flood.faulted ? 'ON' : 'OFF'
         const freezeState = this.device.data.freeze && this.device.data.freeze.faulted ? 'ON' : 'OFF'
         this.mqttPublish(this.entity.flood.state_topic, floodState)

@@ -7,7 +7,7 @@ class Bridge extends RingSocketDevice {
         this.deviceData.name = this.device.location.name + ' Bridge'
     }
 
-    publishData() {
+    publishState() {
         // This device only has attributes and attribute based entities
         this.publishAttributes()
     }

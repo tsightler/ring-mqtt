@@ -12,7 +12,7 @@ class MultiLevelSwitch extends RingSocketDevice {
         }
     }
 
-    publishData() {
+    publishState() {
         const switchState = this.device.data.on ? "ON" : "OFF"
         const switchLevel = (this.device.data.level && !isNaN(this.device.data.level) ? Math.round(100 * this.device.data.level) : 0) 
         this.mqttPublish(this.entity.light.state_topic, switchState)

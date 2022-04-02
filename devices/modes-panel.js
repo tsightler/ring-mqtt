@@ -17,7 +17,7 @@ class ModesPanel extends RingPolledDevice {
         }
     }
     
-    publishData(data) {
+    publishState(data) {
         const isPublish = data === undefined ? true : false
         const mode = (isPublish) ? this.device.location.getLocationMode() : data
         // Publish device state if it's changed from prior state

@@ -53,7 +53,7 @@ class BinarySensor extends RingSocketDevice {
         }
     }
 
-    publishData() {
+    publishState() {
         const contactState = this.device.data.faulted ? 'ON' : 'OFF'
         this.mqttPublish(this.entity[this.entityName].state_topic, contactState)
         this.publishAttributes()

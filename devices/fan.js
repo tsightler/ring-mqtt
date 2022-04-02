@@ -16,7 +16,7 @@ class Fan extends RingSocketDevice {
         }
     }
 
-    publishData() {
+    publishState() {
         const fanState = this.device.data.on ? "ON" : "OFF"
         const fanPercent = (this.device.data.level && !isNaN(this.device.data.level) ? Math.round(this.device.data.level*100) : 0)
         let fanPreset = "unknown"

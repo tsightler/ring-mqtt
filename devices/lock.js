@@ -11,7 +11,7 @@ class Lock extends RingSocketDevice {
         }
     }
 
-    publishData() {
+    publishState() {
         var lockState
         switch(this.device.data.locked) {
             case 'locked':

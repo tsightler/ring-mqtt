@@ -18,7 +18,7 @@ class RingPolledDevice extends RingDevice {
         this.device.onData.subscribe((data) => {
             // Reset heartbeat counter on every polled state
             this.heartbeat = 3
-            if (this.isOnline()) { this.publishData(data) }
+            if (this.isOnline()) { this.publishState(data) }
         })
 
         this.monitorHeartbeat()
@@ -30,7 +30,7 @@ class RingPolledDevice extends RingDevice {
         // Sleep for a few seconds to give HA time to process discovery message
         await utils.sleep(2)
         await this.online()
-        this.publishData()
+        this.publishState()
     }
 
     // This is a simple heartbeat function for devices which use polling.  This

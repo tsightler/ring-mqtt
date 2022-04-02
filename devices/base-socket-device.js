@@ -15,7 +15,7 @@ class RingSocketDevice extends RingDevice {
         }
 
         this.device.onData.subscribe((data) => {
-            if (this.isOnline()) { this.publishData(data) }
+            if (this.isOnline()) { this.publishState(data) }
         })
     }
 
@@ -26,7 +26,7 @@ class RingSocketDevice extends RingDevice {
             // Sleep for a few seconds to give HA time to process discovery message
             await utils.sleep(2)
             await this.online()
-            this.publishData()
+            this.publishState()
         }
     }
 
