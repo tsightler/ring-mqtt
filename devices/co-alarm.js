@@ -3,9 +3,12 @@ const RingSocketDevice = require('./base-socket-device')
 class CoAlarm extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'alarm')
+    }
+
+    init() {
         this.deviceData.mdl = 'CO Alarm'
-        this.deviceData.mf = (deviceInfo.hasOwnProperty('parentDevice') && deviceInfo.parentDevice.data && deviceInfo.parentDevice.data.hasOwnProperty('manufacturerName'))
-            ? deviceInfo.parentDevice.data.manufacturerName 
+        this.deviceData.mf = (this.hasOwnProperty('parentDevice') && this.parentDevice.hasOwnProperty('data') && this.parentDevice.data.hasOwnProperty('manufacturerName'))
+            ? this.parentDevice.data.manufacturerName
             : 'Ring'
 
         this.entity.co = {

@@ -4,14 +4,12 @@ const RingSocketDevice = require('./base-socket-device')
 class BaseStation extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'alarm', 'acStatus')
+    }
+
+    async init() {
         this.deviceData.mdl = 'Alarm Base Station'
         this.deviceData.name = this.device.location.name + ' Base Station'
 
-        this.initVolumeEntity()
-    }
-    
-    // Check if account has access to control base state volume and initialize topics if so
-    async initVolumeEntity() {
         const origVolume = (this.device.data.volume && !isNaN(this.device.data.volume) ? this.device.data.volume : 0)
         const testVolume = (origVolume === 1) ? .99 : origVolume+.01
         this.device.setVolume(testVolume)

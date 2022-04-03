@@ -4,7 +4,9 @@ const { RingDeviceType } = require('ring-client-api')
 class BinarySensor extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'alarm')
+    }
 
+    init() {
         let device_class = 'None'
 
         // Override icons and and topics

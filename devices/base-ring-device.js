@@ -12,6 +12,7 @@ class RingDevice {
         this.isOnline = () => { 
             return this.availabilityState === 'online' ? true : false 
         }
+
         this.debug = (message, debugType) => {
             utils.debug(debugType === 'disc' ? message : colors.green(`[${this.device.name}] `)+message, debugType ? debugType : 'mqtt')
         }
@@ -19,10 +20,22 @@ class RingDevice {
         this.deviceTopic = `${utils.config.ring_topic}/${this.locationId}/${category}/${this.deviceId}`
         this.availabilityTopic = `${this.deviceTopic}/status`
 
-        if (primaryAttribute !== 'disable') {
-            this.initAttributeEntities(primaryAttribute)
-            this.schedulePublishAttributes()
+        if (deviceInfo.hasOwnProperty('childDevices')) {
+            this.childDevices = deviceInfo.childDevices
         }
+
+        if (deviceInfo.hasOwnProperty('parentDevices')) {
+            this.parentDevices = deviceInfo.parentDevices
+        }
+
+        // Initialize device with saved state data
+        utils.event.on(`device_state_${this.deviceId}`, (stateData) => {
+            this.init(stateData)
+            if (primaryAttribute !== 'disable') {
+                this.initAttributeEntities(primaryAttribute)
+                this.schedulePublishAttributes()
+            }    
+        })
     }
 
     // This function loops through each entity of the device, creates a unique
@@ -151,7 +164,7 @@ class RingDevice {
                 Object.keys(discoveryMessage).filter(property => property.match('topic')).forEach(topic => {
                     this.entity[entityKey][topic] = discoveryMessage[topic]
                     if (topic.match('command_topic')) {
-                        utils.event.emit('mqttSubscribe', discoveryMessage[topic])
+                        utils.event.emit('mqtt_subscribe', discoveryMessage[topic])
                         utils.event.on(discoveryMessage[topic], (command, message) => {
                             this.processCommand(command, message)
                         })
@@ -193,7 +206,7 @@ class RingDevice {
         if (debugType !== false) {
             this.debug(colors.blue(`${topic} `)+colors.cyan(`${message}`), debugType)
         }
-        utils.event.emit('mqttPublish', topic, message)
+        utils.event.emit('mqtt_publish', topic, message)
     }
 
     // Set state topic online

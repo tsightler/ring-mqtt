@@ -3,7 +3,9 @@ const RingSocketDevice = require('./base-socket-device')
 class Siren extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'alarm')
+    }
 
+    init() {
         this.deviceData.mdl = (this.device.data.deviceType === 'siren.outdoor-strobe') ? 'Outdoor Siren' : 'Siren'        
         this.entity = {
             ...this.entity,

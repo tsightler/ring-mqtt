@@ -4,7 +4,9 @@ const RingPolledDevice = require('./base-polled-device')
 class Chime extends RingPolledDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'chime')
+    }
 
+    init(stateData) {
         this.data = {
             volume: null,
             snooze: null,
@@ -12,6 +14,12 @@ class Chime extends RingPolledDevice {
             snooze_minutes_remaining: Math.floor(this.device.data.do_not_disturb.seconds_left/60),
             play_ding_sound: 'OFF',
             play_motion_sound: 'OFF'
+        }
+
+        if (stateData) {
+            this.data.snooze_minutes = (stateData.hasOwnProperty('snooze_minutes'))
+                ? stateData.snooze_minutes
+                : this.data.snooze_minutes
         }
 
         // Define entities for this device
@@ -48,6 +56,15 @@ class Chime extends RingPolledDevice {
                 value_template: '{{ value_json["lastUpdate"] | default("") }}'
             }
         }
+
+        this.saveDeviceState()
+    }
+
+    saveDeviceState() {
+        const stateData = {
+            snooze_minutes: this.data.snooze_minutes
+        }
+        utils.event.emit(`save_device_state`, this.deviceId, stateData)
     }
 
     initAttributeEntities() {

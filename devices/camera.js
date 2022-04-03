@@ -11,7 +11,9 @@ const rss = require('../lib/rtsp-simple-server')
 class Camera extends RingPolledDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'camera')
+    }
 
+    init(stateData) {
         this.data = {
             motion: {
                 active_ding: false,
@@ -108,6 +110,27 @@ class Camera extends RingPolledDevice {
                 }
             }
         }
+
+        if (stateData) {
+            if (utils.config.snapshot_mode.match(/^(interval|all)$/)) {
+                if (stateData.hasOwnProperty('snapshot')) {
+                    this.data.snapshot.autoInterval = stateData.snapshot.hasOwnProperty('autoInterval')
+                        ? stateData.snapshot.autoInterval
+                        : this.data.snapshot.autoInterval
+                    if (!this.data.snapshot.autoInterval) {
+                        this.data.snapshot.interval = stateData.snapshot.hasOwnProperty('interval') 
+                            ? stateData.snapshot.interval
+                            : this.data.snapshot.interval
+                    }
+                }
+            }
+
+            if (stateData.hasOwnProperty('event_select')) {
+                this.data.event_select.state = stateData.event_select.hasOwnProperty('state')
+                    ? stateData.event_select.state
+                    : this.data.event_select.state
+            }
+        }
       
         this.entity = {
             ...this.entity,
@@ -178,7 +201,7 @@ class Camera extends RingPolledDevice {
             }
         }
 
-        utils.event.on(`${this.deviceId}_livestream`, (state) => {
+        utils.event.on(`livestream_${this.deviceId}`, (state) => {
             switch (state) {
                 case 'active':
                     if (this.data.stream.live.status !== 'active') {
@@ -207,34 +230,6 @@ class Camera extends RingPolledDevice {
             if (this.isOnline()) { this.processDing(ding) }
         })
 
-        utils.event.on(`deviceState_${this.deviceId}`, (stateData) => {
-            this.initDeviceState(stateData)
-        })
-        utils.event.emit('getDeviceState', this.deviceId)
-    }
-
-    async initDeviceState(stateData) {
-        if (stateData) {
-            if (utils.config.snapshot_mode.match(/^(interval|all)$/)) {
-                if (stateData.hasOwnProperty('snapshot')) {
-                    this.data.snapshot.autoInterval = stateData.snapshot.hasOwnProperty('autoInterval')
-                        ? stateData.snapshot.autoInterval
-                        : this.data.snapshot.autoInterval
-                    if (!this.data.snapshot.autoInterval) {
-                        this.data.snapshot.interval = stateData.snapshot.hasOwnProperty('interval') 
-                            ? stateData.snapshot.interval
-                            : this.data.snapshot.interval
-                    }
-                }
-            }
-
-            if (stateData.hasOwnProperty('event_select')) {
-                this.data.event_select.state = stateData.event_select.hasOwnProperty('state')
-                    ? stateData.event_select.state
-                    : this.data.event_select.state
-            }
-        }
-
         if (this.data.snapshot.interval > 0) {
             this.scheduleSnapshotRefresh()
         }
@@ -249,10 +244,10 @@ class Camera extends RingPolledDevice {
                 interval: this.data.snapshot.interval
             },
             event_select: {
-                state: this.data.snapshot.state
+                state: this.data.event_select.state
             }
         }
-        utils.event.emit(`saveDeviceState`, this.deviceId, stateData)
+        utils.event.emit(`save_device_state`, this.deviceId, stateData)
     }
 
     // Build standard and optional entities for device

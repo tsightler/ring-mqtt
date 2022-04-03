@@ -5,6 +5,9 @@ const RingSocketDevice = require('./base-socket-device')
 class SecurityPanel extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'alarm', 'alarmState')
+    }
+
+    init() {
         this.deviceData.mdl = 'Alarm Control Panel'
         this.deviceData.name = `${this.device.location.name} Alarm`
         
@@ -41,7 +44,7 @@ class SecurityPanel extends RingSocketDevice {
     }
 
     publishState() {
-        var alarmMode
+        let alarmMode
         const alarmInfo = this.device.data.alarmInfo ? this.device.data.alarmInfo : []
 
         // If alarm is active report triggered or, if entry-delay, pending
@@ -150,7 +153,7 @@ class SecurityPanel extends RingSocketDevice {
         while (retries-- > 0 && !(setAlarmSuccess)) {
             let bypassDeviceIds = []
 
-            // If arming bypass arming mode is enabled, get device ids requiring bypass
+            // If arming bypass mode is enabled, get device ids requiring bypass
             if (message.toLowerCase() !== 'disarm' && this.entity.bypass.state) {
                 const bypassDevices = (await this.device.location.getDevices()).filter((device) => {
                     return (

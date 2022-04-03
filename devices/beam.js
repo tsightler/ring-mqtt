@@ -3,7 +3,9 @@ const RingSocketDevice = require('./base-socket-device')
 class Beam extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'lighting')
+    }
 
+    init() {
         // Setup device topics based on capabilities.
         switch (this.device.data.deviceType) {
             case 'group.light-group.beams':
