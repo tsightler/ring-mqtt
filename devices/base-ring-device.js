@@ -20,12 +20,12 @@ class RingDevice {
         this.deviceTopic = `${utils.config.ring_topic}/${this.locationId}/${category}/${this.deviceId}`
         this.availabilityTopic = `${this.deviceTopic}/status`
 
-        if (deviceInfo.hasOwnProperty('childDevices')) {
-            this.childDevices = deviceInfo.childDevices
-        }
-
         if (deviceInfo.hasOwnProperty('parentDevices')) {
             this.parentDevices = deviceInfo.parentDevices
+        }
+
+        if (deviceInfo.hasOwnProperty('childDevices')) {
+            this.childDevices = deviceInfo.childDevices
         }
 
         // Initialize device with saved state data
@@ -34,6 +34,12 @@ class RingDevice {
             if (primaryAttribute !== 'disable') {
                 this.initAttributeEntities(primaryAttribute)
                 this.schedulePublishAttributes()
+            }
+
+            // If device supports persistent state but there's no existing state
+            // data for an update of the initial state
+            if (!stateData && typeof this.updateDeviceState === "function") {
+                this.updateDeviceState()
             }    
         })
     }

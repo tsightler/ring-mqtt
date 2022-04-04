@@ -34,11 +34,15 @@ class Camera extends RingPolledDevice {
                 } 
             } : {},
             snapshot: {
-                autoInterval: false,
-                currentImage: null,
-                interval: false,
+                autoInterval: stateData?.snapshot?.autoInterval
+                    ? stateData.snapshot.autoInterval
+                    : true,
+                interval: stateData?.snapshot?.interval
+                    ? stateData.snapshot.interval
+                    : false,
                 intervalTimerId: null,
-                motion: false, 
+                motion: false,
+                currentImage: null,
                 timestamp: null,
                 update: false
             },
@@ -78,7 +82,9 @@ class Camera extends RingPolledDevice {
                 }
             },
             event_select: {
-                state: 'Motion 1',
+                state: stateData?.event_select?.state
+                    ? stateData.event_select.state
+                    : 'Motion 1',
                 publishedState: null
             },
             ...this.device.hasLight ? {
@@ -96,11 +102,9 @@ class Camera extends RingPolledDevice {
 
         if (utils.config.snapshot_mode.match(/^(motion|interval|all)$/)) {
             this.data.snapshot.motion = (utils.config.snapshot_mode.match(/^(motion|all)$/)) ? true : false
-
-            if (utils.config.snapshot_mode.match(/^(interval|all)$/)) {
-                this.data.snapshot.autoInterval = true
+            if (this.data.snapshot.autoInterval && utils.config.snapshot_mode.match(/^(interval|all)$/)) {
                 if (this.device.operatingOnBattery) {
-                    if (this.device.data.settings.hasOwnProperty('lite_24x7') && this.device.data.settings.lite_24x7.enabled) {
+                    if (this.device.data.settings.lite_24x7?.enabled) {
                         this.data.snapshot.interval = this.device.data.settings.lite_24x7.frequency_secs
                     } else {
                         this.data.snapshot.interval = 600
@@ -108,27 +112,6 @@ class Camera extends RingPolledDevice {
                 } else {
                     this.data.snapshot.interval = 30
                 }
-            }
-        }
-
-        if (stateData) {
-            if (utils.config.snapshot_mode.match(/^(interval|all)$/)) {
-                if (stateData.hasOwnProperty('snapshot')) {
-                    this.data.snapshot.autoInterval = stateData.snapshot.hasOwnProperty('autoInterval')
-                        ? stateData.snapshot.autoInterval
-                        : this.data.snapshot.autoInterval
-                    if (!this.data.snapshot.autoInterval) {
-                        this.data.snapshot.interval = stateData.snapshot.hasOwnProperty('interval') 
-                            ? stateData.snapshot.interval
-                            : this.data.snapshot.interval
-                    }
-                }
-            }
-
-            if (stateData.hasOwnProperty('event_select')) {
-                this.data.event_select.state = stateData.event_select.hasOwnProperty('state')
-                    ? stateData.event_select.state
-                    : this.data.event_select.state
             }
         }
       
@@ -226,18 +209,16 @@ class Camera extends RingPolledDevice {
             this.publishStreamState()
         })
 
-        this.onNewDingSubscription = this.device.onNewDing.subscribe(ding => {
-            if (this.isOnline()) { this.processDing(ding) }
+        this.device.onNewNotification.subscribe(notification => {
+            this.processNotification(notification)
         })
 
         if (this.data.snapshot.interval > 0) {
             this.scheduleSnapshotRefresh()
         }
-
-        this.saveDeviceState()
     }
 
-    saveDeviceState() {
+    updateDeviceState() {
         const stateData = {
             snapshot: {
                 autoInterval: this.data.snapshot.autoInterval,
@@ -247,7 +228,7 @@ class Camera extends RingPolledDevice {
                 state: this.data.event_select.state
             }
         }
-        utils.event.emit(`save_device_state`, this.deviceId, stateData)
+        utils.event.emit(`update_device_state`, this.deviceId, stateData)
     }
 
     // Build standard and optional entities for device
@@ -365,45 +346,46 @@ class Camera extends RingPolledDevice {
     }
     
     // Process a ding event
-    async processDing(ding) {
+    async processNotification(notification) {
+        if (notification.subtype !== 'ding' && notification.subtype !== 'motion' && notification.subtype !== 'human') { return }
+        const ding = notification.ding
+        const dingKind = (notification.subtype === 'motion' || notification.subtype === 'human') ? 'motion' : 'ding'
         // Is it a motion or doorbell ding? (for others we do nothing)
-        if (ding.kind !== 'ding' && ding.kind !== 'motion') { return }
-        this.debug(`Camera received ${ding.kind === 'ding' ? 'doorbell' : 'motion'} ding at ${Math.floor(ding.now)}, expires in ${ding.expires_in} seconds`)
+        this.debug(`Camera received ${dingKind} notification at ${Math.floor((new Date(ding.created_at))/1000)}, expires in ${this.data[dingKind].ding_duration} seconds`)
 
         // Is this a new Ding or refresh of active ding?
-        const newDing = (!this.data[ding.kind].active_ding) ? true : false
-        this.data[ding.kind].active_ding = true
+        const newDing = (!this.data[dingKind].active_ding) ? true : false
+        this.data[dingKind].active_ding = true
 
-        // Update last_ding, duration and expire time
-        this.data[ding.kind].last_ding = Math.floor(ding.now)
-        this.data[ding.kind].last_ding_time = utils.getISOTime(ding.now*1000)
-        this.data[ding.kind].ding_duration = ding.expires_in
-        this.data[ding.kind].last_ding_expires = this.data[ding.kind].last_ding+ding.expires_in
+        // Update last_ding and expire time
+        this.data[dingKind].last_ding = Math.floor((new Date(ding.created_at))/1000)
+        this.data[dingKind].last_ding_time = ding.created_at
+        this.data[dingKind].last_ding_expires = this.data[dingKind].last_ding+this.data[dingKind].ding_duration
 
         // If motion ding and snapshots on motion are enabled, publish a new snapshot
-        if (ding.kind === 'motion') {
-            this.data[ding.kind].is_person = (ding.detection_type === 'human') ? true : false
+        if (dingKind === 'motion') {
+            this.data[dingKind].is_person = (ding.detection_type === 'human') ? true : false
             if (this.data.snapshot.motion) {
-                this.refreshSnapshot('motion')
+                this.refreshSnapshot('motion', ding.image_uuid)
             }
         }
 
         // Publish MQTT active sensor state
         // Will republish to MQTT for new dings even if ding is already active
-        this.publishDingState(ding.kind)
+        this.publishDingState(dingKind)
 
         // If new ding, begin expiration loop (only needed for first ding as others just extend time)
         if (newDing) {
             // Loop until current time is > last_ding expires time.  Sleeps until
             // estimated expire time, but may loop if new dings increase last_ding_expires
-            while (Math.floor(Date.now()/1000) < this.data[ding.kind].last_ding_expires) {
-                const sleeptime = (this.data[ding.kind].last_ding_expires - Math.floor(Date.now()/1000)) + 1
+            while (Math.floor(Date.now()/1000) < this.data[dingKind].last_ding_expires) {
+                const sleeptime = (this.data[dingKind].last_ding_expires - Math.floor(Date.now()/1000)) + 1
                 await utils.sleep(sleeptime)
             }
             // All dings have expired, set ding state back to false/off and publish
-            this.debug(`All ${ding.kind === 'ding' ? 'doorbell' : 'motion'} dings for camera have expired`)
-            this.data[ding.kind].active_ding = false
-            this.publishDingState(ding.kind)
+            this.debug(`All ${dingKind} dings for camera have expired`)
+            this.data[dingKind].active_ding = false
+            this.publishDingState(dingKind)
         }
     }
 
@@ -555,25 +537,7 @@ class Camera extends RingPolledDevice {
         }, this.data.snapshot.interval * 1000)
     }
 
-    refreshSnapshot(type) {
-        const canSnapshotOnMotion = (this.deviceOperatingOnBattery || this.device.data.kind === 'doorbell_graham_cracker') ? false : true
-        if (canSnapshotOnMotion || (type === 'interval' && this.data.stream.live.status.match(/^(inactive|failed)$/))) {
-            this.updateSnapshot(type)
-        } else {
-            // Some Ring cameras are unable to take snapshots while recording so, if it's a motion
-            // event or there's an active local stream, grab a key frame to use for the snapshot
-            if (type === 'motion') {
-                this.debug('Motion event detected on battery powered camera, snapshot will be updated from live stream')
-            }
-            this.data.snapshot.update = true
-            // If there's no existing active local stream, start one as it's required to get a snapshot 
-            if (!this.data.stream.snapshot.active) {
-                this.startRtspReadStream('snapshot', this.data.stream.snapshot.duration)
-            }
-        }
-    }
-
-    async updateSnapshot(type) {
+    async refreshSnapshot(type, image_uuid) {
         let newSnapshot = false
 
         if (this.device.snapshotsAreBlocked) {
@@ -583,8 +547,8 @@ class Camera extends RingPolledDevice {
 
         try {
             if (type === 'motion') {
-                this.debug('Requesting an updated motion snapshot')
-                newSnapshot = await this.device.getNextSnapshot({ force: true })
+                this.debug(`Requesting motion snapshot using notification uuid ${image_uuid}`)
+                newSnapshot = await this.device.getSnapshot({ uuid: image_uuid })
             } else {
                 this.debug('Requesting an updated interval snapshot')
                 newSnapshot = await this.device.getSnapshot()
@@ -921,7 +885,7 @@ class Camera extends RingPolledDevice {
             this.scheduleSnapshotRefresh()
             this.publishSnapshotInterval()
             this.debug('Snapshot refresh interval has been set to '+this.data.snapshot.interval+' seconds')
-            this.saveDeviceState()
+            this.updateDeviceState()
         }
     }
 
@@ -977,7 +941,7 @@ class Camera extends RingPolledDevice {
                 this.data.stream.event.session.kill()
             }
             this.data.event_select.state = message
-            this.saveDeviceState()
+            this.updateDeviceState()
             if (await this.updateEventStreamUrl()) {
                 this.publishStreamSelectState()
             }

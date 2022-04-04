@@ -10,16 +10,12 @@ class Chime extends RingPolledDevice {
         this.data = {
             volume: null,
             snooze: null,
-            snooze_minutes: 1440,
+            snooze_minutes: (stateData?.snooze_minutes)
+                ? stateData.snooze_minutes
+                : 1440,
             snooze_minutes_remaining: Math.floor(this.device.data.do_not_disturb.seconds_left/60),
             play_ding_sound: 'OFF',
             play_motion_sound: 'OFF'
-        }
-
-        if (stateData) {
-            this.data.snooze_minutes = (stateData.hasOwnProperty('snooze_minutes'))
-                ? stateData.snooze_minutes
-                : this.data.snooze_minutes
         }
 
         // Define entities for this device
@@ -56,15 +52,13 @@ class Chime extends RingPolledDevice {
                 value_template: '{{ value_json["lastUpdate"] | default("") }}'
             }
         }
-
-        this.saveDeviceState()
     }
 
-    saveDeviceState() {
+    updateDeviceState() {
         const stateData = {
             snooze_minutes: this.data.snooze_minutes
         }
-        utils.event.emit(`save_device_state`, this.deviceId, stateData)
+        utils.event.emit(`update_device_state`, this.deviceId, stateData)
     }
 
     initAttributeEntities() {
