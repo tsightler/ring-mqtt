@@ -258,7 +258,7 @@ class Camera extends RingPolledDevice {
             this.data.ding.last_ding_time = lastDingDate ? utils.getISOTime(lastDingDate) : ''
         }
 
-        if (!await this.updateEventStreamUrl()) {
+        if (!await this.updateEventStreamUrl(true)) {
             this.debug('Could not retrieve recording URL for event, assuming no Ring Protect subscription')
             delete this.entity.event_stream
             delete this.entity.event_select
@@ -884,6 +884,7 @@ class Camera extends RingPolledDevice {
                 } else {
                     clearTimeout(this.data.snapshot.intervalTimerId)
                 }
+                this.publishSnapshotMode()
                 this.updateDeviceState()
                 break;
             default:
