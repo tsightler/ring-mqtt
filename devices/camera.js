@@ -67,7 +67,7 @@ class Camera extends RingPolledDevice {
                         : `rtsp://localhost:8554/${this.deviceId}_event`
                 },
                 snapshot: {
-                    duration: (this.device.data.settings.video_settings.hasOwnProperty('clip_length_max') && this.device.data.settings.video_settings.clip_length_max) 
+                    duration: (this.device.data.settings.video_settings?.clip_length_max) 
                         ? this.device.data.settings.video_settings.clip_length_max
                         : 60,
                     active: false,
@@ -232,7 +232,7 @@ class Camera extends RingPolledDevice {
     async initAttributeEntities() {
          // If device is wireless publish signal strength entity
         const deviceHealth = await this.device.getHealth()
-        if (deviceHealth && !(deviceHealth.hasOwnProperty('network_connection') && deviceHealth.network_connection === 'ethernet')) {
+        if (deviceHealth && !(deviceHealth?.network_connection && deviceHealth.network_connection === 'ethernet')) {
             this.entity.wireless = {
                 component: 'sensor',
                 device_class: 'signal_strength',
@@ -258,19 +258,25 @@ class Camera extends RingPolledDevice {
 
         // Update motion properties with most recent historical event data
         const lastMotionEvent = (await this.device.getEvents({ limit: 1, kind: 'motion'})).events[0]
-        const lastMotionDate = (lastMotionEvent && lastMotionEvent.hasOwnProperty('created_at')) ? new Date(lastMotionEvent.created_at) : false
+        const lastMotionDate = (lastMotionEvent?.created_at) ? new Date(lastMotionEvent.created_at) : false
         this.data.motion.last_ding = lastMotionDate ? Math.floor(lastMotionDate/1000) : 0
         this.data.motion.last_ding_time = lastMotionDate ? utils.getISOTime(lastMotionDate) : ''
-        if (lastMotionEvent && lastMotionEvent.hasOwnProperty('cv_properties')) {
+        if (lastMotionEvent?.cv_properties) {
             this.data.motion.is_person = (lastMotionEvent.cv_properties.detection_type === 'human') ? true : false
         }
 
         // Update motion properties with most recent historical event data
         if (this.device.isDoorbot) {
             const lastDingEvent = (await this.device.getEvents({ limit: 1, kind: 'ding'})).events[0]
-            const lastDingDate = (lastDingEvent && lastDingEvent.hasOwnProperty('created_at')) ? new Date(lastDingEvent.created_at) : false
+            const lastDingDate = (lastDingEvent?.created_at) ? new Date(lastDingEvent.created_at) : false
             this.data.ding.last_ding = lastDingDate ? Math.floor(lastDingDate/1000) : 0
             this.data.ding.last_ding_time = lastDingDate ? utils.getISOTime(lastDingDate) : ''
+        }
+
+        if (!await this.updateEventStreamUrl()) {
+            this.debug('Could not retrieve recording URL for event, assuming no Ring Protect subscription')
+            delete this.entity.event_stream
+            delete this.entity.event_select
         }
 
         let stillImageUrlBase = 'localhost'
@@ -305,15 +311,17 @@ class Camera extends RingPolledDevice {
         this.data.stream.event.pollCycle--
         if (this.data.stream.event.pollCycle <= 0) {
             this.data.stream.event.pollCycle = 3
-            if (await this.updateEventStreamUrl() && !isPublish) {
-                this.publishStreamSelectState()
+            if (this.entity.event_select && await this.updateEventStreamUrl() && !isPublish) {
+                this.publishEventSelectState()
             }
         }        
 
         if (isPublish) {
             // Publish stream state
             this.publishStreamState(isPublish)
-            this.publishStreamSelectState(isPublish)
+            if (this.entity.event_select) {
+                this.publishEventSelectState(isPublish)
+            }
  
             this.publishDingStates()
             if (this.data.snapshot.motion || this.data.snapshot.interval) {
@@ -462,7 +470,7 @@ class Camera extends RingPolledDevice {
             }
             attributes.firmwareStatus = deviceHealth.firmware
             attributes.lastUpdate = deviceHealth.updated_at.slice(0,-6)+"Z"
-            if (deviceHealth.hasOwnProperty('network_connection') && deviceHealth.network_connection === 'ethernet') {
+            if (deviceHealth?.network_connection && deviceHealth.network_connection === 'ethernet') {
                 attributes.wiredNetwork = this.device.data.alerts.connection
             } else {
                 attributes.wirelessNetwork = deviceHealth.wifi_name
@@ -492,21 +500,23 @@ class Camera extends RingPolledDevice {
     publishStreamState(isPublish) {
         ['live', 'event'].forEach(type => {
             const entityProp = (type === 'live') ? 'stream' : `${type}_stream`
-            const streamState = (this.data.stream[type].status === 'active' || this.data.stream[type].status === 'activating') ? 'ON' : 'OFF'
-            if (streamState !== this.data.stream[type].state || isPublish) {
-                this.data.stream[type].state = streamState
-                this.mqttPublish(this.entity[entityProp].state_topic, this.data.stream[type].state)
-            }
+            if (this.entity.hasOwnProperty(entityProp)) {
+                const streamState = (this.data.stream[type].status === 'active' || this.data.stream[type].status === 'activating') ? 'ON' : 'OFF'
+                if (streamState !== this.data.stream[type].state || isPublish) {
+                    this.data.stream[type].state = streamState
+                    this.mqttPublish(this.entity[entityProp].state_topic, this.data.stream[type].state)
+                }
 
-            if (this.data.stream[type].publishedStatus !== this.data.stream[type].status || isPublish) {
-                this.data.stream[type].publishedStatus = this.data.stream[type].status
-                const attributes = { status: this.data.stream[type].status }
-                this.mqttPublish(this.entity[entityProp].json_attributes_topic, JSON.stringify(attributes), 'attr')
-            } 
+                if (this.data.stream[type].publishedStatus !== this.data.stream[type].status || isPublish) {
+                    this.data.stream[type].publishedStatus = this.data.stream[type].status
+                    const attributes = { status: this.data.stream[type].status }
+                    this.mqttPublish(this.entity[entityProp].json_attributes_topic, JSON.stringify(attributes), 'attr')
+                }
+            }
         })
     }
 
-    publishStreamSelectState(isPublish) {
+    publishEventSelectState(isPublish) {
         if (this.data.event_select.state !== this.data.event_select.publishedState || isPublish) {
             this.data.event_select.publishedState = this.data.event_select.state
             this.mqttPublish(this.entity.event_select.state_topic, this.data.event_select.state)
@@ -515,13 +525,12 @@ class Camera extends RingPolledDevice {
             recordingUrl: this.data.stream.event.recordingUrl,
             eventId: this.data.stream.event.dingId
         }
-        this.mqttPublish(this.entity.event_select.json_attributes_topic, JSON.stringify(attributes), 'attr')
+        this.mqttPublish(this.entity.event_select.json_attributes_topic, JSON.stringify(attributes), 'attr', '<recording_url_masked>')
     }
 
     // Publish snapshot image/metadata
     publishSnapshot() {
-        this.debug(colors.blue(`${this.entity.snapshot.topic}`)+' '+colors.cyan('<binary_image_data>'))
-        this.mqttPublish(this.entity.snapshot.topic, this.data.snapshot.currentImage, false)
+        this.mqttPublish(this.entity.snapshot.topic, this.data.snapshot.currentImage, 'mqtt', '<binary_image_data>')
         this.mqttPublish(this.entity.snapshot.json_attributes_topic, JSON.stringify({ timestamp: this.data.snapshot.timestamp }), 'attr')
     }
 
@@ -594,12 +603,12 @@ class Camera extends RingPolledDevice {
                     method: 'POST',
                     url: this.device.doorbotUrl('live_call')
                 })
-                if (liveCall.data.hasOwnProperty('session_id')) {
+                if (liveCall.data?.session_id) {
                     streamData.sessionId = liveCall.data.session_id
                 }
             }
         } catch(error) {
-            if (error.hasOwnProperty('response') && error.response.hasOwnProperty('statusCode') && error.response.statusCode === 403) {
+            if (error?.response?.statusCode && error.response.statusCode === 403) {
                 this.debug(`Camera returned 403 when starting a live stream.  This usually indicates that live streaming is blocked by Modes settings.  Check your Ring app and verify that you are able to stream from this camera with the current Modes settings.`)
             } else {
                 this.debug(error)
@@ -618,7 +627,7 @@ class Camera extends RingPolledDevice {
 
     async startEventStream() {
         if (await this.updateEventStreamUrl()) {
-            this.publishStreamSelectState()
+            this.publishEventSelectState()
         }
         const streamSelect = this.data.event_select.state.split(' ')
         const kind = streamSelect[0].toLowerCase().replace('-', '_')
@@ -732,7 +741,7 @@ class Camera extends RingPolledDevice {
                 recordingUrl = await this.device.getRecordingUrl(dingId)
             }
         } catch {
-            this.debug(`Failed to retrieve ${kind} event recording URL for event`)
+            this.debug(`Failed to retrieve recording URL for ${kind} event`)
             return false
         }
 
@@ -895,7 +904,7 @@ class Camera extends RingPolledDevice {
             this.data.event_select.state = message
             this.updateDeviceState()
             if (await this.updateEventStreamUrl()) {
-                this.publishStreamSelectState()
+                this.publishEventSelectState()
             }
         } else {
             this.debug(`Set event stream to ${message} received by not a valid value`)

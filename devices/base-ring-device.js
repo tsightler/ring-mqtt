@@ -208,9 +208,9 @@ class RingDevice {
     }
 
     // Publish state messages with debug
-    mqttPublish(topic, message, debugType) {
+    mqttPublish(topic, message, debugType, maskedMessage) {
         if (debugType !== false) {
-            this.debug(colors.blue(`${topic} `)+colors.cyan(`${message}`), debugType)
+            this.debug(colors.blue(`${topic} `)+colors.cyan(`${maskedMessage ? maskedMessage : message}`), debugType)
         }
         utils.event.emit('mqtt_publish', topic, message)
     }
