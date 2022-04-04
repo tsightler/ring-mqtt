@@ -884,7 +884,7 @@ class Camera extends RingPolledDevice {
                 } else {
                     clearTimeout(this.data.snapshot.intervalTimerId)
                 }
-                updateDeviceState()
+                this.updateDeviceState()
                 break;
             default:
                 this.debug(`Received invalid snapshot mode command`)

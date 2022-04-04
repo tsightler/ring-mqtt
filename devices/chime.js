@@ -52,6 +52,8 @@ class Chime extends RingPolledDevice {
                 value_template: '{{ value_json["lastUpdate"] | default("") }}'
             }
         }
+
+        this.updateDeviceState()
     }
 
     updateDeviceState() {
