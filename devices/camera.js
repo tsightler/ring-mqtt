@@ -1,9 +1,6 @@
 const RingPolledDevice = require('./base-polled-device')
 const utils = require( '../lib/utils' )
 const colors = require('colors/safe')
-const P2J = require('pipe2jpeg')
-const net = require('net');
-const getPort = require('get-port')
 const pathToFfmpeg = require('ffmpeg-for-homebridge')
 const { spawn } = require('child_process')
 const rss = require('../lib/rtsp-simple-server')
@@ -346,10 +343,10 @@ class Camera extends RingPolledDevice {
     }
     
     // Process a ding event
-    async processNotification(notification) {
-        if (notification.subtype !== 'ding' && notification.subtype !== 'motion' && notification.subtype !== 'human') { return }
-        const ding = notification.ding
-        const dingKind = (notification.subtype === 'motion' || notification.subtype === 'human') ? 'motion' : 'ding'
+    async processNotification(pushData) {
+        const dingKind = (pushData.subtype === 'motion' || pushData.subtype === 'human') ? 'motion' : 'ding'
+        if (dingKind !== 'motion' && dingKind !== 'ding') { return }
+        const ding = pushData.ding
         // Is it a motion or doorbell ding? (for others we do nothing)
         this.debug(`Camera received ${dingKind} notification at ${Math.floor((new Date(ding.created_at))/1000)}, expires in ${this.data[dingKind].ding_duration} seconds`)
 
@@ -546,12 +543,21 @@ class Camera extends RingPolledDevice {
         }
 
         try {
-            if (type === 'motion') {
-                this.debug(`Requesting motion snapshot using notification uuid ${image_uuid}`)
-                newSnapshot = await this.device.getSnapshot({ uuid: image_uuid })
-            } else {
-                this.debug('Requesting an updated interval snapshot')
-                newSnapshot = await this.device.getSnapshot()
+            switch (type) {
+                case 'interval':
+                    this.debug('Requesting an updated interval snapshot')
+                    newSnapshot = await this.device.getSnapshot()
+                    break;
+                case 'motion':
+                    if (image_uuid) {
+                        this.debug(`Requesting motion snapshot using notification image UUID: ${image_uuid}`)
+                        newSnapshot = await this.device.getSnapshot({ uuid: image_uuid })
+                    } else if (!this.device.operatingOnBattery) {
+                        this.debug('Requesting an updated motion snapshot')
+                        newSnapshot = await this.device.getSnapshot()
+                    } else {
+                        this.debug('Motion snapshot needed but notification did not contain image UUID and battery cameras are unable to snapshot while recording')
+                    }            
             }
         } catch (error) {
             this.debug(error) 
@@ -564,112 +570,6 @@ class Camera extends RingPolledDevice {
             this.data.snapshot.timestamp = Math.round(Date.now()/1000)
             this.publishSnapshot()
         }
-    }
-
-    // Start P2J server to extract and publish JPEG images from stream
-    async startP2J() {
-        const p2j = new P2J()
-        const p2jPort = await getPort()
-
-        let p2jServer = net.createServer(function(p2jStream) {
-            p2jStream.pipe(p2j)
-
-            // Close the p2j server on stream end
-            p2jStream.on('end', function() {
-                p2jServer.close()
-            })
-        })
-
-        // Listen to pipe on localhost only
-        p2jServer.listen(p2jPort, 'localhost')
-      
-        p2j.on('jpeg', (jpegFrame) => {
-            if (this.data.snapshot.update) {
-                this.data.snapshot.currentImage = jpegFrame
-                this.data.snapshot.timestamp = Math.round(Date.now()/1000)
-                this.publishSnapshot()
-                this.data.snapshot.update = false
-            }
-        })
-
-        // Return TCP port for SIP stream to send stream
-        return p2jPort
-    }
-
-    async startRtspReadStream(type, duration) {
-        if (this.data.stream[type].active) { return }
-        this.data.stream[type].active = true
-        let ffmpegProcess
-        let killSignal = 'SIGTERM'
-        
-        // Start stream with MJPEG output directed to P2J server with one frame every 2 seconds 
-        this.debug(`Starting a ${type} stream for camera`)
-
-        if (type === 'snapshot') {
-            // Start a P2J pipeline and server and get the listening TCP port
-            const p2jPort = await this.startP2J()
-            // Create a low frame-rate MJPEG stream to publish motion snapshots
-            // Process only key frames to keep CPU usage low
-            ffmpegProcess = spawn(pathToFfmpeg, [
-                '-skip_frame', 'nokey',
-                '-i', this.data.stream.live.rtspPublishUrl,
-                '-f', 'image2pipe',
-                '-s', '640:360',
-                '-vsync', '0',
-                '-q:v', '2',
-                `tcp://localhost:+${p2jPort}`
-            ])
-        } else {
-            // Keepalive stream is used only when the live stream is started 
-            // manually. It copies only the audio stream to null output just to
-            // trigger rtsp-simple-server to start the on-demand stream and 
-            // keep it running when there are no other RTSP readers.
-            ffmpegProcess = spawn(pathToFfmpeg, [
-                '-i', this.data.stream.live.rtspPublishUrl,
-                '-map', '0:a:0',
-                '-c:a', 'copy',
-                '-f', 'null',
-                '/dev/null'
-            ])
-        }
-
-        ffmpegProcess.on('spawn', async () => {
-            this.debug(`The ${type} stream has started`)
-        })
-
-        ffmpegProcess.on('close', async () => {
-            this.data.stream[type].active = false
-            this.debug(`The ${type} stream has stopped`)
-        })
-
-        // If stream starts, set expire time, may be extended by new events
-        // (if only Ring sent events while streaming)
-        this.data.stream[type].expires = Math.floor(Date.now()/1000) + duration
-
-        // Don't stop stream session until current time > expire time
-        // Expire time could be extended by additional motion events, except 
-        // Ring devices don't send motion events while a stream is active so
-        // it won't ever happen!
-        while (Math.floor(Date.now()/1000) < this.data.stream[type].expires) {
-            if (type === 'snapshot') {
-                const sleeptime = (this.data.stream[type].expires - Math.floor(Date.now()/1000)) + 1
-                await utils.sleep(sleeptime)
-            } else {
-                await utils.sleep(5)
-                const pathDetails = await rss.getPathDetails(`${this.deviceId}_live`)
-                if (!pathDetails.sourceReady) {
-                    // If the source stream stops (due to manual cancel or Ring timeout)
-                    // force the keepalive stream to expire
-                    this.debug('Ring live stream has stopped publishing, killing the keepalive stream')
-                    this.data.stream[type].expires = 0
-                     // For some reason the keepalive stream never times out so kill the process hard
-                    killSignal = 'SIGKILL'
-                }
-            }
-        }
-
-        ffmpegProcess.kill(killSignal)
-        this.data.stream[type].active = false
     }
 
     async startLiveStream() {
@@ -760,6 +660,58 @@ class Camera extends RingPolledDevice {
             this.data.stream.event.session = false
             this.publishStreamState()
         }
+    }
+
+    async startKeepaliveStream() {
+        const duration = 86400
+        if (this.data.stream.keepalive.active) { return }
+        this.data.stream.keepalive.active = true
+        let ffmpegProcess
+        let killSignal = 'SIGTERM'
+        
+        // Start stream with MJPEG output directed to P2J server with one frame every 2 seconds 
+        this.debug(`Starting a keepalive stream for camera`)
+
+        // Keepalive stream is used only when the live stream is started 
+        // manually. It copies only the audio stream to null output just to
+        // trigger rtsp-simple-server to start the on-demand stream and 
+        // keep it running when there are no other RTSP readers.
+        ffmpegProcess = spawn(pathToFfmpeg, [
+            '-i', this.data.stream.live.rtspPublishUrl,
+            '-map', '0:a:0',
+            '-c:a', 'copy',
+            '-f', 'null',
+            '/dev/null'
+        ])
+
+        ffmpegProcess.on('spawn', async () => {
+            this.debug(`The keepalive stream has started`)
+        })
+
+        ffmpegProcess.on('close', async () => {
+            this.data.stream.keepalive.active = false
+            this.debug(`The keepalive stream has stopped`)
+        })
+
+        // If stream starts, set expire time, may be extended by new events
+        // (if only Ring sent events while streaming)
+        this.data.stream.keepalive.expires = Math.floor(Date.now()/1000) + duration
+
+        while (Math.floor(Date.now()/1000) < this.data.stream.keepalive.expires) {
+            await utils.sleep(5)
+            const pathDetails = await rss.getPathDetails(`${this.deviceId}_live`)
+            if (!pathDetails.sourceReady) {
+                // If the source stream stops (due to manual cancel or Ring timeout)
+                // force the keepalive stream to expire
+                this.debug('Ring live stream has stopped publishing, killing the keepalive stream')
+                this.data.stream.keepalive.expires = 0
+                    // For some reason the keepalive stream never times out so kill the process hard
+                killSignal = 'SIGKILL'
+            }
+        }
+
+        ffmpegProcess.kill(killSignal)
+        this.data.stream.keepalive.active = false
     }
 
     async updateEventStreamUrl() {
@@ -897,7 +849,7 @@ class Camera extends RingPolledDevice {
                 if (type === 'live') {
                     // Stream was manually started, create a dummy, audio only
                     // RTSP source stream to trigger stream startup and keep it active
-                    this.startRtspReadStream('keepalive', 86400)
+                    this.startKeepAliveStream()
                 } else {
                     this.debug(`Event stream can only be started on-demand!`)
                 }
