@@ -31,6 +31,9 @@ class Camera extends RingPolledDevice {
                 } 
             } : {},
             snapshot: {
+                mode: stateData?.snapshot?.mode
+                    ?  stateData.snapshot.mode
+                    : 'auto',
                 autoInterval: stateData?.snapshot?.autoInterval
                     ? stateData.snapshot.autoInterval
                     : true,
@@ -40,8 +43,7 @@ class Camera extends RingPolledDevice {
                 intervalTimerId: null,
                 motion: false,
                 currentImage: null,
-                timestamp: null,
-                update: false
+                timestamp: null
             },
             stream: {
                 live: {
@@ -66,13 +68,6 @@ class Camera extends RingPolledDevice {
                         ? `rtsp://${utils.config.livestream_user}:${utils.config.livestream_pass}@localhost:8554/${this.deviceId}_event`
                         : `rtsp://localhost:8554/${this.deviceId}_event`
                 },
-                snapshot: {
-                    duration: (this.device.data.settings.video_settings?.clip_length_max) 
-                        ? this.device.data.settings.video_settings.clip_length_max
-                        : 60,
-                    active: false,
-                    expires: 0
-                },
                 keepalive:{ 
                     active: false, 
                     expires: 0
@@ -95,21 +90,6 @@ class Camera extends RingPolledDevice {
                     state: null
                 }
             } : {}
-        }
-
-        if (utils.config.snapshot_mode.match(/^(motion|interval|all)$/)) {
-            this.data.snapshot.motion = (utils.config.snapshot_mode.match(/^(motion|all)$/)) ? true : false
-            if (this.data.snapshot.autoInterval && utils.config.snapshot_mode.match(/^(interval|all)$/)) {
-                if (this.device.operatingOnBattery) {
-                    if (this.device.data.settings.lite_24x7?.enabled) {
-                        this.data.snapshot.interval = this.device.data.settings.lite_24x7.frequency_secs
-                    } else {
-                        this.data.snapshot.interval = 600
-                    }
-                } else {
-                    this.data.snapshot.interval = 30
-                }
-            }
         }
       
         this.entity = {
@@ -160,20 +140,20 @@ class Camera extends RingPolledDevice {
                     icon: 'mdi:alarm-light'
                 }
             } : {},
-            ...(this.data.snapshot.motion || this.data.snapshot.interval) ? { 
-                snapshot: {
-                    component: 'camera',
-                    attributes: true
-                }
-            } : {},
-            ...(this.data.snapshot.interval) ? {
-                snapshot_interval: {
-                    component: 'number',
-                    min: 10,
-                    max: 604800,
-                    icon: 'hass:timer'
-                }
-            } : {},
+            snapshot: {
+                component: 'camera',
+                attributes: true
+            },
+            snapshot_mode: {
+                component: 'select',
+                options: [ 'auto', 'disabled', 'motion', 'interval', 'all' ]
+            },
+            snapshot_interval: {
+                component: 'number',
+                min: 10,
+                max: 604800,
+                icon: 'hass:timer'
+            },
             info: {
                 component: 'sensor',
                 device_class: 'timestamp',
@@ -206,6 +186,8 @@ class Camera extends RingPolledDevice {
             this.publishStreamState()
         })
 
+        this.updateSnapshotMode()
+
         this.device.onNewNotification.subscribe(notification => {
             this.processNotification(notification)
         })
@@ -213,11 +195,14 @@ class Camera extends RingPolledDevice {
         if (this.data.snapshot.interval > 0) {
             this.scheduleSnapshotRefresh()
         }
+
+        this.updateDeviceState()
     }
 
     updateDeviceState() {
         const stateData = {
             snapshot: {
+                mode: this.data.snapshot.mode,
                 autoInterval: this.data.snapshot.autoInterval,
                 interval: this.data.snapshot.interval
             },
@@ -302,6 +287,35 @@ class Camera extends RingPolledDevice {
             : `rtsp://${streamSourceUrlBase}:8554/${this.deviceId}_live`
     }
 
+    updateSnapshotMode() {
+        if (this.data.snapshot.mode === 'disabled') {
+            this.data.snapshot.motion = false
+            this.data.snapshot.interval = false
+        } else {
+            // Motion snapshots enabled by default on all cameras
+            if (this.data.snapshot.mode.match(/^(auto|motion|all)$/)) {
+                this.data.snapshot.motion = true
+            }
+
+            if (this.device.operatingOnBattery && this.device.snapshop.mode === 'auto') {
+                // Disable interval snapshots by default for battery cameras to avoid battery drain
+                this.device.snapshot.interval = false
+            } else if (this.data.snapshot.autoInterval && this.data.snapshot.mode.match(/^(auto|interval|all)$/)) {
+                if (this.device.operatingOnBattery) {
+                    // If interval snapshots are enabled but interval is not manually set, try to detect a reasonable default
+                    if (this.device.data.settings.lite_24x7?.enabled) {
+                        this.data.snapshot.interval = this.device.data.settings.lite_24x7.frequency_secs
+                    } else {
+                        this.data.snapshot.interval = 600
+                    }
+                } else {
+                    // For wired cameras default to 30 seconds o
+                    this.data.snapshot.interval = 30
+                }
+            }
+        }
+    }
+
     // Publish camera capabilities and state and subscribe to events
     async publishState(data) {
         const isPublish = data === undefined ? true : false
@@ -324,8 +338,14 @@ class Camera extends RingPolledDevice {
             }
  
             this.publishDingStates()
+            this.publishSnapshotMode()
             if (this.data.snapshot.motion || this.data.snapshot.interval) {
-                this.data.snapshot.currentImage ? this.publishSnapshot() : this.refreshSnapshot('interval')
+                if (this.data.snapshot.currentImage) {
+                    this.publishSnapshot()
+                } else {
+                    this.refreshSnapshot('interval')
+                }
+
                 if (this.data.snapshot.interval) {
                     this.publishSnapshotInterval(isPublish)
                 }
@@ -355,16 +375,17 @@ class Camera extends RingPolledDevice {
         const dingKind = (pushData.subtype === 'motion' || pushData.subtype === 'human') ? 'motion' : 'ding'
         if (dingKind !== 'motion' && dingKind !== 'ding') { return }
         const ding = pushData.ding
+        ding.created_at = Math.floor(new Date.now()/1000)
         // Is it a motion or doorbell ding? (for others we do nothing)
-        this.debug(`Camera received ${dingKind} notification at ${Math.floor((new Date(ding.created_at))/1000)}, expires in ${this.data[dingKind].ding_duration} seconds`)
+        this.debug(`Received ${dingKind} push notification, expires in ${this.data[dingKind].ding_duration} seconds`)
 
         // Is this a new Ding or refresh of active ding?
         const newDing = (!this.data[dingKind].active_ding) ? true : false
         this.data[dingKind].active_ding = true
 
         // Update last_ding and expire time
-        this.data[dingKind].last_ding = Math.floor((new Date(ding.created_at))/1000)
-        this.data[dingKind].last_ding_time = ding.created_at
+        this.data[dingKind].last_ding = ding.created_at
+        this.data[dingKind].last_ding_time = utils.getISOTime(ding.created_at)
         this.data[dingKind].last_ding_expires = this.data[dingKind].last_ding+this.data[dingKind].ding_duration
 
         // If motion ding and snapshots on motion are enabled, publish a new snapshot
@@ -495,6 +516,10 @@ class Camera extends RingPolledDevice {
             }
             this.mqttPublish(this.entity.snapshot_interval.state_topic, this.data.snapshot.interval.toString())
         }
+    }
+
+    publishSnapshotMode() {
+        this.mqttPublish(this.entity.snapshot_mode.state_topic, this.data.snapshot.mode)
     }
 
     publishStreamState(isPublish) {
@@ -758,44 +783,36 @@ class Camera extends RingPolledDevice {
     // Process messages from MQTT command topic
     processCommand(command, message) {
         const entityKey = command.split('/')[0]
+        if (!this.entity.hasOwnProperty(entityKey)) {
+            this.debug(`Received message to unknown command topic: ${command}`)
+            return
+        }
+
         switch (command) {
             case 'light/command':
-                if (this.entity.hasOwnProperty(entityKey)) {
-                    this.setLightState(message)
-                }
+                this.setLightState(message)
                 break;
             case 'siren/command':
-                if (this.entity.hasOwnProperty(entityKey)) {
-                    this.setSirenState(message)
-                }
+                this.setSirenState(message)
                 break;
             case 'snapshot/command':
-                if (this.entity.hasOwnProperty(entityKey)) {
-                    this.setSnapshotInterval(message)
-                }
+                this.setSnapshotInterval(message)
+                break;
+            case 'snapshot_mode/command':
+                this.setSnapshotMode(message)
                 break;
             case 'snapshot_interval/command':
-                if (this.entity.hasOwnProperty(entityKey)) {
-                    this.setSnapshotInterval(message)
-                }
+                this.setSnapshotInterval(message)
                 break;
             case 'stream/command':
-                if (this.entity.hasOwnProperty(entityKey)) {
-                    this.setStreamState('live', message)
-                }
+                this.setStreamState('live', message)
                 break;
             case 'event_stream/command':
-                if (this.entity.hasOwnProperty(entityKey)) {
-                    this.setStreamState('event', message)
-                }
+                this.setStreamState('event', message)
                 break;
             case 'event_select/command':
-                if (this.entity.hasOwnProperty(entityKey)) {
-                    this.setEventSelect(message)
-                }
+                this.setEventSelect(message)
                 break;
-            default:
-                this.debug(`Received message to unknown command topic: ${command}`)
         }
     }
 
@@ -847,6 +864,30 @@ class Camera extends RingPolledDevice {
             this.publishSnapshotInterval()
             this.debug('Snapshot refresh interval has been set to '+this.data.snapshot.interval+' seconds')
             this.updateDeviceState()
+        }
+    }
+
+    setSnapshotMode(message) {
+        this.debug(`Received set snapshot mode to ${message}`)
+        switch(message.toLowerCase()) {
+            case 'disabled':
+            case 'auto':
+            case 'motion':
+            case 'interval':
+            case 'all':
+                this.data.snapshot.mode = message
+                this.updateSnapshotMode()
+                if (this.data.snapshot.interval) {
+                    clearTimeout(this.data.snapshot.intervalTimerId)
+                    this.scheduleSnapshotRefresh()
+                    this.publishSnapshotInterval()
+                } else {
+                    clearTimeout(this.data.snapshot.intervalTimerId)
+                }
+                updateDeviceState()
+                break;
+            default:
+                this.debug(`Received invalid snapshot mode command`)
         }
     }
 
