@@ -375,7 +375,7 @@ class Camera extends RingPolledDevice {
         const dingKind = (pushData.subtype === 'motion' || pushData.subtype === 'human') ? 'motion' : 'ding'
         if (dingKind !== 'motion' && dingKind !== 'ding') { return }
         const ding = pushData.ding
-        ding.created_at = Math.floor(new Date.now()/1000)
+        ding.created_at = Math.floor(Date.now()/1000)
         // Is it a motion or doorbell ding? (for others we do nothing)
         this.debug(`Received ${dingKind} push notification, expires in ${this.data[dingKind].ding_duration} seconds`)
 
@@ -511,7 +511,7 @@ class Camera extends RingPolledDevice {
             // Update snapshot frequency in case it's changed
             if (this.data.snapshot.autoInterval && this.data.snapshot.interval !== this.device.data.settings.lite_24x7.frequency_secs) {
                 this.data.snapshot.interval = this.device.data.settings.lite_24x7.frequency_secs
-                clearTimeout(this.data.snapshot.intervalTimerId)
+                clearInterval(this.data.snapshot.intervalTimerId)
                 this.scheduleSnapshotRefresh()
             }
             this.mqttPublish(this.entity.snapshot_interval.state_topic, this.data.snapshot.interval.toString())
@@ -859,7 +859,7 @@ class Camera extends RingPolledDevice {
         } else {
             this.data.snapshot.interval = Math.round(message)
             this.data.snapshot.autoInterval = false
-            clearTimeout(this.data.snapshot.intervalTimerId)
+            clearInterval(this.data.snapshot.intervalTimerId)
             this.scheduleSnapshotRefresh()
             this.publishSnapshotInterval()
             this.debug('Snapshot refresh interval has been set to '+this.data.snapshot.interval+' seconds')
@@ -878,11 +878,11 @@ class Camera extends RingPolledDevice {
                 this.data.snapshot.mode = message
                 this.updateSnapshotMode()
                 if (this.data.snapshot.interval) {
-                    clearTimeout(this.data.snapshot.intervalTimerId)
+                    clearInterval(this.data.snapshot.intervalTimerId)
                     this.scheduleSnapshotRefresh()
                     this.publishSnapshotInterval()
                 } else {
-                    clearTimeout(this.data.snapshot.intervalTimerId)
+                    clearInterval(this.data.snapshot.intervalTimerId)
                 }
                 this.publishSnapshotMode()
                 this.updateDeviceState()
