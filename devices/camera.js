@@ -905,7 +905,8 @@ class Camera extends RingPolledDevice {
                 this.publishSnapshotMode()
                 if (message === 'auto') {
                     clearInterval(this.data.snapshot.intervalTimerId)
-                    this.scheduleSnapshotRefresh()    
+                    this.scheduleSnapshotRefresh()
+                    this.publishSnapshotInterval()
                 }
                 this.debug(`Snapshot mode as been set to ${message}`)
                 this.updateDeviceState()
