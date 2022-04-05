@@ -34,14 +34,15 @@ class Camera extends RingPolledDevice {
                 mode: stateData?.snapshot?.mode
                     ?  stateData.snapshot.mode
                     : 'auto',
+                motion: false,
+                interval: false,
                 autoInterval: stateData?.snapshot?.autoInterval
                     ? stateData.snapshot.autoInterval
                     : true,
-                interval: stateData?.snapshot?.interval
-                    ? stateData.snapshot.interval
-                    : false,
+                intervalDuration: stateData?.snapshot?.intervalDuration
+                    ? stateData.snapshot.intervalDuration
+                    : (this.device.operatingOnBattery) ? 600 : 30,
                 intervalTimerId: null,
-                motion: false,
                 currentImage: null,
                 timestamp: null
             },
@@ -186,15 +187,13 @@ class Camera extends RingPolledDevice {
             this.publishStreamState()
         })
 
-        this.updateSnapshotMode()
 
         this.device.onNewNotification.subscribe(notification => {
             this.processNotification(notification)
         })
 
-        if (this.data.snapshot.interval > 0) {
-            this.scheduleSnapshotRefresh()
-        }
+        this.updateSnapshotMode()
+        this.scheduleSnapshotRefresh()
 
         this.updateDeviceState()
     }
@@ -204,7 +203,7 @@ class Camera extends RingPolledDevice {
             snapshot: {
                 mode: this.data.snapshot.mode,
                 autoInterval: this.data.snapshot.autoInterval,
-                interval: this.data.snapshot.interval
+                interval: this.data.snapshot.intervalDuration
             },
             event_select: {
                 state: this.data.event_select.state
@@ -288,30 +287,44 @@ class Camera extends RingPolledDevice {
     }
 
     updateSnapshotMode() {
-        if (this.data.snapshot.mode === 'disabled') {
-            this.data.snapshot.motion = false
-            this.data.snapshot.interval = false
-        } else {
-            // Motion snapshots enabled by default on all cameras
-            if (this.data.snapshot.mode.match(/^(auto|motion|all)$/)) {
+        switch (this.data.snapshot.mode) {
+            case 'disabled':
+                this.data.snapshot.motion = false
+                this.data.snapshot.interval = false
+                break;
+            case 'motion':
                 this.data.snapshot.motion = true
-            }
-
-            if (this.device.operatingOnBattery && this.device.snapshop.mode === 'auto') {
-                // Disable interval snapshots by default for battery cameras to avoid battery drain
-                this.device.snapshot.interval = false
-            } else if (this.data.snapshot.autoInterval && this.data.snapshot.mode.match(/^(auto|interval|all)$/)) {
+                this.data.snapshot.interval = false
+                break;
+            case 'interval':
+                this.data.snapshot.motion = false
+                this.data.snapshot.interval = true
+                break;
+            case 'all':
+                this.data.snapshot.motion = true
+                this.data.snapshot.interval = true
+                break;
+            case 'auto':
+                this.data.snapshot.motion = true
                 if (this.device.operatingOnBattery) {
-                    // If interval snapshots are enabled but interval is not manually set, try to detect a reasonable default
-                    if (this.device.data.settings.lite_24x7?.enabled) {
-                        this.data.snapshot.interval = this.device.data.settings.lite_24x7.frequency_secs
-                    } else {
-                        this.data.snapshot.interval = 600
-                    }
+                    this.device.snapshot.interval = false
                 } else {
-                    // For wired cameras default to 30 seconds o
-                    this.data.snapshot.interval = 30
+                    this.data.snapshot.interval = true
                 }
+                break;
+        }
+
+        if (this.data.snapshot.interval && this.data.snapshot.autoInterval) {
+            // If interval snapshots are enabled but interval is not manually set, try to detect a reasonable defaults
+            if (this.device.operatingOnBattery) {
+                if (this.device.data.settings.lite_24x7?.enabled) {
+                    this.data.snapshot.intervalDuration = this.device.data.settings.lite_24x7.frequency_secs
+                } else {
+                    this.data.snapshot.intervalDuration = 600
+                }
+            } else {
+                // For wired cameras default to 30 seconds o
+                this.data.snapshot.intervalDuration = 30
             }
         }
     }
@@ -346,9 +359,7 @@ class Camera extends RingPolledDevice {
                     this.refreshSnapshot('interval')
                 }
 
-                if (this.data.snapshot.interval) {
-                    this.publishSnapshotInterval(isPublish)
-                }
+                this.publishSnapshotInterval(isPublish)
             }
             this.publishAttributes()
         }
@@ -506,15 +517,15 @@ class Camera extends RingPolledDevice {
 
     publishSnapshotInterval(isPublish) {
         if (isPublish) {
-            this.mqttPublish(this.entity.snapshot_interval.state_topic, this.data.snapshot.interval.toString())
+            this.mqttPublish(this.entity.snapshot_interval.state_topic, this.data.snapshot.intervalDuration.toString())
         } else {
             // Update snapshot frequency in case it's changed
-            if (this.data.snapshot.autoInterval && this.data.snapshot.interval !== this.device.data.settings.lite_24x7.frequency_secs) {
-                this.data.snapshot.interval = this.device.data.settings.lite_24x7.frequency_secs
+            if (this.data.snapshot.autoInterval && this.data.snapshot.intervalDuration !== this.device.data.settings.lite_24x7.frequency_secs) {
+                this.data.snapshot.intervalDuration = this.device.data.settings.lite_24x7.frequency_secs
                 clearInterval(this.data.snapshot.intervalTimerId)
                 this.scheduleSnapshotRefresh()
             }
-            this.mqttPublish(this.entity.snapshot_interval.state_topic, this.data.snapshot.interval.toString())
+            this.mqttPublish(this.entity.snapshot_interval.state_topic, this.data.snapshot.intervalDuration.toString())
         }
     }
 
@@ -565,7 +576,7 @@ class Camera extends RingPolledDevice {
             if (this.isOnline() && this.data.snapshot.interval && !(this.data.snapshot.motion && this.data.motion.active_ding)) {
                 this.refreshSnapshot('interval')
             }
-        }, this.data.snapshot.interval * 1000)
+        }, this.data.snapshot.intervalDuration * 1000)
     }
 
     async refreshSnapshot(type, image_uuid) {
@@ -857,12 +868,25 @@ class Camera extends RingPolledDevice {
         } else if (!(message >= 10 && message <= 604800)) {
             this.debug('Snapshot interval value received but out of range (10-604800)')
         } else {
-            this.data.snapshot.interval = Math.round(message)
+            this.data.snapshot.intervalDuration = Math.round(message)
             this.data.snapshot.autoInterval = false
+            if (this.data.snapshot.mode === 'auto') {
+                if (this.data.snapshot.motion && this.data.snapshot.interval) {
+                    this.data.snapshot.mode = 'all'               
+                } else if (this.data.snapshot.interval) {
+                    this.data.snapshot.mode = 'interval'
+                } else if (this.data.snapshot.motion) {
+                    this.data.snapshot.mode = 'motion'
+                } else {
+                    this.data.snapshot.mode = 'disabled'
+                }
+                this.updateSnapshotMode()
+                this.publishSnapshotMode()    
+            }
             clearInterval(this.data.snapshot.intervalTimerId)
             this.scheduleSnapshotRefresh()
             this.publishSnapshotInterval()
-            this.debug('Snapshot refresh interval has been set to '+this.data.snapshot.interval+' seconds')
+            this.debug('Snapshot refresh interval has been set to '+this.data.snapshot.intervalDuration+' seconds')
             this.updateDeviceState()
         }
     }
@@ -870,21 +894,16 @@ class Camera extends RingPolledDevice {
     setSnapshotMode(message) {
         this.debug(`Received set snapshot mode to ${message}`)
         switch(message.toLowerCase()) {
-            case 'disabled':
             case 'auto':
+                this.data.snapshot.autoInterval = true
+            case 'disabled':
             case 'motion':
             case 'interval':
             case 'all':
                 this.data.snapshot.mode = message
                 this.updateSnapshotMode()
-                if (this.data.snapshot.interval) {
-                    clearInterval(this.data.snapshot.intervalTimerId)
-                    this.scheduleSnapshotRefresh()
-                    this.publishSnapshotInterval()
-                } else {
-                    clearInterval(this.data.snapshot.intervalTimerId)
-                }
                 this.publishSnapshotMode()
+                this.debug(`Snapshot mode as been set to ${message}`)
                 this.updateDeviceState()
                 break;
             default:
