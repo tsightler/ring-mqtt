@@ -1,4 +1,5 @@
 const RingSocketDevice = require('./base-socket-device')
+const utils = require( '../lib/utils' )
 
 class Beam extends RingSocketDevice {
     constructor(deviceInfo) {

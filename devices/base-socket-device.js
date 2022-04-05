@@ -1,5 +1,5 @@
-const utils = require('../lib/utils')
 const RingDevice = require('./base-ring-device')
+const utils = require('../lib/utils')
 
 // Base class for devices that communicate with hubs via websocket (alarm/smart lighting)
 class RingSocketDevice extends RingDevice {

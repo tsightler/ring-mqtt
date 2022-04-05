@@ -1,6 +1,5 @@
 const RingPolledDevice = require('./base-polled-device')
 const utils = require( '../lib/utils' )
-const colors = require('colors/safe')
 const pathToFfmpeg = require('ffmpeg-for-homebridge')
 const { spawn } = require('child_process')
 const rss = require('../lib/rtsp-simple-server')

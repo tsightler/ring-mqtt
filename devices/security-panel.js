@@ -1,6 +1,6 @@
-const utils = require( '../lib/utils' )
-const { allAlarmStates, RingDeviceType } = require('ring-client-api')
 const RingSocketDevice = require('./base-socket-device')
+const { allAlarmStates, RingDeviceType } = require('ring-client-api')
+const utils = require( '../lib/utils' )
 
 class SecurityPanel extends RingSocketDevice {
     constructor(deviceInfo) {

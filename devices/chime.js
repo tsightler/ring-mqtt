@@ -1,5 +1,5 @@
-const utils = require('../lib/utils')
 const RingPolledDevice = require('./base-polled-device')
+const utils = require( '../lib/utils' )
 
 class Chime extends RingPolledDevice {
     constructor(deviceInfo) {

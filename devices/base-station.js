@@ -1,5 +1,6 @@
-const utils = require( '../lib/utils' )
 const RingSocketDevice = require('./base-socket-device')
+const utils = require( '../lib/utils' )
+
 
 class BaseStation extends RingSocketDevice {
     constructor(deviceInfo) {

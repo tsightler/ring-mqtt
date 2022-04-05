@@ -1,5 +1,5 @@
-const utils = require( '../lib/utils' )
 const RingSocketDevice = require('./base-socket-device')
+const utils = require( '../lib/utils' )
 
 class Fan extends RingSocketDevice {
     constructor(deviceInfo) {
