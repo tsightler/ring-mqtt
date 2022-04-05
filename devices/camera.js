@@ -895,7 +895,7 @@ class Camera extends RingPolledDevice {
         this.debug(`Received set snapshot mode to ${message}`)
         switch(message.toLowerCase()) {
             case 'auto':
-                this.data.snapshot.autoInterval = true
+                this.data.snapshot.autoInterval = true                
             case 'disabled':
             case 'motion':
             case 'interval':
@@ -903,6 +903,10 @@ class Camera extends RingPolledDevice {
                 this.data.snapshot.mode = message
                 this.updateSnapshotMode()
                 this.publishSnapshotMode()
+                if (message === 'auto') {
+                    clearInterval(this.data.snapshot.intervalTimerId)
+                    this.scheduleSnapshotRefresh()    
+                }
                 this.debug(`Snapshot mode as been set to ${message}`)
                 this.updateDeviceState()
                 break;
