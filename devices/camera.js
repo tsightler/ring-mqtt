@@ -305,11 +305,7 @@ class Camera extends RingPolledDevice {
                 break;
             case 'auto':
                 this.data.snapshot.motion = true
-                if (this.device.operatingOnBattery) {
-                    this.data.snapshot.interval = false
-                } else {
-                    this.data.snapshot.interval = true
-                }
+                this.data.snapshot.interval = (this.device.operatingOnBattery) ? false : true
                 break;
         }
 
