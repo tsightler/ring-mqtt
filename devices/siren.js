@@ -25,7 +25,7 @@ class Siren extends RingSocketDevice {
         }
     }
 
-    publishData(data) {
+    publishState(data) {
         const isPublish = data === undefined ? true : false
         if (isPublish) {
             // Eventually remove this but for now this attempts to delete the old siren binary_sensor
