@@ -671,7 +671,7 @@ class Camera extends RingPolledDevice {
                 '-max_delay', '0',
                 '-fflags', '+genpts',
                 '-i', this.data.stream.event.recordingUrl,
-                '-map', '0:v:0',
+                '-map', '0:a:0',
                 '-map', '0:a:0',
                 '-c:a:0', 'copy',
                 '-c:a:1', 'libopus',
