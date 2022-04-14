@@ -23,7 +23,7 @@ green='\033[0;32m'
 blue='\033[0;34m'
 reset='\033[0m'
 
-ctrl_c() {
+cleanup() {
     if [ -z ${reason} ]; then
         # If no reason defined, that means we were interrupted by a signal, send the command to stop the live stream
         echo -e "${green}[${client_name}]${reset} Deactivating ${type} stream due to signal from RTSP server (no more active clients or publisher ended stream)"
@@ -36,7 +36,7 @@ ctrl_c() {
 }
 
 # Trap signals so that the MQTT command to stop the stream can be published on exit
-trap ctrl_c INT TERM QUIT
+trap cleanup INT TERM QUIT
 
 # This loop starts mosquitto_sub with a subscription on the camera stream topic that sends all received
 # messages via file descriptor to the read process. On initial startup the script publishes the message 
@@ -72,12 +72,12 @@ do
             inactive)
                 echo -e "${green}[${client_name}]${yellow} MQTT message indicates that ${type} stream has gone inactive${reset}"
                 reason='inactive'
-                ctrl_c
+                cleanup
                 ;;
             failed)
                 echo -e "${green}[${client_name}]${red} ERROR - MQTT message indicates that ${type} stream failed to activate${reset}"
                 reason='failed'
-                ctrl_c
+                cleanup
                 ;;
             *)
                 echo -e "${green}[${client_name}]${red} ERROR - Unknown MQTT ${type} stream state received on topic ${blue}${json_attribute_topic}${reset}"
