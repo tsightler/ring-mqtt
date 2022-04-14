@@ -31,7 +31,7 @@ ctrl_c() {
     fi
     # There should never be more than one mosquitto_sub for any given camera ID/stream type combination
     # so this scorched earth kill method should be OK 
-    ps aux | grep -ie "mosquitto_sub" | grep -ie "${client_id}" | awk '{print $2}' | xargs -r kill -9
+    pkill "${client_id}"
     exit 0
 }
 
