@@ -256,7 +256,7 @@ class Camera extends RingPolledDevice {
             this.data.ding.last_ding_time = lastDingDate ? utils.getISOTime(lastDingDate) : ''
         }
 
-        if (!await this.updateEventStreamUrl(true)) {
+        if (!await this.updateEventStreamUrl()) {
             this.debug('Could not retrieve recording URL for event, assuming no Ring Protect subscription')
             delete this.entity.event_stream
             delete this.entity.event_select
@@ -765,7 +765,10 @@ class Camera extends RingPolledDevice {
             const events = ((await this.device.getEvents({ limit: 10, kind })).events).filter(event => event.recording_status === 'ready')
             dingId = events[index].ding_id_str
             if (dingId !== this.data.stream.event.dingId) {
-                this.debug(`New ${kind} event detected, updating the event recording URL`)
+                if (this.data.stream.event.recordingUrlExpire) {
+                    // Only log after first update
+                    this.debug(`New ${kind} event detected, updating the event recording URL`)
+                }
                 recordingUrl = await this.device.getRecordingUrl(dingId)
             } else if (Math.floor(Date.now()/1000) - this.data.stream.event.recordingUrlExpire > 0) {
                 this.debug(`Previous ${kind} event recording URL has expired, updating the event recording URL`)

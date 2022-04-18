@@ -108,7 +108,7 @@ if [ "${RUNMODE}" = "addon" ]; then
         fi
 
         case "$MQTTPORT" in
-            8883) MQTTURLPREFIX='mqtts://' ;;
+            8883|8884) MQTTURLPREFIX='mqtts://' ;;
             *) MQTTURLPREFIX='mqtt://' ;;
         esac
 
