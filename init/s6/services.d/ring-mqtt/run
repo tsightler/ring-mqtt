@@ -47,15 +47,13 @@ if [ "${RUNMODE}" = "addon" ]; then
     export ADDONHOSTNAME=$HOSTNAME
 
     # Setup the MQTT environment options based on addon configuration settings
-    export MQTTURL=$(bashio::config "mqtt_url")
+    MQTTURL=$(bashio::config "mqtt_url")
     MQTTHOST=$(bashio::config "mqtt_host")
     MQTTPORT=$(bashio::config "mqtt_port")
     MQTTUSER=$(bashio::config "mqtt_user")
     MQTTPASSWORD=$(bashio::config "mqtt_password")
 
-    echo $MQTTURL
-
-    if [ ! -v MQTTURL ] || [ $MQTTURL = '<auto_detect>' ]; then
+    if [ -z "$MQTTURL" ] || [ $MQTTURL = '<auto_detect>' ]; then
         if [ $MQTTHOST = '<auto_detect>' ]; then
             if bashio::services.available 'mqtt'; then
                 MQTTHOST=$(bashio::services mqtt "host")
@@ -125,7 +123,7 @@ if [ "${RUNMODE}" = "addon" ]; then
         echo "Using Configured MQTT URL: ${MQTTURL}"
     fi
 fi
+export MQTTURL
 echo "-------------------------------------------------------"
-
 echo "Running ring-mqtt..."
 exec ./ring-mqtt.js
