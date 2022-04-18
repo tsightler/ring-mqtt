@@ -27,11 +27,11 @@ cleanup() {
     if [ -z ${reason} ]; then
         # If no reason defined, that means we were interrupted by a signal, send the command to stop the live stream
         echo -e "${green}[${client_name}]${reset} Deactivating ${type} stream due to signal from RTSP server (no more active clients or publisher ended stream)"
-        mosquitto_pub -i "${client_id}_pub" -u "${MQTTUSER}" -P "${MQTTPASSWORD}" -h "${MQTTHOST}" -p "${MQTTPORT}" -t "${command_topic}" -m "OFF"
+        mosquitto_pub -i "${client_id}_pub" -L "${MQTTURL}" -t "${command_topic}" -m "OFF"
     fi
     # There should never be more than one mosquitto_sub for any given camera ID/stream type combination
     # so this scorched earth kill method should be OK 
-    pkill "${client_id}"
+    pkill "${client_id}_sub"
     exit 0
 }
 
@@ -53,7 +53,7 @@ do
     # If start message received, publish the command to start stream
     if [ ${message} = "START" ]; then
         echo -e "${green}[${client_name}]${reset} Requesting activation of ${type} stream via MQTT"
-        mosquitto_pub -i "${client_id}_pub" -u "${MQTTUSER}" -P "${MQTTPASSWORD}" -h "${MQTTHOST}" -p "${MQTTPORT}" -t "${command_topic}" -m "ON-DEMAND"
+        mosquitto_pub -i "${client_id}_pub" -L "${MQTTURL}" -t "${command_topic}" -m "ON-DEMAND"
     else
         # Otherwise it should be a JSON message from the stream state attribute topic so extract the detailed stream state
         stream_state=`echo ${message} | jq -r '.status'`
@@ -84,7 +84,7 @@ do
                 ;;
         esac
     fi
-done 10< <(mosquitto_sub -q 1 -i "${client_id}_sub" -u "${MQTTUSER}" -P "${MQTTPASSWORD}" -h "${MQTTHOST}" -p "${MQTTPORT}" -t "${json_attribute_topic}" & (sleep .02; echo "START"))
+done 10< <(mosquitto_sub -q 1 -i "${client_id}_sub" -L "${MQTTURL}" -t "${json_attribute_topic}" & (sleep .02; echo "START"))
 
 ctrl_c
 exit 0
