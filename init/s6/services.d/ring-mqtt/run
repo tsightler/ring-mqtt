@@ -62,7 +62,7 @@ if [ "${RUNMODE}" = "addon" ]; then
                         # This is the default configuration of Mosquitto addon, but it's of course
                         # possible that user generates customer certifiacate for MQTT addon with
                         # it's own hostname.  I can't figure out any way to detect this so far. 
-                        MQTTHOST='${HAHOSTNAME}'
+                        MQTTHOST="${HAHOSTNAME}"
                         ;;
                     *)  
                         MQTTHOST=$(bashio::services mqtt "host")
