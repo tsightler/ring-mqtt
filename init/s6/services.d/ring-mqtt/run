@@ -53,7 +53,7 @@ if [ "${RUNMODE}" = "addon" ]; then
     MQTTUSER=$(bashio::config "mqtt_user")
     MQTTPASSWORD=$(bashio::config "mqtt_password")
 
-    if [ $MQTTURL = '<auto_detect>' || -z $MQTTURL ]; then
+    if [ $MQTTURL = '<auto_detect>' ] || [ -z $MQTTURL ]; then
         if [ $MQTTHOST = '<auto_detect>' ]; then
             if bashio::services.available 'mqtt'; then
                 MQTTHOST=$(bashio::services mqtt "host")
