@@ -125,13 +125,13 @@ if [ "${RUNMODE}" = "addon" ]; then
 
         if [ ! -z $MQTTUSER ] && [ ! -z $MQTTPASSWORD ]; then
             MQTTURL="${MQTTURLPREFIX}${MQTTUSER}:${MQTTPASSWORD}@${MQTTHOST}:${MQTTPORT}"
-            echo "Using generated MQTT URL: ${MQTTURLPREFIX}${MQTTUSER}:<hidden>@${MQTTHOST}:${MQTTPORT}"
+            echo "Generated MQTT URL: ${MQTTURLPREFIX}${MQTTUSER}:<hidden>@${MQTTHOST}:${MQTTPORT}"
         else
             MQTTURL="${MQTTURLPREFIX}@${MQTTHOST}:${MQTTPORT}"
-            echo "Using generated MQTT URL: ${MQTTURLPREFIX}${MQTTHOST}:${MQTTPORT}"
+            echo "Generated MQTT URL: ${MQTTURLPREFIX}${MQTTHOST}:${MQTTPORT}"
         fi
     else
-        echo "Using configured MQTT URL: ${MQTTURL}"
+        echo "Configured MQTT URL: ${MQTTURL}"
     fi
 fi
 export MQTTURL
