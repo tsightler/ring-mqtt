@@ -5,6 +5,7 @@ const utils = require( '../lib/utils' )
 class Thermostat extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'alarm')
+        this.activeChildDevices = true
     }
 
     init() {

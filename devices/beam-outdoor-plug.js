@@ -4,6 +4,7 @@ const { RingDeviceType } = require('ring-client-api')
 class BeamOutdoorPlug extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'lighting')
+        this.activeChildDevices = true
     }
 
     init() {
