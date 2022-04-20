@@ -4,7 +4,6 @@ const { RingDeviceType } = require('ring-client-api')
 class BeamOutdoorPlug extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'lighting')
-        this.activeChildDevices = true
     }
 
     init() {
@@ -23,27 +22,24 @@ class BeamOutdoorPlug extends RingSocketDevice {
             name: `${this.outlet2.name}`
         }
 
-        this.outlet1.onData.subscribe((data) => {
-            if (this.isOnline()) { this.publishOutlet1State() }
+        this.outlet1.onData.subscribe(() => {
+            if (this.isOnline()) { this.publishOutletState('outlet1') }
         })
 
-        this.outlet2.onData.subscribe((data) => {
-            if (this.isOnline()) { this.publishOutlet2State() }
+        this.outlet2.onData.subscribe(() => {
+            if (this.isOnline()) { this.publishOutletState('outlet2') }
         })
     }
 
     publishState() {
-        this.publishOutlet1State()
-        this.publishOutlet2State()
+        this.publishOutletState('outlet1')
+        this.publishOutletState('outlet2')
         this.publishAttributes()
     }
 
-    publishOutlet1State() {
-        this.mqttPublish(this.entity.outlet1.state_topic, this.outlet1.data.on ? "ON" : "OFF")
-    }
-
-    publishOutlet2State() {
-        this.mqttPublish(this.entity.outlet2.state_topic, this.outlet2.data.on ? "ON" : "OFF")
+    publishOutletState(outletId) {
+        this.mqttPublish(this.entity[outletId].state_topic, this[outletId].data.on ? "ON" : "OFF")
+        this.publishAttributes()
     }
 
     // Process messages from MQTT command topic

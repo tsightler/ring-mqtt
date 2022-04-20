@@ -5,7 +5,6 @@ const utils = require( '../lib/utils' )
 class Thermostat extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'alarm')
-        this.activeChildDevices = true
     }
 
     init() {
@@ -114,7 +113,7 @@ class Thermostat extends RingSocketDevice {
             // representing the low/high temp offset from the set point
             if (!this.data.setPointInProgress) {
                 // Only publish state if there are no pending setpoint commands in progress
-                // since update commands take 100ms to complete and always publish new state
+                // since update commands take ~100ms to complete and always publish new state
                 // as soon as the update is completed
                 this.data.autoSetPoint.low = this.device.data.setPoint-this.device.data.deadBand
                 this.data.autoSetPoint.high = this.device.data.setPoint+this.device.data.deadBand

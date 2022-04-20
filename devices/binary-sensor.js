@@ -53,6 +53,12 @@ class BinarySensor extends RingSocketDevice {
             device_class: device_class,
             isLegacyEntity: true  // Legacy compatibility
         }
+
+        this.entity[this.entityName+'_bypass_mode'] = {
+            component: 'select',
+            
+        }
+        
     }
 
     publishState() {
