@@ -971,7 +971,7 @@ class Camera extends RingPolledDevice {
                 this.publishEventSelectState()
             }
         } else {
-            this.debug(`Set event stream to ${message} received by not a valid value`)
+            this.debug('Received invalid value for event stream')
         }
     }
 }

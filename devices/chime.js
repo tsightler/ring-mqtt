@@ -10,9 +10,7 @@ class Chime extends RingPolledDevice {
         this.data = {
             volume: null,
             snooze: null,
-            snooze_minutes: (stateData?.snooze_minutes)
-                ? stateData.snooze_minutes
-                : 1440,
+            snooze_minutes: stateData?.snooze_minutes ? stateData.snooze_minutes : 1440,
             snooze_minutes_remaining: Math.floor(this.device.data.do_not_disturb.seconds_left/60),
             play_ding_sound: 'OFF',
             play_motion_sound: 'OFF'
