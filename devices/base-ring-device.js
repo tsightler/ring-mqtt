@@ -208,12 +208,12 @@ class RingDevice {
 
     // Gets all saved state data for device
     getSavedState() {
-        return state.getDeviceState(this.deviceId)
+        return state.getDeviceSavedState(this.deviceId)
     }
 
     // Called to update saved state data for device
     setSavedState(stateData) {
-        state.updateDeviceState(this.deviceId, stateData)
+        state.setDeviceSavedState(this.deviceId, stateData)
     }
 
     // Set state topic online
