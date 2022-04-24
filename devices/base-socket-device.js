@@ -17,9 +17,6 @@ class RingSocketDevice extends RingDevice {
         this.device.onData.subscribe((data) => {
             if (this.isOnline()) { this.publishState(data) }
         })
-
-        // Request saved state for device
-        utils.event.emit('get_device_state', this.deviceId)
     }
 
     // Publish device discovery, set online, and send all state data

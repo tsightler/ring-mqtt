@@ -3,9 +3,6 @@ const RingSocketDevice = require('./base-socket-device')
 class MultiLevelSwitch extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'alarm')
-    }
-
-    init() {
         this.deviceData.mdl = 'Dimming Light'
         
         this.entity.light = {

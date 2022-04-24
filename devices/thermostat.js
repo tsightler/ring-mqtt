@@ -5,9 +5,6 @@ const utils = require( '../lib/utils' )
 class Thermostat extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'alarm')
-    }
-
-    init() {
         this.deviceData.mdl = 'Thermostat'
 
         this.operatingStatus = this.childDevices.find(d => d.deviceType === 'thermostat-operating-status'),

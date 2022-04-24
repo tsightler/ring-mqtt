@@ -3,9 +3,6 @@ const RingSocketDevice = require('./base-socket-device')
 class FloodFreezeSensor extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'alarm')
-    }
-
-    init() {
         this.deviceData.mdl = 'Flood & Freeze Sensor'
 
         this.entity.flood = {

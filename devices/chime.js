@@ -4,13 +4,13 @@ const utils = require( '../lib/utils' )
 class Chime extends RingPolledDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'chime')
-    }
 
-    init(stateData) {
+        const savedState = this.getSavedState()
+
         this.data = {
             volume: null,
             snooze: null,
-            snooze_minutes: stateData?.snooze_minutes ? stateData.snooze_minutes : 1440,
+            snooze_minutes: savedState?.snooze_minutes ? savedState.snooze_minutes : 1440,
             snooze_minutes_remaining: Math.floor(this.device.data.do_not_disturb.seconds_left/60),
             play_ding_sound: 'OFF',
             play_motion_sound: 'OFF'
@@ -58,7 +58,7 @@ class Chime extends RingPolledDevice {
         const stateData = {
             snooze_minutes: this.data.snooze_minutes
         }
-        utils.event.emit(`update_device_state`, this.deviceId, stateData)
+        this.setSavedState(stateData)
     }
 
     initAttributeEntities() {
@@ -167,7 +167,8 @@ class Chime extends RingPolledDevice {
             this.debug('Snooze minutes command received but out of range (0-1440 minutes)')
         } else {
             this.data.snooze_minutes = parseInt(minutes)
-            this.mqttPublish(this.entity.snooze_minutes.state_topic, this.data.snooze_minutes.toString())           
+            this.mqttPublish(this.entity.snooze_minutes.state_topic, this.data.snooze_minutes.toString())
+            this.updateDeviceState()
         }
     }
 

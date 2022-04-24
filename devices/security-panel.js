@@ -1,13 +1,11 @@
 const RingSocketDevice = require('./base-socket-device')
 const { allAlarmStates, RingDeviceType } = require('ring-client-api')
 const utils = require( '../lib/utils' )
+const state = require('../lib/state')
 
 class SecurityPanel extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'alarm', 'alarmState')
-    }
-
-    init() {
         this.deviceData.mdl = 'Alarm Control Panel'
         this.deviceData.name = `${this.device.location.name} Alarm`
         
@@ -134,59 +132,54 @@ class SecurityPanel extends RingSocketDevice {
     async setAlarmMode(message) {
         this.debug(`Received set alarm mode ${message} for location ${this.device.location.name} (${this.locationId})`)
 
-        // Execute arming once bypass mode state event is received
-        utils.event.once('bypass_mode_states', async (bypassModeStates) => {
-            // Try to set alarm mode and retry after delay if mode set fails
-            // Performing initial arming attempt with no delay
-            let retries = 5
-            let setAlarmSuccess = false
-            while (retries-- > 0 && !(setAlarmSuccess)) {
-                const bypassDeviceIds = []
+        // Try to set alarm mode and retry after delay if mode set fails
+        // Performing initial arming attempt with no delay
+        let retries = 5
+        let setAlarmSuccess = false
+        while (retries-- > 0 && !(setAlarmSuccess)) {
+            bypassDeviceIds = []
 
-                if (message.toLowerCase() !== 'disarm') {
-                    // When arming, check for sensors that require bypass
-                    // Get all devices that allow bypass 
-                    const bypassDevices = (await this.device.location.getDevices()).filter(device => 
-                        device.deviceType === RingDeviceType.ContactSensor ||
-                        device.deviceType === RingDeviceType.RetrofitZone ||
-                        device.deviceType === RingDeviceType.MotionSensor ||
-                        device.deviceType === RingDeviceType.TiltSensor ||
-                        device.deviceType === RingDeviceType.GlassbreakSensor
-                    ),
-                    bypassDeviceNames = []
+            if (message.toLowerCase() !== 'disarm') {
+                // During arming, check for sensors that require bypass
+                // Get all devices that allow bypass 
+                const bypassDevices = (await this.device.location.getDevices()).filter(device => 
+                    device.deviceType === RingDeviceType.ContactSensor ||
+                    device.deviceType === RingDeviceType.RetrofitZone ||
+                    device.deviceType === RingDeviceType.MotionSensor ||
+                    device.deviceType === RingDeviceType.TiltSensor ||
+                    device.deviceType === RingDeviceType.GlassbreakSensor
+                ),
+                savedStates = state.getAllSavedStates(),
+                bypassDeviceNames = []
 
-                    // Loop through all devices and add device ID if required
-                    for (const device of bypassDevices) {
-                        const bypassMode = bypassModeStates[device.id]
-                        if (bypassMode === 'Always' || bypassMode === 'Faulted' && device.data.faulted) {
-                            bypassDeviceIds.push(device.id)
-                            bypassDeviceNames.push(`${device.name} [${bypassMode}]`)
-                        }
-                    }
-
-                    if (bypassDeviceIds.length > 0) {
-                        this.debug(`Bypassed sensors [Reason]: ${bypassDeviceNames.join(', ')}`)
-                    } else {
-                        this.debug('No sensors will be bypased')
+                // Loop through all bypass eligible devices and bypass based on settings/state
+                for (const device of bypassDevices) {
+                    const bypassMode = savedStates[device.id]?.bypass_mode
+                    if (bypassMode === 'Always' || bypassMode === 'Faulted' && device.data.faulted) {
+                        bypassDeviceIds.push(device.id)
+                        bypassDeviceNames.push(`${device.name} [${bypassMode}]`)
                     }
                 }
 
-                setAlarmSuccess = await this.trySetAlarmMode(message, bypassDeviceIds)
-
-                // On failure delay 10 seconds for next set attempt
-                if (!setAlarmSuccess) { await utils.sleep(10) }
+                if (bypassDeviceIds.length > 0) {
+                    this.debug(`The following sensors will be bypassed [Reason]: ${bypassDeviceNames.join(', ')}`)
+                } else {
+                    this.debug('No sensors will be bypased')
+                }
             }
 
-            // Check the return status and print some debugging for failed states
-            if (!setAlarmSuccess) {
-                this.debug('Alarm could not enter proper arming mode after all retries...Giving up!')
-            } else if (setAlarmSuccess == 'unknown') {
-                this.debug('Unknown alarm arming mode requested.')
-            }
-        })
+            setAlarmSuccess = await this.trySetAlarmMode(message, bypassDeviceIds)
 
-        // Request device bypass mode states from state engine
-        utils.event.emit('get_bypass_mode_states')
+            // On failure delay 10 seconds for next set attempt
+            if (!setAlarmSuccess) { await utils.sleep(10) }
+        }
+
+        // Check the return status and print some debugging for failed states
+        if (!setAlarmSuccess) {
+            this.debug('Alarm could not enter proper arming mode after all retries...Giving up!')
+        } else if (setAlarmSuccess == 'unknown') {
+            this.debug('Unknown alarm arming mode requested.')
+        }
     }
 
     async trySetAlarmMode(message, bypassDeviceIds) {

@@ -3,16 +3,13 @@ const RingSocketDevice = require('./base-socket-device')
 class SmokeAlarm extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'alarm')
+        this.deviceData.mdl = 'Smoke Alarm'
 
         // Combination Smoke/CO alarm is handled as separate devices (same behavior as Ring app)
         // If child device exist, delete it to prevent duplicate display of device during discovery
         if (this.hasOwnProperty('childDevices')) {
             delete this.childDevices
         }
-    }
-
-    init() {
-        this.deviceData.mdl = 'Smoke Alarm'
         
         this.entity.smoke = {
             component: 'binary_sensor',

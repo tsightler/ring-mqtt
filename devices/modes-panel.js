@@ -4,9 +4,6 @@ const utils = require( '../lib/utils' )
 class ModesPanel extends RingPolledDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'alarm', 'disable')
-    }
-
-    init() {
         this.deviceData.mdl = 'Mode Control Panel'
         this.deviceData.name = `${this.device.location.name} Mode`
 

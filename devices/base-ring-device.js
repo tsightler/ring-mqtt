@@ -1,4 +1,5 @@
 const utils = require('../lib/utils')
+const state = require('../lib/state')
 const colors = require('colors/safe')
 
 // Base class with functions common to all devices
@@ -28,20 +29,10 @@ class RingDevice {
             this.childDevices = deviceInfo.childDevices
         }
 
-        // Initialize device with saved state data
-        utils.event.on(`device_state_${this.deviceId}`, (stateData) => {
-            this.init(stateData)
-            if (primaryAttribute !== 'disable') {
-                this.initAttributeEntities(primaryAttribute)
-                this.schedulePublishAttributes()
-            }
-
-            // If device supports persistent state but there's no existing state
-            // data for an update of the initial state
-            if (!stateData && typeof this.updateDeviceState === "function") {
-                this.updateDeviceState()
-            }    
-        })
+        if (primaryAttribute !== 'disable') {
+            this.initAttributeEntities(primaryAttribute)
+            this.schedulePublishAttributes()
+        }
     }
 
     // This function loops through each entity of the device, creates a unique
@@ -213,6 +204,16 @@ class RingDevice {
             this.debug(colors.blue(`${topic} `)+colors.cyan(`${maskedMessage ? maskedMessage : message}`), debugType)
         }
         utils.event.emit('mqtt_publish', topic, message)
+    }
+
+    // Gets all saved state data for device
+    getSavedState() {
+        return state.getDeviceState(this.deviceId)
+    }
+
+    // Called to update saved state data for device
+    setSavedState(stateData) {
+        state.updateDeviceState(this.deviceId, stateData)
     }
 
     // Set state topic online

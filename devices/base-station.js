@@ -1,16 +1,16 @@
 const RingSocketDevice = require('./base-socket-device')
-const utils = require( '../lib/utils' )
-
+const utils = require('../lib/utils')
 
 class BaseStation extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'alarm', 'acStatus')
-    }
-
-    async init() {
         this.deviceData.mdl = 'Alarm Base Station'
         this.deviceData.name = this.device.location.name + ' Base Station'
 
+        this.detectVolumeAccess()
+    }
+
+    async detectVolumeAccess() {
         const origVolume = (this.device.data.volume && !isNaN(this.device.data.volume) ? this.device.data.volume : 0)
         const testVolume = (origVolume === 1) ? .99 : origVolume+.01
         this.device.setVolume(testVolume)

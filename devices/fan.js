@@ -4,9 +4,6 @@ const utils = require( '../lib/utils' )
 class Fan extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'alarm')
-    }
-
-    init() {
         this.deviceData.mdl = 'Fan Control'
 
         this.entity.fan = {

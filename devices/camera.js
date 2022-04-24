@@ -7,9 +7,9 @@ const rss = require('../lib/rtsp-simple-server')
 class Camera extends RingPolledDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'camera')
-    }
 
-    init(stateData) {
+        const savedState = this.getSavedState()
+
         this.data = {
             motion: {
                 active_ding: false,
@@ -30,16 +30,16 @@ class Camera extends RingPolledDevice {
                 } 
             } : {},
             snapshot: {
-                mode: stateData?.snapshot?.mode
-                    ?  stateData.snapshot.mode
+                mode: savedState?.snapshot?.mode
+                    ?  savedState.snapshot.mode
                     : 'auto',
                 motion: false,
                 interval: false,
-                autoInterval: stateData?.snapshot?.autoInterval
-                    ? stateData.snapshot.autoInterval
+                autoInterval: savedState?.snapshot?.autoInterval
+                    ? savedState.snapshot.autoInterval
                     : true,
-                intervalDuration: stateData?.snapshot?.intervalDuration
-                    ? stateData.snapshot.intervalDuration
+                intervalDuration: savedState?.snapshot?.intervalDuration
+                    ? savedState.snapshot.intervalDuration
                     : (this.device.operatingOnBattery) ? 600 : 30,
                 intervalTimerId: null,
                 currentImage: null,
@@ -74,8 +74,8 @@ class Camera extends RingPolledDevice {
                 }
             },
             event_select: {
-                state: stateData?.event_select?.state
-                    ? stateData.event_select.state
+                state: savedState?.event_select?.state
+                    ? savedState.event_select.state
                     : 'Motion 1',
                 publishedState: null
             },
@@ -208,7 +208,7 @@ class Camera extends RingPolledDevice {
                 state: this.data.event_select.state
             }
         }
-        utils.event.emit(`update_device_state`, this.deviceId, stateData)
+        this.setSavedState(stateData)
     }
 
     // Build standard and optional entities for device

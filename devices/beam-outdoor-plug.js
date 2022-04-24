@@ -4,9 +4,6 @@ const { RingDeviceType } = require('ring-client-api')
 class BeamOutdoorPlug extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'lighting')
-    }
-
-    init() {
         this.deviceData.mdl = 'Outdoor Smart Plug'
 
         this.outlet1 = this.childDevices.find(d => d.deviceType === RingDeviceType.BeamsSwitch && d.data.relToParentZid === "1"),
