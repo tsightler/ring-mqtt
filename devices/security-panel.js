@@ -137,7 +137,7 @@ class SecurityPanel extends RingSocketDevice {
         let retries = 5
         let setAlarmSuccess = false
         while (retries-- > 0 && !(setAlarmSuccess)) {
-            bypassDeviceIds = []
+            const bypassDeviceIds = []
 
             if (message.toLowerCase() !== 'disarm') {
                 // During arming, check for sensors that require bypass

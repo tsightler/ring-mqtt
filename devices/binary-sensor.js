@@ -68,7 +68,8 @@ class BinarySensor extends RingSocketDevice {
             }
 
             this.entity.bypass_mode = {
-                component: 'select'
+                component: 'select',
+                options: bypass_modes
             }
 
             this.updateDeviceState()
@@ -86,16 +87,16 @@ class BinarySensor extends RingSocketDevice {
         const isPublish = data === undefined ? true : false
         const contactState = this.device.data.faulted ? 'ON' : 'OFF'
         this.mqttPublish(this.entity[this.entityName].state_topic, contactState)
-        if (this.entity?.bypass_mode) {
-            this.publishBypassModeState(isPublish)
-        }
+        this.publishBypassModeState(isPublish)
         this.publishAttributes()
     }
 
     publishBypassModeState(isPublish) {
-        if (this.data.bypass_mode !== this.data.published_bypass_mode || isPublish) {
-            this.data.published_bypass_mode = this.data.bypass_mode.state
-            this.mqttPublish(this.entity.bypass_mode.state_topic, this.data.bypass_mode)
+        if (this.entity?.bypass_mode) {
+            if (this.data.bypass_mode !== this.data.published_bypass_mode || isPublish) {
+                this.data.published_bypass_mode = this.data.bypass_mode.state
+                this.mqttPublish(this.entity.bypass_mode.state_topic, this.data.bypass_mode)
+            }
         }
     }
 
@@ -103,7 +104,9 @@ class BinarySensor extends RingSocketDevice {
     processCommand(command, message) {
         switch (command) {
             case 'bypass_mode/command':
-                this.setBypassMode(message)
+                if (this.entity?.bypass_mode) {
+                    this.setBypassMode(message)
+                }
                 break;
             default:
                 this.debug(`Received message to unknown command topic: ${command}`)
@@ -112,13 +115,13 @@ class BinarySensor extends RingSocketDevice {
 
     // Set Stream Select Option
     async setBypassMode(message) {
-        this.debug(`Received set bypass mode to ${message}`)
         if (this.entity.bypass_mode.options.includes(message)) {
+            this.debug(`Received set bypass mode to ${message}`)
             this.data.bypass_mode = message
             this.publishBypassModeState()
             this.updateDeviceState()
         } else {
-            this.debug('Received invalid value for sensor bypass mode')
+            this.debug(`Received invalid bypass mode for this sensor: ${message}`)
         }
     }
 }
