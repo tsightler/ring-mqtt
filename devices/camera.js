@@ -925,7 +925,7 @@ class Camera extends RingPolledDevice {
                 if (type === 'live') {
                     // Stream was manually started, create a dummy, audio only
                     // RTSP source stream to trigger stream startup and keep it active
-                    this.startKeepAliveStream()
+                    this.startKeepaliveStream()
                 } else {
                     this.debug(`Event stream can only be started on-demand!`)
                 }
