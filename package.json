@@ -1,6 +1,6 @@
 {
   "name": "ring-mqtt",
-  "version": "5.0.0-beta4",
+  "version": "5.0.0-beta.5",
   "description": "Ring Devices via MQTT",
   "main": "ring-mqtt.js",
   "dependencies": {
@@ -13,7 +13,7 @@
     "write-file-atomic": "^4.0.1",
     "mqtt": "4.3.7",
     "aedes": "0.46.3",
-    "ring-client-api": "10.0.0-beta.6"
+    "ring-client-api": "10.0.0-beta.5"
   },
   "devDependencies": {
     "eslint": "^7.19.0"
