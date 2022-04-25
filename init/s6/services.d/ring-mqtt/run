@@ -48,10 +48,10 @@ if [ "${RUNMODE}" = "addon" ]; then
 
     # Export MQTT service discovery data for use within NodeJS process
     if bashio::services.available 'mqtt'; then
-        export DISCMQTTHOST=$(bashio::services mqtt "host")
-        export DISCMQTTPORT=$(bashio::services mqtt "port")
-        export DISCMQTTUSER=$(bashio::services mqtt "username")
-        export DISCMQTTPASS=$(bashio::services mqtt "password")
+        export HAMQTTHOST=$(bashio::services mqtt "host")
+        export HAMQTTPORT=$(bashio::services mqtt "port")
+        export HAMQTTUSER=$(bashio::services mqtt "username")
+        export HAMQTTPASS=$(bashio::services mqtt "password")
     fi
 fi
 echo "-------------------------------------------------------"
