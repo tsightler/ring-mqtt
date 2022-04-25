@@ -535,18 +535,14 @@ class Camera extends RingPolledDevice {
                 if (streamState !== this.data.stream[type].state || isPublish) {
                     this.data.stream[type].state = streamState
                     this.mqttPublish(this.entity[entityProp].state_topic, this.data.stream[type].state)
-                    if (entityProp === 'stream') {
-                        utils.event.emit('mqtt_ipc_publish', this.entity[entityProp].state_topic, this.data.stream[type].state)
-                    }
+                    utils.event.emit('mqtt_ipc_publish', this.entity[entityProp].state_topic, this.data.stream[type].state)
                 }
 
                 if (this.data.stream[type].publishedStatus !== this.data.stream[type].status || isPublish) {
                     this.data.stream[type].publishedStatus = this.data.stream[type].status
                     const attributes = { status: this.data.stream[type].status }
                     this.mqttPublish(this.entity[entityProp].json_attributes_topic, JSON.stringify(attributes), 'attr')
-                    if (entityProp === 'stream') {
-                        utils.event.emit('mqtt_ipc_publish', this.entity[entityProp].json_attributes_topic, JSON.stringify(attributes))
-                    }
+                    utils.event.emit('mqtt_ipc_publish', this.entity[entityProp].json_attributes_topic, JSON.stringify(attributes))
                 }
             }
         })
