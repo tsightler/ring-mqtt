@@ -1,8 +1,8 @@
 {
     "mqtt_url": "mqtt://localhost:1883",
-    "disarm_code": "",
     "livestream_user": "",
     "livestream_pass": "",
+    "disarm_code": "",
     "enable_cameras": true,
     "enable_modes": false,
     "enable_panic": false,
