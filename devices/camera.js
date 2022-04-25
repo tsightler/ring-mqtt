@@ -947,7 +947,11 @@ class Camera extends RingPolledDevice {
             case 'off':
                 if (this.data.stream[type].session) {
                     if (type === 'live') {
-                        utils.event.emit('stop_livestream', this.deviceId)
+                        const streamData = {
+                            deviceId: this.deviceId,
+                            deviceName: this.device.name
+                        }
+                        utils.event.emit('stop_livestream', streamData)
                     } else {
                         this.data.stream[type].session.kill()
                     }
