@@ -83,7 +83,7 @@ do
                 ;;
         esac
     fi
-done 10< <(mosquitto_sub -q 1 -i "${client_id}_sub" -L "mqtt://127.0.0.1:51883/${json_attribute_topic}" & echo "START"
+done 10< <(mosquitto_sub -q 1 -i "${client_id}_sub" -L "mqtt://127.0.0.1:51883/${json_attribute_topic}" & echo "START")
 
 cleanup
 exit 0
