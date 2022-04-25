@@ -15,7 +15,7 @@ class RingDevice {
         }
 
         this.debug = (message, debugType) => {
-            utils.debug(debugType === 'disc' ? message : colors.green(`[${this.device.name}] `)+message, debugType ? debugType : 'mqtt')
+            utils.debug(debugType === 'disc' ? message : colors.green(`[${this.deviceData.name}] `)+message, debugType ? debugType : 'mqtt')
         }
         // Build device base and availability topic
         this.deviceTopic = `${utils.config.ring_topic}/${this.locationId}/${category}/${this.deviceId}`
@@ -165,6 +165,12 @@ class RingDevice {
                         utils.event.on(discoveryMessage[topic], (command, message) => {
                             this.processCommand(command, message)
                         })
+                        
+                        // For camera live stream entity subscribe to internal IPC broker
+                        if (entityKey === 'stream') {
+                            utils.event.emit('mqtt_ipc_subscribe', discoveryMessage[topic])
+                            
+                        }
                     }
                 })
             }

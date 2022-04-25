@@ -12,7 +12,8 @@
     "is-online": "^9.0.1",
     "write-file-atomic": "^4.0.1",
     "mqtt": "4.3.7",
-    "ring-client-api": "10.0.0-beta.5"
+    "aedes": "0.46.3",
+    "ring-client-api": "10.0.0-beta.6"
   },
   "devDependencies": {
     "eslint": "^7.19.0"
