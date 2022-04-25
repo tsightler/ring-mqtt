@@ -1,8 +1,8 @@
 #!/bin/bash
 # Activate video stream on Ring cameras via ring-mqtt
-# Intended for use as on-demand script for rtsp-simple-server
-
+# Intended only for use as on-demand script for rtsp-simple-server
 # Requires mosquitto MQTT clients package to be installed
+# Uses ring-mqtt internal IPC broker for communications with main process 
 # Provides status updates and termintates stream on script exit
 
 # Required command line arguments

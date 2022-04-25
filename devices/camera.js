@@ -535,6 +535,7 @@ class Camera extends RingPolledDevice {
                 if (streamState !== this.data.stream[type].state || isPublish) {
                     this.data.stream[type].state = streamState
                     this.mqttPublish(this.entity[entityProp].state_topic, this.data.stream[type].state)
+                    // Publish state to IPC broker as well
                     utils.event.emit('mqtt_ipc_publish', this.entity[entityProp].state_topic, this.data.stream[type].state)
                 }
 
@@ -542,6 +543,7 @@ class Camera extends RingPolledDevice {
                     this.data.stream[type].publishedStatus = this.data.stream[type].status
                     const attributes = { status: this.data.stream[type].status }
                     this.mqttPublish(this.entity[entityProp].json_attributes_topic, JSON.stringify(attributes), 'attr')
+                    // Publish attribute state to IPC broker as well
                     utils.event.emit('mqtt_ipc_publish', this.entity[entityProp].json_attributes_topic, JSON.stringify(attributes))
                 }
             }

@@ -166,7 +166,7 @@ class RingDevice {
                             this.processCommand(command, message)
                         })
                         
-                        // For camera live stream entity subscribe to internal IPC broker
+                        // For camera stream entities subscribe to IPC broker
                         if (entityKey === 'stream' || entityKey === 'event_stream') {
                             utils.event.emit('mqtt_ipc_subscribe', discoveryMessage[topic])                            
                         }
