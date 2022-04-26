@@ -1,5 +1,6 @@
 {
     "mqtt_url": "mqtt://localhost:1883",
+    "mqtt_options": "",
     "livestream_user": "",
     "livestream_pass": "",
     "disarm_code": "",
