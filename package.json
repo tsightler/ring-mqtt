@@ -11,6 +11,7 @@
     "ip": "^1.1.5",
     "is-online": "^9.0.1",
     "write-file-atomic": "^4.0.1",
+    "minimist": "^1.2.6",
     "mqtt": "4.3.7",
     "aedes": "0.46.3",
     "ring-client-api": "10.0.0-beta.5"
