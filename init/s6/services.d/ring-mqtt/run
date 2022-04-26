@@ -54,6 +54,5 @@ if [ "${RUNMODE}" = "addon" ]; then
         export HAMQTTPASS=$(bashio::services mqtt "password")
     fi
 fi
-echo "-------------------------------------------------------"
 echo "Running ring-mqtt..."
 exec ./ring-mqtt.js
