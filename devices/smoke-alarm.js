@@ -5,8 +5,8 @@ class SmokeAlarm extends RingSocketDevice {
         super(deviceInfo, 'alarm')
         this.deviceData.mdl = 'Smoke Alarm'
 
-        // Combination Smoke/CO alarm is handled as separate devices (same behavior as Ring app)
-        // If child device exist, delete it to prevent duplicate display of device during discovery
+        // Combination Smoke/CO alarm is handled as separate devices (same as Ring app)
+        // Delete childDevices key here to prevent duplicate discovery entries in log
         if (this.hasOwnProperty('childDevices')) {
             delete this.childDevices
         }
