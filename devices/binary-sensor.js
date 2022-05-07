@@ -14,31 +14,31 @@ class BinarySensor extends RingSocketDevice {
                 this.entityName = 'contact'
                 this.deviceData.mdl = 'Contact Sensor'
                 device_class = (this.device.data.subCategoryId == 2) ? 'window' : 'door'
-                bypass_modes = [ 'Never', 'Faulted', 'Always' ]
+                bypass_modes = [ 'never', 'faulted', 'always' ]
                 break;
             case RingDeviceType.MotionSensor:
                 this.entityName = 'motion'
                 this.deviceData.mdl = 'Motion Sensor',
                 device_class = 'motion'
-                bypass_modes = [ 'Never', 'Always' ]
+                bypass_modes = [ 'never', 'always' ]
                 break;
             case RingDeviceType.RetrofitZone:
                 this.entityName = 'zone'
                 this.deviceData.mdl = 'Retrofit Zone'
                 device_class = 'safety'
-                bypass_modes = [ 'Never', 'Faulted', 'Always' ]
+                bypass_modes = [ 'never', 'faulted', 'always' ]
                 break;
             case RingDeviceType.TiltSensor:
                 this.entityName = 'tilt'
                 this.deviceData.mdl = 'Tilt Sensor'
                 device_class = 'garage_door'
-                bypass_modes = [ 'Never', 'Faulted', 'Always' ]
+                bypass_modes = [ 'never', 'faulted', 'always' ]
                 break;
             case RingDeviceType.GlassbreakSensor:
                 this.entityName = 'glassbreak'
                 this.deviceData.mdl = 'Glassbreak Sensor'
                 device_class = 'safety'
-                bypass_modes = [ 'Never', 'Always' ]
+                bypass_modes = [ 'never', 'always' ]
                 break;
             default:
                 if (this.device.name.toLowerCase().includes('motion')) {
