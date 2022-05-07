@@ -33,11 +33,15 @@ async function getRefreshToken() {
 
 const main = async() => {
     let refresh_token
-    let stateData
+    let stateData = {}
     // If running in Docker set state file path as appropriate
     const stateFile = (fs.existsSync('/etc/cont-init.d/ring-mqtt.sh')) 
         ? '/data/ring-state.json'
         : require('path').dirname(require.main.filename)+'/ring-state.json'
+    
+    const configFile = (fs.existsSync('/etc/cont-init.d/ring-mqtt.sh')) 
+        ? '/data/config.json'
+        : require('path').dirname(require.main.filename)+'/config.json'
 
     if (fs.existsSync(stateFile)) {
         console.log('Reading latest data from state file: '+stateFile)
@@ -68,6 +72,30 @@ const main = async() => {
         console.log('State file ' +stateFile+ ' saved with updated refresh token.')
     } catch (err) {
         console.log('Saving state file '+stateFile+' failed with error: ')
+        conslog.log(err)
+    }
+
+    const configData = {
+        "mqtt_url": "mqtt://localhost:1883",
+        "mqtt_options": "",
+        "livestream_user": "",
+        "livestream_pass": "",
+        "disarm_code": "",
+        "enable_cameras": true,
+        "enable_modes": false,
+        "enable_panic": false,
+        "hass_topic": "homeassistant/status",
+        "ring_topic": "ring",
+        "location_ids": [
+            ""
+        ]
+    }
+
+    try {
+        await writeFileAtomic(configFile, JSON.stringify(configData))
+        console.log('New config file written to '+configFile)
+    } catch (err) {
+        console.log('Failed to create new config file at '+stateFile)
         conslog.log(err)
     }
 }
