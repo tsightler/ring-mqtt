@@ -68,7 +68,7 @@ const main = async() => {
         stateData.systemId = (createHash('sha256').update(randomBytes(32)).digest('hex'))
     }
     try {
-        await writeFileAtomic(stateFile, JSON.stringify(stateData, null, 2))
+        await writeFileAtomic(stateFile, JSON.stringify(stateData))
         console.log('State file ' +stateFile+ ' saved with updated refresh token.')
     } catch (err) {
         console.log('Saving state file '+stateFile+' failed with error: ')
