@@ -91,12 +91,14 @@ const main = async() => {
         ]
     }
 
-    try {
-        await writeFileAtomic(configFile, JSON.stringify(configData, null, 4))
-        console.log('New config file written to '+configFile)
-    } catch (err) {
-        console.log('Failed to create new config file at '+stateFile)
-        conslog.log(err)
+    if (!fs.existsSync(configFile)) {
+        try {
+            await writeFileAtomic(configFile, JSON.stringify(configData, null, 4))
+            console.log('New config file written to '+configFile)
+        } catch (err) {
+            console.log('Failed to create new config file at '+stateFile)
+            conslog.log(err)
+        }
     }
 }
 
