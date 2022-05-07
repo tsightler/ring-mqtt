@@ -47,7 +47,7 @@ RUN apk add --no-cache tar git libcrypto1.1 libssl1.1 musl-utils musl bash curl 
     chmod 777 /data /app /run && \
     cd /app/ring-mqtt && \
     chmod +x ring-mqtt.js && \
-    chmod +x get-ring-token.js && \
+    chmod +x init-ring-mqtt.js && \
     npm install && \
     rm -Rf /root/.npm && \
     rm -f -r /tmp/*
