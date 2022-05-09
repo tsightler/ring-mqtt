@@ -1,26 +1,43 @@
 ## v5.0.0
+**!!!!! WARNING !!!!!**
+This is a breaking release, while efforts have been made to make the upgrade path straightforward for most users, it was simply not possible to make the transition to new features and configuration methods without introducing breaking changes.  Users should carefully read the [Upgrading to 5.x](https://github.com/tsightler/ring-mqtt/wiki/Upgrading-to-v5.x) wiki document, which is also now home to the documentation for this project.
+
+If you value stability over the absolute latest features, you may want to delay upgrades until v5 has had some time to stabilize as the underlying number of changes is large and will almost certainly mean that there will be some bugs and regressions vs prior versions.
+
 **New Features**
-- Add support for Ring glassbreak sensors
-- Add support for Ring Floodlight Pro security cameras
-- Add support for thermostat "auto" operating mode with low/high (dual setpoint) temperature range settings
-- Add volume support for Ring Outdoor Siren (thanks to @roylofthouse for the PR)
+- Based on the newly released ring-client-api v11 which brings the following features:
+  - Push notifications vs polling for camera ding and motion events
+    - Significantly faster notifications
+    - Access to rich notifications which means battery/low-power mode cameras can receive motion snapshots just like the Ring app (requires Ring Protect plan and rich notifications to be enabled)
+  - Faster and more relaible snapshot updates
+  - Live streaming via WebRTC protocol vs the legacy SIP based streaming from prior versions
+    - Faster and more reliable streaming startup
+    - Support for devices with Ring Edge enabled (ring-mqtt must have network connectivity to Ring Edge )
+- New URL based MQTT configuration method with full support for TLS and certificate based authentication
+- Support for the following new devices:
+  - Ring glassbreak sensors
+  - Ring Floodlight Pro security cameras
+- Support for additional device features:
+  - Thermostat "auto" operating mode with low/high (dual setpoint) temperature range settings
+  - Volume support for Ring Outdoor Siren (thanks to @roylofthouse for the PR)
+- Per-device settings with persistence across reboots
+  - Arming bypass mode for sensors
+  - On duration for smart lighting
+- Per-camera snapshot settings
 
 **Fixed Bugs**
 - Use atomic writes for updating state/config file.  Hopefully this will fix the occassional report of corrupted state files.
 
 **Breaking Changes**
-The primary goal of the 5.0.0 release is to standardize configuration and state management across the 3 different install methods (Addon, Docker, and Standard) as much as possible.  This significantly simplifies the initialization code allowing for easier maintenance going forward and provides a basis for implementation of device level state management in a consistent way. Efforts have been made reduce breaking changes for existing setups, but there are some considerations for certain install methods which are noted below:
-
-- Docker installs now *REQUIRE* a mapped persistent volume for storing the state file.  This was practically required anyway because of refresh token expiration, so I'm guessing most Docker installs already used a persistent volume, but, at least theoretically, it was previously possible to run without this, however, this is no longer possible with 5.x and later releases.
-- Also for Docker installs, the initial refresh token can no longer be set via the RINGTOKEN environment variable, nor is it used as a fallback, only the token in the state file is considered valid. New users can now simply start the container with required config variables, and use the Web UI for acquring the initial token, or pre-generate the state file with a token by running the get-ring-token.js CLI tool.
-- Standard installs will now also use a state file rather than storing the token directly in the config file.  On the first run of a 5.x release, any token in the config file will be read, saved into a new state file, and the config file will be updated to remove the token.  Please note that limited support is provided for standard installs and Docker/Addon install methods are highly recommended for the vast majority of users, but, if you are comfortable with installing software by hand then standard installs are still a viable option.
+See [Upgrading to 5.x](https://github.com/tsightler/ring-mqtt/wiki/Upgrading-to-v5.x) wiki document for details on breaking changes
 
 **Other Changes**
 - Standardized discovery logic for multi-component devices.  The child component discovery logic is now contained completely within the device level code.  Previously this logic was implemented as hard coded exceptions in the common discovery loop which was pretty ugly and exposed risk of breaking other devices any time a new multi-component device was added.
 
 **Dependency Updates**
-- Bump ring-client-api to 10.0.0 which adds support for new devices and uses updated APIs for snapshots and video streaming.
-- Update rtsp-simple-server to 0.17.17
+- Bump ring-client-api to 11.0.0 which adds support for new devices and uses updated APIs for snapshots and video streaming.
+- Update rtsp-simple-server to 0.18.2
+- Require NodeJS v16 (latest LTS version is recommended)
 
 ## v4.9.1
 **New Features**
