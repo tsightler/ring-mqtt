@@ -627,12 +627,12 @@ class Camera extends RingPolledDevice {
         }
 
         try {
-            if (this.device.isRingEdgeEnabled) {
-                this.debug('Requesting a Ring Edge live stream session via websocket API')
+            if (!this.device.isRingEdgeEnabled) {
+                this.debug('Starting a live stream session via Ring Edge')
                 const auth = await this.device.restClient.getCurrentAuth()
                 streamData.authToken = auth.access_token
             } else {
-                this.debug('Requesting a live stream session via Ring API')
+                this.debug('Starting a live stream session via Ring servers')
                 const liveCall = await this.device.restClient.request({
                     method: 'POST',
                     url: this.device.doorbotUrl('live_call')
