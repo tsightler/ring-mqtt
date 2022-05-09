@@ -627,7 +627,7 @@ class Camera extends RingPolledDevice {
         }
 
         try {
-            if (!this.device.isRingEdgeEnabled) {
+            if (this.device.isRingEdgeEnabled) {
                 this.debug('Starting a live stream session via Ring Edge')
                 const auth = await this.device.restClient.getCurrentAuth()
                 streamData.authToken = auth.access_token
