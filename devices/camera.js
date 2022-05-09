@@ -627,7 +627,7 @@ class Camera extends RingPolledDevice {
         }
 
         try {
-            if (this.isRingEdgeEnabled) {
+            if (this.device.isRingEdgeEnabled) {
                 this.debug('Requesting a Ring Edge live stream session via websocket API')
                 const auth = await this.device.restClient.getCurrentAuth()
                 streamData.authToken = auth.access_token
@@ -642,7 +642,7 @@ class Camera extends RingPolledDevice {
                 }
             }
         } catch(error) {
-            if (error?.response?.statusCode && error.response.statusCode === 403) {
+            if (error?.response?.statusCode === 403) {
                 this.debug(`Camera returned 403 when starting a live stream.  This usually indicates that live streaming is blocked by Modes settings.  Check your Ring app and verify that you are able to stream from this camera with the current Modes settings.`)
             } else {
                 this.debug(error)
@@ -673,11 +673,7 @@ class Camera extends RingPolledDevice {
                 '-re',
                 '-max_delay', '0',
                 '-i', this.data.stream.event.recordingUrl,
-                '-map', '0:v',
-                '-map', '0:a',
-                '-map', '0:a',
-                '-c:a:0', 'copy',
-                '-c:a:1', 'libopus',
+                '-c:a', 'libopus',
                 '-c:v', 'copy',
                 '-flags', '+global_header',
                 '-f', 'rtsp',
