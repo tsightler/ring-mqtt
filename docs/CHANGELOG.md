@@ -1,6 +1,6 @@
 ## v5.0.0
-**!!!!! WARNING !!!!!**
-This is a breaking release, while efforts have been made to make the upgrade path straightforward for most users, it was simply not possible to make the transition to new features and configuration methods without introducing breaking changes.  Users should carefully read the [Upgrading to 5.x](https://github.com/tsightler/ring-mqtt/wiki/Upgrading-to-v5.x) wiki document, which is also now home to the documentation for this project.
+**!!!!! WARNING !!!!!**\
+This is a breaking release!  While efforts have been made to ensure the upgrade path is straightforward for most users, it was simply not possible to make the transition to new features and configuration methods without introducing breaking changes.  Users should carefully read the [Upgrading to 5.x](https://github.com/tsightler/ring-mqtt/wiki/Upgrading-to-v5.x) wiki document for more details prior to upgrading to this version.
 
 If you value stability over the absolute latest features, you may want to delay upgrades until v5 has had some time to stabilize as the underlying number of changes is large and will almost certainly mean that there will be some bugs and regressions vs prior versions.
 
@@ -8,7 +8,7 @@ If you value stability over the absolute latest features, you may want to delay 
 - Based on the newly released ring-client-api v11 which brings the following features:
   - Push notifications vs polling for camera ding and motion events
     - Significantly faster notifications
-    - Access to rich notifications which means battery/low-power mode cameras can receive motion snapshots just like the Ring app (requires Ring Protect plan and rich notifications to be enabled)
+    - Access to rich notifications which allows the snapshot camera to receive the same snapshot as the notification used for the Ring app (requires Ring Protect plan and rich notifications to be enabled)
   - Faster and more relaible snapshot updates
   - Live streaming via WebRTC protocol vs the legacy SIP based streaming from prior versions
     - Faster and more reliable streaming startup
@@ -20,7 +20,7 @@ If you value stability over the absolute latest features, you may want to delay 
 - Support for additional device features:
   - Thermostat "auto" operating mode with low/high (dual setpoint) temperature range settings
   - Volume support for Ring Outdoor Siren (thanks to @roylofthouse for the PR)
-- Per-device settings with persistence across reboots
+- Per-device settings with persistence across restarts:
   - Arming bypass mode for sensors
   - On duration for smart lighting
 - Per-camera snapshot settings
