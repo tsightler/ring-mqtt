@@ -2,7 +2,7 @@
 **!!!!! WARNING !!!!!**\
 This is a breaking release!  While efforts have been made to ensure the upgrade path is straightforward for most users, it was simply not possible to make the transition to new features and configuration methods without introducing breaking changes.  Users should carefully read the [Upgrading to 5.x](https://github.com/tsightler/ring-mqtt/wiki/Upgrading-to-v5.x) wiki document for more details prior to upgrading to this version.
 
-If you value stability over the absolute latest features, you may want to delay upgrades until v5 has had some time to stabilize as the underlying number of changes is large and will almost certainly mean that there will be some bugs and regressions vs prior versions.
+If you value stability over the absolute latest features, you may want to delay upgrades until v5.x has had some time to stabilize as the underlying number of changes is large and will almost certainly mean that there will be some bugs and regressions.  At a minimum **take a backup** prior to upgrading so that you can revert if things do not go to plan.
 
 **New Features**
 - Based on the newly released ring-client-api v11 which brings the following features:
@@ -29,7 +29,7 @@ If you value stability over the absolute latest features, you may want to delay 
 - Use atomic writes for updating state/config file.  Hopefully this will fix the occassional report of corrupted state files.
 
 **Breaking Changes**
-See [Upgrading to 5.x](https://github.com/tsightler/ring-mqtt/wiki/Upgrading-to-v5.x) wiki document for details on breaking changes
+See [Upgrading to ring-mqtt v5.x](https://github.com/tsightler/ring-mqtt/wiki/Upgrading-to-v5.x) wiki document for details on breaking changes
 
 **Other Changes**
 - Standardized discovery logic for multi-component devices.  The child component discovery logic is now contained completely within the device level code.  Previously this logic was implemented as hard coded exceptions in the common discovery loop which was pretty ugly and exposed risk of breaking other devices any time a new multi-component device was added.
