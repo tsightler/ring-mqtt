@@ -155,7 +155,7 @@ class SecurityPanel extends RingSocketDevice {
                 // Loop through all bypass eligible devices and bypass based on settings/state
                 for (const device of bypassDevices) {
                     const bypassMode = savedStates[device.id]?.bypass_mode
-                    if (bypassMode === 'Always' || bypassMode === 'Faulted' && device.data.faulted) {
+                    if (bypassMode === 'Always' || (bypassMode === 'Faulted' && device.data.faulted)) {
                         bypassDeviceIds.push(device.id)
                         bypassDeviceNames.push(`${device.name} [${bypassMode}]`)
                     }

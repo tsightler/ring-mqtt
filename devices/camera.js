@@ -31,8 +31,8 @@ class Camera extends RingPolledDevice {
             } : {},
             snapshot: {
                 mode: savedState?.snapshot?.mode
-                    ?  savedState.snapshot.mode
-                    : 'auto',
+                    ?  savedState.snapshot.mode[0].toUpperCase() + savedState.snapshot.mode.slice(1)
+                    : 'Auto',
                 motion: false,
                 interval: false,
                 autoInterval: savedState?.snapshot?.autoInterval
@@ -146,7 +146,7 @@ class Camera extends RingPolledDevice {
             },
             snapshot_mode: {
                 component: 'select',
-                options: [ 'auto', 'disabled', 'motion', 'interval', 'all' ]
+                options: [ 'Auto', 'Disabled', 'Motion', 'Interval', 'All' ]
             },
             snapshot_interval: {
                 component: 'number',
@@ -894,22 +894,23 @@ class Camera extends RingPolledDevice {
 
     setSnapshotMode(message) {
         this.debug(`Received set snapshot mode to ${message}`)
-        switch(message.toLowerCase()) {
-            case 'auto':
+        const mode = message[0].toUpperCase() + message.slide(1)
+        switch(mode) {
+            case 'Auto':
                 this.data.snapshot.autoInterval = true                
-            case 'disabled':
-            case 'motion':
-            case 'interval':
-            case 'all':
-                this.data.snapshot.mode = message
+            case 'Disabled':
+            case 'Motion':
+            case 'Interval':
+            case 'All':
+                this.data.snapshot.mode = mode
                 this.updateSnapshotMode()
                 this.publishSnapshotMode()
-                if (message === 'auto') {
+                if (message === 'Auto') {
                     clearInterval(this.data.snapshot.intervalTimerId)
                     this.scheduleSnapshotRefresh()
                     this.publishSnapshotInterval()
                 }
-                this.debug(`Snapshot mode as been set to ${message}`)
+                this.debug(`Snapshot mode has been set to ${mode}`)
                 this.updateDeviceState()
                 break;
             default:
