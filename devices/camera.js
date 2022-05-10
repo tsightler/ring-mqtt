@@ -894,7 +894,7 @@ class Camera extends RingPolledDevice {
 
     setSnapshotMode(message) {
         this.debug(`Received set snapshot mode to ${message}`)
-        const mode = message[0].toUpperCase() + message.slide(1)
+        const mode = message[0].toUpperCase() + message.slice(1)
         switch(mode) {
             case 'Auto':
                 this.data.snapshot.autoInterval = true                

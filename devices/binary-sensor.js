@@ -115,7 +115,7 @@ class BinarySensor extends RingSocketDevice {
 
     // Set Stream Select Option
     async setBypassMode(message) {
-        const mode = message[0].toUpperCase() + message.slide(1)
+        const mode = message[0].toUpperCase() + message.slice(1)
         if (this.entity.bypass_mode.options.includes(mode)) {
             this.debug(`Received set bypass mode to ${message}`)
             this.data.bypass_mode = mode
