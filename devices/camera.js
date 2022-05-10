@@ -285,7 +285,7 @@ class Camera extends RingPolledDevice {
     }
 
     updateSnapshotMode() {
-        switch (this.data.snapshot.mode) {
+        switch (this.data.snapshot.mode.toLowerCase()) {
             case 'disabled':
                 this.data.snapshot.motion = false
                 this.data.snapshot.interval = false
