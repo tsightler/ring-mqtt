@@ -2,7 +2,7 @@ const RingSocketDevice = require('./base-socket-device')
 
 class Lock extends RingSocketDevice {
     constructor(deviceInfo) {
-        super(deviceInfo)
+        super(deviceInfo, 'alarm')
         this.deviceData.mdl = 'Lock'
 
         this.entity.lock = {
@@ -11,7 +11,7 @@ class Lock extends RingSocketDevice {
         }
     }
 
-    publishData() {
+    publishState() {
         var lockState
         switch(this.device.data.locked) {
             case 'locked':
@@ -23,18 +23,18 @@ class Lock extends RingSocketDevice {
             default:
                 lockState = 'UNKNOWN'
         }
-        this.publishMqtt(this.entity.lock.state_topic, lockState)
+        this.mqttPublish(this.entity.lock.state_topic, lockState)
         this.publishAttributes()
     }
 
     // Process messages from MQTT command topic
-    processCommand(message, componentCommand) {
-        switch (componentCommand) {
+    processCommand(command, message) {
+        switch (command) {
             case 'lock/command':
                 this.setLockState(message)
                 break;
             default:
-                this.debug(`Received message to unknown command topic: ${componentCommand}`)
+                this.debug(`Received message to unknown command topic: ${command}`)
         }
     }
 

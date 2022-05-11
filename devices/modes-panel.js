@@ -1,9 +1,9 @@
-const utils = require('../lib/utils')
 const RingPolledDevice = require('./base-polled-device')
+const utils = require( '../lib/utils' )
 
 class ModesPanel extends RingPolledDevice {
     constructor(deviceInfo) {
-        super(deviceInfo, 'disable')
+        super(deviceInfo, 'alarm', 'disable')
         this.deviceData.mdl = 'Mode Control Panel'
         this.deviceData.name = `${this.device.location.name} Mode`
 
@@ -17,7 +17,7 @@ class ModesPanel extends RingPolledDevice {
         }
     }
     
-    publishData(data) {
+    publishState(data) {
         const isPublish = data === undefined ? true : false
         const mode = (isPublish) ? this.device.location.getLocationMode() : data
         // Publish device state if it's changed from prior state
@@ -37,18 +37,18 @@ class ModesPanel extends RingPolledDevice {
                 default:
                     mqttMode = 'disarmed'
             }
-            this.publishMqtt(this.entity.mode.state_topic, mqttMode)
+            this.mqttPublish(this.entity.mode.state_topic, mqttMode)
         }
     }
 
     // Process messages from MQTT command topic
-    processCommand(message, componentCommand) {
-        switch (componentCommand) {
+    processCommand(command, message) {
+        switch (command) {
             case 'mode/command':
                 this.setLocationMode(message)
                 break;
             default:
-                this.debug(`Received message to unknown command topic: ${componentCommand}`)
+                this.debug(`Received message to unknown command topic: ${command}`)
         }
     }
     

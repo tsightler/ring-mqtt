@@ -1,5 +1,5 @@
-readTimeout: 5s
-readBufferCount: 1024
+readTimeout: 10s
+readBufferCount: 2048
 
 rtspDisable: no
 protocols: [tcp]

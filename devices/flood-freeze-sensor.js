@@ -2,7 +2,7 @@ const RingSocketDevice = require('./base-socket-device')
 
 class FloodFreezeSensor extends RingSocketDevice {
     constructor(deviceInfo) {
-        super(deviceInfo)
+        super(deviceInfo, 'alarm')
         this.deviceData.mdl = 'Flood & Freeze Sensor'
 
         this.entity.flood = {
@@ -17,11 +17,11 @@ class FloodFreezeSensor extends RingSocketDevice {
         }
     }
         
-    publishData() {
+    publishState() {
         const floodState = this.device.data.flood && this.device.data.flood.faulted ? 'ON' : 'OFF'
         const freezeState = this.device.data.freeze && this.device.data.freeze.faulted ? 'ON' : 'OFF'
-        this.publishMqtt(this.entity.flood.state_topic, floodState)
-        this.publishMqtt(this.entity.freeze.state_topic, freezeState)
+        this.mqttPublish(this.entity.flood.state_topic, floodState)
+        this.mqttPublish(this.entity.freeze.state_topic, freezeState)
         this.publishAttributes()
     }
 }

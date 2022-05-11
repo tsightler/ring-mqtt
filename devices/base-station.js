@@ -1,17 +1,16 @@
-const utils = require( '../lib/utils' )
 const RingSocketDevice = require('./base-socket-device')
+const utils = require('../lib/utils')
 
 class BaseStation extends RingSocketDevice {
     constructor(deviceInfo) {
-        super(deviceInfo, 'acStatus')
+        super(deviceInfo, 'alarm', 'acStatus')
         this.deviceData.mdl = 'Alarm Base Station'
         this.deviceData.name = this.device.location.name + ' Base Station'
 
-        this.initVolumeEntity()
+        this.detectVolumeAccess()
     }
-    
-    // Check if account has access to control base state volume and initialize topics if so
-    async initVolumeEntity() {
+
+    async detectVolumeAccess() {
         const origVolume = (this.device.data.volume && !isNaN(this.device.data.volume) ? this.device.data.volume : 0)
         const testVolume = (origVolume === 1) ? .99 : origVolume+.01
         this.device.setVolume(testVolume)
@@ -30,32 +29,32 @@ class BaseStation extends RingSocketDevice {
         }
     }
 
-    publishData(data) {
+    publishState(data) {
         const isPublish = data === undefined ? true : false
 
         if (this.entity.hasOwnProperty('volume')) {
             const currentVolume = (this.device.data.volume && !isNaN(this.device.data.volume) ? Math.round(100 * this.device.data.volume) : 0)
-            this.publishMqtt(this.entity.volume.state_topic, currentVolume.toString())
+            this.mqttPublish(this.entity.volume.state_topic, currentVolume.toString())
 
             // Eventually remove this but for now this attempts to delete the old light component based volume control from Home Assistant
             if (isPublish) {
-                this.publishMqtt('homeassistant/light/'+this.locationId+'/'+this.deviceId+'_audio/config', '', false)
+                this.mqttPublish('homeassistant/light/'+this.locationId+'/'+this.deviceId+'_audio/config', '', false)
             }
         }
         this.publishAttributes()
     }
 
     // Process messages from MQTT command topic
-    processCommand(message, componentCommand) {
-        const entityKey = componentCommand.split('/')[0]
-        switch (componentCommand) {
+    processCommand(command, message) {
+        const entityKey = command.split('/')[0]
+        switch (command) {
             case 'volume/command':
                 if (this.entity.hasOwnProperty(entityKey)) {
                     this.setVolumeLevel(message)
                 }
                 break;
             default:
-                this.debug(`Received message to unknown command topic: ${componentCommand}`)
+                this.debug(`Received message to unknown command topic: ${command}`)
         }
     }
 

@@ -1,13 +1,12 @@
-const utils = require('../lib/utils')
 const RingDevice = require('./base-ring-device')
+const utils = require('../lib/utils')
 
 // Base class for devices that communicate with hubs via websocket (alarm/smart lighting)
 class RingSocketDevice extends RingDevice {
-    constructor(deviceInfo, primaryAttribute) {
-        super(deviceInfo, deviceInfo.device.id, deviceInfo.device.location.locationId, primaryAttribute)
+    constructor(deviceInfo, category, primaryAttribute) {
+        super(deviceInfo, category, primaryAttribute, deviceInfo.device.id, deviceInfo.device.location.locationId)
 
         // Set default device data for Home Assistant device registry
-        // Values may be overridden by individual devices
         this.deviceData = { 
             ids: [ this.deviceId ],
             name: this.device.name,
@@ -16,7 +15,7 @@ class RingSocketDevice extends RingDevice {
         }
 
         this.device.onData.subscribe((data) => {
-            if (this.isOnline()) { this.publishData(data) }
+            if (this.isOnline()) { this.publishState(data) }
         })
     }
 
@@ -24,8 +23,10 @@ class RingSocketDevice extends RingDevice {
     async publish(locationConnected) {
         if (locationConnected) {
             await this.publishDiscovery()
+            // Sleep for a few seconds to give HA time to process discovery message
+            await utils.sleep(2)
             await this.online()
-            this.publishData()
+            this.publishState()
         }
     }
 
@@ -117,7 +118,7 @@ class RingSocketDevice extends RingDevice {
                 && this.device.data.hasOwnProperty('networks') && this.device.data.networks.hasOwnProperty('wlan0')
                     ? { wirelessNetwork: this.device.data.networks.wlan0.ssid, wirelessSignal: this.device.data.networks.wlan0.rssi } : {}
         }
-        this.publishMqtt(this.entity.info.state_topic, JSON.stringify(attributes), 'attr')
+        this.mqttPublish(this.entity.info.state_topic, JSON.stringify(attributes), 'attr')
         this.publishAttributeEntities(attributes)
     }
 }

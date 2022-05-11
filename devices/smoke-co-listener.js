@@ -2,7 +2,7 @@ const RingSocketDevice = require('./base-socket-device')
 
 class SmokeCoListener extends RingSocketDevice {
     constructor(deviceInfo) {
-        super(deviceInfo)
+        super(deviceInfo, 'alarm')
         this.deviceData.mdl = 'Smoke & CO Listener'
         
         this.entity.smoke = {
@@ -17,11 +17,11 @@ class SmokeCoListener extends RingSocketDevice {
         }
     }
 
-    publishData() {
+    publishState() {
         const smokeState = this.device.data.smoke && this.device.data.smoke.alarmStatus === 'active' ? 'ON' : 'OFF'
         const coState = this.device.data.co && this.device.data.co.alarmStatus === 'active' ? 'ON' : 'OFF'
-        this.publishMqtt(this.entity.smoke.state_topic, smokeState)
-        this.publishMqtt(this.entity.co.state_topic, coState)
+        this.mqttPublish(this.entity.smoke.state_topic, smokeState)
+        this.mqttPublish(this.entity.co.state_topic, coState)
         this.publishAttributes()
     }
 }

@@ -1,14 +1,16 @@
-const utils = require('../lib/utils')
 const RingPolledDevice = require('./base-polled-device')
+const utils = require( '../lib/utils' )
 
 class Chime extends RingPolledDevice {
     constructor(deviceInfo) {
-        super(deviceInfo)
+        super(deviceInfo, 'chime')
+
+        const savedState = this.getSavedState()
 
         this.data = {
             volume: null,
             snooze: null,
-            snooze_minutes: 1440,
+            snooze_minutes: savedState?.snooze_minutes ? savedState.snooze_minutes : 1440,
             snooze_minutes_remaining: Math.floor(this.device.data.do_not_disturb.seconds_left/60),
             play_ding_sound: 'OFF',
             play_motion_sound: 'OFF'
@@ -48,6 +50,15 @@ class Chime extends RingPolledDevice {
                 value_template: '{{ value_json["lastUpdate"] | default("") }}'
             }
         }
+
+        this.updateDeviceState()
+    }
+
+    updateDeviceState() {
+        const stateData = {
+            snooze_minutes: this.data.snooze_minutes
+        }
+        this.setSavedState(stateData)
     }
 
     initAttributeEntities() {
@@ -61,7 +72,7 @@ class Chime extends RingPolledDevice {
         }
     }
 
-    publishData(data) {
+    publishState(data) {
         const isPublish = data === undefined ? true : false
         const volumeState = this.device.data.settings.volume
         const snoozeState = Boolean(this.device.data.do_not_disturb.seconds_left) ? 'ON' : 'OFF'
@@ -69,25 +80,25 @@ class Chime extends RingPolledDevice {
 
         // Polled states are published only if value changes or it's a device publish
         if (volumeState !== this.data.volume || isPublish) { 
-            this.publishMqtt(this.entity.volume.state_topic, volumeState.toString())
+            this.mqttPublish(this.entity.volume.state_topic, volumeState.toString())
             this.data.volume = volumeState
         }
 
         if (snoozeState !== this.data.snooze || isPublish) {
-            this.publishMqtt(this.entity.snooze.state_topic, snoozeState)
+            this.mqttPublish(this.entity.snooze.state_topic, snoozeState)
             this.data.snooze = snoozeState
         }
 
         if (snoozeMinutesRemaining !== this.data.snooze_minutes_remaining || isPublish) {
-            this.publishMqtt(this.entity.snooze.json_attributes_topic, JSON.stringify({ minutes_remaining: snoozeMinutesRemaining }), 'attr')
+            this.mqttPublish(this.entity.snooze.json_attributes_topic, JSON.stringify({ minutes_remaining: snoozeMinutesRemaining }), 'attr')
             this.data.snooze_minutes_remaining = snoozeMinutesRemaining
         }
 
         // Local states are published only for publish/republish
         if (isPublish) {
-            this.publishMqtt(this.entity.snooze_minutes.state_topic, this.data.snooze_minutes.toString())
-            this.publishMqtt(this.entity.play_ding_sound.state_topic, this.data.play_ding_sound)
-            this.publishMqtt(this.entity.play_motion_sound.state_topic, this.data.play_motion_sound)
+            this.mqttPublish(this.entity.snooze_minutes.state_topic, this.data.snooze_minutes.toString())
+            this.mqttPublish(this.entity.play_ding_sound.state_topic, this.data.play_ding_sound)
+            this.mqttPublish(this.entity.play_motion_sound.state_topic, this.data.play_motion_sound)
             this.publishAttributes()
         }
     }
@@ -101,14 +112,14 @@ class Chime extends RingPolledDevice {
             attributes.wirelessSignal = deviceHealth.latest_signal_strength
             attributes.firmwareStatus = deviceHealth.firmware
             attributes.lastUpdate = deviceHealth.updated_at.slice(0,-6)+"Z"
-            this.publishMqtt(this.entity.info.state_topic, JSON.stringify(attributes), 'attr')
+            this.mqttPublish(this.entity.info.state_topic, JSON.stringify(attributes), 'attr')
             this.publishAttributeEntities(attributes)
         }
     }
 
     // Process messages from MQTT command topic
-    processCommand(message, topic) {
-        switch (topic.split("/").slice(-2).join("/")) {
+    processCommand(command, message) {
+        switch (command) {
             case 'snooze/command':
                 this.setSnoozeState(message)
                 break;
@@ -125,7 +136,7 @@ class Chime extends RingPolledDevice {
                 this.playSound(message, 'motion')
                 break;
             default:
-                this.debug(`Received message to unknown command topic: ${componentCommand}`)
+                this.debug(`Received message to unknown command topic: ${command}`)
         }
     }
 
@@ -156,7 +167,8 @@ class Chime extends RingPolledDevice {
             this.debug('Snooze minutes command received but out of range (0-1440 minutes)')
         } else {
             this.data.snooze_minutes = parseInt(minutes)
-            this.publishMqtt(this.entity.snooze_minutes.state_topic, this.data.snooze_minutes.toString())           
+            this.mqttPublish(this.entity.snooze_minutes.state_topic, this.data.snooze_minutes.toString())
+            this.updateDeviceState()
         }
     }
 
@@ -179,10 +191,10 @@ class Chime extends RingPolledDevice {
 
         switch(command) {
             case 'on':
-                this.publishMqtt(this.entity[`play_${chimeType}_sound`].state_topic, 'ON')
+                this.mqttPublish(this.entity[`play_${chimeType}_sound`].state_topic, 'ON')
                 await this.device.playSound(chimeType)
                 await utils.sleep(5)
-                this.publishMqtt(this.entity[`play_${chimeType}_sound`].state_topic, 'OFF')
+                this.mqttPublish(this.entity[`play_${chimeType}_sound`].state_topic, 'OFF')
                 break;
             case 'off': {
                 break;

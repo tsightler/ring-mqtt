@@ -2,7 +2,7 @@ const RingSocketDevice = require('./base-socket-device')
 
 class Switch extends RingSocketDevice {
     constructor(deviceInfo) {
-        super(deviceInfo)
+        super(deviceInfo, 'alarm')
         this.deviceData.mdl = (this.device.data.categoryId === 2) ? 'Light' : 'Switch'
         this.component = (this.device.data.categoryId === 2) ? 'light' : 'switch'
         
@@ -12,20 +12,20 @@ class Switch extends RingSocketDevice {
         }
     }
 
-    publishData() {
-        this.publishMqtt(this.entity[this.component].state_topic, this.device.data.on ? "ON" : "OFF")
+    publishState() {
+        this.mqttPublish(this.entity[this.component].state_topic, this.device.data.on ? "ON" : "OFF")
         this.publishAttributes()
     }
 
     // Process messages from MQTT command topic
-    processCommand(message, componentCommand) {
-        switch (componentCommand) {
+    processCommand(command, message) {
+        switch (command) {
             case 'switch/command':
             case 'light/command':
                 this.setSwitchState(message)
                 break;
             default:
-                this.debug(`Received message to unknown command topic: ${componentCommand}`)
+                this.debug(`Received message to unknown command topic: ${command}`)
         }
     }
 

@@ -2,7 +2,7 @@ const RingSocketDevice = require('./base-socket-device')
 
 class TemperatureSensor extends RingSocketDevice {
     constructor(deviceInfo) {
-        super(deviceInfo)
+        super(deviceInfo, 'alarm')
         this.deviceData.mdl = 'Temperature Sensor'
 
         this.entity.temperature = {
@@ -13,9 +13,9 @@ class TemperatureSensor extends RingSocketDevice {
         }
     }
 
-    publishData() {
+    publishState() {
         const temperature = this.device.data.celsius.toString()
-        this.publishMqtt(this.entity.temperature.state_topic, temperature)
+        this.mqttPublish(this.entity.temperature.state_topic, temperature)
         this.publishAttributes()
     }
 }

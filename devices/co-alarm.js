@@ -1,11 +1,11 @@
 const RingSocketDevice = require('./base-socket-device')
 
 class CoAlarm extends RingSocketDevice {
-    constructor(deviceInfo, parentDevice) {
-        super(deviceInfo)
+    constructor(deviceInfo) {
+        super(deviceInfo, 'alarm')
         this.deviceData.mdl = 'CO Alarm'
-        this.deviceData.mf = (parentDevice && parentDevice.data && parentDevice.data.manufacturerName) 
-            ? parentDevice.data.manufacturerName 
+        this.deviceData.mf = (this.hasOwnProperty('parentDevice') && this.parentDevice.hasOwnProperty('data') && this.parentDevice.data.hasOwnProperty('manufacturerName'))
+            ? this.parentDevice.data.manufacturerName
             : 'Ring'
 
         this.entity.co = {
@@ -15,9 +15,9 @@ class CoAlarm extends RingSocketDevice {
         }
     }
 
-    publishData() {
+    publishState() {
         const coState = this.device.data.alarmStatus === 'active' ? 'ON' : 'OFF'
-        this.publishMqtt(this.entity.co.state_topic, coState)
+        this.mqttPublish(this.entity.co.state_topic, coState)
         this.publishAttributes()
     }
 }

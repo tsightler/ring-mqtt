@@ -1,5 +1,7 @@
 .idea
-node_modules
-.eslintrc.json
-config.json.sample
 .DS_Store
+.eslintrc.json
+node_modules
+config.dev.json
+ring-state.json
+ring-test.js

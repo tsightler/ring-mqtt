@@ -1,50 +1,48 @@
 const RingSocketDevice = require('./base-socket-device')
+const { RingDeviceType } = require('ring-client-api')
 
 class BeamOutdoorPlug extends RingSocketDevice {
-    constructor(deviceInfo, childDevices) {
-        super(deviceInfo)
+    constructor(deviceInfo) {
+        super(deviceInfo, 'lighting')
         this.deviceData.mdl = 'Outdoor Smart Plug'
 
-        this.outlet1 = childDevices.find(d => d.data.relToParentZid === "1")
-        this.outlet2 = childDevices.find(d => d.data.relToParentZid === "2")
+        this.outlet1 = this.childDevices.find(d => d.deviceType === RingDeviceType.BeamsSwitch && d.data.relToParentZid === "1"),
+        this.outlet2 = this.childDevices.find(d => d.deviceType === RingDeviceType.BeamsSwitch && d.data.relToParentZid === "2")
         
         this.entity.outlet1 = {
             component: (this.outlet1.data.categoryId === 2) ? 'light' : 'switch',
-            name: `${this.outlet1.name}`,
+            name: `${this.outlet1.name}`
         }
 
         this.entity.outlet2 = {
-            component: (this.outlet1.data.categoryId === 2) ? 'light' : 'switch',
-            name: `${this.outlet2.name}`,
+            component: (this.outlet2.data.categoryId === 2) ? 'light' : 'switch',
+            name: `${this.outlet2.name}`
         }
 
-        this.outlet1.onData.subscribe((data) => {
-            if (this.isOnline()) { this.publishOutlet1State() }
+        this.outlet1.onData.subscribe(() => {
+            if (this.isOnline()) { this.publishOutletState('outlet1') }
         })
 
-        this.outlet2.onData.subscribe((data) => {
-            if (this.isOnline()) { this.publishOutlet2State() }
+        this.outlet2.onData.subscribe(() => {
+            if (this.isOnline()) { this.publishOutletState('outlet2') }
         })
     }
 
-    publishData() {
-        this.publishOutlet1State()
-        this.publishOutlet2State()
+    publishState() {
+        this.publishOutletState('outlet1')
+        this.publishOutletState('outlet2')
         this.publishAttributes()
     }
 
-    publishOutlet1State() {
-        this.publishMqtt(this.entity.outlet1.state_topic, this.outlet1.data.on ? "ON" : "OFF")
-    }
-
-    publishOutlet2State() {
-        this.publishMqtt(this.entity.outlet2.state_topic, this.outlet2.data.on ? "ON" : "OFF")
+    publishOutletState(outletId) {
+        this.mqttPublish(this.entity[outletId].state_topic, this[outletId].data.on ? "ON" : "OFF")
+        this.publishAttributes()
     }
 
     // Process messages from MQTT command topic
-    processCommand(message, componentCommand) {
-        const entityKey = componentCommand.split('/')[0]
-        switch (componentCommand) {
+    processCommand(command, message) {
+        const entityKey = command.split('/')[0]
+        switch (command) {
             case 'outlet1/command':
                 if (this.entity.hasOwnProperty(entityKey)) {
                     this.setOutletState(message, 'outlet1')
@@ -56,7 +54,7 @@ class BeamOutdoorPlug extends RingSocketDevice {
                 }
                 break;
             default:
-                this.debug(`Received message to unknown command topic: ${componentCommand}`)
+                this.debug(`Received message to unknown command topic: ${command}`)
         }
     }
 

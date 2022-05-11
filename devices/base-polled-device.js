@@ -1,10 +1,10 @@
-const utils = require('../lib/utils')
 const RingDevice = require('./base-ring-device')
+const utils = require('../lib/utils')
 
 // Base class for devices/features that communicate via HTTP polling interface (cameras/chime/modes)
 class RingPolledDevice extends RingDevice {
-    constructor(deviceInfo, primaryAttribute) {
-        super(deviceInfo, deviceInfo.device.data.device_id, deviceInfo.device.data.location_id, primaryAttribute)
+    constructor(deviceInfo, category, primaryAttribute) {
+        super(deviceInfo, category, primaryAttribute, deviceInfo.device.data.device_id, deviceInfo.device.data.location_id)
         this.heartbeat = 3
 
         // Sevice data for Home Assistant device registry 
@@ -18,7 +18,7 @@ class RingPolledDevice extends RingDevice {
         this.device.onData.subscribe((data) => {
             // Reset heartbeat counter on every polled state
             this.heartbeat = 3
-            if (this.isOnline()) { this.publishData(data) }
+            if (this.isOnline()) { this.publishState(data) }
         })
 
         this.monitorHeartbeat()
@@ -27,8 +27,10 @@ class RingPolledDevice extends RingDevice {
     // Publish device discovery, set online, and send all state data
     async publish() {
         await this.publishDiscovery()
+        // Sleep for a few seconds to give HA time to process discovery message
+        await utils.sleep(2)
         await this.online()
-        this.publishData()
+        this.publishState()
     }
 
     // This is a simple heartbeat function for devices which use polling.  This

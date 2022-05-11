@@ -1,17 +1,11 @@
-const debug = {
-    mqtt: require('debug')('ring-mqtt'),
-    attr: require('debug')('ring-attr'),
-    disc: require('debug')('ring-disc')
-}
 const utils = require('../lib/utils')
+const state = require('../lib/state')
 const colors = require('colors/safe')
 
 // Base class with functions common to all devices
 class RingDevice {
-    constructor(deviceInfo, deviceId, locationId, primaryAttribute) {
+    constructor(deviceInfo, category, primaryAttribute, deviceId, locationId) {
         this.device = deviceInfo.device
-        this.mqttClient = deviceInfo.mqttClient
-        this.config = deviceInfo.CONFIG
         this.deviceId = deviceId
         this.locationId = locationId
         this.availabilityState = 'unpublished'
@@ -19,13 +13,21 @@ class RingDevice {
         this.isOnline = () => { 
             return this.availabilityState === 'online' ? true : false 
         }
+
         this.debug = (message, debugType) => {
-            debugType = debugType ? debugType : 'mqtt'
-            debug[debugType](colors.green(`[${this.deviceData.name}] `)+message)
+            utils.debug(debugType === 'disc' ? message : colors.green(`[${this.deviceData.name}] `)+message, debugType ? debugType : 'mqtt')
         }
         // Build device base and availability topic
-        this.deviceTopic = `${this.config.ring_topic}/${this.locationId}/${deviceInfo.category}/${this.deviceId}`
+        this.deviceTopic = `${utils.config.ring_topic}/${this.locationId}/${category}/${this.deviceId}`
         this.availabilityTopic = `${this.deviceTopic}/status`
+
+        if (deviceInfo.hasOwnProperty('parentDevices')) {
+            this.parentDevices = deviceInfo.parentDevices
+        }
+
+        if (deviceInfo.hasOwnProperty('childDevices')) {
+            this.childDevices = deviceInfo.childDevices
+        }
 
         if (primaryAttribute !== 'disable') {
             this.initAttributeEntities(primaryAttribute)
@@ -34,18 +36,18 @@ class RingDevice {
     }
 
     // This function loops through each entity of the device, creates a unique
-    // device ID for each one, and builds state, command, and attribute topics.
-    // Finally it generates a Home Assistant MQTT discovery message for the entity
-    // and publishes this message to the Home Assistant config topic
+    // device ID for each one, builds the required state, command, and attribute
+    // topics and, finally, generates a Home Assistant MQTT discovery message for
+    // the entity and publishes this message to the Home Assistant config topic
     async publishDiscovery() {
         const debugMsg = (this.availabilityState === 'unpublished') ? 'Publishing new ' : 'Republishing existing '
-        debug.disc(debugMsg+'device id: '+this.deviceId, 'disc')
+        this.debug(debugMsg+'device id: '+this.deviceId, 'disc')
 
         Object.keys(this.entity).forEach(entityKey => {
             const entity = this.entity[entityKey]
             const entityTopic = `${this.deviceTopic}/${entityKey}`
 
-            // If this entity uses state values from the attributes of a parent entity set that here,
+            // If this entity uses state values from the JSON attributes of a parent entity use that topic,
             // otherwise use standard state topic for entity ('image' for camera, 'state' for all others)
             const entityStateTopic = entity.hasOwnProperty('parent_state_topic')
                 ? `${this.deviceTopic}/${entity.parent_state_topic}`
@@ -55,14 +57,15 @@ class RingDevice {
             
             // ***** Build a Home Assistant style MQTT discovery message *****
             // Legacy versions of ring-mqtt created entity names and IDs for single function devices
-            // without using any type of suffix. To maintain compatibility with older version, entities
-            // can pass their unique_id in the entity definition. If this is detected then the device
-            // will also get legacy device name generation (i.e. no name suffix either). However,
-            // automatic name generation can also be completely overridden with entity 'name' parameter.
+            // without using any type of suffix. To maintain compatibility with older versions, entities
+            // can set the "isLegacyEntity" flag in the entity definition. In this case the device will
+            // also get legacy device name generation (i.e. no name suffix either). However, automatic
+            // name generation can also be completely overridden by the entity 'name' parameter.
             //
             // I know the code below will offend the sensibilities of some people, especially with
-            // regards to formatting, but, for whatever reason, my brain reads through it linerarly 
-            // and parses the logic out easily, so I've decided I can live with it.
+            // regards to formatting and nested ternaries, but, for whatever reason, my brain reads
+            // and parses the logic out easily, more so than other methods I've tried, so I've
+            // decided I can live with it.
             let discoveryMessage = {
                 ... entity.hasOwnProperty('name')
                     ? { name: entity.name }
@@ -101,8 +104,8 @@ class RingDevice {
                     ? { icon: entity.icon } 
                     : entityKey === "info" 
                         ? { icon: 'mdi:information-outline' } : {},
-                ... entity.component === 'alarm_control_panel' && this.config.disarm_code
-                    ? { code: this.config.disarm_code.toString(),
+                ... entity.component === 'alarm_control_panel' && utils.config.disarm_code
+                    ? { code: utils.config.disarm_code.toString(),
                         code_arm_required: false,
                         code_disarm_required: true } : {},
                 ... entity.hasOwnProperty('brightness_scale')
@@ -127,11 +130,17 @@ class RingDevice {
                         fan_mode_command_topic: `${entityTopic}/fan_mode_command`,
                         max_temp: 37,
                         min_temp: 10,
-                        modes: ["off", "cool", "heat"],
+                        modes: entity.modes,
                         mode_state_topic: `${entityTopic}/mode_state`,
                         mode_command_topic: `${entityTopic}/mode_command`,
                         temperature_state_topic: `${entityTopic}/temperature_state`,
                         temperature_command_topic: `${entityTopic}/temperature_command`,
+                        ... entity.modes.includes('auto')
+                            ? { temperature_high_state_topic: `${entityTopic}/temperature_high_state`,
+                                temperature_high_command_topic: `${entityTopic}/temperature_high_command`,
+                                temperature_low_state_topic: `${entityTopic}/temperature_low_state`,
+                                temperature_low_command_topic: `${entityTopic}/temperature_low_command`,
+                            } : {},
                         temperature_unit: 'C' } : {},
                 ... entity.component === 'select'
                         ? { options: entity.options } : {},
@@ -142,9 +151,9 @@ class RingDevice {
             }
 
             const configTopic = `homeassistant/${entity.component}/${this.locationId}/${this.deviceId}_${entityKey}/config`
-            debug.disc(`HASS config topic: ${configTopic}`)
-            debug.disc(discoveryMessage)
-            this.publishMqtt(configTopic, JSON.stringify(discoveryMessage), false)
+            this.debug(`HASS config topic: ${configTopic}`, 'disc')
+            this.debug(discoveryMessage, 'disc')
+            this.mqttPublish(configTopic, JSON.stringify(discoveryMessage), false)
 
             // On first publish store generated topics in entities object and subscribe to command topics
             if (!this.entity[entityKey].hasOwnProperty('published')) {
@@ -152,22 +161,29 @@ class RingDevice {
                 Object.keys(discoveryMessage).filter(property => property.match('topic')).forEach(topic => {
                     this.entity[entityKey][topic] = discoveryMessage[topic]
                     if (topic.match('command_topic')) {
-                        this.mqttClient.subscribe(discoveryMessage[topic])
+                        utils.event.emit('mqtt_subscribe', discoveryMessage[topic])
+                        utils.event.on(discoveryMessage[topic], (command, message) => {
+                            this.processCommand(command, message)
+                        })
+                        
+                        // For camera stream entities subscribe to IPC broker
+                        if (entityKey === 'stream' || entityKey === 'event_stream') {
+                            utils.event.emit('mqtt_ipc_subscribe', discoveryMessage[topic])                            
+                        }
                     }
                 })
             }
         })
-        // Sleep for a few seconds to give HA time to process discovery message
-        await utils.sleep(2)
     }
 
     // Refresh device info attributes on a sechedule
     async schedulePublishAttributes() {
-        await utils.sleep(this.availabilityState === 'offline' ? 60 : 300)
-        if (this.availabilityState === 'online') {
-            this.publishAttributes()
+        while (true) {
+            await utils.sleep(this.availabilityState === 'offline' ? 60 : 300)
+            if (this.availabilityState === 'online') {
+                this.publishAttributes()
+            }
         }
-        this.schedulePublishAttributes()
     }
 
     publishAttributeEntities(attributes) {
@@ -181,18 +197,28 @@ class RingDevice {
                         return filteredAttributes
                     }, {})
                 if (Object.keys(entityAttributes).length > 0) {
-                    this.publishMqtt(this.entity[entityKey].json_attributes_topic, JSON.stringify(entityAttributes), 'attr')
+                    this.mqttPublish(this.entity[entityKey].json_attributes_topic, JSON.stringify(entityAttributes), 'attr')
                 }
             }
         })
     }
 
     // Publish state messages with debug
-    publishMqtt(topic, message, debugType) {
+    mqttPublish(topic, message, debugType, maskedMessage) {
         if (debugType !== false) {
-            this.debug(colors.blue(`${topic} `)+colors.cyan(`${message}`), debugType)
+            this.debug(colors.blue(`${topic} `)+colors.cyan(`${maskedMessage ? maskedMessage : message}`), debugType)
         }
-        this.mqttClient.publish(topic, message, { qos: 1 })
+        utils.event.emit('mqtt_publish', topic, message)
+    }
+
+    // Gets all saved state data for device
+    getSavedState() {
+        return state.getDeviceSavedState(this.deviceId)
+    }
+
+    // Called to update saved state data for device
+    setSavedState(stateData) {
+        state.setDeviceSavedState(this.deviceId, stateData)
     }
 
     // Set state topic online
@@ -200,7 +226,7 @@ class RingDevice {
         if (this.shutdown) { return } // Supress any delayed online state messages if ring-mqtt is shutting down
         const debugType = (this.availabilityState === 'online') ? false : 'mqtt'
         this.availabilityState = 'online'
-        this.publishMqtt(this.availabilityTopic, this.availabilityState, debugType)
+        this.mqttPublish(this.availabilityTopic, this.availabilityState, debugType)
         await utils.sleep(2)
     }
 
@@ -208,7 +234,7 @@ class RingDevice {
     offline() {
         const debugType = (this.availabilityState === 'offline') ? false : 'mqtt'
         this.availabilityState = 'offline'
-        this.publishMqtt(this.availabilityTopic, this.availabilityState, debugType)
+        this.mqttPublish(this.availabilityTopic, this.availabilityState, debugType)
     }
 }
 

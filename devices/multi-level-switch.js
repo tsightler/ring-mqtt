@@ -2,7 +2,7 @@ const RingSocketDevice = require('./base-socket-device')
 
 class MultiLevelSwitch extends RingSocketDevice {
     constructor(deviceInfo) {
-        super(deviceInfo)
+        super(deviceInfo, 'alarm')
         this.deviceData.mdl = 'Dimming Light'
         
         this.entity.light = {
@@ -12,17 +12,17 @@ class MultiLevelSwitch extends RingSocketDevice {
         }
     }
 
-    publishData() {
+    publishState() {
         const switchState = this.device.data.on ? "ON" : "OFF"
         const switchLevel = (this.device.data.level && !isNaN(this.device.data.level) ? Math.round(100 * this.device.data.level) : 0) 
-        this.publishMqtt(this.entity.light.state_topic, switchState)
-        this.publishMqtt(this.entity.light.brightness_state_topic, switchLevel.toString())
+        this.mqttPublish(this.entity.light.state_topic, switchState)
+        this.mqttPublish(this.entity.light.brightness_state_topic, switchLevel.toString())
         this.publishAttributes()
     }
     
     // Process messages from MQTT command topic
-    processCommand(message, componentCommand) {
-        switch (componentCommand) {
+    processCommand(command, message) {
+        switch (command) {
             case 'light/command':
                 this.setSwitchState(message)
                 break;
@@ -30,7 +30,7 @@ class MultiLevelSwitch extends RingSocketDevice {
                 this.setSwitchLevel(message)
                 break;
             default:
-                this.debug(`Received message to unknown command topic: ${componentCommand}`)
+                this.debug(`Received message to unknown command topic: ${command}`)
         }
     }
 

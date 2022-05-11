@@ -1,9 +1,9 @@
-const utils = require( '../lib/utils' )
 const RingSocketDevice = require('./base-socket-device')
+const utils = require( '../lib/utils' )
 
 class Fan extends RingSocketDevice {
     constructor(deviceInfo) {
-        super(deviceInfo)
+        super(deviceInfo, 'alarm')
         this.deviceData.mdl = 'Fan Control'
 
         this.entity.fan = {
@@ -16,7 +16,7 @@ class Fan extends RingSocketDevice {
         }
     }
 
-    publishData() {
+    publishState() {
         const fanState = this.device.data.on ? "ON" : "OFF"
         const fanPercent = (this.device.data.level && !isNaN(this.device.data.level) ? Math.round(this.device.data.level*100) : 0)
         let fanPreset = "unknown"
@@ -33,21 +33,21 @@ class Fan extends RingSocketDevice {
         // Publish device state
         // targetFanPercent is a small hack to work around Home Assistant UI behavior
         if (this.data.targetFanPercent && this.data.targetFanPercent !== fanPercent) {
-            this.publishMqtt(this.entity.fan.percentage_state_topic, this.data.targetFanPercent.toString())
+            this.mqttPublish(this.entity.fan.percentage_state_topic, this.data.targetFanPercent.toString())
             this.data.targetFanPercent = undefined
         } else {
-            this.publishMqtt(this.entity.fan.percentage_state_topic, fanPercent.toString())
+            this.mqttPublish(this.entity.fan.percentage_state_topic, fanPercent.toString())
         }
-        this.publishMqtt(this.entity.fan.state_topic, fanState)
-        this.publishMqtt(this.entity.fan.preset_mode_state_topic, fanPreset)
+        this.mqttPublish(this.entity.fan.state_topic, fanState)
+        this.mqttPublish(this.entity.fan.preset_mode_state_topic, fanPreset)
 
         // Publish device attributes (batterylevel, tamper status)
         this.publishAttributes()
     }
     
     // Process messages from MQTT command topic
-    processCommand(message, componentCommand) {
-        switch (componentCommand) {
+    processCommand(command, message) {
+        switch (command) {
             case 'fan/command':
                 this.setFanState(message)
                 break;
@@ -58,7 +58,7 @@ class Fan extends RingSocketDevice {
                 this.setFanPreset(message)
                 break;
             default:
-                this.debug(`Received message to unknown command topic: ${componentCommand}`)
+                this.debug(`Received message to unknown command topic: ${command}`)
         }
     }
 

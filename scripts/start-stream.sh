@@ -1,8 +1,8 @@
 #!/bin/bash
 # Activate video stream on Ring cameras via ring-mqtt
-# Intended for use as on-demand script for rtsp-simple-server
-
+# Intended only for use as on-demand script for rtsp-simple-server
 # Requires mosquitto MQTT clients package to be installed
+# Uses ring-mqtt internal IPC broker for communications with main process 
 # Provides status updates and termintates stream on script exit
 
 # Required command line arguments
@@ -23,20 +23,19 @@ green='\033[0;32m'
 blue='\033[0;34m'
 reset='\033[0m'
 
-ctrl_c() {
+cleanup() {
     if [ -z ${reason} ]; then
         # If no reason defined, that means we were interrupted by a signal, send the command to stop the live stream
         echo -e "${green}[${client_name}]${reset} Deactivating ${type} stream due to signal from RTSP server (no more active clients or publisher ended stream)"
-        mosquitto_pub -i "${client_id}_pub" -u "${MQTTUSER}" -P "${MQTTPASSWORD}" -h "${MQTTHOST}" -p "${MQTTPORT}" -t "${command_topic}" -m "OFF"
+        mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${command_topic}" -m "OFF"
     fi
-    # There should only ever be one process per client active at any time so this works for now
-    mosquitto_pid=`ps -ef | grep mosquitto_sub | grep "${client_id}" | tr -s ' ' | cut -d ' ' -f2`
-    [ ! -z ${mosquitto_pid} ] && kill ${mosquitto_pid}
+    # Kill the spawed mosquitto_sub process or it will stay listening forever
+    kill $(pgrep -f "mosquitto_sub.*${client_id}_sub" | grep -v ^$$\$)
     exit 0
 }
 
 # Trap signals so that the MQTT command to stop the stream can be published on exit
-trap ctrl_c INT TERM QUIT
+trap cleanup INT TERM QUIT
 
 # This loop starts mosquitto_sub with a subscription on the camera stream topic that sends all received
 # messages via file descriptor to the read process. On initial startup the script publishes the message 
@@ -52,39 +51,39 @@ while read -u 10 message
 do
     # If start message received, publish the command to start stream
     if [ ${message} = "START" ]; then
-        echo -e "${green}[${client_name}]${reset} Activating ${type} stream via topic ${blue}${command_topic}${reset}"
-        mosquitto_pub -i "${client_id}_pub" -u "${MQTTUSER}" -P "${MQTTPASSWORD}" -h "${MQTTHOST}" -p "${MQTTPORT}" -t "${command_topic}" -m "ON-DEMAND"
+        echo -e "${green}[${client_name}]${reset} Sending command to activate ${type} stream ON-DEMAND"
+        mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${command_topic}" -m "ON-DEMAND"
     else
         # Otherwise it should be a JSON message from the stream state attribute topic so extract the detailed stream state
         stream_state=`echo ${message} | jq -r '.status'`
         case ${stream_state,,} in
             activating)
                 if [ ${activated} = "false" ]; then
-                    echo -e "${green}[${client_name}]${reset} ${type^} stream is activating..."
+                    echo -e "${green}[${client_name}]${reset} State indicates ${type} stream is activating"
                 fi
                 ;;
             active)
                 if [ ${activated} = "false" ]; then
-                    echo -e "${green}[${client_name}]${reset} ${type^} stream is active!"
+                    echo -e "${green}[${client_name}]${reset} State indicates ${type} stream is active"
                     activated="true"
                 fi
                 ;;
             inactive)
-                echo -e "${green}[${client_name}]${yellow} ${type^} stream has gone inactive, exiting...${reset}"
+                echo -e "${green}[${client_name}]${yellow} State indicates ${type} stream has gone inactive${reset}"
                 reason='inactive'
-                ctrl_c
+                cleanup
                 ;;
             failed)
-                echo -e "${green}[${client_name}]${red} ERROR - ${type^} stream failed to activate, exiting...${reset}"
+                echo -e "${green}[${client_name}]${red} ERROR - State indicates ${type} stream failed to activate${reset}"
                 reason='failed'
-                ctrl_c
+                cleanup
                 ;;
             *)
-                echo -e "${green}[${client_name}]${red} ERROR - Unknown ${type} stream state received on topic ${blue}${json_attribute_topic}${reset}"
+                echo -e "${green}[${client_name}]${red} ERROR - Received unknown ${type} stream state on topic ${blue}${json_attribute_topic}${reset}"
                 ;;
         esac
     fi
-done 10< <(mosquitto_sub -q 1 -i "${client_id}_sub" -u "${MQTTUSER}" -P "${MQTTPASSWORD}" -h "${MQTTHOST}" -p "${MQTTPORT}" -t "${json_attribute_topic}" & (sleep .02; echo "START"))
+done 10< <(mosquitto_sub -q 1 -i "${client_id}_sub" -L "mqtt://127.0.0.1:51883/${json_attribute_topic}" & echo "START")
 
-ctrl_c
+cleanup
 exit 0

@@ -1,4 +1,4 @@
-FROM alpine:3.15
+FROM alpine:3.15.4
 
 ENV LANG="C.UTF-8" \
     PS1="$(whoami)@$(hostname):$(pwd)$ " \
@@ -30,15 +30,13 @@ RUN apk add --no-cache tar git libcrypto1.1 libssl1.1 musl-utils musl bash curl 
             RSSARCH="amd64";; \
         aarch64) \
             RSSARCH="arm64v8";; \
-        armv7) \
+        armv7|armhf) \
             RSSARCH="armv7";; \
-        armhf) \
-            RSSARCH="armv6";; \
         *) \
             echo >&2 "ERROR: Unsupported architecture '$APKARCH'" \
             exit 1;; \
     esac && \
-    curl -L -s "https://github.com/aler9/rtsp-simple-server/releases/download/v0.17.13/rtsp-simple-server_v0.17.13_linux_${RSSARCH}.tar.gz" | tar zxf - -C /usr/local/bin rtsp-simple-server && \
+    curl -L -s "https://github.com/aler9/rtsp-simple-server/releases/download/v0.18.2/rtsp-simple-server_v0.18.2_linux_${RSSARCH}.tar.gz" | tar zxf - -C /usr/local/bin rtsp-simple-server && \
     curl -J -L -o /tmp/bashio.tar.gz "https://github.com/hassio-addons/bashio/archive/v0.14.3.tar.gz" && \
     mkdir /tmp/bashio && \
     tar zxvf /tmp/bashio.tar.gz --strip 1 -C /tmp/bashio && \
@@ -49,24 +47,26 @@ RUN apk add --no-cache tar git libcrypto1.1 libssl1.1 musl-utils musl bash curl 
     chmod 777 /data /app /run && \
     cd /app/ring-mqtt && \
     chmod +x ring-mqtt.js && \
+    chmod +x init-ring-mqtt.js && \
     npm install && \
     rm -Rf /root/.npm && \
     rm -f -r /tmp/*
 ENTRYPOINT [ "/init" ]
 
 EXPOSE 8554/tcp
+EXPOSE 55123/tcp
 
 ARG BUILD_VERSION
 ARG BUILD_DATE
 
 LABEL \
-    io.hass.name="Ring Device Integration via MQTT" \
+    io.hass.name="Ring-MQTT with Video Streaming" \
     io.hass.description="Home Assistant Community Add-on for Ring Devices" \
     io.hass.type="addon" \
     io.hass.version=${BUILD_VERSION} \
     maintainer="Tom Sightler <tsightler@gmail.com>" \
-    org.opencontainers.image.title="Ring Device Integration via MQTT" \
-    org.opencontainers.image.description="Home Assistant Community Add-on for Ring Devices" \
+    org.opencontainers.image.title="Ring-MQTT with Video Streaming" \
+    org.opencontainers.image.description="Intergrate wtih Ring devices using MQTT/RTSP" \
     org.opencontainers.image.authors="Tom Sightler <tsightler@gmail.com> (and various other contributors)" \
     org.opencontainers.image.licenses="MIT" \
     org.opencontainers.image.source="https://github.com/tsightler/ring-mqtt" \
