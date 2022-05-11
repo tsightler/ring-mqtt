@@ -1,11 +1,11 @@
 ## v5.0.0
 **!!!!! WARNING !!!!!**\
-This is a breaking release!  While efforts have been made to ensure the upgrade path is straightforward for most users, it was simply not possible to make the transition to new features and configuration methods without introducing breaking changes.  Users should carefully read the [Upgrading to 5.x](https://github.com/tsightler/ring-mqtt/wiki/Upgrading-to-v5.x) wiki document for more details prior to upgrading.
+This is a breaking release!  While efforts have been made to ensure the upgrade path is straightforward for most users, it was simply not possible to make the transition to new features and configuration methods without introducing breaking changes.  Users should carefully read [Upgrading to 5.x](https://github.com/tsightler/ring-mqtt/wiki/Upgrading-to-v5.x) on the project wiki page for more details prior to upgrading.
 
-If you value stability over the absolute latest features, you may want to delay upgrades until v5.x has had some time to stabilize as the underlying number of changes is large and there will almost certainly some bugs and regressions.  At a minimum **take a backup** prior to upgrading so that you can revert if things do not go to plan.
+If you value stability over the absolute latest features, you may want to delay upgrades until v5.x has had some time to stabilize as the underlying number of changes is large and there will almost certainly be some bugs and regressions.  At a minimum **take a backup** prior to upgrading so that you can revert if things do not go to plan.
 
 **New Features**
-- Uses the newly released ring-client-api v11 which brings the following features:
+- Uses the newly released ring-client-api v11.x which brings the following features:
   - Push notifications vs polling for camera ding and motion events
     - Significantly faster notifications
     - Access to rich notifications which allows grabbing the same snapshot use for rich notifications in the Ring app (requires Ring Protect plan and rich notifications to be enabled)
@@ -29,7 +29,7 @@ If you value stability over the absolute latest features, you may want to delay 
 - Use atomic writes for updating state/config file.  Hopefully this will fix the occassional report of corrupted state files.
 
 **Breaking Changes**
-See [Upgrading to ring-mqtt v5.x](https://github.com/tsightler/ring-mqtt/wiki/Upgrading-to-v5.x) wiki document for details on breaking changes
+- See [Upgrading to ring-mqtt v5.x](https://github.com/tsightler/ring-mqtt/wiki/Upgrading-to-v5.x) on the project wiki page for details
 
 **Other Changes**
 - Standardized discovery logic for multi-component devices
