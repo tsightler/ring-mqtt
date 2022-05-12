@@ -1,3 +1,11 @@
+## v5.0.1
+**!!!!! WARNING !!!!!**\
+The 5.x release is a breaking release!  Be sure to read the v5.0.0 release notes below for details.
+
+**Fixed Bugs**
+- Fixed a bug where some camera motion events were reported as dings
+- Fixed an issue where camera events sometimes had timestamps from far in the past
+
 ## v5.0.0
 **!!!!! WARNING !!!!!**\
 This is a breaking release!  While efforts have been made to ensure the upgrade path is straightforward for most users, it was simply not possible to make the transition to new features and configuration methods without introducing breaking changes.  Users should carefully read [Upgrading to 5.x](https://github.com/tsightler/ring-mqtt/wiki/Upgrading-to-v5.x) on the project wiki page for more details prior to upgrading.
