@@ -377,12 +377,12 @@ class Camera extends RingPolledDevice {
     
     // Process a ding event
     async processNotification(pushData) {
-        console.log(pushData)
-        const dingKind = (pushData.subtype === 'motion' || pushData.subtype === 'human') ? 'motion' : 'ding'
-        if (dingKind !== 'motion' && dingKind !== 'ding') { return }
+        // Is it a motion or doorbell ding? (for others we do nothing)
+        if (pushData.action !== 'com.ring.push.HANDLE_NEW_DING' && pushData.action !== 'com.ring.push.HANDLE_NEW_motion') { return }
+
+        const dingKind = (pushData.action === 'com.ring.push.HANDLE_NEW_DING') ? 'ding' : 'motion'
         const ding = pushData.ding
         ding.created_at = Math.floor(Date.now()/1000)
-        // Is it a motion or doorbell ding? (for others we do nothing)
         this.debug(`Received ${dingKind} push notification, expires in ${this.data[dingKind].ding_duration} seconds`)
 
         // Is this a new Ding or refresh of active ding?
