@@ -1,6 +1,6 @@
 ## v5.0.1
 **!!!!! WARNING !!!!!**\
-The 5.x releases are breaking releases!  Be sure to read the [v5.0.0](#v5.0.0) release notes below for details.
+The 5.x releases are breaking releases!  Be sure to read the [v5.0.0](#v500) release notes below for details.
 
 **Fixed Bugs**
 - Fixed a bug where some camera motion events were reported as dings
