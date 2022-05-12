@@ -1,3 +1,5 @@
+### This is the historical changelog, for changes in current versions please see the [current changelog](https://github.com/tsightler/ring-mqtt/blob/main/docs/CHANGELOG.md).
+
 ## v4.9.1
 **New Features**
 - Add support for Ring Outdoor Smart Plug (thanks to @mopwr for suffering through my poor coding mistakes while testing)
