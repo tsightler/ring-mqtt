@@ -377,7 +377,7 @@ class Camera extends RingPolledDevice {
     
     // Process a ding event
     async processNotification(pushData) {
-        this.debug(JSON.stringify(pushData))
+        console.log(pushData)
         const dingKind = (pushData.subtype === 'motion' || pushData.subtype === 'human') ? 'motion' : 'ding'
         if (dingKind !== 'motion' && dingKind !== 'ding') { return }
         const ding = pushData.ding
