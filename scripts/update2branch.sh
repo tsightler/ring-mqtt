@@ -19,4 +19,5 @@ if [ ! -d "/app/ring-mqtt-${BRANCH}" ]; then
     echo "-------------------------------------------------------"
 else
     # Branch has already been initialized, run any post-update command here
+    echo "The ring-mqtt-${BRANCH} has been updated."
 fi
