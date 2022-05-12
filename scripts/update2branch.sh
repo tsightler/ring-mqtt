@@ -13,27 +13,11 @@ if [ ! -d "/app/ring-mqtt-${BRANCH}" ]; then
     npm install --no-progress > /dev/null 2>&1
     chmod +x ring-mqtt.js scripts/*.sh
 
-    # This runs the just updated version of this script in case there are 
-    # additonal special commands that need to be run outside of the generic
-    # update script.
+    # This runs the downloaded version of this script in case there are 
+    # additonal component upgrade actions that need to be performed
     exec "/app/ring-mqtt-${BRANCH}/scripts/update2branch.sh"
     echo "-------------------------------------------------------"
 else
-    # Branch has already been initialized, perform optional component update actions here
-    APKARCH="$(apk --print-arch)"
-    case "${APKARCH}" in \
-        x86_64) \
-            RSSARCH="amd64";; \
-        aarch64) \
-            RSSARCH="arm64v8";; \
-        armv7|armhf) \
-            RSSARCH="armv7";; \
-        *) \
-            echo >&2 "ERROR: Unsupported architecture '$APKARCH'" \
-            exit 1;; \
-    esac
-    curl -L -s "https://github.com/aler9/rtsp-simple-server/releases/download/v0.18.0/rtsp-simple-server_v0.18.0_linux_${RSSARCH}.tar.gz" | tar zxf - -C /usr/local/bin rtsp-simple-server
-
-    cp -a "/app/ring-mqtt-${BRANCH}/init/s6/services.d/ring-mqtt/run" /etc/services.d/ring-mqtt/.
-    chmod +x /etc/services.d/ring-mqtt/run
+    # Branch has already been initialized, run any post-update command here
+    echo "The ring-mqtt-${BRANCH} has been updated."
 fi
