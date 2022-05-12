@@ -391,7 +391,7 @@ class Camera extends RingPolledDevice {
 
         // Update last_ding and expire time
         this.data[dingKind].last_ding = ding.created_at
-        this.data[dingKind].last_ding_time = utils.getISOTime(ding.created_at)
+        this.data[dingKind].last_ding_time = utils.getISOTime(ding.created_at*1000)
         this.data[dingKind].last_ding_expires = this.data[dingKind].last_ding+this.data[dingKind].ding_duration
 
         // If motion ding and snapshots on motion are enabled, publish a new snapshot
