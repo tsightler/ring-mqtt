@@ -1,7 +1,11 @@
-## v5.0.1
+## v5.0.2
 **!!!!! WARNING !!!!!**\
 The 5.x releases are breaking releases!  When upgrading from 4.x versions please be sure to read the [v5.0.0](#v500) release notes below for full details as manual steps may be required.
 
+**Other Changes**
+- Suppress spurious error messages from push-receiver dependency during startup
+
+## v5.0.1
 **Fixed Bugs**
 - Fixed a bug where some camera motion events were reported as dings
 - Fixed an issue where camera events sometimes had timestamps from far in the past
