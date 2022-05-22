@@ -72,7 +72,7 @@ const main = async() => {
         console.log('State file ' +stateFile+ ' saved with updated refresh token.')
     } catch (err) {
         console.log('Saving state file '+stateFile+' failed with error: ')
-        conslog.log(err)
+        console.log(err)
     }
 
     const configData = {
