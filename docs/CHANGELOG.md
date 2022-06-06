@@ -1,9 +1,9 @@
 ## v5.0.2
 **!!!!! WARNING !!!!!**\
-The 5.x releases are breaking releases!  When upgrading from 4.x versions please be sure to read the [v5.0.0](#v500) release notes below for full details as manual steps may be required.
+The 5.x releases are breaking release when upgrading from 4.x versions, please be sure to read the [v5.0.0](#v500) release notes below for full details as manual steps may be required.
 
 **Dependency Updates***
-- Bump to ring-client-api 11.0.4 (hopefully fixes some live stream connection issues)
+- Bump ring-client-api to v11.0.4 (hopefully fixes some live stream connection issues)
 
 **Other Changes**
 - Suppress spurious error messages from push-receiver dependency during startup
