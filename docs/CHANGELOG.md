@@ -1,7 +1,14 @@
-## v5.0.1
+## v5.0.2
 **!!!!! WARNING !!!!!**\
-The 5.x releases are breaking releases when upgrading from 4.x versions!  Please be sure to read the [v5.0.0 release notes](#v500) below for full details as manual steps may be required.
+The 5.x releases are breaking release when upgrading from 4.x versions, please be sure to read the [v5.0.0](#v500) release notes below for full details as manual steps may be required.
 
+**Dependency Updates***
+- Bump ring-client-api to v11.0.4 (hopefully fixes some live stream connection issues)
+
+**Other Changes**
+- Suppress spurious error messages from push-receiver dependency during startup
+
+## v5.0.1
 **Fixed Bugs**
 - Fixed a bug where some camera motion events were reported as dings
 - Fixed an issue where camera events sometimes had timestamps from far in the past
