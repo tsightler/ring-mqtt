@@ -4,9 +4,10 @@ class CoAlarm extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'alarm')
         this.deviceData.mdl = 'CO Alarm'
-        this.deviceData.mf = (this.hasOwnProperty('parentDevice') && this.parentDevice.hasOwnProperty('data') && this.parentDevice.data.hasOwnProperty('manufacturerName'))
+        this.deviceData.mf = this.parentDevice?.data?.manufacturerName
             ? this.parentDevice.data.manufacturerName
             : 'Ring'
+        console.log(this.deviceData)
 
         this.entity.co = {
             component: 'binary_sensor',
