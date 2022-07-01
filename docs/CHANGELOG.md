@@ -1,7 +1,15 @@
-## v5.0.2
+## v5.0.3
 **!!!!! WARNING !!!!!**\
-The 5.x releases are breaking release when upgrading from 4.x versions, please be sure to read the [v5.0.0](#v500) release notes below for full details as manual steps may be required.
+The 5.x releases are breaking releases when upgrading from 4.x versions, please be sure to read the [v5.0.0](#v500) release notes below for full details as manual steps may be required following an upgrade from 4.x versions.
 
+**Fixed Bugs**
+- Fix incorrect model name for First Alert CO alarms
+
+**Dependency Updates***
+- Bump ring-client-api to v11.0.5 as well as other module dependencies
+- Upgrade to latest rtsp-simple-server version
+
+## v5.0.2
 **Dependency Updates***
 - Bump ring-client-api to v11.0.4 (hopefully fixes some live stream connection issues)
 
