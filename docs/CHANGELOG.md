@@ -6,7 +6,7 @@ The 5.x releases are breaking releases when upgrading from 4.x versions, please 
 - Fix incorrect model name for First Alert CO alarms
 
 **Dependency Updates***
-- Bump ring-client-api to v11.0.5 as well as other module dependencies
+- Bump ring-client-api to v11.1.0 as well as other dependency updates
 - Upgrade to latest rtsp-simple-server version
 
 ## v5.0.2
