@@ -1,4 +1,5 @@
 readTimeout: 10s
+writeTimeout: 10s
 readBufferCount: 2048
 
 rtspDisable: no
