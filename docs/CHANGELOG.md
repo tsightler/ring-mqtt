@@ -10,7 +10,7 @@ The 5.x releases are breaking releases when upgrading from 4.x versions, please 
 - Upgrade to latest rtsp-simple-server version
 
 ## v5.0.2
-**Dependency Updates***
+**Dependency Updates**
 - Bump ring-client-api to v11.0.4 (hopefully fixes some live stream connection issues)
 
 **Other Changes**
