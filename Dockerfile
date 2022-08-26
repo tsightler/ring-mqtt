@@ -25,6 +25,8 @@ RUN apk add --no-cache tar xz git libcrypto1.1 libssl1.1 musl-utils musl bash cu
     mkdir -p /etc/fix-attrs.d && \
     mkdir -p /etc/services.d && \
     cp -a /app/ring-mqtt/init/s6/* /etc/. && \
+    chmod +x /etc/s6/cont-init.d/*.sh && \
+    chmod +x /etc/s6/services.d/ring-mqtt/* && \
     rm -Rf /app/ring-mqtt/init && \ 
     case "${APKARCH}" in \
         x86_64) \
