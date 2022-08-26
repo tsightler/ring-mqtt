@@ -11,17 +11,6 @@ RUN apk add --no-cache tar git libcrypto1.1 libssl1.1 musl-utils musl bash curl 
     APKARCH="$(apk --print-arch)" && \
     S6VERSION="v3.1.1.2" && \
     curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/${S6VERSION}/s6-overlay-noarch.tar.xz" | tar -C / -Jxpf - && \
-    case "${APKARCH}" in \
-        aarch64|armhf|x86_64) \
-            curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/${S6VERSION}/s6-overlay-${APKARCH}.tar.xz" | tar -C / -Jxpf - ;; \
-        armv7) \
-            curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/${S6VERSION}/s6-overlay-arm.tar.xz" | tar -C / -Jxpf - ;; \
-        *) \
-            echo >&2 "ERROR: Unsupported architecture '$APKARCH'" \
-            exit 1 ;; \
-    esac && \
-    curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/${S6VERSION}/s6-overlay-symlinks-noarch.tar.xz" | tar -C / -Jxpf - && \
-    curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/${S6VERSION}/s6-overlay-symlinks-arch.tar.xz" | tar -C / -Jxpf - && \
     mkdir -p /etc/fix-attrs.d && \
     mkdir -p /etc/services.d && \
     cp -a /app/ring-mqtt/init/s6/* /etc/. && \
