@@ -13,9 +13,9 @@ RUN apk add --no-cache tar git libcrypto1.1 libssl1.1 musl-utils musl bash curl 
     curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/${S6VERSION}/s6-overlay-noarch.tar.xz" | tar Jxpf - -C / && \
     case "${APKARCH}" in \
         aarch64|armhf|x86_64) \
-            curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/${S6VERSION}/s6-overlay-${APKARCH}.tar.xz" | tar Jxpf - -C / && \
+            curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/${S6VERSION}/s6-overlay-${APKARCH}.tar.xz" | tar Jxpf - -C / \
         armv7) \
-            curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/${S6VERSION}/s6-overlay-arm.tar.xz" | tar Jxpf - -C / && \
+            curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/${S6VERSION}/s6-overlay-arm.tar.xz" | tar Jxpf - -C / \
         *) \
             echo >&2 "ERROR: Unsupported architecture '$APKARCH'" \
             exit 1;; \
