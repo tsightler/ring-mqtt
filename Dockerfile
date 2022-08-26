@@ -1,4 +1,4 @@
-FROM alpine:3.16
+FROM alpine:3.15
 
 ENV LANG="C.UTF-8" \
     PS1="$(whoami)@$(hostname):$(pwd)$ " \
