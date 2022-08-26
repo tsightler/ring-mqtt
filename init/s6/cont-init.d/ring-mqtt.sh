@@ -1,4 +1,4 @@
-#!/usr/bin/with-contenv bashio
+#!/command/with-contenv bashio
 
 # =============================================================================
 # ring-mqtt run script for s6-init               #

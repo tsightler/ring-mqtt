@@ -33,5 +33,5 @@ else
             echo >&2 "ERROR: Unsupported architecture '$APKARCH'"
             exit 1;;
     esac
-    curl -L -s "https://github.com/aler9/rtsp-simple-server/releases/download/v0.19.3/rtsp-simple-server_v0.19.3_linux_${RSSARCH}.tar.gz" | tar zxf - -C /usr/local/bin rtsp-simple-server
+    curl -L -s "https://github.com/aler9/rtsp-simple-server/releases/download/v0.19.3/rtsp-simple-server_v0.20.0_linux_${RSSARCH}.tar.gz" | tar zxf - -C /usr/local/bin rtsp-simple-server
 fi

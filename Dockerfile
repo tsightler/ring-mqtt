@@ -1,4 +1,4 @@
-FROM alpine:3.15.4
+FROM alpine:3.16
 
 ENV LANG="C.UTF-8" \
     PS1="$(whoami)@$(hostname):$(pwd)$ " \
@@ -9,18 +9,19 @@ ENV LANG="C.UTF-8" \
 COPY . /app/ring-mqtt
 RUN apk add --no-cache tar git libcrypto1.1 libssl1.1 musl-utils musl bash curl jq tzdata nodejs npm mosquitto-clients && \
     APKARCH="$(apk --print-arch)" && \
+    S6VERSION="v3.1.1.2" && \
+    curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/${S6VERSION}/s6-overlay-noarch.tar.xz" | tar Jxpf - -C / && \
     case "${APKARCH}" in \
-        aarch64|armhf) \
-            S6ARCH="${APKARCH}";; \
-        x86_64) \
-            S6ARCH="amd64";; \
+        aarch64|armhf|x86_64) \
+            curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/${S6VERSION}/s6-overlay-${APKARCH}.tar.xz" | tar Jxpf - -C / && \
         armv7) \
-            S6ARCH="arm";; \
+            curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/${S6VERSION}/s6-overlay-arm.tar.xz" | tar Jxpf - -C / && \
         *) \
             echo >&2 "ERROR: Unsupported architecture '$APKARCH'" \
             exit 1;; \
     esac && \
-    curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/v2.2.0.3/s6-overlay-${S6ARCH}.tar.gz" | tar zxf - -C / && \
+    curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/${S6VERSION}/s6-overlay-symlinks-noarch.tar.xz" | tar Jxpf - -C / && \
+    curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/${S6VERSION}/s6-overlay-symlinks-arch.tar.xz" | tar Jxpf - -C / && \
     mkdir -p /etc/fix-attrs.d && \
     mkdir -p /etc/services.d && \
     cp -a /app/ring-mqtt/init/s6/* /etc/. && \
@@ -36,7 +37,7 @@ RUN apk add --no-cache tar git libcrypto1.1 libssl1.1 musl-utils musl bash curl 
             echo >&2 "ERROR: Unsupported architecture '$APKARCH'" \
             exit 1;; \
     esac && \
-    curl -L -s "https://github.com/aler9/rtsp-simple-server/releases/download/v0.18.2/rtsp-simple-server_v0.18.2_linux_${RSSARCH}.tar.gz" | tar zxf - -C /usr/local/bin rtsp-simple-server && \
+    curl -L -s "https://github.com/aler9/rtsp-simple-server/releases/download/v0.18.2/rtsp-simple-server_v0.20.0_linux_${RSSARCH}.tar.gz" | tar zxf - -C /usr/local/bin rtsp-simple-server && \
     curl -J -L -o /tmp/bashio.tar.gz "https://github.com/hassio-addons/bashio/archive/v0.14.3.tar.gz" && \
     mkdir /tmp/bashio && \
     tar zxvf /tmp/bashio.tar.gz --strip 1 -C /tmp/bashio && \
