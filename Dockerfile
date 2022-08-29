@@ -3,24 +3,25 @@ FROM alpine:3.16
 ENV LANG="C.UTF-8" \
     PS1="$(whoami)@$(hostname):$(pwd)$ " \
     S6_BEHAVIOUR_IF_STAGE2_FAILS=2 \
-    S6_CMD_WAIT_FOR_SERVICES_MAXTIME=0 \
     S6_CMD_WAIT_FOR_SERVICES=1 \
+    S6_CMD_WAIT_FOR_SERVICES_MAXTIME=0 \
+    S6_SERVICES_GRACETIME=10000 \
     TERM="xterm-256color"
     
 COPY . /app/ring-mqtt
 RUN apk add --no-cache tar xz git libcrypto1.1 libssl1.1 musl-utils musl bash curl jq tzdata nodejs npm mosquitto-clients && \
-    APKARCH="$(apk --print-arch)" && \
-    S6VERSION="v3.1.2.0" && \
-    RSSVERSION="v0.20.0" && \
-    BASHIOVERSION="v0.14.3" && \
-    curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/${S6VERSION}/s6-overlay-noarch.tar.xz" | tar -Jxpf - -C / && \
-    case "${APKARCH}" in \
+    APK_ARCH="$(apk --print-arch)" && \
+    S6_VERSION="v3.1.2.0" && \
+    RSS_VERSION="v0.20.0" && \
+    BASHIO_VERSION="v0.14.3" && \
+    curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/${S6_VERSION}/s6-overlay-noarch.tar.xz" | tar -Jxpf - -C / && \
+    case "${APK_ARCH}" in \
         aarch64|armhf|x86_64) \
-            curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/${S6VERSION}/s6-overlay-${APKARCH}.tar.xz" | tar Jxpf - -C / ;; \
+            curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/${S6_VERSION}/s6-overlay-${APK_ARCH}.tar.xz" | tar Jxpf - -C / ;; \
         armv7) \
-            curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/${S6VERSION}/s6-overlay-arm.tar.xz" | tar Jxpf - -C / ;; \
+            curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/${S6_VERSION}/s6-overlay-arm.tar.xz" | tar Jxpf - -C / ;; \
         *) \
-            echo >&2 "ERROR: Unsupported architecture '$APKARCH'" \
+            echo >&2 "ERROR: Unsupported architecture '$APK_ARCH'" \
             exit 1;; \
     esac && \
     mkdir -p /etc/fix-attrs.d && \
@@ -29,19 +30,19 @@ RUN apk add --no-cache tar xz git libcrypto1.1 libssl1.1 musl-utils musl bash cu
     chmod +x /etc/cont-init.d/*.sh && \
     chmod +x /etc/services.d/ring-mqtt/* && \
     rm -Rf /app/ring-mqtt/init && \ 
-    case "${APKARCH}" in \
+    case "${APK_ARCH}" in \
         x86_64) \
-            RSSARCH="amd64";; \
+            RSS_ARCH="amd64";; \
         aarch64) \
-            RSSARCH="arm64v8";; \
+            RSS_ARCH="arm64v8";; \
         armv7|armhf) \
-            RSSARCH="armv7";; \
+            RSS_ARCH="armv7";; \
         *) \
-            echo >&2 "ERROR: Unsupported architecture '$APKARCH'" \
+            echo >&2 "ERROR: Unsupported architecture '$APK_ARCH'" \
             exit 1;; \
     esac && \
-    curl -L -s "https://github.com/aler9/rtsp-simple-server/releases/download/${RSSVERSION}/rtsp-simple-server_${RSSVERSION}_linux_${RSSARCH}.tar.gz" | tar zxf - -C /usr/local/bin rtsp-simple-server && \
-    curl -J -L -o /tmp/bashio.tar.gz "https://github.com/hassio-addons/bashio/archive/${BASHIOVERSION}.tar.gz" && \
+    curl -L -s "https://github.com/aler9/rtsp-simple-server/releases/download/${RSS_VERSION}/rtsp-simple-server_${RSS_VERSION}_linux_${RSS_ARCH}.tar.gz" | tar zxf - -C /usr/local/bin rtsp-simple-server && \
+    curl -J -L -o /tmp/bashio.tar.gz "https://github.com/hassio-addons/bashio/archive/${BASHIO_VERSION}.tar.gz" && \
     mkdir /tmp/bashio && \
     tar zxvf /tmp/bashio.tar.gz --strip 1 -C /tmp/bashio && \
     mv /tmp/bashio/lib /usr/lib/bashio && \
