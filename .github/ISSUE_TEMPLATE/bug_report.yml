@@ -10,8 +10,8 @@ body:
         Do not open bugs for simple "howto" usage questions or basic operational issues, such
         issues should be directed to the discussion groups instead.
         
-        Also, before opening an issues, please search for all open and closed Github issues that
-        may match you situation.
+        Also, before opening an issue, please search for all open and closed Github issues and
+        all relevant discussion topics that may match your situation.
 
         ## Important note regarding camera support    
         The ring-mqtt project does not turn Ring cameras into 24x7 CCTV cameras capable of continous
