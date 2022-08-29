@@ -63,7 +63,7 @@ body:
       render: shell
     validations:
       required: true
-    - type: markdown
+  - type: markdown
     attributes:
       value: |
         Environment
