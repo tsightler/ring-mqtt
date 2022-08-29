@@ -3,11 +3,17 @@
 The 5.x releases are breaking releases when upgrading from 4.x versions, please be sure to read the [v5.0.0](#v500) release notes below for full details as manual steps may be required following an upgrade from 4.x versions.
 
 **Fixed Bugs**
+- Fix to prevent cases where live stream get stuck in "on" state even though no stream is active
 - Fix incorrect model name for First Alert CO alarms
 
+**Other Changes**
+- Add additional debug logging on token updates
+
 **Dependency Updates***
-- Bump ring-client-api to v11.1.0 as well as other dependency updates
-- Upgrade to latest rtsp-simple-server version
+- Migrate from v2 to v3 of s6-overlay process supervisor
+- Bump ring-client-api to v11.2.1 (new camera modes and minor fixes)
+- Update rtsp-simple-server to v0.20.0 (misc RTSP fixes)
+- Move to latest Alpine 3.16 image and various minor package updates
 
 ## v5.0.2
 **Dependency Updates**
