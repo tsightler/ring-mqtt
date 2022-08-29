@@ -7,7 +7,9 @@ The 5.x releases are breaking releases when upgrading from 4.x versions, please 
 - Fix incorrect model name for First Alert CO alarms
 
 **Other Changes**
-- Add additional debug logging on token updates
+- Additional debug logging on token updates in the hope of tracking down token refresh issues
+- Additional logging for live stream WebRTC connection start/end
+- Increase live stream timeout for no clients to 10 seconds.  Cameras that take more than a few seconds to start a stream may work on the 2nd attempt with this change.
 
 **Dependency Updates***
 - Migrate from v2 to v3 of s6-overlay process supervisor
