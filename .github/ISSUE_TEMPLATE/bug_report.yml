@@ -83,18 +83,18 @@ body:
   - type: input
     attributes:
       label: Operating System
-      placeholder: Home Assistant OS / Docker / Ubuntu / Debian / RaspianOS
+      placeholder: Home Assistant OS / Ubuntu / Debian / RaspianOS / etc.
     validations:
       required: true
   - type: input
     attributes:
       label: Architecture
-      placeholder: x86_64 / arm64 / arm7
+      placeholder: x86_64 / arm64 / arm7 / etc.
     validations:
       required: true
   - type: input
     attributes:
       label: Machine Details
-      placeholder: Raspberry Pi / Physical x86_64 / Virtual Machine (provide hypervisor details)
+      placeholder: Raspberry Pi / Physical x86_64 / Virtual Machine (provide hypervisor details) / etc.
     validations:
       required: true
