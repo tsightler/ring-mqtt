@@ -1,0 +1,99 @@
+name: Bug Report
+description: Report a bug in ring-mqtt
+title: 'Bug: <Please enter bug description here>'
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please complete the fields below completely or your issue may be closed immediately.
+        Do not open bugs for simple "howto" usage questions or basic operational issues, such
+        issues should be directed to the discussion groups instead.
+        
+        Also, before opening an issues, please search for all open and closed Github issues that
+        may match you situation.
+
+        ## Important note regarding camera support    
+        The ring-mqtt project does not turn Ring cameras into 24x7 CCTV cameras capable of continous
+        streaming.  Ring cameras are designed to work with Ring cloud servers for on-demand streaming
+        based on detected events (motion/ding) or for on-demand interactive viewing.  Even when using
+        ring-mqtt, all streaming still goes through Ring cloud servers and is not local.  Using this
+        project for continuous streaming is not a supported use case and attempts to do so will almost
+        certainly end in disappointment.  Any support cases opened for issues with continuous streaming
+         (i.e. more than one streaming session back-to-back) will be closed as unsupported.  This
+         includes use with NVR tools like Frigate or motionEye.
+  - type: input
+    attributes:
+      label: Describe the Bug
+      placeholder: A clear and concise description of the issue.  Please be sure to enter brief summary of the issue in the title as well.
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Steps to Reproduce
+      placeholder: Please provide the exact steps required to reproduce the behavior
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Expected Behavior
+      placeholder: Descibe clearly the behavior that is expected
+    validations:
+      required: true
+  - type: textarea
+    id: Logs
+    attributes:
+      label: Log Output
+      placeholder: Please include the relevant log output.  In most cases full logs will be required and can be sent to my username at GMAIL while referencing this issue number.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Screenshots
+      description: If applicable, add screenshots to help explain your problem.
+      placeholder: You can attach images by clicking this area to highlight it and then dragging files in.
+    validations:
+      required: false
+  - type: textarea
+    id: Config
+    attributes:
+      label: Config File
+      placeholder: Post the contents of YAML config from HA addon or config.json file _without sensitive information_
+      render: shell
+    validations:
+      required: true
+    - type: markdown
+    attributes:
+      value: |
+        Environment
+  - type: input
+    attributes:
+      label: Install Type
+      placeholder: Home Assistant Addon, Docker, Manual
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Version
+      placeholder: v5.0.3
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Operating System
+      placeholder: Home Assistant OS / Docker / Ubuntu / Debian / RaspianOS
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Architecture
+      placeholder: x86_64 / arm64 / arm7
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Machine Details
+      placeholder: Raspberry Pi / Physical x86_64 / Virtual Machine (provide hypervisor details)
+    validations:
+      required: true
