@@ -6,14 +6,15 @@ body:
   - type: markdown
     attributes:
       value: |
-        Please complete the fields below completely or your issue may be closed immediately.
-        Do not open bugs for simple "howto" usage questions or basic operational issues, such
-        issues should be directed to the discussion groups instead.
+        Before opening an issue, please search for all open and closed Github issues as well
+        as any relevant discussion topics that may match your situation.
         
-        Also, before opening an issue, please search for all open and closed Github issues and
-        all relevant discussion topics that may match your situation.
-
-        ## Important note regarding camera support    
+        Do not open bugs for simple howto usage questions or basic operational issuea. Such
+        issues should be directed to the [discussion groups](https://github.com/tsightler/ring-mqtt/discussions) instead.
+        
+        Please complete the fields below completely or your issue may be closed immediately.
+        
+        **Important note regarding camera support**    
         The ring-mqtt project does not turn Ring cameras into 24x7 CCTV cameras capable of continous
         streaming.  Ring cameras are designed to work with Ring cloud servers for on-demand streaming
         based on detected events (motion/ding) or for on-demand interactive viewing.  Even when using
