@@ -1,4 +1,4 @@
-#!/usr/bin/with-contenv bashio
+#!/command/with-contenv bashio
 
 # =============================================================================
 # ring-mqtt run script for s6-init               #
@@ -8,30 +8,25 @@
 # for the detected environment.
 # ==============================================================================
 
-# Short delay to keep log messages from overlapping with s6 logs
-sleep .5
-
 # If options.json exist we are running as addon
 if [ -f /data/options.json ]; then
-    echo "-------------------------------------------------------"
-    echo "| Ring-MQTT with Video Streaming                      |"
-    echo "| Addon for Home Assistant                            |"
-    echo "|                                                     |"
-    echo "| Report issues at:                                   |"
-    echo "| https://github.com/tsightler/ring-mqtt-hassio-addon |"
-    echo "-------------------------------------------------------"
+    RUNMODE_BANNER_DESCRIPTION="Addon for Home Assistant     "
     # Use bashio to get configured branch
     export BRANCH=$(bashio::config "branch")
 else
-    # No options.json found, assume we are in running in standard Docker
-    echo "-------------------------------------------------------"
-    echo "| Ring-MQTT with Video Streaming                      |"
-    echo "| Docker Edition                                      |"
-    echo "|                                                     |"
-    echo "| Report issues at:                                   |"
-    echo "| https://github.com/tsightler/ring-mqtt              |"
-    echo "-------------------------------------------------------"
+    RUNMODE_BANNER_DESCRIPTION="Docker Edition               "
 fi
+
+# Short delay to keep log messages from overlapping with s6 logs
+sleep .5
+
+echo "-------------------------------------------------------"
+echo "| Ring-MQTT with Video Streaming                      |"
+echo "| ${RUNMODE_BANNER_DESCRIPTION}                       |"
+echo "|                                                     |"
+echo "| For support questions please visit:                 |"
+echo "| https://github.com/tsightler/ring-mqtt/discussions  |"
+echo "-------------------------------------------------------"
 
 if [ -v BRANCH ]; then
     if [ "${BRANCH}" = "latest" ] || [ "${BRANCH}" = "dev" ]; then

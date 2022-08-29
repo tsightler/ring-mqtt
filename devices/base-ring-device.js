@@ -21,8 +21,8 @@ class RingDevice {
         this.deviceTopic = `${utils.config.ring_topic}/${this.locationId}/${category}/${this.deviceId}`
         this.availabilityTopic = `${this.deviceTopic}/status`
 
-        if (deviceInfo.hasOwnProperty('parentDevices')) {
-            this.parentDevices = deviceInfo.parentDevices
+        if (deviceInfo.hasOwnProperty('parentDevice')) {
+            this.parentDevice = deviceInfo.parentDevice
         }
 
         if (deviceInfo.hasOwnProperty('childDevices')) {

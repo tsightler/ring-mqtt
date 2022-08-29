@@ -1,7 +1,23 @@
-## v5.0.2
+## v5.0.3
 **!!!!! WARNING !!!!!**\
-The 5.x releases are breaking release when upgrading from 4.x versions, please be sure to read the [v5.0.0](#v500) release notes below for full details as manual steps may be required.
+The 5.x releases are breaking releases when upgrading from 4.x versions, please be sure to read the [v5.0.0](#v500) release notes below for full details as manual steps may be required following an upgrade from 4.x versions.
 
+**Fixed Bugs**
+- Fix to prevent cases where live stream get stuck in "on" state even though no stream is active
+- Fix incorrect model name for First Alert CO alarms
+
+**Other Changes**
+- Additional debug logging on token updates in the hope of tracking down token refresh issues
+- Additional logging for live stream WebRTC connection start/end
+- Increase live stream timeout for no clients to 10 seconds.  Cameras that take more than a few seconds to start a stream may work on the 2nd attempt with this change.
+
+**Dependency Updates***
+- Migrate from v2 to v3 of s6-overlay process supervisor
+- Bump ring-client-api to v11.2.1 (new camera modes and minor fixes)
+- Update rtsp-simple-server to v0.20.0 (misc RTSP fixes)
+- Move to latest Alpine 3.16 image and various minor package updates
+
+## v5.0.2
 **Dependency Updates**
 - Bump ring-client-api to v11.0.4 (hopefully fixes some live stream connection issues)
 
