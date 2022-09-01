@@ -19,5 +19,7 @@ if [ ! -d "/app/ring-mqtt-${BRANCH}" ]; then
     echo "-------------------------------------------------------"
 else
     # Branch has already been initialized, run any post-update command here
+    cd "/app/ring-mqtt-${BRANCH}/node_modules"
+    ln -s @tsightler/ring-client-api ring-client-api
     echo "The ring-mqtt-${BRANCH} has been updated."
 fi
