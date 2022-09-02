@@ -1,6 +1,6 @@
 {
   "name": "ring-mqtt",
-  "version": "5.0.4-beta.1",
+  "version": "5.0.4-beta.2",
   "description": "Ring Devices via MQTT",
   "main": "ring-mqtt.js",
   "dependencies": {
@@ -14,7 +14,7 @@
     "minimist": "^1.2.6",
     "mqtt": "4.3.7",
     "aedes": "0.47.0",
-    "@tsightler/ring-client-api": "^11.2.1-ts.2"
+    "@tsightler/ring-client-api": "^11.2.1-ts.3"
   },
   "devDependencies": {
     "eslint": "^7.19.0"

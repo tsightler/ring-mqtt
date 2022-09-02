@@ -1,3 +1,10 @@
+## v5.0.4
+**!!!!! WARNING !!!!!**\
+The 5.x releases are breaking releases when upgrading from 4.x versions, please be sure to read the [v5.0.0](#v500) release notes below for full details as manual steps may be required following an upgrade from 4.x versions.
+
+**Fixed Bugs**
+- Use custom push-receiver package to hopefully reduce lost push notifications causing some motion and ding events to be missed even when they are not otherwise suppressed.
+
 ## v5.0.3
 **!!!!! WARNING !!!!!**\
 The 5.x releases are breaking releases when upgrading from 4.x versions, please be sure to read the [v5.0.0](#v500) release notes below for full details as manual steps may be required following an upgrade from 4.x versions.
