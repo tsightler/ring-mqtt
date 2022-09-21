@@ -744,7 +744,7 @@ class Camera extends RingPolledDevice {
         while (Math.floor(Date.now()/1000) < this.data.stream.keepalive.expires) {
             await utils.sleep(5)
             const pathDetails = await rss.getPathDetails(`${this.deviceId}_live`)
-            if (!pathDetails.sourceReady) {
+            if (pathDetails.hasOwnProperty('sourceReady') && !pathDetails.sourceReady) {
                 // If the source stream stops (due to manual cancel or Ring timeout)
                 // force the keepalive stream to expire
                 this.debug('Ring live stream has stopped publishing, killing the keepalive stream')
