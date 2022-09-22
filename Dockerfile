@@ -1,4 +1,4 @@
-FROM alpine:3.16
+FROM alpine:3.16.2
 
 ENV LANG="C.UTF-8" \
     PS1="$(whoami)@$(hostname):$(pwd)$ " \
@@ -11,7 +11,7 @@ ENV LANG="C.UTF-8" \
 COPY . /app/ring-mqtt
 RUN apk add --no-cache tar xz git libcrypto1.1 libssl1.1 musl-utils musl bash curl jq tzdata nodejs npm mosquitto-clients && \
     APK_ARCH="$(apk --print-arch)" && \
-    S6_VERSION="v3.1.2.0" && \
+    S6_VERSION="v3.1.2.1" && \
     RSS_VERSION="v0.20.0" && \
     BASHIO_VERSION="v0.14.3" && \
     curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/${S6_VERSION}/s6-overlay-noarch.tar.xz" | tar -Jxpf - -C / && \
@@ -49,11 +49,13 @@ RUN apk add --no-cache tar xz git libcrypto1.1 libssl1.1 musl-utils musl bash cu
     ln -s /usr/lib/bashio/bashio /usr/bin/bashio && \
     chmod +x /app/ring-mqtt/scripts/*.sh && \
     mkdir /data && \
-    chmod 777 /data /app && \
+    chmod 777 /data /app /run && \
     cd /app/ring-mqtt && \
     chmod +x ring-mqtt.js && \
     chmod +x init-ring-mqtt.js && \
     npm install && \
+    cd /app/ring-mqtt/node_modules && \
+    ln -s @tsightler/ring-client-api ring-client-api && \
     rm -Rf /root/.npm && \
     rm -f -r /tmp/*
 ENTRYPOINT [ "/init" ]
