@@ -4,8 +4,13 @@
 # s6-overlay docs: https://github.com/just-containers/s6-overlay
 # ==============================================================================
 
-echo $1
-echo $2
+if test "$1" -eq 256 ; then
+  e=$((128 + $2))
+else
+  e="$1"
+fi
+
+echo "$e" > /run/s6-linux-init-container-results/exitcode
 
 if [[ "$1" -ne 0 ]] && [[ "$1" -ne 256 ]]; then
   bashio::log.warning "A critical error was detected, exiting the container..."
