@@ -1,15 +1,15 @@
 #!/command/with-contenv bashio
 
 # =============================================================================
-# ring-mqtt run script for s6-init               #
+# ring-mqtt run script for s6-init
 #
 # This script automatically detects if it is running as the Home Assistant 
 # addon or a standard docker environment and sets configuration variables as 
-# appropriate for the detected environment.
+# appropriate.
 # ==============================================================================
 
 # Delay to keep logs messages from overlapping with s6 logs
-sleep .5
+sleep 1
 
 # If HASSIO_TOKEN variable exist we are running as addon
 if [ -v HASSIO_TOKEN ]; then
