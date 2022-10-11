@@ -7,6 +7,6 @@
 if [[ "${1}" -ne 0 ]] && [[ "${1}" -ne 256 ]]; then
   bashio::log.warning "The ring-mqtt service crashed, halting add-on..."
   /run/s6/basedir/bin/halt
+else
+  bashio::log.info "The ring-mqtt service exited unexpectedly, restarting..."
 fi
-
-bashio::log.info "The ring-mqtt service exited unexpectedly, restarting..."
