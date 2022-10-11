@@ -11,19 +11,19 @@
 # Delay to keep logs messages from overlapping with s6 logs
 sleep .5
 
-echo "-------------------------------------------------------"
-echo -n "ring-mqtt.js version: "
-echo $(cat package.json | grep version | cut -f4 -d'"')
-echo Node version $(node -v)
-echo NPM version $(npm -v)
-git --version
-echo "-------------------------------------------------------"
+bashio::log.info "-------------------------------------------------------"
+bashio::log.info -n "ring-mqtt.js version: "
+bashio::log.info $(cat package.json | grep version | cut -f4 -d'"')
+bashio::log.info Node version $(node -v)
+bashio::log.info NPM version $(npm -v)
+bashio::log.info $(git --version)
+bashio::log.info "-------------------------------------------------------"
 
 # If HASSIO_TOKEN variable exist we are running as addon
 if [ -v HASSIO_TOKEN ]; then
     export RUNMODE="addon"
     if ! bashio::config.require 'mqtt_url_test'; then
-        exit 2
+        exit 256
     fi
 
     if bashio::services.available 'mqtt'; then
@@ -62,5 +62,5 @@ else
     cd /app/ring-mqtt
 fi
 
-echo "Running ring-mqtt..."
+bashio::log.info "Running ring-mqtt..."
 exec ./ring-mqtt.js
