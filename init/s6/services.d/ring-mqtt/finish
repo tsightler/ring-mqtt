@@ -4,15 +4,9 @@
 # s6-overlay docs: https://github.com/just-containers/s6-overlay
 # ==============================================================================
 
-if test "$1" -eq 256 ; then
-  e=$((128 + $2))
-else
-  e="$1"
+if [[ "${1}" -ne 0 ]] && [[ "${1}" -ne 256 ]]; then
+  bashio::log.warning "The ring-mqtt service crashed, halting add-on..."
+  /run/s6/basedir/bin/halt
 fi
 
-echo "$e" > /run/s6-linux-init-container-results/exitcode
-
-if [[ "$1" -ne 0 ]] && [[ "$1" -ne 256 ]]; then
-  bashio::log.warning "A critical error was detected, exiting the container..."
-  exec /run/s6/basedir/bin/halt
-fi
+bashio::log.info "The ring-mqtt service exited unexpectedly, restarting..."
