@@ -1,11 +1,11 @@
-#!/usr/bin/env bashio
+#!/command/with-contenv bashio
 # ==============================================================================
 # Take down the S6 supervision tree when service fails
 # s6-overlay docs: https://github.com/just-containers/s6-overlay
 # ==============================================================================
 
 if [[ "${1}" -ne 0 ]] && [[ "${1}" -ne 256 ]]; then
-  bashio::log.warning "A critical error was detected, halting ring-mqtt add-on..."
+  bashio::log.warning "A critical error was detected, shutting down container..."
   /run/s6/basedir/bin/halt
 else
   bashio::log.info "The ring-mqtt service exited unexpectedly, restarting..."
