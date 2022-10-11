@@ -5,7 +5,8 @@
 # ==============================================================================
 
 if [[ "$1" -ne 0 ]] && [[ "$1" -ne 256 ]]; then
+  bashio::log.warning "The ring-mqtt container is shutting down..."
   exec /run/s6/basedir/bin/halt
 fi
 
-bashio::log.info "The ring-mqtt service exited unexpectedly, restarting..."
+bashio::log.warning "The ring-mqtt service exited unexpectedly, restarting..."

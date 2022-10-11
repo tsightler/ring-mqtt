@@ -52,12 +52,12 @@ else
     cd /app/ring-mqtt
 fi
 
-bashio::log.info "-------------------------------------------------------"
-bashio::log.info ring-mqtt.js version: $(cat package.json | grep version | cut -f4 -d'"')
-bashio::log.info Node version $(node -v)
-bashio::log.info NPM version $(npm -v)
-bashio::log.info $(git --version)
-bashio::log.info "-------------------------------------------------------"
+echo "-------------------------------------------------------"
+echo ring-mqtt.js version: $(cat package.json | grep version | cut -f4 -d'"')
+echo Node version $(node -v)
+echo NPM version $(npm -v)
+echo $(git --version)
+echo "-------------------------------------------------------"
 
-bashio::log.info "Running ring-mqtt..."
+echo "Running ring-mqtt..."
 exec ./ring-mqtt.js
