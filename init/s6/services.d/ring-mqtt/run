@@ -14,7 +14,7 @@ sleep .5
 # If HASSIO_TOKEN variable exist we are running as addon
 if [ -v HASSIO_TOKEN ]; then
     export RUNMODE="addon"
-    bashio::config.require 'mqtt_url_test'
+    bashio::config.require 'mqtt_url'
 
     if bashio::services.available 'mqtt'; then
         export BRANCH=$(bashio::config "branch")
@@ -53,8 +53,7 @@ else
 fi
 
 bashio::log.info "-------------------------------------------------------"
-bashio::log.info "ring-mqtt.js version: "
-bashio::log.info $(cat package.json | grep version | cut -f4 -d'"')
+bashio::log.info ring-mqtt.js version: $(cat package.json | grep version | cut -f4 -d'"')
 bashio::log.info Node version $(node -v)
 bashio::log.info NPM version $(npm -v)
 bashio::log.info $(git --version)
