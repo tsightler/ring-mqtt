@@ -18,11 +18,6 @@ if [ ! -d "/app/ring-mqtt-${BRANCH}" ]; then
     exec "/app/ring-mqtt-${BRANCH}/scripts/update2branch.sh"
     echo "-------------------------------------------------------"
 else
-    cp -f "/app/ring-mqtt-${BRANCH}/init/s6/services.d/ring-mqtt/run" /etc/services.d/ring-mqtt/run
-    chmod +x /etc/services.d/ring-mqtt/run
-    cp -f "/app/ring-mqtt-${BRANCH}/init/s6/services.d/ring-mqtt/finish" /etc/services.d/ring-mqtt/finish
-    chmod +x /etc/services.d/ring-mqtt/finish
-
     # Branch has already been initialized, run any post-update command here
     echo "The ring-mqtt-${BRANCH} has been updated."
 fi
