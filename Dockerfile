@@ -54,8 +54,6 @@ RUN S6_VERSION="v3.1.2.1" && \
     chmod +x ring-mqtt.js && \
     chmod +x init-ring-mqtt.js && \
     npm install && \
-    cd /app/ring-mqtt/node_modules && \
-    ln -s @tsightler/ring-client-api ring-client-api && \
     rm -Rf /root/.npm && \
     rm -f -r /tmp/*
 ENTRYPOINT [ "/init" ]

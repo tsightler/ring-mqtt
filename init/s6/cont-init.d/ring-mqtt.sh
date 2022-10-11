@@ -8,8 +8,8 @@
 # for the detected environment.
 # ==============================================================================
 
-# If options.json exist we are running as addon
-if [ -f /data/options.json ]; then
+# If HASSIO_TOKEN variable exist we are running as addon
+if [ -v HASSIO_TOKEN ]; then
     RUNMODE_BANNER_DESCRIPTION="Addon for Home Assistant     "
     # Use bashio to get configured branch
     export BRANCH=$(bashio::config "branch")
