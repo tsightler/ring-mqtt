@@ -14,7 +14,7 @@ sleep .5
 # If HASSIO_TOKEN variable exist we are running as addon
 if [ -v HASSIO_TOKEN ]; then
     # If addon mode is detected but config isn't available exit immediately
-    bashio::config.require 'mqtt_url_2'
+    bashio::config.require 'mqtt_url'
 
     export RUNMODE="addon"
     export BRANCH=$(bashio::config "branch")
