@@ -13,25 +13,24 @@ sleep .5
 
 # If HASSIO_TOKEN variable exist we are running as addon
 if [ -v HASSIO_TOKEN ]; then
-    export RUNMODE="addon"
+    # If addon mode is detected but config isn't available exit immediately
     bashio::config.require 'mqtt_url_2'
 
+    export RUNMODE="addon"
+    export BRANCH=$(bashio::config "branch")
+    export DEBUG=$(bashio::config "debug")
+
+    # Export MQTT service discovery data for use within NodeJS process
     if bashio::services.available 'mqtt'; then
-        export BRANCH=$(bashio::config "branch")
-        export DEBUG=$(bashio::config "debug")
-
-        # Export MQTT service discovery data for use within NodeJS process
-        if bashio::services.available 'mqtt'; then
-            export HAMQTTHOST=$(bashio::services mqtt "host")
-            export HAMQTTPORT=$(bashio::services mqtt "port")
-            export HAMQTTUSER=$(bashio::services mqtt "username")
-            export HAMQTTPASS=$(bashio::services mqtt "password")
-        fi
-
-        # Export a few helper variables for building the Streaming and Still Image URLs
-        export HAHOSTNAME=$(bashio::info.hostname)
-        export ADDONHOSTNAME=$HOSTNAME
+        export HAMQTTHOST=$(bashio::services mqtt "host")
+        export HAMQTTPORT=$(bashio::services mqtt "port")
+        export HAMQTTUSER=$(bashio::services mqtt "username")
+        export HAMQTTPASS=$(bashio::services mqtt "password")
     fi
+
+    # Export a few helper variables for building the Streaming and Still Image URLs
+    export HAHOSTNAME=$(bashio::info.hostname)
+    export ADDONHOSTNAME=$HOSTNAME
 else
     export RUNMODE=docker
 
