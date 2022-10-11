@@ -22,7 +22,9 @@ echo "-------------------------------------------------------"
 # If HASSIO_TOKEN variable exist we are running as addon
 if [ -v HASSIO_TOKEN ]; then
     export RUNMODE="addon"
-    bashio::config.require 'mqtt_url_test'
+    if ! bashio::config.require 'mqtt_url_test'; then
+        exit 2
+    fi
 
     if bashio::services.available 'mqtt'; then
         export BRANCH=$(bashio::config "branch")
