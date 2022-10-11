@@ -11,14 +11,6 @@
 # Delay to keep logs messages from overlapping with s6 logs
 sleep .5
 
-bashio::log.info "-------------------------------------------------------"
-bashio::log.info -n "ring-mqtt.js version: "
-bashio::log.info $(cat package.json | grep version | cut -f4 -d'"')
-bashio::log.info Node version $(node -v)
-bashio::log.info NPM version $(npm -v)
-bashio::log.info $(git --version)
-bashio::log.info "-------------------------------------------------------"
-
 # If HASSIO_TOKEN variable exist we are running as addon
 if [ -v HASSIO_TOKEN ]; then
     export RUNMODE="addon"
@@ -59,6 +51,14 @@ if [ "${BRANCH}" = "latest" ] || [ "${BRANCH}" = "dev" ]; then
 else
     cd /app/ring-mqtt
 fi
+
+bashio::log.info "-------------------------------------------------------"
+bashio::log.info "ring-mqtt.js version: "
+bashio::log.info $(cat package.json | grep version | cut -f4 -d'"')
+bashio::log.info Node version $(node -v)
+bashio::log.info NPM version $(npm -v)
+bashio::log.info $(git --version)
+bashio::log.info "-------------------------------------------------------"
 
 bashio::log.info "Running ring-mqtt..."
 exec ./ring-mqtt.js
