@@ -8,13 +8,13 @@
 # for the detected environment.
 # ==============================================================================
 
-# If options.json exist we are running as addon
-if [ -f /data/options.json ]; then
-    RUNMODE_BANNER_DESCRIPTION="Addon for Home Assistant     "
+# If HASSIO_TOKEN variable exist we are running as addon
+if [ -v HASSIO_TOKEN ]; then
+    RUNMODE_BANNER="Addon for Home Assistant     "
     # Use bashio to get configured branch
     export BRANCH=$(bashio::config "branch")
 else
-    RUNMODE_BANNER_DESCRIPTION="Docker Edition               "
+    RUNMODE_BANNER="Docker Edition               "
 fi
 
 # Short delay to keep log messages from overlapping with s6 logs
@@ -22,7 +22,7 @@ sleep .5
 
 echo "-------------------------------------------------------"
 echo "| Ring-MQTT with Video Streaming                      |"
-echo "| ${RUNMODE_BANNER_DESCRIPTION}                       |"
+echo "| ${RUNMODE_BANNER}                       |"
 echo "|                                                     |"
 echo "| For support questions please visit:                 |"
 echo "| https://github.com/tsightler/ring-mqtt/discussions  |"

@@ -744,7 +744,7 @@ class Camera extends RingPolledDevice {
         while (Math.floor(Date.now()/1000) < this.data.stream.keepalive.expires) {
             await utils.sleep(5)
             const pathDetails = await rss.getPathDetails(`${this.deviceId}_live`)
-            if (!pathDetails.sourceReady) {
+            if (pathDetails.hasOwnProperty('sourceReady') && !pathDetails.sourceReady) {
                 // If the source stream stops (due to manual cancel or Ring timeout)
                 // force the keepalive stream to expire
                 this.debug('Ring live stream has stopped publishing, killing the keepalive stream')
@@ -818,10 +818,10 @@ class Camera extends RingPolledDevice {
                 this.setSnapshotInterval(message)
                 break;
             case 'stream/command':
-                this.setStreamState('live', message)
+                this.setLiveStreamState(message)
                 break;
             case 'event_stream/command':
-                this.setStreamState('event', message)
+                this.setEventStreamState(message)
                 break;
             case 'event_select/command':
                 this.setEventSelect(message)
@@ -919,51 +919,67 @@ class Camera extends RingPolledDevice {
         }
     }
 
-    setStreamState(type, message) {
+    setLiveStreamState(message) {
         const command = message.toLowerCase()
-        this.debug(`Received set ${type} stream state ${message}`)
+        this.debug(`Received set live stream state ${message}`)
         switch (command) {
             case 'on':
-                if (type === 'live') {
-                    // Stream was manually started, create a dummy, audio only
-                    // RTSP source stream to trigger stream startup and keep it active
-                    this.startKeepaliveStream()
-                } else {
-                    this.debug(`Event stream can only be started on-demand!`)
-                }
+                // Stream was manually started, create a dummy, audio only
+                // RTSP source stream to trigger stream startup and keep it active
+                this.startKeepaliveStream()
                 break;
             case 'on-demand':
-                if (this.data.stream[type].status === 'active' || this.data.stream[type].status === 'activating') {
+                if (this.data.stream.live.status === 'active' || this.data.stream.live.status === 'activating') {
                     this.publishStreamState()
-                    return
                 } else {
-                    this.data.stream[type].status = 'activating'
+                    this.data.stream.live.status = 'activating'
                     this.publishStreamState()
-                    if (type === 'live') {
-                        this.startLiveStream()
-                    } else {
-                        this.startEventStream()
-                    }
+                    this.startLiveStream()
                 }
                 break;
             case 'off':
-                if (this.data.stream[type].session) {
-                    if (type === 'live') {
-                        const streamData = {
-                            deviceId: this.deviceId,
-                            deviceName: this.device.name
-                        }
-                        utils.event.emit('stop_livestream', streamData)
-                    } else {
-                        this.data.stream[type].session.kill()
+                if (this.data.stream.live.session) {
+                    const streamData = {
+                        deviceId: this.deviceId,
+                        deviceName: this.device.name
                     }
+                    utils.event.emit('stop_livestream', streamData)
                 } else {
-                    this.data.stream[type].status = 'inactive'
+                    this.data.stream.live.status = 'inactive'
                     this.publishStreamState()
                 }
                 break;
             default:
-                this.debug(`Received unknown command for ${type} stream`)
+                this.debug(`Received unknown command for live stream`)
+        }
+    }
+
+    setEventStreamState(message) {
+        const command = message.toLowerCase()
+        this.debug(`Received set event stream state ${message}`)
+        switch (command) {
+            case 'on':
+                this.debug(`Event stream can only be started on-demand!`)
+                break;
+            case 'on-demand':
+                if (this.data.stream.event.status === 'active' || this.data.stream.event.status === 'activating') {
+                    this.publishStreamState()
+                } else {
+                    this.data.stream.event.status = 'activating'
+                    this.publishStreamState()
+                    this.startEventStream()
+                }
+                break;
+            case 'off':
+                if (this.data.stream.event.session) {
+                    this.data.stream.event.session.kill()
+                } else {
+                    this.data.stream.wcwnr.status = 'inactive'
+                    this.publishStreamState()
+                }
+                break;
+            default:
+                this.debug(`Received unknown command for event stream`)
         }
     }
 

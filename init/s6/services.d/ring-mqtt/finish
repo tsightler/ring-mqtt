@@ -1,5 +1,10 @@
-#!/command/execlineb -S1
-if { s6-test ${1} -ne 0 }
-if { s6-test ${1} -ne 256 }
+#!/command/with-contenv bashio
+# ==============================================================================
+# Take down the S6 supervision tree when service fails
+# s6-overlay docs: https://github.com/just-containers/s6-overlay
+# ==============================================================================
 
-s6-svscanctl -t /var/run/s6/services
+if [[ "${1}" -ne 0 ]] && [[ "${1}" -ne 256 ]]; then
+  bashio::log.warning "A critical error was detected, shutting down container..."
+  /run/s6/basedir/bin/halt
+fi

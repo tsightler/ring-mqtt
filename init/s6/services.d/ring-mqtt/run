@@ -1,50 +1,24 @@
 #!/command/with-contenv bashio
 
 # =============================================================================
-# ring-mqtt run script for s6-init               #
+# ring-mqtt run script for s6-init
 #
 # This script automatically detects if it is running as the Home Assistant 
 # addon or a standard docker environment and sets configuration variables as 
-# appropriate for the detected environment.
+# appropriate.
 # ==============================================================================
 
 # Delay to keep logs messages from overlapping with s6 logs
-sleep .5
+sleep 1
 
-if [ -f /data/options.json ]; then
-    export RUNMODE=addon
+# If HASSIO_TOKEN variable exist we are running as addon
+if [ -v HASSIO_TOKEN ]; then
+    # If addon mode is detected but config isn't available exit immediately
+    bashio::config.require 'mqtt_url'
+
+    export RUNMODE="addon"
     export BRANCH=$(bashio::config "branch")
     export DEBUG=$(bashio::config "debug")
-else
-    export RUNMODE=docker
-    # If debug is not explicitly defined, use default
-    if [ ! -v DEBUG ]; then
-        export DEBUG="ring-*"
-    fi
-fi
-
-if [ -v BRANCH ]; then
-    if [ "${BRANCH}" = "latest" ] || [ "${BRANCH}" = "dev" ]; then
-        cd "/app/ring-mqtt-${BRANCH}"
-    else
-        cd /app/ring-mqtt
-    fi
-else
-    cd /app/ring-mqtt
-fi
-
-echo "-------------------------------------------------------"
-echo -n "ring-mqtt.js version: "
-echo $(cat package.json | grep version | cut -f4 -d'"')
-echo Node version $(node -v)
-echo NPM version $(npm -v)
-git --version
-echo "-------------------------------------------------------"
-
-if [ "${RUNMODE}" = "addon" ]; then
-    # Export a few helper variables for building the Streaming and Still Image URLs
-    export HAHOSTNAME=$(bashio::info.hostname)
-    export ADDONHOSTNAME=$HOSTNAME
 
     # Export MQTT service discovery data for use within NodeJS process
     if bashio::services.available 'mqtt'; then
@@ -53,6 +27,36 @@ if [ "${RUNMODE}" = "addon" ]; then
         export HAMQTTUSER=$(bashio::services mqtt "username")
         export HAMQTTPASS=$(bashio::services mqtt "password")
     fi
+
+    # Export a few helper variables for building the Streaming and Still Image URLs
+    export HAHOSTNAME=$(bashio::info.hostname)
+    export ADDONHOSTNAME=$HOSTNAME
+else
+    export RUNMODE=docker
+
+    # If branch is not explicitly defined, use builtin branch
+    if [ ! -v BRANCH]; then
+        export BRANCH="builtin"
+    fi
+
+    # If debug is not explicitly defined, use default
+    if [ ! -v DEBUG ]; then
+        export DEBUG="ring-*"
+    fi
 fi
+
+if [ "${BRANCH}" = "latest" ] || [ "${BRANCH}" = "dev" ]; then
+    cd "/app/ring-mqtt-${BRANCH}"
+else
+    cd /app/ring-mqtt
+fi
+
+echo "-------------------------------------------------------"
+echo ring-mqtt.js version: $(cat package.json | grep version | cut -f4 -d'"')
+echo Node version $(node -v)
+echo NPM version $(npm -v)
+echo $(git --version)
+echo "-------------------------------------------------------"
+
 echo "Running ring-mqtt..."
 exec ./ring-mqtt.js
