@@ -1,16 +1,16 @@
 ## v5.0.4
-**!!!!! NOTE !!!!!**\
+**!!!!! NOTE !!!!!**
 This is a stability release only and I'm happy to announce that, with this release, the 5.x versions are now considered stable.  Analytics indicate that over 90% of ring-mqtt users are already runnning a 5.x release and, overall, there are very few reported issues.  Still, it is highly recommened to **take a backup** prior to upgrading so that you can revert if things do not go to plan.  
 
-**!!!!! WARNING !!!!!**\
+**!!!!! WARNING !!!!!**
 The 5.x releases are breaking releases when upgrading from 4.x versions, please be sure to read the [v5.0.0](#v500) release notes below for full details as manual steps may be required following an upgrade from 4.x versions.  Please note that support for direct upgrade from 4.x versions will be deprecated once the 5.1.x releases begin rolling out later this year so upgrading now is highly recommended.
 
-**Fixed Bugs**\
+**Fixed Bugs**
 - Modified init scripts to detect cases where Home Assistant Services API is not available during startup and exit with error (might fix cases where MQTT service and authentication discovery fails after a hard shutdown/restart)
 - Implement check and automatic recovery from null refresh token which can occur during Ring service outages.  Previously a manual restart of ring-mqtt was required after Ring outages that involved authentication failures.
 - Fix a case where regenerating a new refresh token failed to properly re-authenticate the API without restarting the addon.
 
-**Dependency Updates**\
+**Dependency Updates**
 - Bump ring-client-api to v11.3.0 to pull in latest push-receiver fixes for improved stability with motion/ding events
 
 ## v5.0.3
@@ -42,7 +42,7 @@ The 5.x releases are breaking releases when upgrading from 4.x versions, please 
 - Fixed an issue where camera events sometimes had timestamps from far in the past
 
 ## v5.0.0
-**!!!!! WARNING !!!!!**\
+**!!!!! WARNING !!!!!**
 This is a breaking release!  While efforts have been made to ensure the upgrade path is straightforward for most users, it was simply not possible to make the transition to new features and configuration methods without introducing breaking changes.  Users should carefully read [Upgrading to 5.x](https://github.com/tsightler/ring-mqtt/wiki/Upgrading-to-v5.x) on the project wiki page for more details prior to upgrading.
 
 **New Features**
