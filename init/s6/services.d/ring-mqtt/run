@@ -32,10 +32,10 @@ if [ -v HASSIO_TOKEN ]; then
     export HAHOSTNAME=$(bashio::info.hostname)
     export ADDONHOSTNAME=$HOSTNAME
 else
-    export RUNMODE=docker
+    export RUNMODE="docker"
 
     # If branch is not explicitly defined, use builtin branch
-    if [ ! -v BRANCH]; then
+    if [ ! -v BRANCH ]; then
         export BRANCH="builtin"
     fi
 
