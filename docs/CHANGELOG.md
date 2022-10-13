@@ -1,9 +1,19 @@
+## v5.1.0
+After several releases focused on stability and minor bug fixes its finally time to implement a few new features!
+
+**!!!!! WARNING !!!!!**  
+The 5.x releases are breaking releases when upgrading from 4.x versions, please be sure to read the [v5.0.0](#v500) release notes below for full details as manual steps may be required following an upgrade from 4.x versions.  Please note that support for upgrading directly from 4.x releases is deprecated in the 5.1.x releases and, while it should still work, the code for automatically converting legacy configuration options will be removed in a future version.
+
+**New Features**
+- Added ability to refine event stream to only motion events where a person is detected
+- Option to select which video the event stream uses:
+  - Raw video (default) - This video is exactly as it was recorded by the camera
+  - Transcoded video - This video includes Ring logo and timestamps and may included additional data such as pre-roll.
+
 ## v5.0.4
-**!!!!! NOTE !!!!!**
+**!!!!! NOTE !!!!!**  
 This is a stability release only and I'm happy to announce that, with this release, the 5.x versions are now considered stable.  Analytics indicate that over 90% of ring-mqtt users are already runnning a 5.x release and, overall, there are very few reported issues.  Still, it is highly recommened to **take a backup** prior to upgrading so that you can revert if things do not go to plan.  
 
-**!!!!! WARNING !!!!!**
-The 5.x releases are breaking releases when upgrading from 4.x versions, please be sure to read the [v5.0.0](#v500) release notes below for full details as manual steps may be required following an upgrade from 4.x versions.  Please note that support for direct upgrade from 4.x versions will be deprecated once the 5.1.x releases begin rolling out later this year so upgrading now is highly recommended.
 
 **Fixed Bugs**
 - Modified init scripts to detect cases where Home Assistant Services API is not available during startup and exit with error (might fix cases where MQTT service and authentication discovery fails after a hard shutdown/restart)
