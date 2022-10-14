@@ -796,7 +796,7 @@ class Camera extends RingPolledDevice {
         if (recordingUrl) {
                 this.data.stream.event.dingId = dingId
                 this.data.stream.event.recordingUrl = recordingUrl
-                this.data.stream.event.recordingUrlExpire = Math.floor(Date.now()/1000) + 600
+                this.data.stream.event.recordingUrlExpire = Math.floor(Date.now()/1000) + 120
         }
 
         return events.length
