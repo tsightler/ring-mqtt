@@ -7,8 +7,8 @@ const { requestInput } = require('./node_modules/ring-client-api/lib/api/util')
 
 async function getRefreshToken() {
     let generatedToken
-    const email = await requestInput('Email: ')
-    const password = await requestInput('Password: ')
+    const email = process.env.RING_MAIL || await requestInput('Email: ')
+    const password = process.env.RING_PASS || await requestInput('Password: ')
     const restClient = new RingRestClient({ email, password })
     try {
         await restClient.getCurrentAuth()
