@@ -974,7 +974,7 @@ class Camera extends RingPolledDevice {
                 if (this.data.stream.event.session) {
                     this.data.stream.event.session.kill()
                 } else {
-                    this.data.stream.wcwnr.status = 'inactive'
+                    this.data.stream.event.status = 'inactive'
                     this.publishStreamState()
                 }
                 break;

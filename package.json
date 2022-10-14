@@ -1,6 +1,6 @@
 {
   "name": "ring-mqtt",
-  "version": "5.0.4",
+  "version": "5.0.5",
   "description": "Ring Devices via MQTT",
   "main": "ring-mqtt.js",
   "dependencies": {
