@@ -671,6 +671,7 @@ class Camera extends RingPolledDevice {
         this.debug(`Streaming the ${(index==1?"":index==2?"2nd ":index==3?"3rd ":index+"th ")}most recently recorded ${kind} event`)
 
         try {
+            /*
             this.data.stream.event.session = spawn(pathToFfmpeg, [
                 '-re',
                 '-i', this.data.stream.event.recordingUrl,
@@ -680,6 +681,15 @@ class Camera extends RingPolledDevice {
                 '-c:a:0', 'copy',
                 '-c:a:1', 'libopus',
                 '-c:v', 'copy',
+                '-f', 'rtsp',
+                '-rtsp_transport', 'tcp',
+                this.data.stream.event.rtspPublishUrl
+            ])
+            */
+
+            this.data.stream.event.session = spawn(pathToFfmpeg, [
+                '-re',
+                '-i', this.data.stream.event.recordingUrl,
                 '-f', 'rtsp',
                 '-rtsp_transport', 'tcp',
                 this.data.stream.event.rtspPublishUrl
