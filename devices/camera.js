@@ -681,8 +681,9 @@ class Camera extends RingPolledDevice {
                 '-c:a:1', 'libopus',
                 '-map', '0:v',
                 '-r:v', '20',
-                '-b:v', '12M',
+                '-b:v', '4M',
                 '-c:v', 'h264_v4l2m2m',
+                '-bf', '0',
                 '-f', 'rtsp',
                 '-rtsp_transport', 'tcp',
                 this.data.stream.event.rtspPublishUrl
