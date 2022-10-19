@@ -1,4 +1,4 @@
-logLevel: debug
+logLevel: info
 readTimeout: 10s
 writeTimeout: 10s
 readBufferCount: 2048
