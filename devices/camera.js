@@ -684,7 +684,6 @@ class Camera extends RingPolledDevice {
                 '-c:a:1', 'libopus',
                 '-flags', '+global_header',
                 '-g', '1',
-                '-sameq',
                 '-f', 'rtsp',
                 '-rtsp_transport', 'tcp',
                 this.data.stream.event.rtspPublishUrl
