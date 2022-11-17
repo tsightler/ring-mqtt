@@ -679,7 +679,7 @@ class Camera extends RingPolledDevice {
                 '-map', '0:v',
                 '-map', '0:a',
                 '-map', '0:a',
-                '-c:v', 'copy',
+                '-c:v', 'libx264',
                 '-c:a:0', 'copy',
                 '-c:a:1', 'libopus',
                 '-f', 'rtsp',
