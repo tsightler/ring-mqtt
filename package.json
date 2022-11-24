@@ -14,7 +14,7 @@
     "minimist": "^1.2.6",
     "mqtt": "4.3.7",
     "aedes": "0.48.0",
-    "ring-client-api": "^11.3.0"
+    "ring-client-api": "^11.6.0"
   },
   "devDependencies": {
     "eslint": "^7.19.0"
