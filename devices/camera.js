@@ -674,7 +674,7 @@ class Camera extends RingPolledDevice {
             this.data.stream.event.session = spawn(pathToFfmpeg, [
                 '-report',
                 '-re',
-                '-rtbufsize', '0',
+                '-rtbufsize', '256K',
                 '-i', this.data.stream.event.recordingUrl,
                 '-map', '0:v',
                 '-map', '0:a',
