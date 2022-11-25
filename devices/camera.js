@@ -676,6 +676,7 @@ class Camera extends RingPolledDevice {
                 '-re',
                 '-rtbufsize', '15M',
                 '-i', this.data.stream.event.recordingUrl,
+                '-filter_complex', 'tpad=start_duration=10',
                 '-map', '0:v',
                 '-map', '0:a',
                 '-map', '0:a',
