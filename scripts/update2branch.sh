@@ -21,7 +21,7 @@ else
     # Branch has already been initialized, run any post-update command here
     echo "The ring-mqtt-${BRANCH} branch has been updated."
     cd "/app/ring-mqtt-${BRANCH}"
-    RSS_VERSION="v0.20.2"
+    RSS_VERSION="v0.21.0"
     APK_ARCH="$(apk --print-arch)"
     case "${APK_ARCH}" in
         x86_64)
