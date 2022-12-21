@@ -6,13 +6,15 @@ body:
   - type: markdown
     attributes:
       value: |
-        Before opening an issue, please search for all open and closed Github issues as well
-        as any relevant discussion topics that may match your situation.
+        Before opening an issue, please search for all open and closed Github issues as well as any
+        relevant discussion topics that may match your situation.
         
-        Do not open bugs for simple howto usage questions or basic operational issuea. Such
-        issues should be directed to the [discussion groups](https://github.com/tsightler/ring-mqtt/discussions) instead.
+        Please **DO NOT** open bugs for simple howto usage questions or basic operational issues such
+        as "I can't get the live stream to work". Such issues should be directed to the [discussion groups](https://github.com/tsightler/ring-mqtt/discussions) 
+        instead.
         
-        Please complete the fields below completely or your issue may be closed immediately.
+        Please include the information requested in the fields below completely or the issue will
+        likely be closed immediately.
         
         **Important note regarding camera support**    
         The ring-mqtt project does not turn Ring cameras into 24x7 CCTV cameras capable of continous
