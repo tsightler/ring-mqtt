@@ -50,7 +50,6 @@ else
             exit 1;;
     esac
     rm -f /usr/local/bin/go2rtc
-    https://github.com/AlexxIT/go2rtc/releases/download/v0.1-rc.5/go2rtc_linux_arm
     curl -L -s -o /usr/local/bin/go2rtc "https://github.com/AlexxIT/go2rtc/releases/download/${GO2RTC_VERSION}/go2rtc_linux_${GO2RTC_ARCH}"
     chmod +x /usr/local/bin/go2rtc
 
