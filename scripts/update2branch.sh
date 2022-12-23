@@ -34,6 +34,25 @@ else
             echo >&2 "ERROR: Unsupported architecture '$APK_ARCH'"
             exit 1;;
     esac
-    rm /usr/local/bin/rtsp-simple-server
+    rm -f /usr/local/bin/rtsp-simple-server
     curl -L -s "https://github.com/aler9/rtsp-simple-server/releases/download/${RSS_VERSION}/rtsp-simple-server_${RSS_VERSION}_linux_${RSS_ARCH}.tar.gz" | tar zxf - -C /usr/local/bin rtsp-simple-server
+    
+    GO2RTC_VERSION="v0.1-rc.5"
+    case "${APK_ARCH}" in
+        x86_64)
+            GO2RTC_ARCH="amd64";;
+        aarch64)
+            GO2RTC_ARCH="arm64";;
+        armv7|armhf)
+            GO2RTC_ARCH="arm";;
+        *)
+            echo >&2 "ERROR: Unsupported architecture '$APK_ARCH'"
+            exit 1;;
+    esac
+    rm -f /usr/local/bin/go2rtc
+    https://github.com/AlexxIT/go2rtc/releases/download/v0.1-rc.5/go2rtc_linux_arm
+    curl -L -s -o /usr/local/bin/go2rtc "https://github.com/AlexxIT/go2rtc/releases/download/${GO2RTC_VERSION}/go2rtc_linux_${GO2RTC_ARCH}"
+    chmod +x /usr/local/bin/go2rtc
+
+
 fi

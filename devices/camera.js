@@ -2,7 +2,6 @@ const RingPolledDevice = require('./base-polled-device')
 const utils = require( '../lib/utils' )
 const pathToFfmpeg = require('ffmpeg-for-homebridge')
 const { spawn } = require('child_process')
-const rss = require('../lib/rtsp-simple-server')
 
 class Camera extends RingPolledDevice {
     constructor(deviceInfo) {
@@ -50,10 +49,7 @@ class Camera extends RingPolledDevice {
                     state: 'OFF',
                     status: 'inactive',
                     session: false,
-                    publishedStatus: '',
-                    rtspPublishUrl: (utils.config.livestream_user && utils.config.livestream_pass)
-                        ? `rtsp://${utils.config.livestream_user}:${utils.config.livestream_pass}@localhost:8554/${this.deviceId}_live`
-                        : `rtsp://localhost:8554/${this.deviceId}_live`,
+                    publishedStatus: ''
                 },
                 event: {
                     state: 'OFF',
@@ -63,10 +59,7 @@ class Camera extends RingPolledDevice {
                     dingId: null,
                     recordingUrl: null,
                     recordingUrlExpire: null,
-                    pollCycle: 0,
-                    rtspPublishUrl: (utils.config.livestream_user && utils.config.livestream_pass)
-                        ? `rtsp://${utils.config.livestream_user}:${utils.config.livestream_pass}@localhost:8554/${this.deviceId}_event`
-                        : `rtsp://localhost:8554/${this.deviceId}_event`
+                    pollCycle: 0
                 },
                 keepalive:{ 
                     active: false, 
@@ -617,13 +610,13 @@ class Camera extends RingPolledDevice {
         }
     }
 
-    async startLiveStream() {
+    async startLiveStream(rtspPublishUrl) {
         this.data.stream.live.session = true
         const streamData = {
             deviceId: this.deviceId,
             deviceName: this.device.name,
             doorbotId: this.device.id,
-            rtspPublishUrl: this.data.stream.live.rtspPublishUrl,
+            rtspPublishUrl,
             sessionId: false,
             authToken: false
         }
@@ -661,7 +654,7 @@ class Camera extends RingPolledDevice {
         }
     }
 
-    async startEventStream() {
+    async startEventStream(rtspPublishUrl) {
         if (await this.updateEventStreamUrl()) {
             this.publishEventSelectState()
         }
@@ -672,7 +665,6 @@ class Camera extends RingPolledDevice {
 
         try {
             this.data.stream.event.session = spawn(pathToFfmpeg, [
-                '-report',
                 '-re',
                 '-i', this.data.stream.event.recordingUrl,
                 '-map', '0:v',
@@ -683,7 +675,7 @@ class Camera extends RingPolledDevice {
                 '-c:a:1', 'libopus',
                 '-rtsp_transport', 'tcp',
                 '-f', 'rtsp',
-                this.data.stream.event.rtspPublishUrl
+                rtspPublishUrl
             ])
 
             this.data.stream.event.session.on('spawn', async () => {
@@ -712,6 +704,10 @@ class Camera extends RingPolledDevice {
         this.data.stream.keepalive.active = true
         let ffmpegProcess
         let killSignal = 'SIGTERM'
+
+        const rtspPublishUrl = (utils.config.livestream_user && utils.config.livestream_pass)
+            ? `rtsp://${utils.config.livestream_user}:${utils.config.livestream_pass}@localhost:8554/${this.deviceId}_live`
+            : `rtsp://localhost:8554/${this.deviceId}_live`
         
         // Start stream with MJPEG output directed to P2J server with one frame every 2 seconds 
         this.debug(`Starting a keepalive stream for camera`)
@@ -721,7 +717,7 @@ class Camera extends RingPolledDevice {
         // trigger rtsp-simple-server to start the on-demand stream and 
         // keep it running when there are no other RTSP readers.
         ffmpegProcess = spawn(pathToFfmpeg, [
-            '-i', this.data.stream.live.rtspPublishUrl,
+            '-i', rtspPublishUrl,
             '-map', '0:a:0',
             '-c:a', 'copy',
             '-f', 'null',
@@ -743,6 +739,7 @@ class Camera extends RingPolledDevice {
 
         while (Math.floor(Date.now()/1000) < this.data.stream.keepalive.expires) {
             await utils.sleep(5)
+            /*
             const pathDetails = await rss.getPathDetails(`${this.deviceId}_live`)
             if (pathDetails.hasOwnProperty('sourceReady') && !pathDetails.sourceReady) {
                 // If the source stream stops (due to manual cancel or Ring timeout)
@@ -752,6 +749,7 @@ class Camera extends RingPolledDevice {
                     // For some reason the keepalive stream never times out so kill the process hard
                 killSignal = 'SIGKILL'
             }
+            */
         }
 
         ffmpegProcess.kill(killSignal)
@@ -930,64 +928,66 @@ class Camera extends RingPolledDevice {
     setLiveStreamState(message) {
         const command = message.toLowerCase()
         this.debug(`Received set live stream state ${message}`)
-        switch (command) {
-            case 'on':
-                // Stream was manually started, create a dummy, audio only
-                // RTSP source stream to trigger stream startup and keep it active
-                this.startKeepaliveStream()
-                break;
-            case 'on-demand':
-                if (this.data.stream.live.status === 'active' || this.data.stream.live.status === 'activating') {
-                    this.publishStreamState()
-                } else {
-                    this.data.stream.live.status = 'activating'
-                    this.publishStreamState()
-                    this.startLiveStream()
-                }
-                break;
-            case 'off':
-                if (this.data.stream.live.session) {
-                    const streamData = {
-                        deviceId: this.deviceId,
-                        deviceName: this.device.name
+        if (command.startsWith('on-demand')) {
+            if (this.data.stream.live.status === 'active' || this.data.stream.live.status === 'activating') {
+                this.publishStreamState()
+            } else {
+                this.data.stream.live.status = 'activating'
+                this.publishStreamState()
+                this.startLiveStream(message.split('\\')[1]) // Portion after backslash is RTSP publish URL
+            }
+        } else {
+            switch (command) {
+                case 'on':
+                    // Stream was manually started, create a dummy, audio only
+                    // RTSP source stream to trigger stream startup and keep it active
+                    this.startKeepaliveStream()
+                    break;
+                case 'off':
+                    if (this.data.stream.live.session) {
+                        const streamData = {
+                            deviceId: this.deviceId,
+                            deviceName: this.device.name
+                        }
+                        utils.event.emit('stop_livestream', streamData)
+                    } else {
+                        this.data.stream.live.status = 'inactive'
+                        this.publishStreamState()
                     }
-                    utils.event.emit('stop_livestream', streamData)
-                } else {
-                    this.data.stream.live.status = 'inactive'
-                    this.publishStreamState()
-                }
-                break;
-            default:
-                this.debug(`Received unknown command for live stream`)
+                    break;
+                default:
+                    this.debug(`Received unknown command for live stream`)
+            }
         }
     }
 
     setEventStreamState(message) {
         const command = message.toLowerCase()
         this.debug(`Received set event stream state ${message}`)
-        switch (command) {
-            case 'on':
-                this.debug(`Event stream can only be started on-demand!`)
-                break;
-            case 'on-demand':
-                if (this.data.stream.event.status === 'active' || this.data.stream.event.status === 'activating') {
-                    this.publishStreamState()
-                } else {
-                    this.data.stream.event.status = 'activating'
-                    this.publishStreamState()
-                    this.startEventStream()
-                }
-                break;
-            case 'off':
-                if (this.data.stream.event.session) {
-                    this.data.stream.event.session.kill()
-                } else {
-                    this.data.stream.event.status = 'inactive'
-                    this.publishStreamState()
-                }
-                break;
-            default:
-                this.debug(`Received unknown command for event stream`)
+        if (command.startsWith('on-demand')) {
+            if (this.data.stream.event.status === 'active' || this.data.stream.event.status === 'activating') {
+                this.publishStreamState()
+            } else {
+                this.data.stream.event.status = 'activating'
+                this.publishStreamState()
+                this.startEventStream(message.split('\\')[1]) // Portion after backslash is RTSP publish URL
+            }
+        } else {
+            switch (command) {
+                case 'on':
+                    this.debug(`Event stream can only be started on-demand!`)
+                    break;
+                case 'off':
+                    if (this.data.stream.event.session) {
+                        this.data.stream.event.session.kill()
+                    } else {
+                        this.data.stream.event.status = 'inactive'
+                        this.publishStreamState()
+                    }
+                    break;
+                default:
+                    this.debug(`Received unknown command for event stream`)
+            }
         }
     }
 

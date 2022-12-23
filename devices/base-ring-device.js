@@ -163,7 +163,11 @@ class RingDevice {
                     if (topic.match('command_topic')) {
                         utils.event.emit('mqtt_subscribe', discoveryMessage[topic])
                         utils.event.on(discoveryMessage[topic], (command, message) => {
-                            this.processCommand(command, message)
+                            if (message) {
+                                this.processCommand(command, message)
+                            } else {
+                                this.debug(`Received invalid or null value to command topic ${command}`)
+                            }
                         })
                         
                         // For camera stream entities subscribe to IPC broker

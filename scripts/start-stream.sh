@@ -5,16 +5,24 @@
 # Uses ring-mqtt internal IPC broker for communications with main process 
 # Provides status updates and termintates stream on script exit
 
+echo -e "Start stream script was called!!!"
+
 # Required command line arguments
 client_name=${1}   # Friendly name of camera (used for logging)
 device_id=${2}     # Camera device Id
 type=${3}          # Stream type ("live" or "event")
 base_topic=${4}    # Command topic for Camera entity
+rtsp_pub_url=${5}  # URL for publishing RTSP stream
 client_id="${device_id}_${type}"  # Id used to connect to the MQTT broker, camera Id + event type
 activated="false"
 
-json_attribute_topic="${base_topic}stream/attributes"
-command_topic="${base_topic}stream/command"
+if [ ${type} = "live" ]; then
+    json_attribute_topic="${base_topic}/stream/attributes"
+    command_topic="${base_topic}/stream/command"
+else
+    json_attribute_topic="${base_topic}/event_stream/attributes"
+    command_topic="${base_topic}/event_stream/command"
+fi
 
 # Set some colors for debug output
 red='\033[0;31m'
@@ -52,7 +60,7 @@ do
     # If start message received, publish the command to start stream
     if [ ${message} = "START" ]; then
         echo -e "${green}[${client_name}]${reset} Sending command to activate ${type} stream ON-DEMAND"
-        mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${command_topic}" -m "ON-DEMAND"
+        mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${command_topic}" -m "ON-DEMAND\\${rtsp_pub_url}"
     else
         # Otherwise it should be a JSON message from the stream state attribute topic so extract the detailed stream state
         stream_state=`echo ${message} | jq -r '.status'`
