@@ -172,7 +172,9 @@ class RingDevice {
                         
                         // For camera stream entities subscribe to IPC broker
                         if (entityKey === 'stream' || entityKey === 'event_stream') {
-                            utils.event.emit('mqtt_ipc_subscribe', discoveryMessage[topic])                            
+                            utils.event.emit('mqtt_ipc_subscribe', discoveryMessage[topic])
+                            const streamDebugTopic = discoveryMessage[topic].split('/').slice(0,-1).push('debug').join('/')
+                            utils.event.emit('mqtt_ipc_subscribe', streamDebugTopic)
                         }
                     }
                 })
