@@ -179,7 +179,7 @@ class RingDevice {
                             utils.event.on(streamDebugTopic, (command, message) => {
                                 if (message) {
                                     this.debug(`${message}`, 'rtsp')
-                                    this.debug('\u001b[33mState indicates live stream has gone inactive\u001b[0m', rtsp)
+                                    this.debug('\u001b[33mState indicates live stream has gone inactive\u001b[0m', 'rtsp')
                                     this.debug('\u001b[33mState indicates live stream has gone inactive\u001b[0m')
                                 } else {
                                     this.debug(`Received invalid or null value to debug topic ${command}`)
