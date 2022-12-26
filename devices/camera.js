@@ -807,6 +807,9 @@ class Camera extends RingPolledDevice {
             return
         }
 
+        console.log('GOT HERE!!')
+        console.log(command)
+
         switch (command) {
             case 'light/command':
                 this.setLightState(message)
