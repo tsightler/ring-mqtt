@@ -72,7 +72,8 @@ do
                 fi
                 ;;
             inactive)
-                mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${debug_topic}" -m "${yellow}State indicates ${type} stream has gone inactive${reset}"
+                #mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${debug_topic}" -m "${yellow}State indicates ${type} stream has gone inactive${reset}"
+                echo "${yellow}State indicates ${type} stream has gone inactive${reset}" | mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${debug_topic}" =s
                 reason='inactive'
                 cleanup
                 ;;

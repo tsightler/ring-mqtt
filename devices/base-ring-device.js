@@ -178,10 +178,9 @@ class RingDevice {
                             utils.event.emit('mqtt_ipc_subscribe', streamDebugTopic)
                             utils.event.on(streamDebugTopic, (command, message) => {
                                 if (message) {
-                                    const thisMessage = message
-                                    const message2 = '\u001b[33mState indicates live stream has gone inactive\u001b[0m'
+                                    const message2 = JSON.parse(JSON.stringify(message))
                                     console.log(thisMessage.length, message2.length)
-                                    this.debug(thisMessage, 'rtsp')
+                                    this.debug(message, 'rtsp')
                                     this.debug(message2, 'rtsp')
                                 } else {
                                     this.debug(`Received invalid or null value to debug topic ${command}`)
