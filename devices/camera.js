@@ -801,14 +801,14 @@ class Camera extends RingPolledDevice {
 
     // Process messages from MQTT command topic
     processCommand(command, message) {
+        console.log('GOT HERE!!')
+        console.log(command)
+        
         const entityKey = command.split('/')[0]
         if (!this.entity.hasOwnProperty(entityKey)) {
             this.debug(`Received message to unknown command topic: ${command}`)
             return
         }
-
-        console.log('GOT HERE!!')
-        console.log(command)
 
         switch (command) {
             case 'light/command':
