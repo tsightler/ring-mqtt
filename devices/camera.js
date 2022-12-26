@@ -826,8 +826,14 @@ class Camera extends RingPolledDevice {
             case 'stream/command':
                 this.setLiveStreamState(message)
                 break;
+            case 'stream/debug':
+                this.debug(message)
+                break;
             case 'event_stream/command':
                 this.setEventStreamState(message)
+                break;
+            case 'event_stream/debug':
+                this.debug(message)
                 break;
             case 'event_select/command':
                 this.setEventSelect(message)
@@ -934,7 +940,7 @@ class Camera extends RingPolledDevice {
             } else {
                 this.data.stream.live.status = 'activating'
                 this.publishStreamState()
-                this.startLiveStream(message.split('\\')[1]) // Portion after backslash is RTSP publish URL
+                this.startLiveStream(message.split(' ')[1]) // Portion after backslash is RTSP publish URL
             }
         } else {
             switch (command) {
@@ -970,7 +976,7 @@ class Camera extends RingPolledDevice {
             } else {
                 this.data.stream.event.status = 'activating'
                 this.publishStreamState()
-                this.startEventStream(message.split('\\')[1]) // Portion after backslash is RTSP publish URL
+                this.startEventStream(message.split(' ')[1]) // Portion after backslash is RTSP publish URL
             }
         } else {
             switch (command) {
