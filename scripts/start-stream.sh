@@ -20,11 +20,11 @@ command_topic="${base_topic}/command"
 debug_topic="${base_topic}/debug"
 
 # Set some colors for debug output
-red='\u001b[31;1m'
-yellow='\u001b[33;1m'
-green='\u001b[32;1m'
-blue='\u001b[34;1m'
-reset='\u001b[0m'
+red='\x1b[31m'
+yellow='\x1b[33m'
+green='\x1b[32'
+blue='\x1b[34'
+reset='\x1b[0m'
 
 cleanup() {
     if [ -z ${reason} ]; then
