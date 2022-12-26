@@ -20,11 +20,11 @@ command_topic="${base_topic}/command"
 debug_topic="${base_topic}/debug"
 
 # Set some colors for debug output
-red='\033[0;31m'
-yellow='\033[0;33m'
-green='\033[0;32m'
-blue='\033[0;34m'
-reset='\033[0m'
+red='\e[0;31m'
+yellow='\e[0;33m'
+green='\e[0;32m'
+blue='\e[0;34m'
+reset='\e[0m'
 
 cleanup() {
     if [ -z ${reason} ]; then
@@ -67,7 +67,7 @@ do
                 ;;
             active)
                 if [ ${activated} = "false" ]; then
-                    mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${debug_topic}" -m "State indicates ${type} stream is active"
+                    mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${debug_topic}" -m "${yellow}State indicates ${type} stream is active${reset}"
                     activated="true"
                 fi
                 ;;
