@@ -178,6 +178,7 @@ class RingDevice {
                             utils.event.emit('mqtt_ipc_subscribe', streamDebugTopic)
                             utils.event.on(streamDebugTopic, (command, message) => {
                                 if (message) {
+                                    console.log(message)
                                     this.debug(message, 'rtsp')
                                 } else {
                                     this.debug(`Received invalid or null value to debug topic ${command}`)
