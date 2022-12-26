@@ -179,7 +179,7 @@ class RingDevice {
                             utils.event.on(streamDebugTopic, (command, message) => {
                                 if (message) {
                                     const message2 = JSON.parse(JSON.stringify(message))
-                                    console.log(thisMessage.length, message2.length)
+                                    console.log(message.length, message2.length)
                                     this.debug(message, 'rtsp')
                                     this.debug(message2, 'rtsp')
                                 } else {
