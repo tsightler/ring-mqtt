@@ -54,7 +54,7 @@ while read -u 10 message
 do
     # If start message received, publish the command to start stream
     if [ ${message} = "START" ]; then
-        mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${debug_topic}" -m "Sending command to activate ${type} stream ON-DEMAND"
+        mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${debug_topic}" -m $(echo -n "Sending command to activate ${type} stream ON-DEMAND" | base64 --encode)
         mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${command_topic}" -m "ON-DEMAND ${rtsp_pub_url}"
     else
         # Otherwise it should be a JSON message from the stream state attribute topic so extract the detailed stream state
@@ -62,17 +62,17 @@ do
         case ${stream_state,,} in
             activating)
                 if [ ${activated} = "false" ]; then
-                    mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${debug_topic}" -m "State indicates ${type} stream is activating"
+                    mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${debug_topic}" -m $(echo -n "State indicates ${type} stream is activating" | base64 --encode`)
                 fi
                 ;;
             active)
                 if [ ${activated} = "false" ]; then
-                    mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${debug_topic}" -m "State indicates ${type} stream is active"
+                    mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${debug_topic}" -m $(echo -n "State indicates ${type} stream is active" | base64 --encode)
                     activated="true"
                 fi
                 ;;
             inactive)
-                mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${debug_topic}" -m "${yellow}State indicates ${type} stream has gone inactive${reset}"
+                mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${debug_topic}" -m $(echo -n "${yellow}State indicates ${type} stream has gone inactive${reset}" | base64 --encode)
                 reason='inactive'
                 cleanup
                 ;;
