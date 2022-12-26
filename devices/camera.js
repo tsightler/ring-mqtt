@@ -827,6 +827,7 @@ class Camera extends RingPolledDevice {
                 this.setLiveStreamState(message)
                 break;
             case 'stream/debug':
+                console.log(message)
                 this.debug(message)
                 break;
             case 'event_stream/command':
