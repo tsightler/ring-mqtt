@@ -5,8 +5,6 @@
 # Uses ring-mqtt internal IPC broker for communications with main process 
 # Provides status updates and termintates stream on script exit
 
-echo -e "Start stream script was called!!!"
-
 # Required command line arguments
 client_name=${1}   # Friendly name of camera (used for logging)
 device_id=${2}     # Camera device Id
@@ -34,7 +32,7 @@ reset='\033[0m'
 cleanup() {
     if [ -z ${reason} ]; then
         # If no reason defined, that means we were interrupted by a signal, send the command to stop the live stream
-        echo -e "${green}[${client_name}]${reset} Deactivating ${type} stream due to signal from RTSP server (no more active clients or publisher ended stream)"
+        mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/debug/log" -m "${green}[${client_name}]${reset} Deactivating ${type} stream due to signal from RTSP server (no more active clients or publisher ended stream)"
         mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${command_topic}" -m "OFF"
     fi
     # Kill the spawed mosquitto_sub process or it will stay listening forever
@@ -59,7 +57,7 @@ while read -u 10 message
 do
     # If start message received, publish the command to start stream
     if [ ${message} = "START" ]; then
-        echo -e "${green}[${client_name}]${reset} Sending command to activate ${type} stream ON-DEMAND"
+        mosquitto_pub -i "${client_id}_pub" "${green}[${client_name}]${reset} Sending command to activate ${type} stream ON-DEMAND"
         mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${command_topic}" -m "ON-DEMAND\\${rtsp_pub_url}"
     else
         # Otherwise it should be a JSON message from the stream state attribute topic so extract the detailed stream state
@@ -67,27 +65,27 @@ do
         case ${stream_state,,} in
             activating)
                 if [ ${activated} = "false" ]; then
-                    echo -e "${green}[${client_name}]${reset} State indicates ${type} stream is activating"
+                    mosquitto_pub -i "${client_id}_pub" "${green}[${client_name}]${reset} State indicates ${type} stream is activating"
                 fi
                 ;;
             active)
                 if [ ${activated} = "false" ]; then
-                    echo -e "${green}[${client_name}]${reset} State indicates ${type} stream is active"
+                    mosquitto_pub -i "${client_id}_pub" "${green}[${client_name}]${reset} State indicates ${type} stream is active"
                     activated="true"
                 fi
                 ;;
             inactive)
-                echo -e "${green}[${client_name}]${yellow} State indicates ${type} stream has gone inactive${reset}"
+                mosquitto_pub -i "${client_id}_pub" "${green}[${client_name}]${yellow} State indicates ${type} stream has gone inactive${reset}"
                 reason='inactive'
                 cleanup
                 ;;
             failed)
-                echo -e "${green}[${client_name}]${red} ERROR - State indicates ${type} stream failed to activate${reset}"
+                mosquitto_pub -i "${client_id}_pub" "${green}[${client_name}]${red} ERROR - State indicates ${type} stream failed to activate${reset}"
                 reason='failed'
                 cleanup
                 ;;
             *)
-                echo -e "${green}[${client_name}]${red} ERROR - Received unknown ${type} stream state on topic ${blue}${json_attribute_topic}${reset}"
+                mosquitto_pub -i "${client_id}_pub" "${green}[${client_name}]${red} ERROR - Received unknown ${type} stream state on topic ${blue}${json_attribute_topic}${reset}"
                 ;;
         esac
     fi
