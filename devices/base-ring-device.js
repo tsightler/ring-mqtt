@@ -174,7 +174,15 @@ class RingDevice {
                         if (entityKey === 'stream' || entityKey === 'event_stream') {
                             utils.event.emit('mqtt_ipc_subscribe', discoveryMessage[topic])
                             // Also subscribe to debug topic used to logged messages from start-stream script
-                            utils.event.emit('mqtt_ipc_subscribe', discoveryMessage[topic].split('/').slice(0,-1).join('/')+'/debug')
+                            const streamDebugTopic = discoveryMessage[topic].split('/').slice(0,-1).join('/')+'/debug'
+                            utils.event.emit('mqtt_ipc_subscribe', streamDebugTopic)
+                            utils.event.on(streamDebugTopic, (command, message) => {
+                                if (message) {
+                                    this.debug(message)
+                                } else {
+                                    this.debug(`Received invalid or null value to debug topic ${command}`)
+                                }
+                            })
                         }
                     }
                 })

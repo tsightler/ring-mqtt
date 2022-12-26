@@ -803,7 +803,7 @@ class Camera extends RingPolledDevice {
     processCommand(command, message) {
         console.log('GOT HERE!!')
         console.log(command)
-        
+
         const entityKey = command.split('/')[0]
         if (!this.entity.hasOwnProperty(entityKey)) {
             this.debug(`Received message to unknown command topic: ${command}`)
@@ -829,15 +829,8 @@ class Camera extends RingPolledDevice {
             case 'stream/command':
                 this.setLiveStreamState(message)
                 break;
-            case 'stream/debug':
-                console.log(message)
-                this.debug(message)
-                break;
             case 'event_stream/command':
                 this.setEventStreamState(message)
-                break;
-            case 'event_stream/debug':
-                this.debug(message)
                 break;
             case 'event_select/command':
                 this.setEventSelect(message)
