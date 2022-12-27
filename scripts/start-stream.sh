@@ -76,7 +76,7 @@ do
                 fi
                 ;;
             inactive)
-                debug_log $(echo -en "${yellow}State indicates ${type} stream has gone inactive${reset}")
+                debug_log ""$(echo -en "${yellow}State indicates ${type} stream has gone inactive${reset}")""
                 reason='inactive'
                 cleanup
                 ;;
