@@ -78,20 +78,20 @@ do
                 fi
                 ;;
             inactive)
-                message=$(echo -en "${yellow}State indicates ${type} stream has gone inactive${reset}")
-                logger message
+                logmsg=$(echo -en "${yellow}State indicates ${type} stream has gone inactive${reset}")
+                logger "${logmsg}"
                 reason='inactive'
                 cleanup
                 ;;
             failed)
-                message=$(echo -en "${red} ERROR - State indicates ${type} stream failed to activate${reset}")
-                logger message
+                logmsg=$(echo -en "${red} ERROR - State indicates ${type} stream failed to activate${reset}")
+                logger "${logmsg}"
                 reason='failed'
                 cleanup
                 ;;
             *)
-                debug_message=$(echo -en "${red}ERROR - Received unknown ${type} stream state on topic ${blue}${json_attribute_topic}${reset}")
-                logger message
+                logmsg=$(echo -en "${red}ERROR - Received unknown ${type} stream state on topic ${blue}${json_attribute_topic}${reset}")
+                logger "${logmsg}"
                 ;;
         esac
     fi
