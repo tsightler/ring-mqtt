@@ -77,14 +77,12 @@ do
                 cleanup
                 ;;
             failed)
-                debug_message=$(echo -en "${yellow}State indicates ${type} stream has gone inactive${reset}")
-                mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${debug_topic}" -m "${debug_message}"
+                echo -en "${red} ERROR - State indicates ${type} stream failed to activate${reset}" | mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${debug_topic}" -s
                 reason='failed'
                 cleanup
                 ;;
             *)
-                debug_message=$(echo -en "${red}ERROR - Received unknown ${type} stream state on topic ${blue}${json_attribute_topic}${reset}")
-                mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${debug_topic}" -m "${debug_message}"
+                echo -en "${red}ERROR - Received unknown ${type} stream state on topic ${blue}${json_attribute_topic}${reset}" | mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${debug_topic}" -s
                 ;;
         esac
     fi
