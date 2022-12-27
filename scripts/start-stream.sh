@@ -20,11 +20,11 @@ command_topic="${base_topic}/command"
 debug_topic="${base_topic}/debug"
 
 # Set some colors for debug output
-red='\033[0;31m'
-yellow='\033[0;33m'
-green='\033[0;32m'
-blue='\033[0;34m'
-reset='\033[0m'
+red='\e[0;31m'
+yellow='\e[0;33m'
+green='\e[0;32m'
+blue='\e[0;34m'
+reset='\e[0m'
 
 cleanup() {
     if [ -z ${reason} ]; then
@@ -54,7 +54,8 @@ while read -u 10 message
 do
     # If start message received, publish the command to start stream
     if [ ${message} = "START" ]; then
-        mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${debug_topic}" -m "Sending command to activate ${type} stream ON-DEMAND"
+        debug_message = $(echo -en "Sending command to activate ${type} stream ON-DEMAND")
+        mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${debug_topic}" -m debug_message
         mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${command_topic}" -m "ON-DEMAND ${rtsp_pub_url}"
     else
         # Otherwise it should be a JSON message from the stream state attribute topic so extract the detailed stream state
