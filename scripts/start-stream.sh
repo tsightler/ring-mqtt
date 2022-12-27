@@ -37,7 +37,9 @@ cleanup() {
     exit 0
 }
 
-debug_log() {
+# go2rtc does not pass stdout through from child processes so send debug loggins
+# via main process using MQTT messages
+logger() {
     mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${debug_topic}" -m "${1}"
 }
 
@@ -58,7 +60,7 @@ while read -u 10 message
 do
     # If start message received, publish the command to start stream
     if [ ${message} = "START" ]; then
-        debug_log "Sending command to activate ${type} stream ON-DEMAND"
+        logger "Sending command to activate ${type} stream ON-DEMAND"
         mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${command_topic}" -m "ON-DEMAND ${rtsp_pub_url}"
     else
         # Otherwise it should be a JSON message from the stream state attribute topic so extract the detailed stream state
@@ -66,27 +68,30 @@ do
         case ${stream_state,,} in
             activating)
                 if [ ${activated} = "false" ]; then
-                    debug_log "State indicates ${type} stream is activating"
+                    logger "State indicates ${type} stream is activating"
                 fi
                 ;;
             active)
                 if [ ${activated} = "false" ]; then
-                    debug_log "State indicates ${type} stream is active"
+                    logger "State indicates ${type} stream is active"
                     activated="true"
                 fi
                 ;;
             inactive)
-                debug_log \"$(echo -en "${yellow}State indicates ${type} stream has gone inactive${reset}")\"
+                message=$(echo -en "${yellow}State indicates ${type} stream has gone inactive${reset}")
+                logger message
                 reason='inactive'
                 cleanup
                 ;;
             failed)
-                echo -en "${red} ERROR - State indicates ${type} stream failed to activate${reset}" | mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${debug_topic}" -s
+                message=$(echo -en "${red} ERROR - State indicates ${type} stream failed to activate${reset}")
+                logger message
                 reason='failed'
                 cleanup
                 ;;
             *)
-                echo -en "${red}ERROR - Received unknown ${type} stream state on topic ${blue}${json_attribute_topic}${reset}" | mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${debug_topic}" -s
+                debug_message=$(echo -en "${red}ERROR - Received unknown ${type} stream state on topic ${blue}${json_attribute_topic}${reset}")
+                logger message
                 ;;
         esac
     fi
