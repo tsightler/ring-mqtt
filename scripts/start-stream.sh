@@ -62,12 +62,12 @@ do
         case ${stream_state,,} in
             activating)
                 if [ ${activated} = "false" ]; then
-                    mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${debug_topic}" -m $(echo -en "State indicates ${type} stream is activating")
+                    mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${debug_topic}" -m '$(echo -en "State indicates ${type} stream is activating")'
                 fi
                 ;;
             active)
                 if [ ${activated} = "false" ]; then
-                    mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${debug_topic}" -m $(echo -en "State indicates ${type} stream is active")
+                    mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${debug_topic}" -m '$(echo -en "State indicates ${type} stream is active")'
                     activated="true"
                 fi
                 ;;
