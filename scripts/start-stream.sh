@@ -37,6 +37,10 @@ cleanup() {
     exit 0
 }
 
+debug_log() {
+    mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${debug_topic}" -m "$(1)"
+}
+
 # Trap signals so that the MQTT command to stop the stream can be published on exit
 trap cleanup INT TERM QUIT
 
@@ -54,7 +58,7 @@ while read -u 10 message
 do
     # If start message received, publish the command to start stream
     if [ ${message} = "START" ]; then
-        mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${debug_topic}" -m "Sending command to activate ${type} stream ON-DEMAND"
+        debug_log "Sending command to activate ${type} stream ON-DEMAND"
         mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${command_topic}" -m "ON-DEMAND ${rtsp_pub_url}"
     else
         # Otherwise it should be a JSON message from the stream state attribute topic so extract the detailed stream state
@@ -62,17 +66,17 @@ do
         case ${stream_state,,} in
             activating)
                 if [ ${activated} = "false" ]; then
-                    mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${debug_topic}" -m "State indicates ${type} stream is activating"
+                    debug_log "State indicates ${type} stream is activating"
                 fi
                 ;;
             active)
                 if [ ${activated} = "false" ]; then
-                    mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${debug_topic}" -m "State indicates ${type} stream is active"
+                    debug_log "State indicates ${type} stream is active"
                     activated="true"
                 fi
                 ;;
             inactive)
-                echo -en "${yellow}State indicates ${type} stream has gone inactive${reset}" | mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${debug_topic}" -s
+                debug_log $(echo -en"${yellow}State indicates ${type} stream has gone inactive${reset}")
                 reason='inactive'
                 cleanup
                 ;;
