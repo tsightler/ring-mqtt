@@ -72,17 +72,17 @@ do
                 fi
                 ;;
             inactive)
-                mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${debug_topic}" -m $(echo -n "${yellow}State indicates ${type} stream has gone inactive${reset}" | base64 --encode)
+                mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${debug_topic}" -m $(echo -n "${yellow}State indicates ${type} stream has gone inactive${reset}" | base64)
                 reason='inactive'
                 cleanup
                 ;;
             failed)
-                mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${debug_topic}" -m "${red}ERROR - State indicates ${type} stream failed to activate${reset}"
+                mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${debug_topic}" -m $(echo -n "${red}ERROR - State indicates ${type} stream failed to activate${reset}" | base64)
                 reason='failed'
                 cleanup
                 ;;
             *)
-                mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${debug_topic}" -m "${red}ERROR - Received unknown ${type} stream state on topic ${blue}${json_attribute_topic}${reset}"
+                mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${debug_topic}" -m $(echo -n "${red}ERROR - Received unknown ${type} stream state on topic ${blue}${json_attribute_topic}${reset}" | base64)
                 ;;
         esac
     fi
