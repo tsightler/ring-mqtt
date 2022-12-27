@@ -20,11 +20,11 @@ command_topic="${base_topic}/command"
 debug_topic="${base_topic}/debug"
 
 # Set some colors for debug output
-red='\e[0;31m'
-yellow='\e[0;33m'
-green='\e[0;32m'
-blue='\e[0;34m'
-reset='\e[0m'
+red='\033[0;31m'
+yellow='\033[0;33m'
+green='\033[0;32m'
+blue='\033[0;34m'
+reset='\033[0m'
 
 cleanup() {
     if [ -z ${reason} ]; then
@@ -54,7 +54,7 @@ while read -u 10 message
 do
     # If start message received, publish the command to start stream
     if [ ${message} = "START" ]; then
-        mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${debug_topic}" -m $(echo -en "Sending command to activate ${type} stream ON-DEMAND")
+        mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${debug_topic}" -m "Sending command to activate ${type} stream ON-DEMAND"
         mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${command_topic}" -m "ON-DEMAND ${rtsp_pub_url}"
     else
         # Otherwise it should be a JSON message from the stream state attribute topic so extract the detailed stream state
@@ -62,27 +62,27 @@ do
         case ${stream_state,,} in
             activating)
                 if [ ${activated} = "false" ]; then
-                    mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${debug_topic}" -m '$(echo -en "State indicates ${type} stream is activating")'
+                    mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${debug_topic}" -m "State indicates ${type} stream is activating"
                 fi
                 ;;
             active)
                 if [ ${activated} = "false" ]; then
-                    mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${debug_topic}" -m '$(echo -en "State indicates ${type} stream is active")'
+                    mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${debug_topic}" -m "State indicates ${type} stream is active"
                     activated="true"
                 fi
                 ;;
             inactive)
-                mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${debug_topic}" -m $(echo -en "${yellow}State indicates ${type} stream has gone inactive${reset}")
+                mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${debug_topic}" -m "${yellow}State indicates ${type} stream has gone inactive${reset}"
                 reason='inactive'
                 cleanup
                 ;;
             failed)
-                mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${debug_topic}" -m $(echo -en "${red}ERROR - State indicates ${type} stream failed to activate${reset}")
+                mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${debug_topic}" -m "${red}ERROR - State indicates ${type} stream failed to activate${reset}"
                 reason='failed'
                 cleanup
                 ;;
             *)
-                mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${debug_topic}" -m $(echo -rn "${red}ERROR - Received unknown ${type} stream state on topic ${blue}${json_attribute_topic}${reset}")
+                mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${debug_topic}" -m "${red}ERROR - Received unknown ${type} stream state on topic ${blue}${json_attribute_topic}${reset}"
                 ;;
         esac
     fi
