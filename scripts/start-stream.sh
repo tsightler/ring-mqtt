@@ -58,7 +58,7 @@ while read -u 10 message
 do
     # If start message received, publish the command to start stream
     if [ ${message} = "START" ]; then
-        debug_log "Sending command to activate ${type} stream ON-DEMAND"
+        debug_log "Sending comand to activate ${type} stream ON-DEMAND"
         mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${command_topic}" -m "ON-DEMAND ${rtsp_pub_url}"
     else
         # Otherwise it should be a JSON message from the stream state attribute topic so extract the detailed stream state
