@@ -674,8 +674,8 @@ class Camera extends RingPolledDevice {
                 '-c:v', 'libx264',
                 '-c:a:0', 'copy',
                 '-c:a:1', 'libopus',
-                '-movflags', 'empty_moov',
                 '-preset', 'ultrafast',
+                '-movflags', 'frag_keyframe+empty_moov',
                 '-rtsp_transport', 'tcp',
                 '-f', 'rtsp',
                 rtspPublishUrl
