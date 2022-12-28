@@ -671,10 +671,10 @@ class Camera extends RingPolledDevice {
                 '-map', '0:v',
                 '-map', '0:a',
                 '-map', '0:a',
-                '-c:v', 'libx264',
+                '-c:v', 'copy',
                 '-c:a:0', 'copy',
                 '-c:a:1', 'libopus',
-                '-preset', 'ultrafast',
+                '-movflags', 'empty_moov',
                 '-rtsp_transport', 'tcp',
                 '-f', 'rtsp',
                 rtspPublishUrl
