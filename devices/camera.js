@@ -325,7 +325,7 @@ class Camera extends RingPolledDevice {
 
         // Update every 3 polling cycles (~1 minute), check for updated event or expired recording URL
         if (this.entity.hasOwnProperty('event_select')) {
-            this.data.stream.event_select.pollCycle--
+            this.data.event_select.pollCycle--
             if (this.data.event_select.pollCycle <= 0) {
                 this.data.event_select.pollCycle = 3
                 if (await this.updateEventStreamUrl() && !isPublish) {
@@ -777,12 +777,12 @@ class Camera extends RingPolledDevice {
         try {
             if (eventData && eventData.event_id !== this.data.event_select.eventId) {
                 this.data.event_select.eventId = eventData.event_id
-                if (this.data.stream.event.recordingUrlExpire) {
+                if (this.data.event_select.recordingUrlExpire) {
                     // Only log after first update
                     this.debug(`New ${this.data.event_select.state} event detected, updating the recording URL`)
                 }
                 recordingUrl = await this.device.getRecordingUrl(this.data.event_select.eventId, { transcoded: false })
-            } else if (this.data.event_select.eventId && Math.floor(Date.now()/1000) - this.data.stream.event.recordingUrlExpire > 0) {
+            } else if (this.data.event_select.eventId && Math.floor(Date.now()/1000) - this.data.event_select.recordingUrlExpire > 0) {
                 this.debug(`Previous ${this.data.event_select.state} URL has expired, updating the recording URL`)
                 recordingUrl = await this.device.getRecordingUrl(this.data.event_select.eventId, { transcoded: false })
             }
@@ -792,9 +792,9 @@ class Camera extends RingPolledDevice {
         }
 
         if (recordingUrl) {
-                this.data.stream.event.dingId = dingId
-                this.data.stream.event.recordingUrl = recordingUrl
-                this.data.stream.event.recordingUrlExpire = Math.floor(Date.now()/1000) + 600
+                this.data.event_select.dingId = dingId
+                this.data.event_select.recordingUrl = recordingUrl
+                this.data.event_select.recordingUrlExpire = Math.floor(Date.now()/1000) + 600
         }
 
         return events.length
