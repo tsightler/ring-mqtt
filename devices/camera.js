@@ -660,9 +660,8 @@ class Camera extends RingPolledDevice {
     }
 
     async startEventStream(rtspPublishUrl) {
-        if (await this.updateEventStreamUrl(true)) {
-            this.publishEventSelectState()
-        }
+        await this.updateEventStreamUrl(true)
+        this.publishEventSelectState()
 
         if (this.data.event_select.recordingUrl === '<URL Not Found>') {
             this.debug('ON-DEMAND event stream requested but no found valid recording URL is available for selected event!')
@@ -1035,9 +1034,8 @@ class Camera extends RingPolledDevice {
             }
             this.data.event_select.state = message
             this.updateDeviceState()
-            if (await this.updateEventStreamUrl(true)) {
-                this.publishEventSelectState()
-            }
+            await this.updateEventStreamUrl(true)
+            this.publishEventSelectState()
         } else {
             this.debug('Received invalid value for event stream')
         }
