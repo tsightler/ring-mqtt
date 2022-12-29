@@ -807,7 +807,7 @@ class Camera extends RingPolledDevice {
             const amzDate = urlSearch.get('X-Amz-Date')
             if (amzDate && amzExpires && amzExpires !== 'NaN') {
                 const [_, year, month, day, hour, min, sec] = amzDate.match(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})/)
-                this.data.event_select.recordingUrlExpire = Math.floor(Date.UTC(year, month-1, day, hour, min, sec)/1000)+amzExpires-90
+                this.data.event_select.recordingUrlExpire = Math.floor(Date.UTC(year, month-1, day, hour, min, sec)/1000)+amzExpires-75
             } else {
                 this.data.event_select.recordingUrlExpire = Math.floor(Date.now()/1000) + 600
             }
@@ -825,11 +825,11 @@ class Camera extends RingPolledDevice {
         let event
         try {
             let events = ((await this.device.getEvents({ 
-                limit: eventNumber+2,
-                kind: eventType.replace('person', 'motion'),
-                ...eventType === 'person' ? { state: 'person_detected' } : {},
+                limit: eventType === 'person' ? 100 : eventNumber+2,
+                kind: eventType.replace('person', 'motion') 
             })).events).filter(event => event.recording_status === 'ready')
 
+            events = eventType === 'person' ? events.filter(event => event.cv_properties.detection_type === 'human') : events
             event = events.length >= eventNumber ? events[eventNumber-1] : false
         } catch {
             event = false
