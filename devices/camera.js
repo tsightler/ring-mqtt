@@ -56,10 +56,6 @@ class Camera extends RingPolledDevice {
                     status: 'inactive',
                     session: false,
                     publishedStatus: '',
-                    dingId: null,
-                    recordingUrl: null,
-                    recordingUrlExpire: null,
-                    pollCycle: 0
                 },
                 keepalive:{ 
                     active: false, 
@@ -70,7 +66,12 @@ class Camera extends RingPolledDevice {
                 state: savedState?.event_select?.state
                     ? savedState.event_select.state
                     : 'Motion 1',
-                publishedState: null
+                publishedState: null,
+                pollCycle: 0,
+                recordingUrl: null,
+                recordingUrlExpire: null,
+                eventId: null,
+                latestEventId: null
             },
             ...this.device.hasLight ? {
                 light: {
@@ -323,13 +324,15 @@ class Camera extends RingPolledDevice {
         this.publishPolledState(isPublish)
 
         // Update every 3 polling cycles (~1 minute), check for updated event or expired recording URL
-        this.data.stream.event.pollCycle--
-        if (this.data.stream.event.pollCycle <= 0) {
-            this.data.stream.event.pollCycle = 3
-            if (this.entity.event_select && await this.updateEventStreamUrl() && !isPublish) {
-                this.publishEventSelectState()
+        if (this.entity.hasOwnProperty('event_select')) {
+            this.data.stream.event_select.pollCycle--
+            if (this.data.stream.event_select.pollCycle <= 0) {
+                this.data.stream.event_select.pollCycle = 3
+                if (await this.updateEventStreamUrl() && !isPublish) {
+                    this.publishEventSelectState()
+                }
             }
-        }        
+        }
 
         if (isPublish) {
             // Publish stream state
@@ -551,8 +554,8 @@ class Camera extends RingPolledDevice {
             this.mqttPublish(this.entity.event_select.state_topic, this.data.event_select.state)
         }
         const attributes = { 
-            recordingUrl: this.data.stream.event.recordingUrl,
-            eventId: this.data.stream.event.dingId
+            recordingUrl: this.data.stream.event_select.recordingUrl,
+            eventId: this.data.stream.event_select.eventId
         }
         this.mqttPublish(this.entity.event_select.json_attributes_topic, JSON.stringify(attributes), 'attr', '<recording_url_masked>')
     }
@@ -667,15 +670,13 @@ class Camera extends RingPolledDevice {
             this.data.stream.event.session = spawn(pathToFfmpeg, [
                 '-report',
                 '-re',
-                '-i', this.data.stream.event.recordingUrl,
+                '-i', this.data.stream.event_select.recordingUrl,
                 '-map', '0:v',
                 '-map', '0:a',
                 '-map', '0:a',
-                '-c:v', 'libx264',
+                '-c:v', 'copy',
                 '-c:a:0', 'copy',
                 '-c:a:1', 'libopus',
-                '-preset', 'ultrafast',
-                '-movflags', 'frag_keyframe+empty_moov',
                 '-rtsp_transport', 'tcp',
                 '-f', 'rtsp',
                 rtspPublishUrl
@@ -761,32 +762,29 @@ class Camera extends RingPolledDevice {
 
     async updateEventStreamUrl() {
         const streamSelect = this.data.event_select.state.split(' ')
-        const streamKind = streamSelect[0].toLowerCase().replace('-', '_')
-        const kind = streamKind === 'person' ? 'motion' : streamKind
-        const limit = streamKind === 'person' ? 50 : 10
-        const index = streamSelect[1]-1
-        let events
+        const eventType = streamSelect[0].toLowerCase().replace('-', '_')
+        const eventNumber = streamSelect[1]
+        let eventData
         let recordingUrl
-        let dingId
+        
+        // If there are new events we need to refresh the event ID for the selected event
+        const latestEvent = (await this.device.getEvents({ limit: 1 })).events[0]
+        if (latestEvent && latestEvent.event_id !== this.data.event_select.latestEventId) {
+            this.data.event_select.latestEventId = latestEvent.event_id
+            eventData = await(this.getEvent(eventType, eventNumber))
+        }
 
         try {
-            events = ((await this.device.getEvents({ limit, kind })).events).filter(event => event.recording_status === 'ready')
-            events = streamKind === 'person' ? events.filter(event => event.cv_properties.detection_type === 'human') : events
-            if (events.length < index+1) {
-                this.debug(`No event corresponding to ${this.data.event_select.state} was found`)
-                recordingUrl = null
-            } else {
-                dingId = events[index].ding_id_str
-                if (dingId !== this.data.stream.event.dingId) {
-                    if (this.data.stream.event.recordingUrlExpire) {
-                        // Only log after first update
-                        this.debug(`New ${this.data.event_select.state} event detected, updating the recording URL`)
-                    }
-                    recordingUrl = await this.device.getRecordingUrl(dingId, { transcoded: true })
-                } else if (Math.floor(Date.now()/1000) - this.data.stream.event.recordingUrlExpire > 0) {
-                    this.debug(`Previous ${this.data.event_select.state} URL has expired, updating the recording URL`)
-                    recordingUrl = await this.device.getRecordingUrl(dingId, { transcoded: true })
+            if (eventData && eventData.event_id !== this.data.event_select.eventId) {
+                this.data.event_select.eventId = eventData.event_id
+                if (this.data.stream.event.recordingUrlExpire) {
+                    // Only log after first update
+                    this.debug(`New ${this.data.event_select.state} event detected, updating the recording URL`)
                 }
+                recordingUrl = await this.device.getRecordingUrl(this.data.event_select.eventId, { transcoded: false })
+            } else if (this.data.event_select.eventId && Math.floor(Date.now()/1000) - this.data.stream.event.recordingUrlExpire > 0) {
+                this.debug(`Previous ${this.data.event_select.state} URL has expired, updating the recording URL`)
+                recordingUrl = await this.device.getRecordingUrl(this.data.event_select.eventId, { transcoded: false })
             }
         } catch {
             this.debug(`Failed to retrieve recording URL for ${this.data.event_select.state} event`)
@@ -796,10 +794,25 @@ class Camera extends RingPolledDevice {
         if (recordingUrl) {
                 this.data.stream.event.dingId = dingId
                 this.data.stream.event.recordingUrl = recordingUrl
-                this.data.stream.event.recordingUrlExpire = Math.floor(Date.now()/1000) + 120
+                this.data.stream.event.recordingUrlExpire = Math.floor(Date.now()/1000) + 600
         }
 
         return events.length
+    }
+
+    async getEvent(eventType, eventNumber) {
+        try {
+            let events = await this.device.getEvents({ 
+                limit: eventType === 'person' ? 100 : eventNumber, 
+                kind: eventType.replace('person', 'motion') 
+            }).events
+            events = eventType === 'person' ? events.filter(event => event.cv_properties.detection_type === 'human') : events
+            const event = events.length >= eventNumber ? events[eventNumber-1] : false
+            return event
+        } catch {
+            this.debug(`No event corresponding to ${this.data.event_select.state} was found in event history`)
+            return false
+        }
     }
 
     // Process messages from MQTT command topic
