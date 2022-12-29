@@ -666,6 +666,9 @@ class Camera extends RingPolledDevice {
 
         if (this.data.event_select.recordingUrl === '<URL Not Found>') {
             this.debug('ON-DEMAND event stream requested but no found valid recording URL is available for selected event!')
+            this.data.stream.event.status = 'failed'
+            this.data.stream.event.session = false
+            this.publishStreamState()
             return
         }
 
