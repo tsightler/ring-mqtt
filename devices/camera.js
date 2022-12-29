@@ -663,6 +663,12 @@ class Camera extends RingPolledDevice {
         if (await this.updateEventStreamUrl(true)) {
             this.publishEventSelectState()
         }
+
+        if (this.data.event_select.recordingUrl === '<URL Not Found>') {
+            this.debug('ON-DEMAND event stream requested but no found valid recording URL is available for selected event!')
+            return
+        }
+
         const streamSelect = this.data.event_select.state.split(' ')
         const kind = streamSelect[0].toLowerCase().replace('-', '_')
         const index = streamSelect[1]
@@ -794,8 +800,11 @@ class Camera extends RingPolledDevice {
         }
 
         if (recordingUrl) {
-                this.data.event_select.recordingUrl = recordingUrl
-                this.data.event_select.recordingUrlExpire = Math.floor(Date.now()/1000) + 600
+            this.data.event_select.recordingUrl = recordingUrl
+            this.data.event_select.recordingUrlExpire = Math.floor(Date.now()/1000) + 600
+        } else {
+            this.data.event_select.recordingUrl = '<URL Not Found>'
+            this.data.event_select.eventId = 0
         }
 
         return recordingUrl
