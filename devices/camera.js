@@ -660,20 +660,20 @@ class Camera extends RingPolledDevice {
     }
 
     async startEventStream(rtspPublishUrl) {
+        const streamSelect = this.data.event_select.state.split(' ')
+        const kind = streamSelect[0].toLowerCase().replace('-', '_')
+        const index = streamSelect[1]
         await this.updateEventStreamUrl(true)
         this.publishEventSelectState()
 
         if (this.data.event_select.recordingUrl === '<URL Not Found>') {
-            this.debug('ON-DEMAND event stream requested but no found valid recording URL is available for selected event!')
+            this.debug(`No valid recording was found for the ${(index==1?"":index==2?"2nd ":index==3?"3rd ":index+"th ")}most recent ${kind} event!`)
             this.data.stream.event.status = 'failed'
             this.data.stream.event.session = false
             this.publishStreamState()
             return
         }
 
-        const streamSelect = this.data.event_select.state.split(' ')
-        const kind = streamSelect[0].toLowerCase().replace('-', '_')
-        const index = streamSelect[1]
         this.debug(`Streaming the ${(index==1?"":index==2?"2nd ":index==3?"3rd ":index+"th ")}most recently recorded ${kind} event`)
 
         try {
@@ -723,7 +723,6 @@ class Camera extends RingPolledDevice {
             ? `rtsp://${utils.config.livestream_user}:${utils.config.livestream_pass}@localhost:8554/${this.deviceId}_live`
             : `rtsp://localhost:8554/${this.deviceId}_live`
         
-        // Start stream with MJPEG output directed to P2J server with one frame every 2 seconds 
         this.debug(`Starting a keepalive stream for camera`)
 
         // Keepalive stream is used only when the live stream is started 
@@ -803,14 +802,23 @@ class Camera extends RingPolledDevice {
 
         if (recordingUrl) {
             this.data.event_select.recordingUrl = recordingUrl
-            this.data.event_select.recordingUrlExpire = Math.floor(Date.now()/1000) + 600
+            const urlSearch = new URLSearchParams(recordingUrl)
+            const amzExpires = urlSearch.get('X-Amz-Expires')
+            const amzDate = urlSearch.get('X-Amz-Date')
+            if (amzDate && amzExpires) {
+                this.data.event_select.recordingUrlExpire = Math.floor(Date(amzDate)/1000)+(amzExpires-60)
+            } else {
+                this.data.event_select.recordingUrlExpire = Math.floor(Date.now()/1000) + 600
+            }
         } else {
             this.data.event_select.recordingUrl = '<URL Not Found>'
-            this.data.event_select.eventId = 0
+            this.data.event_select.eventId = '0'
         }
 
         return recordingUrl
     }
+
+    parseAmz
 
     async getRecordedEvent(eventType, eventNumber) {
         let event

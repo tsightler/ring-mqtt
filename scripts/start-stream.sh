@@ -84,7 +84,7 @@ do
                 cleanup
                 ;;
             failed)
-                logmsg=$(echo -en "${red} ERROR - State indicates ${type} stream failed to activate${reset}")
+                logmsg=$(echo -en "${red}ERROR - State indicates ${type} stream failed to activate${reset}")
                 logger "${logmsg}"
                 reason='failed'
                 cleanup
