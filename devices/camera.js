@@ -765,7 +765,7 @@ class Camera extends RingPolledDevice {
         const eventType = streamSelect[0].toLowerCase().replace('-', '_')
         const eventNumber = streamSelect[1]
         let eventData
-        let recordingUrl
+        let recordingUrl = false
         
         // If there are new events we need to refresh the event ID for the selected event
         const latestEvent = (await this.device.getEvents({ limit: 1 })).events[0]
@@ -795,9 +795,10 @@ class Camera extends RingPolledDevice {
                 this.data.event_select.dingId = dingId
                 this.data.event_select.recordingUrl = recordingUrl
                 this.data.event_select.recordingUrlExpire = Math.floor(Date.now()/1000) + 600
+                return recordingUrl
         }
-
-        return events.length
+        
+        return recordingUrl
     }
 
     async getEvent(eventType, eventNumber) {
