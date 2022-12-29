@@ -791,7 +791,7 @@ class Camera extends RingPolledDevice {
                     this.debug(`New ${this.data.event_select.state} event detected, updating the recording URL`)
                 }
                 recordingUrl = await this.device.getRecordingUrl(this.data.event_select.eventId, { transcoded: false })
-            } else if (this.data.event_select.eventId && Math.floor(Date.now()/1000) - this.data.event_select.recordingUrlExpire > 0) {
+            } else if (this.data.event_select.eventId && (Math.floor(Date.now()/1000) - this.data.event_select.recordingUrlExpire > 0)) {
                 this.debug(`Previous ${this.data.event_select.state} URL has expired, updating the recording URL`)
                 recordingUrl = await this.device.getRecordingUrl(this.data.event_select.eventId, { transcoded: false })
             }
@@ -803,10 +803,11 @@ class Camera extends RingPolledDevice {
         if (recordingUrl) {
             this.data.event_select.recordingUrl = recordingUrl
             const urlSearch = new URLSearchParams(recordingUrl)
-            const amzExpires = urlSearch.get('X-Amz-Expires')
+            const amzExpires = Number(urlSearch.get('X-Amz-Expires'))
             const amzDate = urlSearch.get('X-Amz-Date')
-            if (amzDate && amzExpires) {
-                this.data.event_select.recordingUrlExpire = Math.floor(Date(amzDate)/1000)+(amzExpires-60)
+            if (amzDate && amzExpires && amzExpires !== 'NaN') {
+                const [_, year, month, day, hour, min, sec] = amzDate.match(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})/)
+                this.data.event_select.recordingUrlExpire = Math.floor(Date.UTC(year, month-1, day, hour, min, sec)/1000)+amzExpires-75
             } else {
                 this.data.event_select.recordingUrlExpire = Math.floor(Date.now()/1000) + 600
             }
