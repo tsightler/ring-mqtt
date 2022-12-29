@@ -326,8 +326,8 @@ class Camera extends RingPolledDevice {
         // Update every 3 polling cycles (~1 minute), check for updated event or expired recording URL
         if (this.entity.hasOwnProperty('event_select')) {
             this.data.stream.event_select.pollCycle--
-            if (this.data.stream.event_select.pollCycle <= 0) {
-                this.data.stream.event_select.pollCycle = 3
+            if (this.data.event_select.pollCycle <= 0) {
+                this.data.event_select.pollCycle = 3
                 if (await this.updateEventStreamUrl() && !isPublish) {
                     this.publishEventSelectState()
                 }
@@ -554,8 +554,8 @@ class Camera extends RingPolledDevice {
             this.mqttPublish(this.entity.event_select.state_topic, this.data.event_select.state)
         }
         const attributes = { 
-            recordingUrl: this.data.stream.event_select.recordingUrl,
-            eventId: this.data.stream.event_select.eventId
+            recordingUrl: this.data.event_select.recordingUrl,
+            eventId: this.data.event_select.eventId
         }
         this.mqttPublish(this.entity.event_select.json_attributes_topic, JSON.stringify(attributes), 'attr', '<recording_url_masked>')
     }
@@ -670,7 +670,7 @@ class Camera extends RingPolledDevice {
             this.data.stream.event.session = spawn(pathToFfmpeg, [
                 '-report',
                 '-re',
-                '-i', this.data.stream.event_select.recordingUrl,
+                '-i', this.data.event_select.recordingUrl,
                 '-map', '0:v',
                 '-map', '0:a',
                 '-map', '0:a',
@@ -718,8 +718,8 @@ class Camera extends RingPolledDevice {
 
         // Keepalive stream is used only when the live stream is started 
         // manually. It copies only the audio stream to null output just to
-        // trigger rtsp-simple-server to start the on-demand stream and 
-        // keep it running when there are no other RTSP readers.
+        // trigger rtsp server to start the on-demand stream and keep it running
+        // when there are no other RTSP readers.
         ffmpegProcess = spawn(pathToFfmpeg, [
             '-i', rtspPublishUrl,
             '-map', '0:a:0',
