@@ -251,11 +251,11 @@ class Camera extends RingPolledDevice {
         }
 
         if (await this.getRecordedEvent('motion', 1)) {
+            await this.updateEventStreamUrl(true)
+        } else {
             this.debug('Could not retrieve recording URL for any motion event, assuming no Ring Protect subscription')
             delete this.entity.event_stream
             delete this.entity.event_select
-        } else {
-            await this.updateEventStreamUrl(true)
         }
 
         let stillImageUrlBase = 'localhost'
