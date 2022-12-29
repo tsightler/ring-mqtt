@@ -792,28 +792,29 @@ class Camera extends RingPolledDevice {
         }
 
         if (recordingUrl) {
-                this.data.event_select.dingId = dingId
                 this.data.event_select.recordingUrl = recordingUrl
                 this.data.event_select.recordingUrlExpire = Math.floor(Date.now()/1000) + 600
-                return recordingUrl
         }
-        
+
         return recordingUrl
     }
 
     async getEvent(eventType, eventNumber) {
+        let event
         try {
-            let events = await this.device.getEvents({ 
+            const eventResult = await this.device.getEvents({ 
                 limit: eventType === 'person' ? 100 : eventNumber, 
                 kind: eventType.replace('person', 'motion') 
-            }).events
-            events = eventType === 'person' ? events.filter(event => event.cv_properties.detection_type === 'human') : events
-            const event = events.length >= eventNumber ? events[eventNumber-1] : false
-            return event
+            })
+
+            if (eventResult.hasOwnProperty('events')) {
+                const events = eventType === 'person' ? eventResult.events.filter(event => event.cv_properties.detection_type === 'human') : eventResult.events
+                event = events.length >= eventNumber ? events[eventNumber-1] : false
+            }
         } catch {
             this.debug(`No event corresponding to ${this.data.event_select.state} was found in event history`)
-            return false
         }
+        return event
     }
 
     // Process messages from MQTT command topic
