@@ -250,7 +250,7 @@ class Camera extends RingPolledDevice {
             this.data.ding.last_ding_time = lastDingDate ? utils.getISOTime(lastDingDate) : ''
         }
 
-        if (!await this.updateEventStreamUrl()) {
+        if (!await this.updateEventStreamUrl(true)) {
             this.debug('Could not retrieve recording URL for event, assuming no Ring Protect subscription')
             delete this.entity.event_stream
             delete this.entity.event_select
@@ -658,7 +658,7 @@ class Camera extends RingPolledDevice {
     }
 
     async startEventStream(rtspPublishUrl) {
-        if (await this.updateEventStreamUrl()) {
+        if (await this.updateEventStreamUrl(true)) {
             this.publishEventSelectState()
         }
         const streamSelect = this.data.event_select.state.split(' ')
@@ -760,18 +760,18 @@ class Camera extends RingPolledDevice {
         this.data.stream.keepalive.active = false
     }
 
-    async updateEventStreamUrl() {
+    async updateEventStreamUrl(forceUpdate) {
         const streamSelect = this.data.event_select.state.split(' ')
         const eventType = streamSelect[0].toLowerCase().replace('-', '_')
         const eventNumber = streamSelect[1]
         let eventData
         let recordingUrl = false
         
-        // If there are new events we need to refresh the event ID for the selected event
+        // On forced updates or new detected events refresh the latest event ID
         const latestEvent = (await this.device.getEvents({ limit: 1 })).events[0]
-        if (latestEvent && latestEvent.event_id !== this.data.event_select.latestEventId) {
+        if (latestEvent && (forceUpdate || latestEvent.event_id !== this.data.event_select.latestEventId)) {
             this.data.event_select.latestEventId = latestEvent.event_id
-            eventData = await(this.getEvent(eventType, eventNumber))
+            eventData = await(this.getRecordedEvent(eventType, eventNumber))
         }
 
         try {
@@ -799,21 +799,24 @@ class Camera extends RingPolledDevice {
         return recordingUrl
     }
 
-    async getEvent(eventType, eventNumber) {
+    async getRecordedEvent(eventType, eventNumber) {
         let event
         try {
-            const eventResult = await this.device.getEvents({ 
-                limit: eventType === 'person' ? 100 : eventNumber, 
+            let events = ((await this.device.getEvents({ 
+                limit: eventType === 'person' ? 100 : eventNumber+2,
                 kind: eventType.replace('person', 'motion') 
-            })
+            })).events).filter(event => event.recording_status === 'ready')
 
-            if (eventResult.hasOwnProperty('events')) {
-                const events = eventType === 'person' ? eventResult.events.filter(event => event.cv_properties.detection_type === 'human') : eventResult.events
-                event = events.length >= eventNumber ? events[eventNumber-1] : false
-            }
+            events = eventType === 'person' ? events.filter(event => event.cv_properties.detection_type === 'human') : events
+            event = events.length >= eventNumber ? events[eventNumber-1] : false
         } catch {
-            this.debug(`No event corresponding to ${this.data.event_select.state} was found in event history`)
+            event = false
         }
+
+        if (!event) {
+            this.debug(`No recording corresponding to ${this.data.event_select.state} was found in event history`)
+        }
+
         return event
     }
 
@@ -1018,7 +1021,7 @@ class Camera extends RingPolledDevice {
             }
             this.data.event_select.state = message
             this.updateDeviceState()
-            if (await this.updateEventStreamUrl()) {
+            if (await this.updateEventStreamUrl(true)) {
                 this.publishEventSelectState()
             }
         } else {
