@@ -250,10 +250,12 @@ class Camera extends RingPolledDevice {
             this.data.ding.last_ding_time = lastDingDate ? utils.getISOTime(lastDingDate) : ''
         }
 
-        if (!await this.updateEventStreamUrl(true)) {
-            this.debug('Could not retrieve recording URL for event, assuming no Ring Protect subscription')
+        if (getRecordedEvent('motion', 1)) {
+            this.debug('Could not retrieve recording URL for any motion event, assuming no Ring Protect subscription')
             delete this.entity.event_stream
             delete this.entity.event_select
+        } else {
+            await this.updateEventStreamUrl(true)
         }
 
         let stillImageUrlBase = 'localhost'
