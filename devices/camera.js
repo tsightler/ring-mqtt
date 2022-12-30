@@ -785,15 +785,17 @@ class Camera extends RingPolledDevice {
 
         try {
             if (eventData && eventData.event_id !== this.data.event_select.eventId) {
-                this.data.event_select.eventId = eventData.event_id
                 if (this.data.event_select.recordingUrlExpire) {
                     // Only log after first update
                     this.debug(`New ${this.data.event_select.state} event detected, updating the recording URL`)
                 }
-                recordingUrl = await this.device.getRecordingUrl(this.data.event_select.eventId, { transcoded: false })
+                recordingUrl = await this.device.getRecordingUrl(eventData.event_id, { transcoded: false })
             } else if (this.data.event_select.eventId && (Math.floor(Date.now()/1000) - this.data.event_select.recordingUrlExpire > 0)) {
                 this.debug(`Previous ${this.data.event_select.state} URL has expired, updating the recording URL`)
-                recordingUrl = await this.device.getRecordingUrl(this.data.event_select.eventId, { transcoded: false })
+                if (!eventData) {
+                    eventData = await(this.getRecordedEvent(eventType, eventNumber))
+                }
+                recordingUrl = await this.device.getRecordingUrl(eventData.event_id, { transcoded: false })
             }
         } catch(error) {
             this.debug(error)
@@ -802,6 +804,7 @@ class Camera extends RingPolledDevice {
         }
 
         if (recordingUrl) {
+            this.data.event_select.eventId = eventData.event_id
             this.data.event_select.recordingUrl = recordingUrl
             const urlSearch = new URLSearchParams(recordingUrl)
             const amzExpires = Number(urlSearch.get('X-Amz-Expires'))
