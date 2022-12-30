@@ -795,7 +795,8 @@ class Camera extends RingPolledDevice {
                 this.debug(`Previous ${this.data.event_select.state} URL has expired, updating the recording URL`)
                 recordingUrl = await this.device.getRecordingUrl(this.data.event_select.eventId, { transcoded: false })
             }
-        } catch {
+        } catch(error) {
+            this.debug(error)
             this.debug(`Failed to retrieve recording URL for ${this.data.event_select.state} event`)
             return false
         }
@@ -818,8 +819,6 @@ class Camera extends RingPolledDevice {
 
         return recordingUrl
     }
-
-    parseAmz
 
     async getRecordedEvent(eventType, eventNumber) {
         let event
