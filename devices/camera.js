@@ -70,8 +70,7 @@ class Camera extends RingPolledDevice {
                 pollCycle: 0,
                 recordingUrl: null,
                 recordingUrlExpire: null,
-                eventId: null,
-                latestEventId: null
+                eventId: '0'
             },
             ...this.device.hasLight ? {
                 light: {
@@ -250,9 +249,8 @@ class Camera extends RingPolledDevice {
             this.data.ding.last_ding_time = lastDingDate ? utils.getISOTime(lastDingDate) : ''
         }
 
-        if (await this.getRecordedEvent('motion', 1)) {
-            await this.updateEventStreamUrl(true)
-        } else {
+        // Try to get URL for most recent event, if it fails, assume there's no 
+        if (!await this.updateEventStreamUrl()) {
             this.debug('Could not retrieve recording URL for any motion event, assuming no Ring Protect subscription')
             delete this.entity.event_stream
             delete this.entity.event_select
@@ -325,7 +323,7 @@ class Camera extends RingPolledDevice {
         const isPublish = data === undefined ? true : false
         this.publishPolledState(isPublish)
 
-        // Update every 3 polling cycles (~1 minute), check for updated event or expired recording URL
+        // Checks for new events or expired recording URL even 3 polling cycles (~1 minute)
         if (this.entity.hasOwnProperty('event_select')) {
             this.data.event_select.pollCycle--
             if (this.data.event_select.pollCycle <= 0) {
@@ -660,10 +658,11 @@ class Camera extends RingPolledDevice {
     }
 
     async startEventStream(rtspPublishUrl) {
-        const streamSelect = this.data.event_select.state.split(' ')
-        const kind = streamSelect[0].toLowerCase().replace('-', '_')
-        const index = streamSelect[1]
-        await this.updateEventStreamUrl(true)
+        const eventSelect = this.data.event_select.state.split(' ')
+        const kind = eventSelect[0].toLowerCase().replace('-', '_')
+        const index = eventSelect[1]
+
+        await this.updateEventStreamUrl()
         this.publishEventSelectState()
 
         if (this.data.event_select.recordingUrl === '<URL Not Found>') {
@@ -769,43 +768,38 @@ class Camera extends RingPolledDevice {
         this.data.stream.keepalive.active = false
     }
 
-    async updateEventStreamUrl(forceUpdate) {
-        const streamSelect = this.data.event_select.state.split(' ')
-        const eventType = streamSelect[0].toLowerCase().replace('-', '_')
-        const eventNumber = streamSelect[1]
-        let eventData
-        let recordingUrl = false
-        
-        // On forced updates or new detected events refresh the latest event ID
-        const latestEvent = (await this.device.getEvents({ limit: 1 })).events[0]
-        if (latestEvent && (forceUpdate || latestEvent.event_id !== this.data.event_select.latestEventId)) {
-            this.data.event_select.latestEventId = latestEvent.event_id
-            eventData = await(this.getRecordedEvent(eventType, eventNumber))
-        }
+    async updateEventStreamUrl() {
+        const eventSelect = this.data.event_select.state.split(' ')
+        const eventType = eventSelect[0].toLowerCase().replace('-', '_')
+        const eventNumber = eventSelect[1]
+        let selectedEvent
+        let recordingUrl
 
         try {
-            if (eventData && eventData.event_id !== this.data.event_select.eventId) {
-                if (this.data.event_select.recordingUrlExpire) {
-                    // Only log after first update
-                    this.debug(`New ${this.data.event_select.state} event detected, updating the recording URL`)
+            const events = await(this.getRecordedEvents(eventType, eventNumber))
+            selectedEvent = events[eventNumber-1]
+
+            if (selectedEvent) {
+                if (selectedEvent.event_id !== this.data.event_select.eventId) {
+                    if (this.data.event_select.recordingUrl) {
+                        this.debug(`New ${this.data.event_select.state} event detected, updating the recording URL`)
+                    }
+                    recordingUrl = await this.device.getRecordingUrl(selectedEvent.event_id, { transcoded: false })
+                } else if (Math.floor(Date.now()/1000) - this.data.event_select.recordingUrlExpire > 0) {
+                    this.debug(`Previous ${this.data.event_select.state} URL has expired, updating the recording URL`)
+                    recordingUrl = await this.device.getRecordingUrl(selectedEvent.event_id, { transcoded: false })
                 }
-                recordingUrl = await this.device.getRecordingUrl(eventData.event_id, { transcoded: false })
-            } else if (this.data.event_select.eventId && (Math.floor(Date.now()/1000) - this.data.event_select.recordingUrlExpire > 0)) {
-                this.debug(`Previous ${this.data.event_select.state} URL has expired, updating the recording URL`)
-                if (!eventData) {
-                    eventData = await(this.getRecordedEvent(eventType, eventNumber))
-                }
-                recordingUrl = await this.device.getRecordingUrl(eventData.event_id, { transcoded: false })
             }
         } catch(error) {
             this.debug(error)
             this.debug(`Failed to retrieve recording URL for ${this.data.event_select.state} event`)
-            return false
         }
 
         if (recordingUrl) {
-            this.data.event_select.eventId = eventData.event_id
+            this.data.event_select.eventId = selectedEvent.event_id
             this.data.event_select.recordingUrl = recordingUrl
+
+            // Try to parse URL parameters to set expire time
             const urlSearch = new URLSearchParams(recordingUrl)
             const amzExpires = Number(urlSearch.get('X-Amz-Expires'))
             const amzDate = urlSearch.get('X-Amz-Date')
@@ -818,30 +812,38 @@ class Camera extends RingPolledDevice {
         } else {
             this.data.event_select.recordingUrl = '<URL Not Found>'
             this.data.event_select.eventId = '0'
+            return false
         }
 
         return recordingUrl
     }
 
-    async getRecordedEvent(eventType, eventNumber) {
-        let event
+    async getRecordedEvents(eventType, eventNumber) {
+        let events = []
         try {
-            let events = ((await this.device.getEvents({ 
-                limit: eventType === 'person' ? 100 : eventNumber+2,
-                kind: eventType.replace('person', 'motion') 
-            })).events).filter(event => event.recording_status === 'ready')
-
-            events = eventType === 'person' ? events.filter(event => event.cv_properties.detection_type === 'human') : events
-            event = events.length >= eventNumber ? events[eventNumber-1] : false
-        } catch {
-            event = false
+            if (eventType !== 'person') {
+                events = ((await this.device.getEvents({ 
+                    limit: eventNumber+2,
+                    kind: eventType
+                })).events).filter(event => event.recording_status === 'ready')
+            } else {
+                let loop = 0
+                while (loop < 3 && events.length < eventNumber)
+                events = ((await this.device.getEvents({ 
+                    limit: 50,
+                    kind: 'motion'
+                })).events).filter(event => event.recording_status === 'ready' && event.cv_properties.detection_type === 'human')
+                loop++
+            }
+        } catch(error) {
+            this.debug(error)
         }
 
-        if (!event) {
+        if (events.length === 0) {
             this.debug(`No recording corresponding to ${this.data.event_select.state} was found in event history`)
         }
 
-        return event
+        return events
     }
 
     // Process messages from MQTT command topic
@@ -1045,7 +1047,7 @@ class Camera extends RingPolledDevice {
             }
             this.data.event_select.state = message
             this.updateDeviceState()
-            await this.updateEventStreamUrl(true)
+            await this.updateEventStreamUrl()
             this.publishEventSelectState()
         } else {
             this.debug('Received invalid value for event stream')
