@@ -1,9 +1,9 @@
-const RingPolledDevice = require('./base-polled-device')
-const utils = require( '../lib/utils' )
-const pathToFfmpeg = require('ffmpeg-for-homebridge')
-const { spawn } = require('child_process')
+import RingPolledDevice from './base-polled-device.js'
+import utils from '../lib/utils.js'
+import pathToFfmpeg from 'ffmpeg-for-homebridge'
+import { spawn } from 'child_process'
 
-class Camera extends RingPolledDevice {
+export default class Camera extends RingPolledDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'camera')
 
@@ -274,8 +274,8 @@ class Camera extends RingPolledDevice {
 
         // Set some helper attributes for streaming
         this.data.stream.live.stillImageURL = `https://${stillImageUrlBase}:8123{{ states.camera.${this.device.name.toLowerCase().replace(" ","_")}_snapshot.attributes.entity_picture }}`,
-        this.data.stream.live.streamSource = (utils.config.livestream_user && utils.config.livestream_pass)
-            ? `rtsp://${utils.config.livestream_user}:${utils.config.livestream_pass}@${streamSourceUrlBase}:8554/${this.deviceId}_live`
+        this.data.stream.live.streamSource = (utils.config().livestream_user && utils.config().livestream_pass)
+            ? `rtsp://${utils.config().livestream_user}:${utils.config().livestream_pass}@${streamSourceUrlBase}:8554/${this.deviceId}_live`
             : `rtsp://${streamSourceUrlBase}:8554/${this.deviceId}_live`
     }
 
@@ -718,8 +718,8 @@ class Camera extends RingPolledDevice {
         let ffmpegProcess
         let killSignal = 'SIGTERM'
 
-        const rtspPublishUrl = (utils.config.livestream_user && utils.config.livestream_pass)
-            ? `rtsp://${utils.config.livestream_user}:${utils.config.livestream_pass}@localhost:8554/${this.deviceId}_live`
+        const rtspPublishUrl = (utils.config().livestream_user && utils.config().livestream_pass)
+            ? `rtsp://${utils.config().livestream_user}:${utils.config().livestream_pass}@localhost:8554/${this.deviceId}_live`
             : `rtsp://localhost:8554/${this.deviceId}_live`
         
         this.debug(`Starting a keepalive stream for camera`)
@@ -1054,5 +1054,3 @@ class Camera extends RingPolledDevice {
         }
     }
 }
-
-module.exports = Camera

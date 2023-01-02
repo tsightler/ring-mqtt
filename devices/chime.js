@@ -1,7 +1,7 @@
-const RingPolledDevice = require('./base-polled-device')
-const utils = require( '../lib/utils' )
+import RingPolledDevice from './base-polled-device.js'
+import utils from '../lib/utils.js'
 
-class Chime extends RingPolledDevice {
+export default class Chime extends RingPolledDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'chime')
 
@@ -204,5 +204,3 @@ class Chime extends RingPolledDevice {
         }
     }
 }
-
-module.exports = Chime

@@ -1,7 +1,7 @@
-const RingSocketDevice = require('./base-socket-device')
-const utils = require('../lib/utils')
+import RingSocketDevice from './base-socket-device.js'
+import utils from '../lib/utils.js'
 
-class BaseStation extends RingSocketDevice {
+export default class BaseStation extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'alarm', 'acStatus')
         this.deviceData.mdl = 'Alarm Base Station'
@@ -72,5 +72,3 @@ class BaseStation extends RingSocketDevice {
     }
 
 }
-
-module.exports = BaseStation

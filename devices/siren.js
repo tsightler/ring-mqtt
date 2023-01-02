@@ -1,6 +1,6 @@
-const RingSocketDevice = require('./base-socket-device')
+import RingSocketDevice from './base-socket-device.js'
 
-class Siren extends RingSocketDevice {
+export default class Siren extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'alarm')
         this.deviceData.mdl = (this.device.data.deviceType === 'siren.outdoor-strobe') ? 'Outdoor Siren' : 'Siren'        
@@ -84,5 +84,3 @@ class Siren extends RingSocketDevice {
         }
     }
 }
-
-module.exports = Siren

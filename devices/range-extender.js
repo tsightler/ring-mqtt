@@ -1,6 +1,6 @@
-const RingSocketDevice = require('./base-socket-device')
+import RingSocketDevice from './base-socket-device.js'
 
-class RangeExtender extends RingSocketDevice {
+export default class RangeExtender extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'alarm', 'acStatus')
         this.deviceData.mdl = 'Z-Wave Range Extender'
@@ -12,5 +12,3 @@ class RangeExtender extends RingSocketDevice {
         this.publishAttributes()
     }
 }
-
-module.exports = RangeExtender

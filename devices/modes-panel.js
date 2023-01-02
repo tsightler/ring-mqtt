@@ -1,7 +1,7 @@
-const RingPolledDevice = require('./base-polled-device')
-const utils = require( '../lib/utils' )
+import RingPolledDevice from './base-polled-device.js'
+import utils from '../lib/utils.js'
 
-class ModesPanel extends RingPolledDevice {
+export default class ModesPanel extends RingPolledDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'alarm', 'disable')
         this.deviceData.mdl = 'Mode Control Panel'
@@ -105,5 +105,3 @@ class ModesPanel extends RingPolledDevice {
         }
     }
 }
-
-module.exports = ModesPanel

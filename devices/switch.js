@@ -1,6 +1,6 @@
-const RingSocketDevice = require('./base-socket-device')
+import RingSocketDevice from './base-socket-device.js'
 
-class Switch extends RingSocketDevice {
+export default class Switch extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'alarm')
         this.deviceData.mdl = (this.device.data.categoryId === 2) ? 'Light' : 'Switch'
@@ -43,5 +43,3 @@ class Switch extends RingSocketDevice {
         }
     }
 }
-
-module.exports = Switch

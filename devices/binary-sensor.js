@@ -1,7 +1,7 @@
-const RingSocketDevice = require('./base-socket-device')
-const { RingDeviceType } = require('ring-client-api')
+import RingSocketDevice from './base-socket-device.js'
+import { RingDeviceType } from 'ring-client-api'
 
-class BinarySensor extends RingSocketDevice {
+export default class BinarySensor extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'alarm')
         let device_class = 'None'
@@ -126,5 +126,3 @@ class BinarySensor extends RingSocketDevice {
         }
     }
 }
-
-module.exports = BinarySensor

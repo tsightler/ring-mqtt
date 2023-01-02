@@ -1,6 +1,6 @@
-const RingSocketDevice = require('./base-socket-device')
+import RingSocketDevice from './base-socket-device.js'
 
-class CoAlarm extends RingSocketDevice {
+export default class CoAlarm extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'alarm')
         this.deviceData.mdl = 'CO Alarm'
@@ -21,5 +21,3 @@ class CoAlarm extends RingSocketDevice {
         this.publishAttributes()
     }
 }
-
-module.exports = CoAlarm

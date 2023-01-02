@@ -1,8 +1,8 @@
-const RingDevice = require('./base-ring-device')
-const utils = require('../lib/utils')
+import RingDevice from './base-ring-device.js'
+import utils from '../lib/utils.js'
 
 // Base class for devices/features that communicate via HTTP polling interface (cameras/chime/modes)
-class RingPolledDevice extends RingDevice {
+export default class RingPolledDevice extends RingDevice {
     constructor(deviceInfo, category, primaryAttribute) {
         super(deviceInfo, category, primaryAttribute, deviceInfo.device.data.device_id, deviceInfo.device.data.location_id)
         this.heartbeat = 3
@@ -61,5 +61,3 @@ class RingPolledDevice extends RingDevice {
         this.monitorHeartbeat()
     }
 }
-
-module.exports = RingPolledDevice

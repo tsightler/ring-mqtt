@@ -1,6 +1,6 @@
-const RingSocketDevice = require('./base-socket-device')
+import RingSocketDevice from './base-socket-device.js'
 
-class TemperatureSensor extends RingSocketDevice {
+export default class TemperatureSensor extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'alarm')
         this.deviceData.mdl = 'Temperature Sensor'
@@ -19,5 +19,3 @@ class TemperatureSensor extends RingSocketDevice {
         this.publishAttributes()
     }
 }
-
-module.exports = TemperatureSensor

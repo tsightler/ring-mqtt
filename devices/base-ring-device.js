@@ -1,9 +1,9 @@
-const utils = require('../lib/utils')
-const state = require('../lib/state')
-const colors = require('colors/safe')
+import utils from '../lib/utils.js'
+import state from '../lib/state.js'
+import chalk from 'chalk'
 
 // Base class with functions common to all devices
-class RingDevice {
+export default class RingDevice {
     constructor(deviceInfo, category, primaryAttribute, deviceId, locationId) {
         this.device = deviceInfo.device
         this.deviceId = deviceId
@@ -15,10 +15,10 @@ class RingDevice {
         }
 
         this.debug = (message, debugType) => {
-            utils.debug(debugType === 'disc' ? message : colors.green(`[${this.deviceData.name}] `)+message, debugType ? debugType : 'mqtt')
+            utils.debug(debugType === 'disc' ? message : chalk.green(`[${this.deviceData.name}] `)+message, debugType ? debugType : 'mqtt')
         }
         // Build device base and availability topic
-        this.deviceTopic = `${utils.config.ring_topic}/${this.locationId}/${category}/${this.deviceId}`
+        this.deviceTopic = `${utils.config().ring_topic}/${this.locationId}/${category}/${this.deviceId}`
         this.availabilityTopic = `${this.deviceTopic}/status`
 
         if (deviceInfo.hasOwnProperty('parentDevice')) {
@@ -104,8 +104,8 @@ class RingDevice {
                     ? { icon: entity.icon } 
                     : entityKey === "info" 
                         ? { icon: 'mdi:information-outline' } : {},
-                ... entity.component === 'alarm_control_panel' && utils.config.disarm_code
-                    ? { code: utils.config.disarm_code.toString(),
+                ... entity.component === 'alarm_control_panel' && utils.config().disarm_code
+                    ? { code: utils.config().disarm_code.toString(),
                         code_arm_required: false,
                         code_disarm_required: true } : {},
                 ... entity.hasOwnProperty('brightness_scale')
@@ -220,7 +220,7 @@ class RingDevice {
     // Publish state messages with debug
     mqttPublish(topic, message, debugType, maskedMessage) {
         if (debugType !== false) {
-            this.debug(colors.blue(`${topic} `)+colors.cyan(`${maskedMessage ? maskedMessage : message}`), debugType)
+            this.debug(chalk.blue(`${topic} `)+chalk.cyan(`${maskedMessage ? maskedMessage : message}`), debugType)
         }
         utils.event.emit('mqtt_publish', topic, message)
     }
@@ -251,5 +251,3 @@ class RingDevice {
         this.mqttPublish(this.availabilityTopic, this.availabilityState, debugType)
     }
 }
-
-module.exports = RingDevice

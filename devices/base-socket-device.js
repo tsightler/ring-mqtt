@@ -1,8 +1,8 @@
-const RingDevice = require('./base-ring-device')
-const utils = require('../lib/utils')
+import RingDevice from './base-ring-device.js'
+import utils from '../lib/utils.js'
 
 // Base class for devices that communicate with hubs via websocket (alarm/smart lighting)
-class RingSocketDevice extends RingDevice {
+export default class RingSocketDevice extends RingDevice {
     constructor(deviceInfo, category, primaryAttribute) {
         super(deviceInfo, category, primaryAttribute, deviceInfo.device.id, deviceInfo.device.location.locationId)
 
@@ -122,5 +122,3 @@ class RingSocketDevice extends RingDevice {
         this.publishAttributeEntities(attributes)
     }
 }
-
-module.exports = RingSocketDevice

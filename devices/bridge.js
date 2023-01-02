@@ -1,6 +1,6 @@
-const RingSocketDevice = require('./base-socket-device')
+import RingSocketDevice from './base-socket-device.js'
 
-class Bridge extends RingSocketDevice {
+export default class Bridge extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'alarm', 'commStatus')
         this.deviceData.mdl = 'Bridge'
@@ -12,5 +12,3 @@ class Bridge extends RingSocketDevice {
         this.publishAttributes()
     }
 }
-
-module.exports = Bridge

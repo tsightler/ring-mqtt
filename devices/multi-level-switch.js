@@ -1,6 +1,6 @@
-const RingSocketDevice = require('./base-socket-device')
+import RingSocketDevice from './base-socket-device.js'
 
-class MultiLevelSwitch extends RingSocketDevice {
+export default class MultiLevelSwitch extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'alarm')
         this.deviceData.mdl = 'Dimming Light'
@@ -63,5 +63,3 @@ class MultiLevelSwitch extends RingSocketDevice {
         }
     }
 }
-
-module.exports = MultiLevelSwitch

@@ -1,7 +1,6 @@
-const RingSocketDevice = require('./base-socket-device')
-const utils = require( '../lib/utils' )
+import RingSocketDevice from './base-socket-device.js'
 
-class Beam extends RingSocketDevice {
+export default class Beam extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'lighting')
 
@@ -163,5 +162,3 @@ class Beam extends RingSocketDevice {
         }
     }
 }
-
-module.exports = Beam

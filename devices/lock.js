@@ -1,6 +1,6 @@
-const RingSocketDevice = require('./base-socket-device')
+import RingSocketDevice from './base-socket-device.js'
 
-class Lock extends RingSocketDevice {
+export default class Lock extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'alarm')
         this.deviceData.mdl = 'Lock'
@@ -52,5 +52,3 @@ class Lock extends RingSocketDevice {
         }
     }
 }
-
-module.exports = Lock

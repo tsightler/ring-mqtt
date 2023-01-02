@@ -1,8 +1,8 @@
-const RingSocketDevice = require('./base-socket-device')
-const { RingDeviceType } = require('ring-client-api')
-const utils = require( '../lib/utils' )
+import RingSocketDevice from './base-socket-device.js'
+import { RingDeviceType } from 'ring-client-api'
+import utils from '../lib/utils.js'
 
-class Thermostat extends RingSocketDevice {
+export default class Thermostat extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'alarm')
         this.deviceData.mdl = 'Thermostat'
@@ -273,5 +273,3 @@ class Thermostat extends RingSocketDevice {
         }
     }
 }
-
-module.exports = Thermostat
