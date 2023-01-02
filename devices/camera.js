@@ -665,7 +665,7 @@ class Camera extends RingPolledDevice {
         await this.updateEventStreamUrl()
         this.publishEventSelectState()
 
-        if (this.data.event_select.recordingUrl === '<URL Not Found>') {
+        if (this.data.event_select.recordingUrl === '<No Valid URL>') {
             this.debug(`No valid recording was found for the ${(index==1?"":index==2?"2nd ":index==3?"3rd ":index+"th ")}most recent ${kind} event!`)
             this.data.stream.event.status = 'failed'
             this.data.stream.event.session = false
@@ -772,20 +772,21 @@ class Camera extends RingPolledDevice {
         const eventSelect = this.data.event_select.state.split(' ')
         const eventType = eventSelect[0].toLowerCase().replace('-', '_')
         const eventNumber = eventSelect[1]
-        let selectedEvent
+        const urlExpired = Math.floor(Date.now()/1000) - this.data.event_select.recordingUrlExpire > 0 ? true : false
         let recordingUrl
 
         try {
             const events = await(this.getRecordedEvents(eventType, eventNumber))
-            selectedEvent = events[eventNumber-1]
+            const selectedEvent = events[eventNumber-1]
 
             if (selectedEvent) {
                 if (selectedEvent.event_id !== this.data.event_select.eventId) {
+                    this.data.event_select.eventId = selectedEvent.event_id
                     if (this.data.event_select.recordingUrl) {
                         this.debug(`New ${this.data.event_select.state} event detected, updating the recording URL`)
                     }
                     recordingUrl = await this.device.getRecordingUrl(selectedEvent.event_id, { transcoded: false })
-                } else if (Math.floor(Date.now()/1000) - this.data.event_select.recordingUrlExpire > 0) {
+                } else if (urlExpired) {
                     this.debug(`Previous ${this.data.event_select.state} URL has expired, updating the recording URL`)
                     recordingUrl = await this.device.getRecordingUrl(selectedEvent.event_id, { transcoded: false })
                 }
@@ -796,7 +797,6 @@ class Camera extends RingPolledDevice {
         }
 
         if (recordingUrl) {
-            this.data.event_select.eventId = selectedEvent.event_id
             this.data.event_select.recordingUrl = recordingUrl
 
             // Try to parse URL parameters to set expire time
@@ -809,8 +809,8 @@ class Camera extends RingPolledDevice {
             } else {
                 this.data.event_select.recordingUrlExpire = Math.floor(Date.now()/1000) + 600
             }
-        } else {
-            this.data.event_select.recordingUrl = '<URL Not Found>'
+        } else if (urlExpired) {
+            this.data.event_select.recordingUrl = '<No Valid URL>'
             this.data.event_select.eventId = '0'
             return false
         }
