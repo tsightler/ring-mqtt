@@ -60,5 +60,7 @@ echo NPM version $(npm -v)
 echo $(git --version)
 echo "-------------------------------------------------------"
 
+export FORCE_COLOR=1
+
 echo "Running ring-mqtt..."
 exec ./ring-mqtt.js
