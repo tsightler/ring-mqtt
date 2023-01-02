@@ -21,6 +21,7 @@ else
     # Branch has already been initialized, run any post-update command here
     echo "The ring-mqtt-${BRANCH} branch has been updated."
     
+    APK_ARCH="$(apk --print-arch)"
     GO2RTC_VERSION="v0.1-rc.6"
     case "${APK_ARCH}" in
         x86_64)
