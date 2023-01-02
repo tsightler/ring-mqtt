@@ -20,24 +20,8 @@ if [ ! -d "/app/ring-mqtt-${BRANCH}" ]; then
 else
     # Branch has already been initialized, run any post-update command here
     echo "The ring-mqtt-${BRANCH} branch has been updated."
-    cd "/app/ring-mqtt-${BRANCH}"
-    RSS_VERSION="v0.21.0"
-    APK_ARCH="$(apk --print-arch)"
-    case "${APK_ARCH}" in
-        x86_64)
-            RSS_ARCH="amd64";;
-        aarch64)
-            RSS_ARCH="arm64v8";;
-        armv7|armhf)
-            RSS_ARCH="armv7";;
-        *)
-            echo >&2 "ERROR: Unsupported architecture '$APK_ARCH'"
-            exit 1;;
-    esac
-    rm -f /usr/local/bin/rtsp-simple-server
-    curl -L -s "https://github.com/aler9/rtsp-simple-server/releases/download/${RSS_VERSION}/rtsp-simple-server_${RSS_VERSION}_linux_${RSS_ARCH}.tar.gz" | tar zxf - -C /usr/local/bin rtsp-simple-server
     
-    GO2RTC_VERSION="v0.1-rc.5"
+    GO2RTC_VERSION="v0.1-rc.6"
     case "${APK_ARCH}" in
         x86_64)
             GO2RTC_ARCH="amd64";;

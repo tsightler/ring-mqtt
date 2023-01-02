@@ -6,7 +6,8 @@ ENV LANG="C.UTF-8" \
     S6_CMD_WAIT_FOR_SERVICES=1 \
     S6_CMD_WAIT_FOR_SERVICES_MAXTIME=0 \
     S6_SERVICES_GRACETIME=10000 \
-    TERM="xterm-256color"
+    TERM="xterm-256color" \
+    FORCE_COLOR=2
     
 COPY . /app/ring-mqtt
 RUN S6_VERSION="v3.1.2.1" && \
