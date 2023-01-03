@@ -773,11 +773,12 @@ export default class Camera extends RingPolledDevice {
         const eventType = eventSelect[0].toLowerCase().replace('-', '_')
         const eventNumber = eventSelect[1]
         const urlExpired = Math.floor(Date.now()/1000) - this.data.event_select.recordingUrlExpire > 0 ? true : false
+        let selectedEvent
         let recordingUrl
 
         try {
             const events = await(this.getRecordedEvents(eventType, eventNumber))
-            const selectedEvent = events[eventNumber-1]
+            selectedEvent = events[eventNumber-1]
 
             if (selectedEvent) {
                 if (selectedEvent.event_id !== this.data.event_select.eventId) {
