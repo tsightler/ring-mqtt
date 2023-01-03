@@ -809,7 +809,7 @@ export default class Camera extends RingPolledDevice {
             } else {
                 this.data.event_select.recordingUrlExpire = Math.floor(Date.now()/1000) + 600
             }
-        } else if (urlExpired) {
+        } else if (urlExpired || !selectedEvent) {
             this.data.event_select.recordingUrl = '<No Valid URL>'
             this.data.event_select.eventId = '0'
             return false
