@@ -249,8 +249,10 @@ export default class Camera extends RingPolledDevice {
             this.data.ding.last_ding_time = lastDingDate ? utils.getISOTime(lastDingDate) : ''
         }
 
-        // Try to get URL for most recent event, if it fails, assume there's no 
-        if (!await this.updateEventStreamUrl()) {
+        // Try to get URL for most recent motion event, if it fails, assume there's no subscription
+        const events = await(this.getRecordedEvents('motion', 1))
+        const recordingUrl = await this.device.getRecordingUrl(events[0].event_id, { transcoded: false })
+        if (!recordingUrl) {
             this.debug('Could not retrieve recording URL for any motion event, assuming no Ring Protect subscription')
             delete this.entity.event_stream
             delete this.entity.event_select
