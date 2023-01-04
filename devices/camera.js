@@ -984,6 +984,7 @@ export default class Camera extends RingPolledDevice {
                     break;
                 case 'off':
                     if (this.data.stream.keepalive.session) {
+                        this.debug('Stopping the keepalive stream')
                         this.data.stream.keepalive.session.kill()
                     } else if (this.data.stream.live.session) {
                         const streamData = {
