@@ -776,10 +776,10 @@ export default class Camera extends RingPolledDevice {
                     if (this.data.event_select.recordingUrl) {
                         this.debug(`New ${this.data.event_select.state} event detected, updating the recording URL`)
                     }
-                    recordingUrl = await this.device.getRecordingUrl(selectedEvent.event_id, { transcoded: false })
+                    recordingUrl = await this.device.getRecordingUrl(selectedEvent.event_id, { transcoded: true })
                 } else if (urlExpired) {
                     this.debug(`Previous ${this.data.event_select.state} URL has expired, updating the recording URL`)
-                    recordingUrl = await this.device.getRecordingUrl(selectedEvent.event_id, { transcoded: false })
+                    recordingUrl = await this.device.getRecordingUrl(selectedEvent.event_id, { transcoded: true })
                 }
             }
         } catch(error) {
