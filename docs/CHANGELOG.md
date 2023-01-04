@@ -2,13 +2,14 @@
 After several releases focused on stability and minor bug fixes its finally time to implement some new features!
 
 **!!!!! WARNING !!!!!**  
-The 5.x releases are breaking releases when upgrading from 4.x versions, please be sure to read the [v5.0.0](#v500) release notes below for full details as manual steps may be required following an upgrade from 4.x versions.  Please note that support for upgrading directly from 4.x releases is deprecated in the 5.1.x releases and, while it should still work, the code for automatically converting legacy configuration options will be removed in a future version.
+Starting with 5.1.x all backwards compatibiltiy with prior 4.x style configuration options has been removed.  If you are upgrading from 4.x version you will have to manually convert the legacy MQTT option to the MQTT URL style.
 
 **New Features**
 - Added ability to refine event stream to only motion events where a person is detected
 - Option to select which video the event stream uses:
   - Raw video (default) - This video is exactly as it was recorded by the camera
   - Transcoded video - This video includes Ring logo and timestamps and may included additional data such as pre-roll.
+- This version replaces rtsp-simple-server with go2rtc and includes optional integration with Home Assistant WebRTC for low-latency viewing without requiring the seperate go2rtc addon.
 
 ## v5.0.5
 **!!!!! NOTE !!!!!**  
