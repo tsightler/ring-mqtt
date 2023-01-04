@@ -58,7 +58,8 @@ export default class Camera extends RingPolledDevice {
                     publishedStatus: '',
                 },
                 keepalive:{ 
-                    active: false, 
+                    active: false,
+                    session: false,
                     expires: 0
                 }
             },
@@ -717,7 +718,6 @@ export default class Camera extends RingPolledDevice {
         const duration = 86400
         if (this.data.stream.keepalive.active) { return }
         this.data.stream.keepalive.active = true
-        let ffmpegProcess
         let killSignal = 'SIGTERM'
 
         const rtspPublishUrl = (utils.config().livestream_user && utils.config().livestream_pass)
@@ -730,7 +730,7 @@ export default class Camera extends RingPolledDevice {
         // manually. It copies only the audio stream to null output just to
         // trigger rtsp server to start the on-demand stream and keep it running
         // when there are no other RTSP readers.
-        ffmpegProcess = spawn(pathToFfmpeg, [
+        this.data.stream.keepalive.session = spawn(pathToFfmpeg, [
             '-i', rtspPublishUrl,
             '-map', '0:a:0',
             '-c:a', 'copy',
@@ -738,12 +738,13 @@ export default class Camera extends RingPolledDevice {
             '/dev/null'
         ])
 
-        ffmpegProcess.on('spawn', async () => {
+        this.data.stream.keepalive.session.on('spawn', async () => {
             this.debug(`The keepalive stream has started`)
         })
 
-        ffmpegProcess.on('close', async () => {
+        this.data.stream.keepalive.session.on('close', async () => {
             this.data.stream.keepalive.active = false
+            this.data.stream.keepalive.session = false
             this.debug(`The keepalive stream has stopped`)
         })
 
@@ -766,8 +767,9 @@ export default class Camera extends RingPolledDevice {
             */
         }
 
-        ffmpegProcess.kill(killSignal)
+        this.data.stream.keepalive.session.kill(killSignal)
         this.data.stream.keepalive.active = false
+        this.data.stream.keepalive.session = false
     }
 
     async updateEventStreamUrl() {
@@ -996,7 +998,9 @@ export default class Camera extends RingPolledDevice {
                     this.startKeepaliveStream()
                     break;
                 case 'off':
-                    if (this.data.stream.live.session) {
+                    if (this.data.stream.keepalive.session) {
+                        this.data.stream.keepalive.session.kill('SIGTERM')
+                    } else if (this.data.stream.live.session) {
                         const streamData = {
                             deviceId: this.deviceId,
                             deviceName: this.device.name
