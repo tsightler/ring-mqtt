@@ -718,7 +718,6 @@ export default class Camera extends RingPolledDevice {
         const duration = 86400
         if (this.data.stream.keepalive.active) { return }
         this.data.stream.keepalive.active = true
-        let killSignal = 'SIGTERM'
 
         const rtspPublishUrl = (utils.config().livestream_user && utils.config().livestream_pass)
             ? `rtsp://${utils.config().livestream_user}:${utils.config().livestream_pass}@localhost:8554/${this.deviceId}_live`
@@ -753,7 +752,7 @@ export default class Camera extends RingPolledDevice {
         while (this.data.stream.keepalive.active && Math.floor(Date.now()/1000) < this.data.stream.keepalive.expires) {
             await utils.sleep(60)
         }
-        this.data.stream.keepalive.session.kill(killSignal)
+        this.data.stream.keepalive.session.kill()
         this.data.stream.keepalive.active = false
         this.data.stream.keepalive.session = false
     }
@@ -985,7 +984,7 @@ export default class Camera extends RingPolledDevice {
                     break;
                 case 'off':
                     if (this.data.stream.keepalive.session) {
-                        this.data.stream.keepalive.session.kill('SIGTERM')
+                        this.data.stream.keepalive.session.kill()
                     } else if (this.data.stream.live.session) {
                         const streamData = {
                             deviceId: this.deviceId,
