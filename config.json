@@ -7,9 +7,8 @@
     "enable_cameras": true,
     "enable_modes": false,
     "enable_panic": false,
+    "enable_ha_webrtc": false,
     "hass_topic": "homeassistant/status",
     "ring_topic": "ring",
-    "location_ids": [
-        ""
-    ]
+    "location_ids": []
 }
