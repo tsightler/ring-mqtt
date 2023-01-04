@@ -748,25 +748,11 @@ export default class Camera extends RingPolledDevice {
             this.debug(`The keepalive stream has stopped`)
         })
 
-        // If stream starts, set expire time, may be extended by new events
-        // (if only Ring sent events while streaming)
+        // The keepalive stream will time out after 24 hours
         this.data.stream.keepalive.expires = Math.floor(Date.now()/1000) + duration
-
-        while (Math.floor(Date.now()/1000) < this.data.stream.keepalive.expires) {
-            await utils.sleep(5)
-            /*
-            const pathDetails = await rss.getPathDetails(`${this.deviceId}_live`)
-            if (pathDetails.hasOwnProperty('sourceReady') && !pathDetails.sourceReady) {
-                // If the source stream stops (due to manual cancel or Ring timeout)
-                // force the keepalive stream to expire
-                this.debug('Ring live stream has stopped publishing, killing the keepalive stream')
-                this.data.stream.keepalive.expires = 0
-                    // For some reason the keepalive stream never times out so kill the process hard
-                killSignal = 'SIGKILL'
-            }
-            */
+        while (this.data.stream.keepalive.active && Math.floor(Date.now()/1000) < this.data.stream.keepalive.expires) {
+            await utils.sleep(60)
         }
-
         this.data.stream.keepalive.session.kill(killSignal)
         this.data.stream.keepalive.active = false
         this.data.stream.keepalive.session = false
