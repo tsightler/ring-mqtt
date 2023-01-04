@@ -678,23 +678,9 @@ export default class Camera extends RingPolledDevice {
         this.debug(`Streaming the ${(index==1?"":index==2?"2nd ":index==3?"3rd ":index+"th ")}most recently recorded ${kind} event`)
 
         try {
-
-            let preLoad = spawn(pathToFfmpeg, [
-                '-re',
-                '-i', dirname(fileURLToPath(new URL('.', import.meta.url)))+'/media/vid.mp4',
-                '-map', '0:v',
-                '-map', '0:a',
-                '-map', '0:a',
-                '-c:v', 'copy',
-                '-c:a:0', 'copy',
-                '-c:a:1', 'libopus',
-                '-rtsp_transport', 'tcp',
-                '-f', 'rtsp',
-                rtspPublishUrl
-            ])
-
             this.data.stream.event.session = spawn(pathToFfmpeg, [
                 '-re',
+                '-i', dirname(fileURLToPath(new URL('.', import.meta.url)))+'/media/vid.mp4',
                 '-i', this.data.event_select.recordingUrl,
                 '-map', '0:v',
                 '-map', '0:a',
