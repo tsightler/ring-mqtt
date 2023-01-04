@@ -1,15 +1,25 @@
 ## v5.1.0
-After several releases focused on stability and minor bug fixes its finally time to implement some new features!
+After several releases focused on stability and minor bug fixes this release includes significant internal changes and a few new features.
 
 **!!!!! WARNING !!!!!**  
-Starting with 5.1.x all backwards compatibiltiy with prior 4.x style configuration options has been removed.  If you are upgrading from 4.x version you will have to manually convert the legacy MQTT option to the MQTT URL style.
+Starting with 5.1.x all backwards compatibiltiy with prior 4.x style configuration options has been removed.  Upgrades from 4.x versions are still possible but will require manual conversion of any legacy configuration methods and options.  Upgrades from 5.0.x versions should not require any changes.
 
-**New Features**
+**New Features**  
 - Added ability to refine event stream to only motion events where a person is detected
 - Option to select which video the event stream uses:
   - Raw video (default) - This video is exactly as it was recorded by the camera
   - Transcoded video - This video includes Ring logo and timestamps and may included additional data such as pre-roll.
-- This version replaces rtsp-simple-server with go2rtc and includes optional integration with Home Assistant WebRTC for low-latency viewing without requiring the seperate go2rtc addon.
+- New camera models should now display with correct model/features
+- (Experimental) When running as a Home Assistant addon it is now possible to leverage the RTSPtoWebRTC integration directly with ring-mqtt to enable WebRTC for fast-startup/shutdown and low-latency viewing.  This integration is possible without the need for additional addons such as RTSPtoWebRTC, RTSPtoWeb, or Go2RTC, although you can still use those addons if desired.
+
+**Other Changes**  
+- Replaced rtsp-simple-server with go2rtc which, as noted above, provides native integration with Home Assitant WebRTC, but also opens the door for some cool new features in the future.
+- Migrated project codebase from CommonJS to ESM.  As this project is not a library this doesn't really mean much for end users, but it does make it easier to pull in newer versions of dependent packages that have also moved to pure ESM and thus improves the ongoing maintenance of this project.
+
+**Dependency Updates**  
+- Replaced problematic colors package with chalk for colorizing log output
+- Bump ring-client-api to 11.7.1 (various fixes and support for newer cameras)
+- Bump other dependent packages to latest versions
 
 ## v5.0.5
 **!!!!! NOTE !!!!!**  
@@ -18,7 +28,7 @@ This is a stability release only and I'm happy to announce that, with this relea
 **!!!!! WARNING !!!!!**  
 The 5.x releases are breaking releases when upgrading from 4.x versions, please be sure to read the [v5.0.0](#v500) release notes below for full details as manual steps may be required following an upgrade from 4.x versions.  Please note that support for direct upgrade from 4.x versions will be deprecated once the 5.1.x releases begin rolling out later this year so upgrading now is highly recommended.
 
-**Fixed Bugs**
+**Fixed Bugs**  
 - Fix typo in the camera event stream function that caused ring-mqtt to crash during event stream shutdown.
 
 ## v5.0.4
@@ -27,20 +37,20 @@ The 5.x releases are breaking releases when upgrading from 4.x versions, please 
 - Implement check and automatic recovery from null refresh token which can occur during Ring service outages.  Previously a manual restart of ring-mqtt was required after Ring outages that involved authentication failures.
 - Fix a case where regenerating a new refresh token failed to properly re-authenticate the API without restarting the addon.
 
-**Dependency Updates**
+**Dependency Updates**  
 - Bump ring-client-api to v11.3.0 to pull in latest push-receiver fixes for improved stability with motion/ding events
 
 ## v5.0.3
-**Fixed Bugs**
+**Fixed Bugs**  
 - Fix to prevent cases where live stream get stuck in "on" state even though no stream is active
 - Fix incorrect model name for First Alert CO alarms
 
-**Other Changes**
+**Other Changes**  
 - Additional debug logging on token updates in the hope of tracking down token refresh issues
 - Additional logging for live stream WebRTC connection start/end
 - Increase live stream timeout for no clients to 10 seconds.  Cameras that take more than a few seconds to start a stream may work on the 2nd attempt with this change.
 
-**Dependency Updates**
+**Dependency Updates**  
 - Migrate from v2 to v3 of s6-overlay process supervisor
 - Bump ring-client-api to v11.2.1 (new camera models and minor fixes)
 - Update rtsp-simple-server to v0.20.0 (misc RTSP fixes)

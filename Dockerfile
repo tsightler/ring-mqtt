@@ -1,4 +1,4 @@
-FROM alpine:3.16.2
+FROM alpine:3.16.3
 
 ENV LANG="C.UTF-8" \
     PS1="$(whoami)@$(hostname):$(pwd)$ " \
@@ -12,9 +12,9 @@ ENV LANG="C.UTF-8" \
 COPY . /app/ring-mqtt
 RUN S6_VERSION="v3.1.2.1" && \
     BASHIO_VERSION="v0.14.3" && \
-    RSS_VERSION="v0.21.0" && \
-    apk add --no-cache tar xz git libcrypto1.1 libssl1.1 musl-utils musl bash curl jq tzdata nodejs npm mosquitto-clients && \
+    GO2RTC_VERSION="v0.1-rc.6" && \
     APK_ARCH="$(apk --print-arch)" && \
+    apk add --no-cache tar xz git libcrypto1.1 libssl1.1 musl-utils musl bash curl jq tzdata nodejs npm mosquitto-clients && \
     curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/${S6_VERSION}/s6-overlay-noarch.tar.xz" | tar -Jxpf - -C / && \
     case "${APK_ARCH}" in \
         aarch64|armhf|x86_64) \
@@ -33,16 +33,17 @@ RUN S6_VERSION="v3.1.2.1" && \
     rm -Rf /app/ring-mqtt/init && \ 
     case "${APK_ARCH}" in \
         x86_64) \
-            RSS_ARCH="amd64";; \
+            GO2RTC_ARCH="amd64";; \
         aarch64) \
-            RSS_ARCH="arm64v8";; \
+            GO2RTC_ARCH="arm64";; \
         armv7|armhf) \
-            RSS_ARCH="armv7";; \
+            GO2RTC_ARCH="arm";; \
         *) \
             echo >&2 "ERROR: Unsupported architecture '$APK_ARCH'" \
             exit 1;; \
     esac && \
-    curl -L -s "https://github.com/aler9/rtsp-simple-server/releases/download/${RSS_VERSION}/rtsp-simple-server_${RSS_VERSION}_linux_${RSS_ARCH}.tar.gz" | tar zxf - -C /usr/local/bin rtsp-simple-server && \
+    curl -L -s -o /usr/local/bin/go2rtc "https://github.com/AlexxIT/go2rtc/releases/download/${GO2RTC_VERSION}/go2rtc_linux_${GO2RTC_ARCH}" && \
+    chmod +x /usr/local/bin/go2rtc && \
     curl -J -L -o /tmp/bashio.tar.gz "https://github.com/hassio-addons/bashio/archive/${BASHIO_VERSION}.tar.gz" && \
     mkdir /tmp/bashio && \
     tar zxvf /tmp/bashio.tar.gz --strip 1 -C /tmp/bashio && \
@@ -60,6 +61,7 @@ RUN S6_VERSION="v3.1.2.1" && \
 ENTRYPOINT [ "/init" ]
 
 EXPOSE 8554/tcp
+EXPOSE 8555/tcp
 EXPOSE 55123/tcp
 
 ARG BUILD_VERSION
