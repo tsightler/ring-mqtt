@@ -2,6 +2,8 @@ import RingPolledDevice from './base-polled-device.js'
 import utils from '../lib/utils.js'
 import pathToFfmpeg from 'ffmpeg-for-homebridge'
 import { spawn } from 'child_process'
+import { dirname } from 'path'
+import { fileURLToPath } from 'url'
 
 export default class Camera extends RingPolledDevice {
     constructor(deviceInfo) {
@@ -665,9 +667,6 @@ export default class Camera extends RingPolledDevice {
         const kind = eventSelect[0].toLowerCase().replace('-', '_')
         const index = eventSelect[1]
 
-        await this.updateEventStreamUrl()
-        this.publishEventSelectState()
-
         if (this.data.event_select.recordingUrl === '<No Valid URL>') {
             this.debug(`No valid recording was found for the ${(index==1?"":index==2?"2nd ":index==3?"3rd ":index+"th ")}most recent ${kind} event!`)
             this.data.stream.event.status = 'failed'
@@ -679,10 +678,23 @@ export default class Camera extends RingPolledDevice {
         this.debug(`Streaming the ${(index==1?"":index==2?"2nd ":index==3?"3rd ":index+"th ")}most recently recorded ${kind} event`)
 
         try {
-            this.data.stream.event.session = spawn(pathToFfmpeg, [
-                '-report',
+
+            let preLoad = spawn(pathToFfmpeg, [
                 '-re',
-                '-seekable', '1',
+                '-i', dirname(fileURLToPath(new URL('.', import.meta.url)))+'/media/vid.mp4',
+                '-map', '0:v',
+                '-map', '0:a',
+                '-map', '0:a',
+                '-c:v', 'copy',
+                '-c:a:0', 'copy',
+                '-c:a:1', 'libopus',
+                '-rtsp_transport', 'tcp',
+                '-f', 'rtsp',
+                rtspPublishUrl
+            ])
+
+            this.data.stream.event.session = spawn(pathToFfmpeg, [
+                '-re',
                 '-i', this.data.event_select.recordingUrl,
                 '-map', '0:v',
                 '-map', '0:a',
