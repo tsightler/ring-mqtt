@@ -677,20 +677,17 @@ export default class Camera extends RingPolledDevice {
 
         try {
             this.data.stream.event.session = spawn(pathToFfmpeg, [
-                '-report',
                 '-re',
-                /* '-i', dirname(fileURLToPath(new URL('.', import.meta.url)))+'/media/fast3.mp4', */
                 '-i', this.data.event_select.recordingUrl,
                 '-map', '0:v',
                 '-map', '0:a',
                 '-map', '0:a',
-                '-c:a:0', 'libopus',
-                '-c:a:1', 'copy',
                 '-c:v', 'libx264',
                 '-x264opts', 'keyint=20',
-                '-crf', '18',
+                '-crf', '17',
                 '-preset', 'ultrafast',
-                '-flags', '+global_header',
+                '-c:a:0', 'copy',
+                '-c:a:1', 'libopus',
                 '-rtsp_transport', 'tcp',
                 '-f', 'rtsp',
                 rtspPublishUrl
