@@ -689,6 +689,7 @@ export default class Camera extends RingPolledDevice {
                 '-x264opts', 'keyint=20',
                 '-crf', '18',
                 '-preset', 'ultrafast',
+                '-flags', '+global_header',
                 '-rtsp_transport', 'tcp',
                 '-f', 'rtsp',
                 rtspPublishUrl
