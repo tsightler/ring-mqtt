@@ -8,7 +8,7 @@ Starting with 5.1.x all backwards compatibiltiy with prior 4.x style configurati
 - Added ability to refine event stream to only motion events where a person is detected
 - Option to select which video the event stream uses:
   - Raw video (default) - This video is exactly as it was recorded by the camera
-  - Transcoded video - This video includes Ring logo and timestamps and may included additional data such as pre-roll.
+  - Transcoded video - This video includes Ring logo and timestamps and may included additional data such as pre-roll video for devices that support it.  These videos are not well optimized for streaming via RTSP, so they must be transcoded on-the-fly, but the URL allows for downloading the full video directly from Ring servers. 
 - New camera models should now display with correct model/features
 - (Experimental) When running as a Home Assistant addon it is now possible to leverage the RTSPtoWebRTC integration directly with ring-mqtt to enable WebRTC for fast-startup/shutdown and low-latency viewing.  This integration is possible without the need for additional addons such as RTSPtoWebRTC, RTSPtoWeb, or Go2RTC, although you can still use those addons if desired.
 
