@@ -2,8 +2,6 @@ import RingPolledDevice from './base-polled-device.js'
 import utils from '../lib/utils.js'
 import pathToFfmpeg from 'ffmpeg-for-homebridge'
 import { spawn } from 'child_process'
-import { dirname } from 'path'
-import { fileURLToPath } from 'url'
 
 export default class Camera extends RingPolledDevice {
     constructor(deviceInfo) {
@@ -685,13 +683,12 @@ export default class Camera extends RingPolledDevice {
                 '-map', '0:v',
                 '-map', '0:a',
                 '-map', '0:a',
+                '-c:a:0', 'copy',
+                '-c:a:1', 'libopus',
                 '-c:v', 'libx264',
                 '-x264opts', 'keyint=20',
                 '-crf', '18',
                 '-preset', 'ultrafast',
-                '-movflags', 'faststart',
-                '-c:a:0', 'copy',
-                '-c:a:1', 'libopus',
                 '-rtsp_transport', 'tcp',
                 '-f', 'rtsp',
                 rtspPublishUrl
