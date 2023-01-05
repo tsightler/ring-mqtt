@@ -695,6 +695,7 @@ export default class Camera extends RingPolledDevice {
                     '-preset', 'ultrafast',
                     '-c:a:0', 'copy',
                     '-c:a:1', 'libopus',
+                    '-movflags', 'isml+frag_keyframe',
                     '-rtsp_transport', 'tcp',
                     '-f', 'rtsp',
                     rtspPublishUrl
