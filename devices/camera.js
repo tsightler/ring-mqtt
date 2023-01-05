@@ -792,7 +792,7 @@ export default class Camera extends RingPolledDevice {
             selectedEvent = events[eventNumber-1]
 
             if (selectedEvent) {
-                if (selectedEvent.event_id !== this.data.event_select.eventId) {
+                if (selectedEvent.event_id !== this.data.event_select.eventId || this.data.event_select.transcoded !== transcoded) {
                     if (this.data.event_select.recordingUrl) {
                         this.debug(`New ${this.data.event_select.state} event detected, updating the recording URL`)
                     }
