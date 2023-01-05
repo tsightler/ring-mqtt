@@ -55,7 +55,7 @@ export default class Camera extends RingPolledDevice {
                     state: 'OFF',
                     status: 'inactive',
                     session: false,
-                    publishedStatus: '',
+                    publishedStatus: ''
                 },
                 keepalive:{ 
                     active: false,
@@ -71,6 +71,7 @@ export default class Camera extends RingPolledDevice {
                 pollCycle: 0,
                 recordingUrl: null,
                 recordingUrlExpire: null,
+                transcoded: false,
                 eventId: '0'
             },
             ...this.device.hasLight ? {
@@ -108,11 +109,15 @@ export default class Camera extends RingPolledDevice {
                 component: 'select',
                 options: [
                     ...(this.device.isDoorbot
-                        ? [ 'Ding 1', 'Ding 2', 'Ding 3', 'Ding 4', 'Ding 5' ]
+                        ? [ 'Ding 1', 'Ding 2', 'Ding 3', 'Ding 4', 'Ding 5', 
+                            'Ding 1 (Transcoded)', 'Ding 2 (Transcoded)', 'Ding 3 (Transcoded)', 'Ding 4 (Transcoded)', 'Ding 5 (Transcoded)' ]
                         : []),
                     'Motion 1', 'Motion 2', 'Motion 3', 'Motion 4', 'Motion 5',
+                    'Motion 1 (Transcoded)', 'Motion 2 (Transcoded)', 'Motion 3 (Transcoded)', 'Motion 4 (Transcoded)', 'Motion 5 (Transcoded)',
                     'Person 1', 'Person 2', 'Person 3', 'Person 4', 'Person 5',
-                    'On-demand 1', 'On-demand 2', 'On-demand 3', 'On-demand 4', 'On-demand 5'
+                    'Person 1 (Transcoded)', 'Person 2 (Transcoded)', 'Person 3 (Transcoded)', 'Person 4 (Transcoded)', 'Person 5 (Transcoded)',
+                    'On-demand 1', 'On-demand 2', 'On-demand 3', 'On-demand 4', 'On-demand 5',
+                    'On-demand 1 (Transcoded)', 'On-demand 2 (Transcoded)', 'On-demand 3 (Transcoded)', 'On-demand 4 (Transcoded)', 'On-demand 5 (Transcoded)',
                 ],
                 attributes: true
             },
@@ -661,9 +666,6 @@ export default class Camera extends RingPolledDevice {
     }
 
     async startEventStream(rtspPublishUrl) {
-        const eventSelect = this.data.event_select.state.split(' ')
-        const kind = eventSelect[0].toLowerCase().replace('-', '_')
-        const index = eventSelect[1]
 
         if (this.data.event_select.recordingUrl === '<No Valid URL>') {
             this.debug(`No valid recording was found for the ${(index==1?"":index==2?"2nd ":index==3?"3rd ":index+"th ")}most recent ${kind} event!`)
@@ -676,22 +678,39 @@ export default class Camera extends RingPolledDevice {
         this.debug(`Streaming the ${(index==1?"":index==2?"2nd ":index==3?"3rd ":index+"th ")}most recently recorded ${kind} event`)
 
         try {
-            this.data.stream.event.session = spawn(pathToFfmpeg, [
-                '-re',
-                '-i', this.data.event_select.recordingUrl,
-                '-map', '0:v',
-                '-map', '0:a',
-                '-map', '0:a',
-                '-c:v', 'libx264',
-                '-x264opts', 'keyint=20',
-                '-crf', '17',
-                '-preset', 'ultrafast',
-                '-c:a:0', 'copy',
-                '-c:a:1', 'libopus',
-                '-rtsp_transport', 'tcp',
-                '-f', 'rtsp',
-                rtspPublishUrl
-            ])
+            if (this.data.event_select.transcoded) {
+                // Ring transcoded videos are poorly optimized for RTSP streaming so they must be re-encoded on-the-fly
+                this.data.stream.event.session = spawn(pathToFfmpeg, [
+                    '-re',
+                    '-i', this.data.event_select.recordingUrl,
+                    '-map', '0:v',
+                    '-map', '0:a',
+                    '-map', '0:a',
+                    '-c:v', 'libx264',
+                    '-x264opts', 'keyint=20',
+                    '-crf', '17',
+                    '-preset', 'ultrafast',
+                    '-c:a:0', 'copy',
+                    '-c:a:1', 'libopus',
+                    '-rtsp_transport', 'tcp',
+                    '-f', 'rtsp',
+                    rtspPublishUrl
+                ])
+            } else {
+                this.data.stream.event.session = spawn(pathToFfmpeg, [
+                    '-re',
+                    '-i', this.data.event_select.recordingUrl,
+                    '-map', '0:v',
+                    '-map', '0:a',
+                    '-map', '0:a',
+                    '-c:v', 'copy',
+                    '-c:a:0', 'copy',
+                    '-c:a:1', 'libopus',
+                    '-rtsp_transport', 'tcp',
+                    '-f', 'rtsp',
+                    rtspPublishUrl
+                ])
+            }
 
             this.data.stream.event.session.on('spawn', async () => {
                 this.debug(`The recorded ${kind} event stream has started`)
@@ -760,6 +779,7 @@ export default class Camera extends RingPolledDevice {
         const eventSelect = this.data.event_select.state.split(' ')
         const eventType = eventSelect[0].toLowerCase().replace('-', '_')
         const eventNumber = eventSelect[1]
+        const transcoded = eventSelect[2] === '(Transcoded)' ? true : false
         const urlExpired = Math.floor(Date.now()/1000) - this.data.event_select.recordingUrlExpire > 0 ? true : false
         let selectedEvent
         let recordingUrl
@@ -770,14 +790,13 @@ export default class Camera extends RingPolledDevice {
 
             if (selectedEvent) {
                 if (selectedEvent.event_id !== this.data.event_select.eventId) {
-                    this.data.event_select.eventId = selectedEvent.event_id
                     if (this.data.event_select.recordingUrl) {
                         this.debug(`New ${this.data.event_select.state} event detected, updating the recording URL`)
                     }
-                    recordingUrl = await this.device.getRecordingUrl(selectedEvent.event_id, { transcoded: true })
+                    recordingUrl = await this.device.getRecordingUrl(selectedEvent.event_id, { transcoded })
                 } else if (urlExpired) {
                     this.debug(`Previous ${this.data.event_select.state} URL has expired, updating the recording URL`)
-                    recordingUrl = await this.device.getRecordingUrl(selectedEvent.event_id, { transcoded: true })
+                    recordingUrl = await this.device.getRecordingUrl(selectedEvent.event_id, { transcoded })
                 }
             }
         } catch(error) {
@@ -787,6 +806,8 @@ export default class Camera extends RingPolledDevice {
 
         if (recordingUrl) {
             this.data.event_select.recordingUrl = recordingUrl
+            this.data.event_select.transcoded = transcoded
+            this.data.event_select.eventId = selectedEvent.event_id
 
             // Try to parse URL parameters to set expire time
             const urlSearch = new URLSearchParams(recordingUrl)
@@ -800,6 +821,7 @@ export default class Camera extends RingPolledDevice {
             }
         } else if (urlExpired || !selectedEvent) {
             this.data.event_select.recordingUrl = '<No Valid URL>'
+            this.data.event_select.transcoded = transcoded
             this.data.event_select.eventId = '0'
             return false
         }
