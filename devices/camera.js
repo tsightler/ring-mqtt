@@ -690,7 +690,7 @@ export default class Camera extends RingPolledDevice {
                     '-map', '0:a',
                     '-map', '0:a',
                     '-c:v', 'libx264',
-                    '-x264opts', 'keyint=10',
+                    '-x264opts', 'keyint=250',
                     '-crf', '17',
                     '-preset', 'ultrafast',
                     '-c:a:0', 'copy',
