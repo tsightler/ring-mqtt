@@ -666,16 +666,19 @@ export default class Camera extends RingPolledDevice {
     }
 
     async startEventStream(rtspPublishUrl) {
-
+        const eventSelect = this.data.event_select.state.split(' ')
+        const eventType = eventSelect[0].toLowerCase().replace('-', '_')
+        const eventNumber = eventSelect[1]
+        
         if (this.data.event_select.recordingUrl === '<No Valid URL>') {
-            this.debug(`No valid recording was found for the ${(index==1?"":index==2?"2nd ":index==3?"3rd ":index+"th ")}most recent ${kind} event!`)
+            this.debug(`No valid recording was found for the ${(eventNumber==1?"":eventNumber==2?"2nd ":eventNumber==3?"3rd ":eventNumber+"th ")}most recent ${eventType} event!`)
             this.data.stream.event.status = 'failed'
             this.data.stream.event.session = false
             this.publishStreamState()
             return
         }
 
-        this.debug(`Streaming the ${(index==1?"":index==2?"2nd ":index==3?"3rd ":index+"th ")}most recently recorded ${kind} event`)
+        this.debug(`Streaming the ${(eventNumber==1?"":eventNumber==2?"2nd ":eventNumber==3?"3rd ":eventNumber+"th ")}most recently recorded ${eventType} event`)
 
         try {
             if (this.data.event_select.transcoded) {
@@ -713,13 +716,13 @@ export default class Camera extends RingPolledDevice {
             }
 
             this.data.stream.event.session.on('spawn', async () => {
-                this.debug(`The recorded ${kind} event stream has started`)
+                this.debug(`The recorded ${eventType} event stream has started`)
                 this.data.stream.event.status = 'active'
                 this.publishStreamState()
             })
 
             this.data.stream.event.session.on('close', async () => {
-                this.debug(`The recorded ${kind} event stream has ended`)
+                this.debug(`The recorded ${eventType} event stream has ended`)
                 this.data.stream.event.status = 'inactive'
                 this.data.stream.event.session = false
                 this.publishStreamState()
