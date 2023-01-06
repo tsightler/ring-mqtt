@@ -670,8 +670,6 @@ export default class Camera extends RingPolledDevice {
         const eventType = eventSelect[0].toLowerCase().replace('-', '_')
         const eventNumber = eventSelect[1]
 
-        await updateEventStreamUrl()
-        
         if (this.data.event_select.recordingUrl === '<No Valid URL>') {
             this.debug(`No valid recording was found for the ${(eventNumber==1?"":eventNumber==2?"2nd ":eventNumber==3?"3rd ":eventNumber+"th ")}most recent ${eventType} event!`)
             this.data.stream.event.status = 'failed'
