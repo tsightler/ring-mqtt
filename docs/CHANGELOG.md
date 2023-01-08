@@ -6,15 +6,14 @@ Starting with 5.1.x all backwards compatibiltiy with prior 4.x style configurati
 
 **New Features**  
 - Added ability to refine event stream to only motion events where a person is detected
-- Option to select which video the event stream uses:
+- Option to select transcoded vs raw video for event stream:
   - Raw video (default) - This video is exactly as it was recorded by the camera
-  - Transcoded video - This video includes Ring logo and timestamps and may included additional data such as pre-roll video for devices that support it.  These videos are not well optimized for streaming via RTSP, so they must be transcoded on-the-fly, but the URL allows for downloading the full video directly from Ring servers. 
+  - Transcoded video - This is the same as selecting to share/download video from the Ring app or web dahsboard.  This video includes the Ring logo and timestamps and may include supplemental pre-roll video for supported devices.  Note that switching from a raw to transcoded event selection can take 10-15 seconds as ring-mqtt has to wait for the Ring servers to process the video and the URL to be returned as transcoded videos are created on-demand. 
 - New camera models should now display with correct model/features
-- (Experimental) When running as a Home Assistant addon it is now possible to leverage the RTSPtoWebRTC integration directly with ring-mqtt to enable WebRTC for fast-startup/shutdown and low-latency viewing.  This integration is possible without the need for additional addons such as RTSPtoWebRTC, RTSPtoWeb, or Go2RTC, although you can still use those addons if desired.
+- (Experimental) The ring-mqtt project now directly integrates go2rtc which means that, when running with Home Assistant, it is now possible to leverage the RTSPtoWebRTC integration directly with ring-mqtt without the need for additional addons such as RTSPtoWebRTC, RTSPtoWeb, or Go2RTC, although you can still use those addons if desired.  This enables low-latency vieweing with fast-startup/shutdown, directly withing the Home Assistant UI.
 
 **Other Changes**  
-- Replaced rtsp-simple-server with go2rtc which, as noted above, provides native integration with Home Assitant WebRTC, but also opens the door for some cool new features in the future.
-- Migrated project codebase from CommonJS to ESM.  As this project is not a library this doesn't really mean much for end users, but it does make it easier to pull in newer versions of dependent packages that have also moved to pure ESM and thus improves the ongoing maintenance of this project.
+- Migrated project codebase from CommonJS to ESM.  As this project is not a library this doesn't really impact end users, but it does ease ongoing maintenance by enabling the ability to pull in newer versions of dependent packages that have also moved to pure ESM.
 
 **Dependency Updates**  
 - Replaced problematic colors package with chalk for colorizing log output
