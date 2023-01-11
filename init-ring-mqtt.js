@@ -78,24 +78,25 @@ const main = async() => {
         console.log(err)
     }
 
-    const configData = {
-        "mqtt_url": "mqtt://localhost:1883",
-        "mqtt_options": "",
-        "livestream_user": "",
-        "livestream_pass": "",
-        "disarm_code": "",
-        "enable_cameras": true,
-        "enable_modes": false,
-        "enable_panic": false,
-        "hass_topic": "homeassistant/status",
-        "ring_topic": "ring",
-        "location_ids": [
-            ""
-        ]
-    }
-
     if (!fs.existsSync(configFile)) {
         try {
+            const configData = {
+                "mqtt_url": "mqtt://localhost:1883",
+                "mqtt_options": "",
+                "livestream_user": "",
+                "livestream_pass": "",
+                "disarm_code": "",
+                "enable_cameras": true,
+                "enable_modes": false,
+                "enable_panic": false,
+                "hass_topic": "homeassistant/status",
+                "ring_topic": "ring",
+                "location_ids": []
+            }
+
+            const mqttUrl = await requestInput('MQTT URL (enter to skip and edit config manually): ')
+            configData.mqtt_url = mqttUrl ? mqttUrl : configData.mqtt_url
+
             await writeFileAtomic(configFile, JSON.stringify(configData, null, 4))
             console.log('New config file written to '+configFile)
         } catch (err) {
