@@ -8,12 +8,12 @@ Starting with 5.1.x all backwards compatibiltiy with prior 4.x style configurati
 - Added ability to refine event stream to only motion events where a person is detected
 - Option to select transcoded vs raw video for event stream:
   - Raw video (default) - This video is exactly as it was recorded by the camera
-  - Transcoded video - This is the same as selecting to share/download video from the Ring app or web dahsboard.  This video includes the Ring logo and timestamps and may include supplemental pre-roll video for supported devices.  Note that switching from a raw to transcoded event selection can take 10-15 seconds as ring-mqtt has to wait for the Ring servers to process the video and the URL to be returned as transcoded videos are created on-demand. 
+  - Transcoded video - This is the same as selecting to share/download video from the Ring app or web dashboard.  This video includes the Ring logo and timestamps and may include supplemental pre-roll video for supported devices.  Note that switching from a raw to transcoded event selection can take 10-15 seconds as transcoded videos are created on-demand so ring-mqtt must wait for the Ring servers to process the video and return the URL. 
 - New camera models should now display with correct model/features
-- (Experimental) The ring-mqtt project now directly integrates go2rtc which means that, when running with Home Assistant, it is now possible to leverage the RTSPtoWebRTC integration directly with ring-mqtt without the need for additional addons such as RTSPtoWebRTC, RTSPtoWeb, or Go2RTC, although you can still use those addons if desired.  This enables low-latency vieweing with fast-startup/shutdown, directly withing the Home Assistant UI.
 
 **Other Changes**  
-- Migrated project codebase from CommonJS to ESM.  As this project is not a library this doesn't really impact end users, but it does ease ongoing maintenance by enabling the ability to pull in newer versions of dependent packages that have also moved to pure ESM.
+- Switched from rtsp-simple-server to go2rtc as the core streaming engine which provides slightly faster stream startup and opens the door for future feature enhancements.  This switch is expected to be transparent for users, but please report any issues.
+- Migrated project codebase from CommonJS to ESM.  As this project is not a library this should have no impact for users, but it does ease ongoing maintenance by enabling the ability to pull in newer versions of dependent packages that have also moved to pure ESM.
 
 **Dependency Updates**  
 - Replaced problematic colors package with chalk for colorizing log output
