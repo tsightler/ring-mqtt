@@ -31,8 +31,6 @@ if [ -v HASSIO_TOKEN ]; then
     # Export a few helper variables for building the Streaming and Still Image URLs
     export HAHOSTNAME=$(bashio::info.hostname)
     export ADDONHOSTNAME=$HOSTNAME
-    HAIPADDRCIDR=$(bashio::network.ipv4_address) # Get IPv4 address of default interface with CIDR prefix
-    export HAIPADDRESS=${HAIPADDRCIDR%/*} # Strip CIDR prefix to get raw IPv4 address
 else
     export RUNMODE="docker"
 
@@ -47,6 +45,8 @@ else
     fi
 fi
 
+export FORCE_COLOR=2
+
 if [ "${BRANCH}" = "latest" ] || [ "${BRANCH}" = "dev" ]; then
     cd "/app/ring-mqtt-${BRANCH}"
 else
@@ -59,8 +59,6 @@ echo Node version $(node -v)
 echo NPM version $(npm -v)
 echo $(git --version)
 echo "-------------------------------------------------------"
-
-export FORCE_COLOR=2
 
 echo "Running ring-mqtt..."
 exec ./ring-mqtt.js
