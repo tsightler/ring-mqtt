@@ -32,7 +32,8 @@ parentPort.on("message", async(data) => {
                 // stream is converted into two output streams using both AAC and Opus codecs.  This
                 // provides a stream with wide compatibility across various media player technologies.
                 input: [
-                    '-sync', 'ext'
+                    '-report',
+                    '-probesize', '32'
                 ],
                 audio: [
                     '-map', '0:v',
