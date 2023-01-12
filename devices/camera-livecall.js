@@ -14,7 +14,6 @@ let liveCall = false
 
 parentPort.on("message", async(data) => {
     const streamData = data.streamData
-    console.log(streamData)
     if (data.command === 'start' && !liveCall) {
         try {
             const cameraData = {
