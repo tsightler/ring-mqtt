@@ -663,7 +663,6 @@ export default class Camera extends RingPolledDevice {
         }
 
         if (streamData.sessionId || streamData.authToken) {
-            debug(chalk.yellowBright(`[${deviceName}] `)+'Sending start command to Livecall worker')
             this.data.stream.live.worker.postMessage({ command: 'start', streamData })
         } else {
             this.debug('Live stream failed to activate')
