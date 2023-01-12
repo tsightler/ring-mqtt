@@ -1,6 +1,7 @@
 import RingPolledDevice from './base-polled-device.js'
 import utils from '../lib/utils.js'
 import pathToFfmpeg from 'ffmpeg-for-homebridge'
+import { Worker } from 'worker_threads'
 import { spawn } from 'child_process'
 
 export default class Camera extends RingPolledDevice {
@@ -49,7 +50,16 @@ export default class Camera extends RingPolledDevice {
                     state: 'OFF',
                     status: 'inactive',
                     session: false,
-                    publishedStatus: ''
+                    publishedStatus: '',
+                    worker: new Worker('./devices/camera-livecall.js', 
+                        { workerData: 
+                            { 
+                                locationId: this.locationId,
+                                deviceId: this.deviceId,
+                                doorbotId: this.device.id,
+                                deviceName: this.deviceData.name
+                            }
+                        })
                 },
                 event: {
                     state: 'OFF',
@@ -161,8 +171,8 @@ export default class Camera extends RingPolledDevice {
             }
         }
 
-        utils.event.on(`livestream_${this.deviceId}`, (state) => {
-            switch (state) {
+        this.data.stream.live.worker.on('message', (data) => {
+            switch (data.state) {
                 case 'active':
                     if (this.data.stream.live.status !== 'active') {
                         this.debug('Live stream has been successfully activated')
@@ -624,9 +634,6 @@ export default class Camera extends RingPolledDevice {
     async startLiveStream(rtspPublishUrl) {
         this.data.stream.live.session = true
         const streamData = {
-            deviceId: this.deviceId,
-            deviceName: this.device.name,
-            doorbotId: this.device.id,
             rtspPublishUrl,
             sessionId: false,
             authToken: false
@@ -656,7 +663,7 @@ export default class Camera extends RingPolledDevice {
         }
 
         if (streamData.sessionId || streamData.authToken) {
-            utils.event.emit('start_livestream', streamData)
+            this.data.stream.live.worker.postMessage({ command: 'start', streamData })
         } else {
             this.debug('Live stream failed to activate')
             this.data.stream.live.status = 'failed'
@@ -1016,7 +1023,7 @@ export default class Camera extends RingPolledDevice {
                             deviceId: this.deviceId,
                             deviceName: this.device.name
                         }
-                        utils.event.emit('stop_livestream', streamData)
+                        this.data.stream.live.worker.postMessage({ command: 'stop' })
                     } else {
                         this.data.stream.live.status = 'inactive'
                         this.publishStreamState()
