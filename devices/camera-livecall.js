@@ -33,8 +33,7 @@ parentPort.on("message", async(data) => {
                 // provides a stream with wide compatibility across various media player technologies.
                 input: [
                     '-probesize', '32',
-                    '-analyzeduration', '0',
-                    '-sync', 'ext'
+                    '-analyzeduration', '0'
                 ],
                 audio: [
                     '-map', '0:v',
