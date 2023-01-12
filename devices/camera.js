@@ -663,6 +663,7 @@ export default class Camera extends RingPolledDevice {
         }
 
         if (streamData.sessionId || streamData.authToken) {
+            debug(chalk.yellowBright(`[${deviceName}] `)+'Sending start command to Livecall worker')
             this.data.stream.live.worker.postMessage({ command: 'start', streamData })
         } else {
             this.debug('Live stream failed to activate')
@@ -703,6 +704,7 @@ export default class Camera extends RingPolledDevice {
                     '-preset', 'ultrafast',
                     '-c:a:0', 'copy',
                     '-c:a:1', 'libopus',
+                    '-flags', '+global_header',
                     '-rtsp_transport', 'tcp',
                     '-f', 'rtsp',
                     rtspPublishUrl
@@ -717,6 +719,7 @@ export default class Camera extends RingPolledDevice {
                     '-c:v', 'copy',
                     '-c:a:0', 'copy',
                     '-c:a:1', 'libopus',
+                    '-flags', '+global_header',
                     '-rtsp_transport', 'tcp',
                     '-f', 'rtsp',
                     rtspPublishUrl
