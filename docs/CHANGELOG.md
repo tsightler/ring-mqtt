@@ -12,8 +12,10 @@ Starting with 5.1.x all backwards compatibiltiy with prior 4.x style configurati
 - New camera models should now display with correct model/features
 
 **Other Changes**  
-- Switched from rtsp-simple-server to go2rtc as the core streaming engine which provides slightly faster stream startup and opens the door for future feature enhancements.  This switch is expected to be transparent for users, but please report any issues.
-- Migrated project codebase from CommonJS to ESM.  As this project is not a library this should have no impact for users, but it does ease ongoing maintenance by enabling the ability to pull in newer versions of dependent packages that have also moved to pure ESM.
+- Reduced average live stream startup time by ~200-300 milliseconds with the following changes (for my setup live stream startup time is ~2 seconds, sometimes as low as 1.8 seconds, with 8 cameras on an RPi 4):
+  - Switched from rtsp-simple-server to go2rtc as the core streaming engine which provides slightly faster stream startup and opens the door for future feature enhancements.  This switch is expected to be transparent for users, but please report any issues.
+  - Cameras now allocate a dedicated worker thread for live streaming vs previous versions which used a pool of worker threads based on the number of processor cores detected.  This significantly simplifies the live stream code which leads to faster stream startup and, hopefully, more reliable recovery from various error conditions.  For most users this should not be a significant change, however, for users with significantly more cameras than processor cores, the overall memory usage will increase vs previous versions.
+- Migrated project codebase from CommonJS to ESM.  As this project is not a library this should have no impact for users, but it does ease ongoing maintenance by enabling the ability to pull in newer versions of various dependent packages that have also moved to pure ESM.
 
 **Dependency Updates**  
 - Replaced problematic colors package with chalk for colorizing log output
