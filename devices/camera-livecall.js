@@ -6,8 +6,6 @@ import chalk from 'chalk'
 import debugModule from 'debug'
 const debug = debugModule('ring-mqtt')
 
-const locationId = workerData.locationId
-const deviceId = workerData.deviceId
 const deviceName = workerData.deviceName
 const doorbotId = workerData.doorbotId
 let liveCall = false
