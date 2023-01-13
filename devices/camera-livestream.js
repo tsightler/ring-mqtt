@@ -8,11 +8,11 @@ const debug = debugModule('ring-mqtt')
 
 const deviceName = workerData.deviceName
 const doorbotId = workerData.doorbotId
-let liveCall = false
+let liveStream = false
 
 parentPort.on("message", async(data) => {
     const streamData = data.streamData
-    if (data.command === 'start' && !liveCall) {
+    if (data.command === 'start' && !liveStream) {
         try {
             const cameraData = {
                 name: deviceName,
@@ -21,23 +21,23 @@ parentPort.on("message", async(data) => {
             const streamConnection = (streamData.sessionId)
                 ? new WebrtcConnection(streamData.sessionId, cameraData)
                 : new RingEdgeConnection(streamData.authToken, cameraData)
-            liveCall = new StreamingSession(cameraData, streamConnection)
+            liveStream = new StreamingSession(cameraData, streamConnection)
 
-            liveCall.connection.pc.onConnectionState.subscribe(async (data) => {
+            liveStream.connection.pc.onConnectionState.subscribe(async (data) => {
                 switch(data) {
                     case 'connected':
                         parentPort.postMessage({ state: 'active' })
                         break;
                     case 'failed':
                         parentPort.postMessage({ state: 'failed' })
-                        liveCall.stop()
+                        liveStream.stop()
                         await new Promise(res => setTimeout(res, 2000))
-                        liveCall = false
+                        liveStream = false
                         break;
                 }
             })
 
-            await liveCall.startTranscoding({
+            await liveStream.startTranscoding({
                 // The native AVC video stream is copied to the RTSP server unmodified while the audio 
                 // stream is converted into two output streams using both AAC and Opus codecs.  This
                 // provides a stream with wide compatibility across various media player technologies.
@@ -60,23 +60,23 @@ parentPort.on("message", async(data) => {
                 ]
             })
 
-            liveCall.onCallEnded.subscribe(() => {
+            liveStream.onCallEnded.subscribe(() => {
                 debug(chalk.green(`[${deviceName}] `)+'Live stream for camera has ended')
                 parentPort.postMessage({ state: 'inactive' })
-                liveCall = false
+                liveStream = false
             })
         } catch(e) {
             debug(e)
             parentPort.postMessage({ state: 'failed' })
-            liveCall = false
+            liveStream = false
         }
     } else if (data.command === 'stop') {
-        if (liveCall) {
-            liveCall.stop()
+        if (liveStream) {
+            liveStream.stop()
             await new Promise(res => setTimeout(res, 2000))
-            if (liveCall) {
+            if (liveStream) {
                 debug(chalk.green(`[${deviceName}] `)+'Live stream failed to stop on request, deleting anyway...')
-                liveCall = false
+                liveStream = false
                 parentPort.postMessage({ state: 'inactive' })
             }
         } else {

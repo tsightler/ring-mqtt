@@ -51,11 +51,9 @@ export default class Camera extends RingPolledDevice {
                     status: 'inactive',
                     session: false,
                     publishedStatus: '',
-                    worker: new Worker('./devices/camera-livecall.js', 
+                    worker: new Worker('./devices/camera-livestream.js', 
                         { workerData: 
                             { 
-                                locationId: this.locationId,
-                                deviceId: this.deviceId,
                                 doorbotId: this.device.id,
                                 deviceName: this.deviceData.name
                             }
@@ -641,11 +639,11 @@ export default class Camera extends RingPolledDevice {
 
         try {
             if (this.device.isRingEdgeEnabled) {
-                this.debug('Starting a live stream session via Ring Edge')
+                this.debug('Activating a live stream session via Ring Edge')
                 const auth = await this.device.restClient.getCurrentAuth()
                 streamData.authToken = auth.access_token
             } else {
-                this.debug('Starting a live stream session via Ring servers')
+                this.debug('Activating a live stream session via Ring servers')
                 const liveCall = await this.device.restClient.request({
                     method: 'POST',
                     url: this.device.doorbotUrl('live_call')
