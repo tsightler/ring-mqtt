@@ -22,7 +22,7 @@ else
     echo "The ring-mqtt-${BRANCH} branch has been updated."
     
     APK_ARCH="$(apk --print-arch)"
-    GO2RTC_VERSION="v0.1-rc.7-ring-mqtt"
+    GO2RTC_VERSION="v0.1-rc.8-ring-mqtt"
     case "${APK_ARCH}" in
         x86_64)
             GO2RTC_ARCH="amd64";;
