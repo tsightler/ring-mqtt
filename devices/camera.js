@@ -1007,7 +1007,7 @@ export default class Camera extends RingPolledDevice {
             } else {
                 this.data.stream.live.status = 'activating'
                 this.publishStreamState()
-                this.startLiveStream(message.split(' ')[1]) // Portion after backslash is RTSP publish URL
+                this.startLiveStream(message.split(' ')[1]) // Portion after space is the RTSP publish URL
             }
         } else {
             switch (command) {
