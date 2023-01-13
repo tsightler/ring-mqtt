@@ -24,6 +24,11 @@ parentPort.on("message", async(data) => {
                 ? new WebrtcConnection(streamData.sessionId, cameraData)
                 : new RingEdgeConnection(streamData.authToken, cameraData)
             liveCall = new StreamingSession(cameraData, streamConnection)
+
+            liveCall.connection.pc.onConnectionState.subscribe((data) => {
+                console.log(data)
+            })
+
             await liveCall.startTranscoding({
                 // The native AVC video stream is copied to the RTSP server unmodified while the audio 
                 // stream is converted into two output streams using both AAC and Opus codecs.  This
@@ -46,7 +51,6 @@ parentPort.on("message", async(data) => {
                     streamData.rtspPublishUrl
                 ]
             })
-            console.log(liveCall.connection.pc)
             parentPort.postMessage({ state: 'active' })
             liveCall.onCallEnded.subscribe(() => {
                 debug(chalk.green(`[${deviceName}] `)+'Live stream for camera has ended')
