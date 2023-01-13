@@ -25,8 +25,18 @@ parentPort.on("message", async(data) => {
                 : new RingEdgeConnection(streamData.authToken, cameraData)
             liveCall = new StreamingSession(cameraData, streamConnection)
 
-            liveCall.connection.pc.onConnectionState.subscribe((data) => {
-                console.log(data)
+            liveCall.connection.pc.onConnectionState.subscribe(async (data) => {
+                switch(data) {
+                    case 'connected':
+                        parentPort.postMessage({ state: 'active' })
+                        break;
+                    case 'failed':
+                        parentPort.postMessage({ state: 'failed' })
+                        liveCall.stop()
+                        await new Promise(res => setTimeout(res, 2000))
+                        liveCall = false
+                        break;
+                }
             })
 
             await liveCall.startTranscoding({
@@ -51,7 +61,7 @@ parentPort.on("message", async(data) => {
                     streamData.rtspPublishUrl
                 ]
             })
-            parentPort.postMessage({ state: 'active' })
+
             liveCall.onCallEnded.subscribe(() => {
                 debug(chalk.green(`[${deviceName}] `)+'Live stream for camera has ended')
                 parentPort.postMessage({ state: 'inactive' })
@@ -59,8 +69,8 @@ parentPort.on("message", async(data) => {
             })
         } catch(e) {
             debug(e)
-            parentPort.postMessage({ state: 'failed', liveCallData: { deviceId: streamData.deviceId }})
-            return false
+            parentPort.postMessage({ state: 'failed' })
+            liveCall = false
         }
     } else if (data.command === 'stop') {
         if (liveCall) {
