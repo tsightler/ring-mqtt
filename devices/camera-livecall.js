@@ -46,7 +46,7 @@ parentPort.on("message", async(data) => {
                     streamData.rtspPublishUrl
                 ]
             })
-            console.log(liveCall.pc)
+            console.log(liveCall)
             parentPort.postMessage({ state: 'active' })
             liveCall.onCallEnded.subscribe(() => {
                 debug(chalk.green(`[${deviceName}] `)+'Live stream for camera has ended')
