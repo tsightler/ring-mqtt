@@ -197,7 +197,7 @@ export default class Camera extends RingPolledDevice {
         })
 
         this.data.stream.live.worker.on('exit', () => {
-            this.debug("Live stream worker exited, starting a new one")
+            this.debug("Live stream worker exited, starting a new worker")
             this.data.stream.live.worker = new Worker('./devices/camera-livestream.js', {   
                 resourceLimits: {
                     maxYoungGenerationSizeM: 64
