@@ -64,7 +64,6 @@ parentPort.on("message", async(data) => {
                 debug(chalk.green(`[${deviceName}] `)+'Live stream for camera has ended')
                 parentPort.postMessage({ state: 'inactive' })
                 liveStream = false
-                process.exit(0)
             })
         } catch(e) {
             debug(e)
@@ -77,7 +76,7 @@ parentPort.on("message", async(data) => {
             if (liveStream) {
                 parentPort.postMessage({ state: 'inactive' })
             }
-            process.exit(0)
+            process.kill()
         } else {
             debug(chalk.green(`[${deviceName}] `)+'Received live stream stop command but no active live call found')
             parentPort.postMessage({ state: 'inactive' })
