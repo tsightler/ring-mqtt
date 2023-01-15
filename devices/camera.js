@@ -210,6 +210,12 @@ export default class Camera extends RingPolledDevice {
         })
 
         this.data.stream.live.worker.on('exit', () => {
+            if (this.data.stream.live.status === 'active') {
+                this.data.stream.live.status === 'inactive'
+            } else if (this.data.stream.live.status === 'activating') {
+                this.data.stream.live.status === 'failed'
+            }
+            this.publishStreamState()
             this.debug("Live stream worker exited, starting a new worker")
             this.startLiveStreamWorker()
         })
