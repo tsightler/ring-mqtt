@@ -73,10 +73,12 @@ parentPort.on("message", async(data) => {
     } else if (data.command === 'stop') {
         if (liveStream) {
             liveStream.stop()
-            if (livestream) {
+            await new Promise(res => setTimeout(res, 2000))
+            if (liveStream) {
+                debug(chalk.green(`[${deviceName}] `)+'Live stream failed to stop on request, deleting anyway...')
+                liveStream = false
                 parentPort.postMessage({ state: 'inactive' })
             }
-            process.exit()
         } else {
             debug(chalk.green(`[${deviceName}] `)+'Received live stream stop command but no active live call found')
             parentPort.postMessage({ state: 'inactive' })
