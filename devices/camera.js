@@ -51,10 +51,7 @@ export default class Camera extends RingPolledDevice {
                     status: 'inactive',
                     session: false,
                     publishedStatus: '',
-                    worker: new Worker('./devices/camera-livestream.js', {   
-                        resourceLimits: {
-                            maxYoungGenerationSizeM: 64
-                        },
+                    worker: new Worker('./devices/camera-livestream.js', {
                         workerData: { 
                             doorbotId: this.device.id,
                             deviceName: this.deviceData.name
