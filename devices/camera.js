@@ -196,6 +196,19 @@ export default class Camera extends RingPolledDevice {
             this.publishStreamState()
         })
 
+        this.data.stream.live.worker.on('exit', () => {
+            this.debug("Live stream worker exited, starting a new one")
+            this.data.stream.live.worker = new Worker('./devices/camera-livestream.js', {   
+                resourceLimits: {
+                    maxYoungGenerationSizeM: 64
+                },
+                workerData: { 
+                    doorbotId: this.device.id,
+                    deviceName: this.deviceData.name
+                }
+            })
+        })
+
         this.device.onNewNotification.subscribe(notification => {
             this.processNotification(notification)
         })
