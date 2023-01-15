@@ -638,7 +638,7 @@ export default class Camera extends RingPolledDevice {
                 const auth = await this.device.restClient.getCurrentAuth()
                 streamData.authToken = auth.access_token
             } else {
-                this.debug('Activating a live stream session via Ring servers')
+                this.debug('Activating a live stream session via Ring Cloud')
                 const liveCall = await this.device.restClient.request({
                     method: 'POST',
                     url: this.device.doorbotUrl('live_call')
@@ -656,9 +656,10 @@ export default class Camera extends RingPolledDevice {
         }
 
         if (streamData.sessionId || streamData.authToken) {
+            this.debug('Initializing live stream WebRTC worker')
             this.data.stream.live.worker.postMessage({ command: 'start', streamData })
         } else {
-            this.debug('Live stream failed to activate')
+            this.debug('Live stream activation failed')
             this.data.stream.live.status = 'failed'
             this.data.stream.live.session = false
             this.publishStreamState()
