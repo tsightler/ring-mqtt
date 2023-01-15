@@ -501,7 +501,17 @@ export default class Camera extends RingPolledDevice {
         if (deviceHealth) {
             const attributes = {}
             if (this.device.hasBattery) {
-                attributes.batteryLevel = deviceHealth.battery_percentage
+                attributes.batteryLevel = this.device.batteryLevel === null ? 0 : this.device.batteryLevel
+                if (this.device.data.hasOwnProperty('battery_life') || this.device.data.hasOwnProperty('battery_voltage')) {
+                    attributes.batteryLife = this.device.data.hasOwnProperty('battery_life') && isNaN(this.device.data.battery_life) 
+                        ? 0
+                        : Number.parseFloat(this.device.data.battery_life)
+                } 
+                if (this.device.data.hasOwnProperty('battery_life_2') || this.device.data.hasOwnProperty('battery_voltage_2')) {
+                    attributes.batteryLife2 = this.device.data.hasOwnProperty('battery_life_2') && isNaN(this.device.data.battery_life_2)
+                        ? 0
+                        : Number.parseFloat(this.device.data.battery_life_2)
+                }
             }
             attributes.firmwareStatus = deviceHealth.firmware
             attributes.lastUpdate = deviceHealth.updated_at.slice(0,-6)+"Z"
