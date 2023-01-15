@@ -51,7 +51,15 @@ export default class Camera extends RingPolledDevice {
                     status: 'inactive',
                     session: false,
                     publishedStatus: '',
-                    worker: false
+                    worker: new Worker('./devices/camera-livestream.js', {   
+                        resourceLimits: {
+                            maxYoungGenerationSizeM: 64
+                        },
+                        workerData: { 
+                            doorbotId: this.device.id,
+                            deviceName: this.deviceData.name
+                        }
+                    })
                 },
                 event: {
                     state: 'OFF',
@@ -163,27 +171,6 @@ export default class Camera extends RingPolledDevice {
             }
         }
 
-        this.device.onNewNotification.subscribe(notification => {
-            this.processNotification(notification)
-        })
-
-        this.startLiveStreamWorker()
-        this.updateSnapshotMode()
-        this.scheduleSnapshotRefresh()
-        this.updateDeviceState()
-    }
-
-    startLiveStreamWorker() {
-        this.data.stream.live.worker = new Worker('./devices/camera-livestream.js', {   
-            resourceLimits: {
-                maxYoungGenerationSizeM: 64
-            },
-            workerData: { 
-                doorbotId: this.device.id,
-                deviceName: this.deviceData.name
-            }
-        })
-
         this.data.stream.live.worker.on('message', (data) => {
             switch (data.state) {
                 case 'active':
@@ -211,8 +198,25 @@ export default class Camera extends RingPolledDevice {
 
         this.data.stream.live.worker.on('exit', () => {
             this.debug("Live stream worker exited, starting a new worker")
-            this.startLiveStreamWorker()
+            this.data.stream.live.worker = new Worker('./devices/camera-livestream.js', {   
+                resourceLimits: {
+                    maxYoungGenerationSizeM: 64
+                },
+                workerData: { 
+                    doorbotId: this.device.id,
+                    deviceName: this.deviceData.name
+                }
+            })
         })
+
+        this.device.onNewNotification.subscribe(notification => {
+            this.processNotification(notification)
+        })
+
+        this.updateSnapshotMode()
+        this.scheduleSnapshotRefresh()
+
+        this.updateDeviceState()
     }
 
     updateDeviceState() {
