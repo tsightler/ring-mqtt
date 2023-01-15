@@ -73,7 +73,7 @@ parentPort.on("message", async(data) => {
     } else if (data.command === 'stop') {
         if (liveStream) {
             liveStream.stop()
-            if (liveStream) {
+            if (livestream) {
                 parentPort.postMessage({ state: 'inactive' })
             }
             process.exit()
