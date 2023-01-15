@@ -76,7 +76,7 @@ parentPort.on("message", async(data) => {
             if (liveStream) {
                 parentPort.postMessage({ state: 'inactive' })
             }
-            process.exit()
+            process.kill()
         } else {
             debug(chalk.green(`[${deviceName}] `)+'Received live stream stop command but no active live call found')
             parentPort.postMessage({ state: 'inactive' })
