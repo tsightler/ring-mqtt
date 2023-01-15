@@ -33,7 +33,7 @@ parentPort.on("message", async(data) => {
                         liveStream.stop()
                         await new Promise(res => setTimeout(res, 2000))
                         liveStream = false
-                        process.exit(0)
+                        break;
                 }
             })
 
@@ -70,7 +70,6 @@ parentPort.on("message", async(data) => {
             debug(e)
             parentPort.postMessage({ state: 'failed' })
             liveStream = false
-            process.exit(0)
         }
     } else if (data.command === 'stop') {
         if (liveStream) {
@@ -82,7 +81,6 @@ parentPort.on("message", async(data) => {
         } else {
             debug(chalk.green(`[${deviceName}] `)+'Received live stream stop command but no active live call found')
             parentPort.postMessage({ state: 'inactive' })
-            process.exit(0)
         }
     }
 })  
