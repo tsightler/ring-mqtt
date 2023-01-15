@@ -1,10 +1,7 @@
 import { parentPort, workerData } from 'worker_threads'
-import { WebrtcConnection } from '../node_modules/ring-client-api/lib/streaming/webrtc-connection.js'
-import { RingEdgeConnection } from '../node_modules/ring-client-api/lib/streaming/ring-edge-connection.js'
-import { StreamingSession } from '../node_modules/ring-client-api/lib/streaming/streaming-session.js'
-import chalk from 'chalk'
-import debugModule from 'debug'
-const debug = debugModule('ring-mqtt')
+import { WebrtcConnection } from '../lib/streaming/webrtc-connection.js'
+import { RingEdgeConnection } from '../lib/streaming/ring-edge-connection.js'
+import { StreamingSession } from '../lib/streaming/streaming-session.js'
 
 const deviceName = workerData.deviceName
 const doorbotId = workerData.doorbotId
@@ -26,10 +23,12 @@ parentPort.on("message", async(data) => {
             liveStream.connection.pc.onConnectionState.subscribe(async (data) => {
                 switch(data) {
                     case 'connected':
-                        parentPort.postMessage({ state: 'active' })
+                        parentPort.postMessage('active')
+                        parentPort.postMessage('Live stream WebRTC session has started')
                         break;
                     case 'failed':
-                        parentPort.postMessage({ state: 'failed' })
+                        parentPort.postMessage('failed')
+                        parentPort.postMessage('Live stream WebRTC session has failed')
                         liveStream.stop()
                         await new Promise(res => setTimeout(res, 2000))
                         liveStream = false
@@ -61,13 +60,13 @@ parentPort.on("message", async(data) => {
             })
 
             liveStream.onCallEnded.subscribe(() => {
-                debug(chalk.green(`[${deviceName}] `)+'Live stream for camera has ended')
-                parentPort.postMessage({ state: 'inactive' })
+                parentPort.postMessage('Live stream WebRTC session has ended')
+                parentPort.postMessage('inactive')
                 liveStream = false
             })
-        } catch(e) {
-            debug(e)
-            parentPort.postMessage({ state: 'failed' })
+        } catch(error) {
+            parentPort.postMessage(error)
+            parentPort.postMessage('failed')
             liveStream = false
         }
     } else if (data.command === 'stop') {
@@ -75,13 +74,14 @@ parentPort.on("message", async(data) => {
             liveStream.stop()
             await new Promise(res => setTimeout(res, 2000))
             if (liveStream) {
-                debug(chalk.green(`[${deviceName}] `)+'Live stream failed to stop on request, deleting anyway...')
+                parentPort.postMessage('Live stream failed to stop on request, deleting anyway...')
+                parentPort.postMessage('inactive')
                 liveStream = false
-                parentPort.postMessage({ state: 'inactive' })
             }
         } else {
-            debug(chalk.green(`[${deviceName}] `)+'Received live stream stop command but no active live call found')
-            parentPort.postMessage({ state: 'inactive' })
+            parentPort.postMessage('Received live stream stop command but no active live call found')
+            parentPort.postMessage('inactive')
+            liveStream = false
         }
     }
 })  

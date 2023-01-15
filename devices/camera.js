@@ -52,7 +52,7 @@ export default class Camera extends RingPolledDevice {
                     session: false,
                     publishedStatus: '',
                     worker: new Worker('./devices/camera-livestream.js', {
-                        workerData: { 
+                        workerData: {
                             doorbotId: this.device.id,
                             deviceName: this.deviceData.name
                         }
@@ -168,27 +168,23 @@ export default class Camera extends RingPolledDevice {
             }
         }
 
-        this.data.stream.live.worker.on('message', (data) => {
-            switch (data.state) {
+        this.data.stream.live.worker.on('message', (message) => {
+            switch (message) {
                 case 'active':
-                    if (this.data.stream.live.status !== 'active') {
-                        this.debug('Live stream has been successfully activated')
-                    }
                     this.data.stream.live.status = 'active'
                     this.data.stream.live.session = true
                     break;
                 case 'inactive':
-                    if (this.data.stream.live.status !== 'inactive') {
-                        this.debug('Live stream has been successfully deactivated')
-                    }
                     this.data.stream.live.status = 'inactive'
                     this.data.stream.live.session = false
                     break;
                 case 'failed':
-                    this.debug('Live stream failed to activate')
                     this.data.stream.live.status = 'failed'
                     this.data.stream.live.session = false
                     break;
+                default:
+                    this.debug(message, 'wrtc')
+                    return
             }
             this.publishStreamState()
         })
