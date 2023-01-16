@@ -509,8 +509,8 @@ export default class Camera extends RingPolledDevice {
                 } 
                 if (this.device.data.hasOwnProperty('battery_life_2') || this.device.data.hasOwnProperty('battery_voltage_2')) {
                     attributes.batteryLife2 = this.device.data.hasOwnProperty('battery_life_2') && utils.isNumeric(this.device.data.battery_life_2)
-                        ? 0
-                        : Number.parseFloat(this.device.data.battery_life_2)
+                        ? Number.parseFloat(this.device.data.battery_life_2)
+                        : 0
                 }
             }
             attributes.firmwareStatus = deviceHealth.firmware
