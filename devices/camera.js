@@ -644,11 +644,11 @@ export default class Camera extends RingPolledDevice {
 
         try {
             if (this.device.isRingEdgeEnabled) {
-                this.debug('Initializing a live stream session (Ring Edge)')
+                this.debug('Initializing a Ring Edge live stream session')
                 const auth = await this.device.restClient.getCurrentAuth()
                 streamData.authToken = auth.access_token
             } else {
-                this.debug('Initializing a live stream session (Ring Cloud)')
+                this.debug('Initializing a Ring cloud live stream session')
                 const liveCall = await this.device.restClient.request({
                     method: 'POST',
                     url: this.device.doorbotUrl('live_call')
