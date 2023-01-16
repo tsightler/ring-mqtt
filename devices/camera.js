@@ -666,7 +666,7 @@ export default class Camera extends RingPolledDevice {
         }
 
         if (streamData.sessionId || streamData.authToken) {
-            this.debug('Live stream session successfully initialized, starting worker thread')
+            this.debug('Live stream session successfully initialized, starting worker')
             this.data.stream.live.worker.postMessage({ command: 'start', streamData })
         } else {
             this.debug('Live stream activation failed to initialize session data')
