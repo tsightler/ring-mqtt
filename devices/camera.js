@@ -20,7 +20,7 @@ export default class Camera extends RingPolledDevice {
                 is_person: false,
                 detection_enabled: null
             },
-            ... this.device.isDoorbot ? { 
+            ...this.device.isDoorbot ? { 
                 ding: {
                     active_ding: false,
                     ding_duration: 180,

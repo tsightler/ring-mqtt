@@ -49,11 +49,13 @@ export default class Chime extends RingPolledDevice {
                 component: 'switch',
                 icon: 'hass:bell-ring'
             },
-            nightlight_enabled: {
-                component: 'switch',
-                icon: "mdi:lightbulb-night",
-                attributes: true
-            },
+            ...this.deviceType.startsWith('chime_pro') ? {
+                nightlight_enabled: {
+                    component: 'switch',
+                    icon: "mdi:lightbulb-night",
+                    attributes: true
+                }
+            } : {},
             info: {
                 component: 'sensor',
                 device_class: 'timestamp',
@@ -106,15 +108,17 @@ export default class Chime extends RingPolledDevice {
             this.data.snooze_minutes_remaining = snoozeMinutesRemaining
         }
 
-        if ((nightlightEnabled !== this.data.nightlight.enabled && Date.now()/1000 - this.data.nightlight.set_time > 30) || isPublish) {
-            this.data.nightlight.enabled = nightlightEnabled
-            this.mqttPublish(this.entity.nightlight_enabled.state_topic, this.data.nightlight.enabled)
-        }
+        if (this.entity.hasOwnProperty('nightlight_enabled')) {
+            if ((nightlightEnabled !== this.data.nightlight.enabled && Date.now()/1000 - this.data.nightlight.set_time > 30) || isPublish) {
+                this.data.nightlight.enabled = nightlightEnabled
+                this.mqttPublish(this.entity.nightlight_enabled.state_topic, this.data.nightlight.enabled)
+            }
 
-        if (nightlightState !== this.data.nightlight.state || isPublish) {
-            this.data.nightlight.state = nightlightState
-            const attributes = { nightlightState: this.data.nightlight.state }
-            this.mqttPublish(this.entity.nightlight_enabled.json_attributes_topic, JSON.stringify(attributes), 'attr')
+            if (nightlightState !== this.data.nightlight.state || isPublish) {
+                this.data.nightlight.state = nightlightState
+                const attributes = { nightlightState: this.data.nightlight.state }
+                this.mqttPublish(this.entity.nightlight_enabled.json_attributes_topic, JSON.stringify(attributes), 'attr')
+            }
         }
 
         // Local states are published only for publish/republish
