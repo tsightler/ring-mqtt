@@ -91,7 +91,7 @@ export default class Chime extends RingPolledDevice {
         }
 
         if (nightlightState !== this.data.nightlight_enabled || isPublish) {
-            this.mqttPublish(this.entity.nighlight_enabled.state_topic, nightlightState ? 'ON' : 'OFF')
+            this.mqttPublish(this.entity.nightlight_enabled.state_topic, nightlightState ? 'ON' : 'OFF')
             this.data.nightlight_enabled = nightlightState
         }
 
