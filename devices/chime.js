@@ -13,7 +13,8 @@ export default class Chime extends RingPolledDevice {
             snooze_minutes: savedState?.snooze_minutes ? savedState.snooze_minutes : 1440,
             snooze_minutes_remaining: Math.floor(this.device.data.do_not_disturb.seconds_left/60),
             play_ding_sound: 'OFF',
-            play_motion_sound: 'OFF'
+            play_motion_sound: 'OFF',
+            nightlight_enabled: null
         }
 
         // Define entities for this device
@@ -43,6 +44,10 @@ export default class Chime extends RingPolledDevice {
             play_motion_sound: {
                 component: 'switch',
                 icon: 'hass:bell-ring'
+            },
+            nighlight_enabled: {
+                component: 'switch',
+                icon: "mdi:lightbulb-night"
             },
             info: {
                 component: 'sensor',
@@ -76,12 +81,18 @@ export default class Chime extends RingPolledDevice {
         const isPublish = data === undefined ? true : false
         const volumeState = this.device.data.settings.volume
         const snoozeState = Boolean(this.device.data.do_not_disturb.seconds_left) ? 'ON' : 'OFF'
+        const nightlightState = this.device.data.settings.night_light_settings.light_sensor_enabled
         const snoozeMinutesRemaining = Math.floor(this.device.data.do_not_disturb.seconds_left/60)
 
         // Polled states are published only if value changes or it's a device publish
         if (volumeState !== this.data.volume || isPublish) { 
             this.mqttPublish(this.entity.volume.state_topic, volumeState.toString())
             this.data.volume = volumeState
+        }
+
+        if (nightlightState !== this.data.nightlight_enabled || isPublish) {
+            this.mqttPublish(this.entity.nighlight_enabled.state_topic, nightlightState ? 'ON' : 'OFF')
+            this.data.nightlight_enabled = nightlightState
         }
 
         if (snoozeState !== this.data.snooze || isPublish) {
@@ -143,6 +154,9 @@ export default class Chime extends RingPolledDevice {
                 break;
             case 'play_motion_sound/command':
                 this.playSound(message, 'motion')
+                break;
+            case 'nightlight_enabled/command':
+                this.setNightlightState(message)
                 break;
             default:
                 this.debug(`Received message to unknown command topic: ${command}`)
@@ -213,7 +227,7 @@ export default class Chime extends RingPolledDevice {
         }
     }
 
-    setNightlightEnabledState(message) {
+    setNightlightState(message) {
         this.debug(`Received set nightlight enabled ${message}`)
         const command = message.toLowerCase()
         switch(command) {
@@ -228,6 +242,6 @@ export default class Chime extends RingPolledDevice {
             default:
                 this.debug('Received invalid command for nightlight enabled mode!')
         }
-
+        this.device.requestUpdate()
     }
 }
