@@ -15,6 +15,7 @@ export default class Chime extends RingPolledDevice {
             play_ding_sound: 'OFF',
             play_motion_sound: 'OFF',
             nightlight: {
+                enabled: null,
                 state: null,
                 set_time: Math.floor(Date.now()/1000)
             }
@@ -50,7 +51,8 @@ export default class Chime extends RingPolledDevice {
             },
             nightlight_enabled: {
                 component: 'switch',
-                icon: "mdi:lightbulb-night"
+                icon: "mdi:lightbulb-night",
+                attributes: true
             },
             info: {
                 component: 'sensor',
@@ -85,7 +87,8 @@ export default class Chime extends RingPolledDevice {
         const volumeState = this.device.data.settings.volume
         const snoozeState = Boolean(this.device.data.do_not_disturb.seconds_left) ? 'ON' : 'OFF'
         const snoozeMinutesRemaining = Math.floor(this.device.data.do_not_disturb.seconds_left/60)
-        const nightlightState = this.device.data.settings.night_light_settings.light_sensor_enabled ? 'ON' : 'OFF'
+        const nightlightEnabled = this.device.data.settings.night_light_settings.light_sensor_enabled ? 'ON' : 'OFF'
+        const nightlightState = this.device.data.night_light_state.toUpperCase()
 
         // Polled states are published only if value changes or it's a device publish
         if (volumeState !== this.data.volume || isPublish) { 
@@ -103,9 +106,14 @@ export default class Chime extends RingPolledDevice {
             this.data.snooze_minutes_remaining = snoozeMinutesRemaining
         }
 
-        if ((nightlightState !== this.data.nightlight.state && Date.now()/1000 - this.data.nightlight.set_time > 30) || isPublish) {
+        if ((nightlightEnabled !== this.data.nightlight.enabled && Date.now()/1000 - this.data.nightlight.set_time > 30) || isPublish) {
+            this.data.nightlight.enabled = nightlightEnabled
+            this.mqttPublish(this.entity.nightlight_enabled.state_topic, this.data.nightlighe.enabled)
+        }
+
+        if (nightlightState !== this.data.nightlight.state || isPublish) {
             this.data.nightlight.state = nightlightState
-            this.mqttPublish(this.entity.nightlight_enabled.state_topic, this.data.nightlight.state)
+            this.mqttPublish(this.entity.nightlight_enabled.json_attributes_topic, this.data.nightlight.state)
         }
 
         // Local states are published only for publish/republish
@@ -242,8 +250,8 @@ export default class Chime extends RingPolledDevice {
                         "light_sensor_enabled": command === 'ON' ? true : false
                     }
                 })
-                this.data.nightlight.state = command
-                this.mqttPublish(this.entity.nightlight_enabled.state_topic, this.data.nightlight.state)
+                this.data.nightlight.enabled = command
+                this.mqttPublish(this.entity.nightlight_enabled.state_topic, this.data.nightlight.enabled)
                 break;
             default:
                 this.debug('Received invalid command for nightlight enabled mode!')
