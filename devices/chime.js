@@ -113,7 +113,7 @@ export default class Chime extends RingPolledDevice {
 
         if (nightlightState !== this.data.nightlight.state || isPublish) {
             this.data.nightlight.state = nightlightState
-            this.mqttPublish(this.entity.nightlight_enabled.json_attributes_topic, `{ nightlight_state: '${this.data.nightlight.state}' }`)
+            this.mqttPublish(this.entity.nightlight_enabled.json_attributes_topic, `{ nightlight_state: '${this.data.nightlight.state}' }`, 'attr')
         }
 
         // Local states are published only for publish/republish
