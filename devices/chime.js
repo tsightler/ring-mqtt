@@ -113,7 +113,8 @@ export default class Chime extends RingPolledDevice {
 
         if (nightlightState !== this.data.nightlight.state || isPublish) {
             this.data.nightlight.state = nightlightState
-            this.mqttPublish(this.entity.nightlight_enabled.json_attributes_topic, JSON.stringify(nightlightState), 'attr')
+            const attributes = { nightlightState: this.data.nightlight.state }
+            this.mqttPublish(this.entity.nightlight_enabled.json_attributes_topic, JSON.stringify(attributes), 'attr')
         }
 
         // Local states are published only for publish/republish
@@ -129,11 +130,12 @@ export default class Chime extends RingPolledDevice {
     async publishAttributes() {
         const deviceHealth = await this.device.getHealth()
         if (deviceHealth) {
-            const attributes = {}
-            attributes.wirelessNetwork = deviceHealth.wifi_name
-            attributes.wirelessSignal = deviceHealth.latest_signal_strength
-            attributes.firmwareStatus = deviceHealth.firmware
-            attributes.lastUpdate = deviceHealth.updated_at.slice(0,-6)+"Z"
+            const attributes = {
+                wirelessNetwork: deviceHealth.wifi_name,
+                wirelessSignal: deviceHealth.latest_signal_strength,
+                firmwareStatus: deviceHealth.firmware,
+                lastUpdate: deviceHealth.updated_at.slice(0,-6)+"Z"
+            }
             this.mqttPublish(this.entity.info.state_topic, JSON.stringify(attributes), 'attr')
             this.publishAttributeEntities(attributes)
         }
