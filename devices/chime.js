@@ -236,7 +236,7 @@ export default class Chime extends RingPolledDevice {
         switch(command) {
             case 'ON':
             case 'OFF':
-                this.data.nighlight.set_time = Math.floor(Date.now()/1000)
+                this.data.nightlight.set_time = Math.floor(Date.now()/1000)
                 await this.setDeviceSettings({
                     "night_light_settings": { 
                         "light_sensor_enabled": command === 'ON' ? true : false
