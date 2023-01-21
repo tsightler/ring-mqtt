@@ -90,11 +90,6 @@ export default class Chime extends RingPolledDevice {
             this.data.volume = volumeState
         }
 
-        if (nightlightState !== this.data.nightlight_enabled || isPublish) {
-            this.mqttPublish(this.entity.nightlight_enabled.state_topic, nightlightState ? 'ON' : 'OFF')
-            this.data.nightlight_enabled = nightlightState
-        }
-
         if (snoozeState !== this.data.snooze || isPublish) {
             this.mqttPublish(this.entity.snooze.state_topic, snoozeState)
             this.data.snooze = snoozeState
@@ -103,6 +98,11 @@ export default class Chime extends RingPolledDevice {
         if (snoozeMinutesRemaining !== this.data.snooze_minutes_remaining || isPublish) {
             this.mqttPublish(this.entity.snooze.json_attributes_topic, JSON.stringify({ minutes_remaining: snoozeMinutesRemaining }), 'attr')
             this.data.snooze_minutes_remaining = snoozeMinutesRemaining
+        }
+
+        if (nightlightState !== this.data.nightlight_enabled || isPublish) {
+            this.mqttPublish(this.entity.nightlight_enabled.state_topic, nightlightState ? 'ON' : 'OFF')
+            this.data.nightlight_enabled = nightlightState
         }
 
         // Local states are published only for publish/republish
@@ -238,10 +238,11 @@ export default class Chime extends RingPolledDevice {
                         "light_sensor_enabled": command === 'on' ? true : false
                     }
                 })
+                this.mqttPublish(this.entity.nightlight_enabled.state_topic, command.toUpperCase())
+                this.device.requestUpdate()
                 break;
             default:
                 this.debug('Received invalid command for nightlight enabled mode!')
         }
-        this.device.requestUpdate()
     }
 }
