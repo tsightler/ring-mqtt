@@ -45,7 +45,7 @@ export default class Chime extends RingPolledDevice {
                 component: 'switch',
                 icon: 'hass:bell-ring'
             },
-            nighlight_enabled: {
+            nightlight_enabled: {
                 component: 'switch',
                 icon: "mdi:lightbulb-night"
             },
