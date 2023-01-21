@@ -108,7 +108,7 @@ export default class Chime extends RingPolledDevice {
 
         if ((nightlightEnabled !== this.data.nightlight.enabled && Date.now()/1000 - this.data.nightlight.set_time > 30) || isPublish) {
             this.data.nightlight.enabled = nightlightEnabled
-            this.mqttPublish(this.entity.nightlight_enabled.state_topic, this.data.nightlighe.enabled)
+            this.mqttPublish(this.entity.nightlight_enabled.state_topic, this.data.nightlight.enabled)
         }
 
         if (nightlightState !== this.data.nightlight.state || isPublish) {
