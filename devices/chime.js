@@ -117,6 +117,15 @@ export default class Chime extends RingPolledDevice {
         }
     }
 
+    async setDeviceSettings(settings) {
+        const response = await this.device.restClient.request({
+            method: 'PATCH',
+            url: `https://api.ring.com/devices/v1/devices/${this.device.id}/settings`,
+            json: settings
+        })
+        return response
+    }
+
     // Process messages from MQTT command topic
     processCommand(command, message) {
         switch (command) {
@@ -202,5 +211,23 @@ export default class Chime extends RingPolledDevice {
             default:
                 this.debug('Received invalid command for play chime sound!')
         }
+    }
+
+    setNightlightEnabledState(message) {
+        this.debug(`Received set nightlight enabled ${message}`)
+        const command = message.toLowerCase()
+        switch(command) {
+            case 'on':
+            case 'off':
+                this.setDeviceSettings({
+                    "night_light_settings": { 
+                        "light_sensor_enabled": command === 'on' ? true : false
+                    }
+                })
+                break;
+            default:
+                this.debug('Received invalid command for nightlight enabled mode!')
+        }
+
     }
 }
