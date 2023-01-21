@@ -14,7 +14,10 @@ export default class Chime extends RingPolledDevice {
             snooze_minutes_remaining: Math.floor(this.device.data.do_not_disturb.seconds_left/60),
             play_ding_sound: 'OFF',
             play_motion_sound: 'OFF',
-            nightlight_enabled: null
+            nightlight: {
+                state: null,
+                set_time: Math.floor(Date.now()/1000)
+            }
         }
 
         // Define entities for this device
@@ -81,8 +84,8 @@ export default class Chime extends RingPolledDevice {
         const isPublish = data === undefined ? true : false
         const volumeState = this.device.data.settings.volume
         const snoozeState = Boolean(this.device.data.do_not_disturb.seconds_left) ? 'ON' : 'OFF'
-        const nightlightState = this.device.data.settings.night_light_settings.light_sensor_enabled
         const snoozeMinutesRemaining = Math.floor(this.device.data.do_not_disturb.seconds_left/60)
+        const nightlightState = this.device.data.settings.night_light_settings.light_sensor_enabled ? 'ON' : 'OFF'
 
         // Polled states are published only if value changes or it's a device publish
         if (volumeState !== this.data.volume || isPublish) { 
@@ -100,9 +103,9 @@ export default class Chime extends RingPolledDevice {
             this.data.snooze_minutes_remaining = snoozeMinutesRemaining
         }
 
-        if (nightlightState !== this.data.nightlight_enabled || isPublish) {
-            this.mqttPublish(this.entity.nightlight_enabled.state_topic, nightlightState ? 'ON' : 'OFF')
-            this.data.nightlight_enabled = nightlightState
+        if ((nightlightState !== this.data.nightlight.state && Date.now()/1000 - this.data.light.setTime > 30) || isPublish) {
+            this.data.nightlight.state = nightlightState
+            this.mqttPublish(this.entity.nightlight_enabled.state_topic, this.data.nightlight.state)
         }
 
         // Local states are published only for publish/republish
@@ -227,19 +230,20 @@ export default class Chime extends RingPolledDevice {
         }
     }
 
-    setNightlightState(message) {
+    async setNightlightState(message) {
         this.debug(`Received set nightlight enabled ${message}`)
-        const command = message.toLowerCase()
+        const command = message.toUpperCase()
         switch(command) {
-            case 'on':
-            case 'off':
-                this.setDeviceSettings({
+            case 'ON':
+            case 'OFF':
+                this.data.nighlight.set_time = Math.floor(Date.now()/1000)
+                await this.setDeviceSettings({
                     "night_light_settings": { 
-                        "light_sensor_enabled": command === 'on' ? true : false
+                        "light_sensor_enabled": command === 'ON' ? true : false
                     }
                 })
-                this.mqttPublish(this.entity.nightlight_enabled.state_topic, command.toUpperCase())
-                this.device.requestUpdate()
+                this.data.nightlight.state = command
+                this.mqttPublish(this.entity.nightlight_enabled.state_topic, this.data.nightlight.state)
                 break;
             default:
                 this.debug('Received invalid command for nightlight enabled mode!')

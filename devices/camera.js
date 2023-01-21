@@ -915,14 +915,14 @@ export default class Camera extends RingPolledDevice {
     // Set switch target state on received MQTT command message
     async setLightState(message) {
         this.debug(`Received set light state ${message}`)
-        const command = message.toLowerCase()
+        const command = message.toUpperCase()
 
         switch (command) {
-            case 'on':
-            case 'off':
+            case 'ON':
+            case 'OFF':
                 this.data.light.setTime = Math.floor(Date.now()/1000)
-                await this.device.setLight(command === 'on' ? true : false)
-                this.data.light.state = command === 'on' ? 'ON' : 'OFF'
+                await this.device.setLight(command === 'ON' ? true : false)
+                this.data.light.state = command
                 this.mqttPublish(this.entity.light.state_topic, this.data.light.state)
                 break;
             default:
