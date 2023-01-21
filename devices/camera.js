@@ -10,6 +10,9 @@ export default class Camera extends RingPolledDevice {
 
         const savedState = this.getSavedState()
 
+        this.hasBattery1 = this.device.data.hasOwnProperty('battery_voltage') ? true : false
+        this.hasBattery2 = this.device.data.hasOwnProperty('battery_voltage_2') ? true : false
+
         this.data = {
             motion: {
                 active_ding: false,
@@ -229,7 +232,7 @@ export default class Camera extends RingPolledDevice {
         }
 
         // If device is battery powered publish battery entity
-        if (this.device.hasBattery) {
+        if (this.device.batteryLevel || this.hasBattery1 || this.hasBattery2) {
             this.entity.battery = {
                 component: 'sensor',
                 device_class: 'battery',
@@ -500,14 +503,16 @@ export default class Camera extends RingPolledDevice {
         
         if (deviceHealth) {
             const attributes = {}
-            if (this.device.hasBattery) {
+            if (this.device.batteryLevel || this.hasBattery1 || this.hasBattery2) {
+                // This reports the level of the active battery
                 attributes.batteryLevel = this.device.batteryLevel === null ? 0 : this.device.batteryLevel
-                if (this.device.data.hasOwnProperty('battery_life') || this.device.data.hasOwnProperty('battery_voltage')) {
-                    attributes.batteryLife = this.device.data.hasOwnProperty('battery_life') && utils.isNumeric(this.device.data.battery_life) 
-                        ? Number.parseFloat(this.device.data.battery_life)
-                        : 0
-                } 
-                if (this.device.data.hasOwnProperty('battery_life_2') || this.device.data.hasOwnProperty('battery_voltage_2')) {
+
+                // All devices with a battery have at least one battery, but it might not be inserted so report zero of not
+                attributes.batteryLife = this.device.data.hasOwnProperty('battery_life') && utils.isNumeric(this.device.data.battery_life) 
+                    ? Number.parseFloat(this.device.data.battery_life)
+                    : 0
+                
+                if (this.hasBattery2) {
                     attributes.batteryLife2 = this.device.data.hasOwnProperty('battery_life_2') && utils.isNumeric(this.device.data.battery_life_2)
                         ? Number.parseFloat(this.device.data.battery_life_2)
                         : 0
