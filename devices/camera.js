@@ -507,7 +507,7 @@ export default class Camera extends RingPolledDevice {
                 // This reports the level of the active battery
                 attributes.batteryLevel = this.device.batteryLevel === null ? 0 : this.device.batteryLevel
 
-                // All devices with a battery have at least one battery, but it might not be inserted so report zero of not
+                // Must have at least one battery, but it might not be inserted, so report 0% if not.
                 attributes.batteryLife = this.device.data.hasOwnProperty('battery_life') && utils.isNumeric(this.device.data.battery_life) 
                     ? Number.parseFloat(this.device.data.battery_life)
                     : 0
