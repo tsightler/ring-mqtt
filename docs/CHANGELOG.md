@@ -6,17 +6,17 @@ Starting with 5.1.x all backwards compatibiltiy with prior 4.x style configurati
 
 **New Features**  
 - Added ability to refine event stream to only motion events where a person is detected
-- Option to select transcoded vs raw video for event stream (this also changes the download URL for scripting automatic download of recordings):
-  - Raw video (default) - This video is exactly as it was recorded by the camera and is the same as previous versions of the addon
-  - Transcoded video - This is the same as selecting to share/download video from the Ring app or web dashboard.  This video includes the Ring logo and timestamps and may include supplemental pre-roll video for supported devices.  Note that switching from a raw to transcoded event selection can take 10-15 seconds as transcoded videos are created on-demand so ring-mqtt must wait for the Ring servers to process the video and return the URL. 
+- Option to select transcoded vs raw video for event stream (this also changes the URL for scripting automatic download of recordings):
+  - Raw video (default) - This video is exactly as it was recorded by the camera and is the same as previous versions of ring-mqtt
+  - Transcoded video - This is the same as selecting to share/download video from the Ring app or web dashboard.  This video includes the Ring logo and timestamps and may include supplemental pre-roll video for supported devices.  Note that switching from a raw to transcoded event selection can take 10-15 seconds as transcoded videos are created by Ring on-demand so ring-mqtt must wait for the Ring servers to process the video and return the URL. 
 - New camera models should now display with correct model/features
-- Improved support for cameras with dual batteries.  Battery level reports the level of active battery but the level of both batteries is individually available via attributes.
-- Ability to enable/disable the Chime Pro nightlight as well as detect whether nightlight is actively on/off via attribute.
+- Improved support for cameras with dual batteries.  The BatteryLevel attribute always reports the level of currently active battery but the level of both batteries is individually available via the batteryLife and batteryLife2 attributes.
+- Switch to enable/disable the Chime Pro nightlight as well as report current nightlight on/off state via attribute.
 
 **Other Changes**  
 - Reduced average live stream startup time by several hundred milliseconds with the following changes:
   - Switched from rtsp-simple-server to go2rtc as the core streaming engine which provides slightly faster stream startup and opens the door for future feature enhancements.  This switch is expected to be transparent for users, but please report any issues.
-  - Cameras now allocate a dedicated worker thread for live streaming vs previous versions which used a pool of worker threads based on the number of processor cores detected.  This significantly simplifies the live stream code which leads to faster stream startup and, hopefully, more reliable recovery from various error conditions.
+  - Cameras now allocate a dedicated worker thread for live streaming vs previous versions which used a pool of worker threads based on the number of processor cores detected.  This significantly simplifies the live stream code and leads to faster stream startup and, hopefully, more reliable recovery from various error conditions.
 - Migrated project codebase from CommonJS to ESM.  As this project is not a library this should have zero impact for users, but it does ease ongoing maintenance by enabling the ability to pull in newer versions of various dependent packages that have also moved to pure ESM.
 
 **Dependency Updates**  
