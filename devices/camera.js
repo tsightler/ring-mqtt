@@ -502,13 +502,13 @@ export default class Camera extends RingPolledDevice {
         const attributes = {}
         const deviceHealth = await this.device.getHealth()
 
-        if (this.device.hasOwnProperty(batteryLevel) || this.hasBattery1 || this.hasBattery2) {
+        if (this.device.batteryLevel || this.hasBattery1 || this.hasBattery2) {
             if (deviceHealth.hasOwnProperty('active_battery')) {
                 attributes.activeBattery = deviceHealth.active_battery
             }
 
             // This reports the level of the active battery
-            attributes.batteryLevel = this.device.batteryLevel === null ? 0 : this.device.batteryLevel
+            attributes.batteryLevel = this.device.batteryLevel ? this.device.batteryLevel : 0
 
             // Must have at least one battery, but it might not be inserted, so report 0% if not.
             attributes.batteryLife = this.device.data.hasOwnProperty('battery_life') && utils.isNumeric(this.device.data.battery_life) 
