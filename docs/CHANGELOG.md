@@ -8,7 +8,7 @@ Starting with 5.1.x all backwards compatibiltiy with prior 4.x style configurati
 - Added ability to refine event stream to only motion events where a person is detected
 - Option to select transcoded vs raw video for event stream (this also changes the URL for scripting automatic download of recordings):
   - Raw video (default) - This video is exactly as it was recorded by the camera and is the same as previous versions of ring-mqtt
-  - Transcoded video - This is the same as selecting to share/download video from the Ring app or web dashboard.  This video includes the Ring logo and timestamps and may include supplemental pre-roll video for supported devices.  Note that switching from a raw to transcoded event selection can take 10-15 seconds as transcoded videos are created by Ring on-demand so ring-mqtt must wait for the Ring servers to process the video and return the URL. 
+  - Transcoded video - This is the same as selecting to share/download video from the Ring app or web dashboard.  This video includes the Ring logo and timestamps and may include supplemental pre-roll video for supported devices.  Note that switching from a raw to transcoded event selection can take 10-15 seconds as transcoded videos are created by Ring on-demand so ring-mqtt must wait for the Ring servers to process the video and return the URL.
 - New camera models should now display with correct model/features
 - Improved support for cameras with dual batteries.  The BatteryLevel attribute always reports the level of currently active battery but the level of both batteries is individually available via the batteryLife and batteryLife2 attributes.
 - Switch to enable/disable the Chime Pro nightlight as well as report current nightlight on/off state via attribute.

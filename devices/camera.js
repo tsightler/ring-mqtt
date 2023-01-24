@@ -499,28 +499,33 @@ export default class Camera extends RingPolledDevice {
 
     // Publish device data to info topic
     async publishAttributes() {
+        const attributes = {}
         const deviceHealth = await this.device.getHealth()
-        
-        if (deviceHealth) {
-            const attributes = {}
-            if (this.device.batteryLevel || this.hasBattery1 || this.hasBattery2) {
-                // This reports the level of the active battery
-                attributes.batteryLevel = this.device.batteryLevel === null ? 0 : this.device.batteryLevel
 
-                // Must have at least one battery, but it might not be inserted, so report 0% if not.
-                attributes.batteryLife = this.device.data.hasOwnProperty('battery_life') && utils.isNumeric(this.device.data.battery_life) 
-                    ? Number.parseFloat(this.device.data.battery_life)
-                    : 0
-                
-                if (this.hasBattery2) {
-                    attributes.batteryLife2 = this.device.data.hasOwnProperty('battery_life_2') && utils.isNumeric(this.device.data.battery_life_2)
-                        ? Number.parseFloat(this.device.data.battery_life_2)
-                        : 0
-                }
+        if (this.device.hasOwnProperty(batteryLevel) || this.hasBattery1 || this.hasBattery2) {
+            if (deviceHealth.hasOwnProperty('active_battery')) {
+                attributes.activeBattery = deviceHealth.active_battery
             }
+
+            // This reports the level of the active battery
+            attributes.batteryLevel = this.device.batteryLevel === null ? 0 : this.device.batteryLevel
+
+            // Must have at least one battery, but it might not be inserted, so report 0% if not.
+            attributes.batteryLife = this.device.data.hasOwnProperty('battery_life') && utils.isNumeric(this.device.data.battery_life) 
+                ? Number.parseFloat(this.device.data.battery_life)
+                : 0
+            
+            if (this.hasBattery2) {
+                attributes.batteryLife2 = this.device.data.hasOwnProperty('battery_life_2') && utils.isNumeric(this.device.data.battery_life_2)
+                    ? Number.parseFloat(this.device.data.battery_life_2)
+                    : 0
+            }
+        }
+
+        if (deviceHealth) {
             attributes.firmwareStatus = deviceHealth.firmware
             attributes.lastUpdate = deviceHealth.updated_at.slice(0,-6)+"Z"
-            if (deviceHealth?.network_connection && deviceHealth.network_connection === 'ethernet') {
+            if (deviceHealth.hasOwnPrperty('network_connection') && deviceHealth.network_connection === 'ethernet') {
                 attributes.wiredNetwork = this.device.data.alerts.connection
             } else {
                 attributes.wirelessNetwork = deviceHealth.wifi_name
@@ -528,6 +533,9 @@ export default class Camera extends RingPolledDevice {
             }
             attributes.stream_Source = this.data.stream.live.streamSource
             attributes.still_Image_URL = this.data.stream.live.stillImageURL
+        }
+
+        if (Object.keys(attributes).length > 0) {
             this.mqttPublish(this.entity.info.state_topic, JSON.stringify(attributes), 'attr')
             this.publishAttributeEntities(attributes)
         }
