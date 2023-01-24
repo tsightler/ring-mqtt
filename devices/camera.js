@@ -503,7 +503,7 @@ export default class Camera extends RingPolledDevice {
         const deviceHealth = await this.device.getHealth()
 
         if (this.device.batteryLevel || this.hasBattery1 || this.hasBattery2) {
-            if (deviceHealth.hasOwnProperty('active_battery')) {
+            if (deviceHealth && deviceHealth.hasOwnProperty('active_battery')) {
                 attributes.activeBattery = deviceHealth.active_battery
             }
 
@@ -525,7 +525,7 @@ export default class Camera extends RingPolledDevice {
         if (deviceHealth) {
             attributes.firmwareStatus = deviceHealth.firmware
             attributes.lastUpdate = deviceHealth.updated_at.slice(0,-6)+"Z"
-            if (deviceHealth.hasOwnPrperty('network_connection') && deviceHealth.network_connection === 'ethernet') {
+            if (deviceHealth.hasOwnProperty('network_connection') && deviceHealth.network_connection === 'ethernet') {
                 attributes.wiredNetwork = this.device.data.alerts.connection
             } else {
                 attributes.wirelessNetwork = deviceHealth.wifi_name
