@@ -46,7 +46,7 @@ parentPort.on("message", async(data) => {
                     '-map', '0:v',
                     '-map', '0:a',
                     '-map', '0:a',
-                    '-c:a:0', 'aac',
+                    '-c:a:0', 'libfdk_aac',
                     '-c:a:1', 'copy',
                 ],
                 video: [
