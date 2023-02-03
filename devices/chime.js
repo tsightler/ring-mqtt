@@ -86,29 +86,29 @@ export default class Chime extends RingPolledDevice {
 
     publishState(data) {
         const isPublish = data === undefined ? true : false
-        const volumeState = this.device.data.settings.volume
-        const snoozeState = Boolean(this.device.data.do_not_disturb.seconds_left) ? 'ON' : 'OFF'
-        const snoozeMinutesRemaining = Math.floor(this.device.data.do_not_disturb.seconds_left/60)
-        const nightlightEnabled = this.device.data.settings.night_light_settings.light_sensor_enabled ? 'ON' : 'OFF'
-        const nightlightState = this.device.data.night_light_state.toUpperCase()
 
         // Polled states are published only if value changes or it's a device publish
+        const volumeState = this.device.data.settings.volume
         if (volumeState !== this.data.volume || isPublish) { 
             this.mqttPublish(this.entity.volume.state_topic, volumeState.toString())
             this.data.volume = volumeState
         }
 
+        const snoozeState = Boolean(this.device.data.do_not_disturb.seconds_left) ? 'ON' : 'OFF'
         if (snoozeState !== this.data.snooze || isPublish) {
             this.mqttPublish(this.entity.snooze.state_topic, snoozeState)
             this.data.snooze = snoozeState
         }
 
+        const snoozeMinutesRemaining = Math.floor(this.device.data.do_not_disturb.seconds_left/60)
         if (snoozeMinutesRemaining !== this.data.snooze_minutes_remaining || isPublish) {
             this.mqttPublish(this.entity.snooze.json_attributes_topic, JSON.stringify({ minutes_remaining: snoozeMinutesRemaining }), 'attr')
             this.data.snooze_minutes_remaining = snoozeMinutesRemaining
         }
 
         if (this.entity.hasOwnProperty('nightlight_enabled')) {
+            const nightlightEnabled = this.device.data.settings.night_light_settings.light_sensor_enabled ? 'ON' : 'OFF'
+            const nightlightState = this.device.data.night_light_state.toUpperCase()    
             if ((nightlightEnabled !== this.data.nightlight.enabled && Date.now()/1000 - this.data.nightlight.set_time > 30) || isPublish) {
                 this.data.nightlight.enabled = nightlightEnabled
                 this.mqttPublish(this.entity.nightlight_enabled.state_topic, this.data.nightlight.enabled)
