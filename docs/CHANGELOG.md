@@ -1,3 +1,7 @@
+## v5.1.1
+**Fixed Bugs**  
+- Fix crash for non-Pro Chime models
+
 ## v5.1.0
 After several releases focused on stability and minor bug fixes this release includes significant internal changes and a few new features.
 
