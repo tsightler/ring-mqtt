@@ -47,7 +47,7 @@ body:
     id: Logs
     attributes:
       label: Log Output
-      placeholder: Please include the relevant log output.  In most cases full logs will be required and can be sent to my username at GMAIL while referencing this issue number.
+      placeholder: Please include full logs as they will be needed in almost all cases.  If you decide to open an issue without providing full logs there's a 99% chance that you issue will be closed without response and you are probably better off open a discussion thread instead as I will not waste my time attemting to troubleshoot issues without logs.
       render: shell
     validations:
       required: true
