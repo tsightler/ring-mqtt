@@ -9,7 +9,5 @@
     "enable_panic": false,
     "hass_topic": "homeassistant/status",
     "ring_topic": "ring",
-    "location_ids": [
-        ""
-    ]
+    "location_ids": []
 }

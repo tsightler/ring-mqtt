@@ -1,7 +1,7 @@
-const RingPolledDevice = require('./base-polled-device')
-const utils = require( '../lib/utils' )
+import RingPolledDevice from './base-polled-device.js'
+import utils from '../lib/utils.js'
 
-class Chime extends RingPolledDevice {
+export default class Chime extends RingPolledDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'chime')
 
@@ -13,7 +13,12 @@ class Chime extends RingPolledDevice {
             snooze_minutes: savedState?.snooze_minutes ? savedState.snooze_minutes : 1440,
             snooze_minutes_remaining: Math.floor(this.device.data.do_not_disturb.seconds_left/60),
             play_ding_sound: 'OFF',
-            play_motion_sound: 'OFF'
+            play_motion_sound: 'OFF',
+            nightlight: {
+                enabled: null,
+                state: null,
+                set_time: Math.floor(Date.now()/1000)
+            }
         }
 
         // Define entities for this device
@@ -44,6 +49,13 @@ class Chime extends RingPolledDevice {
                 component: 'switch',
                 icon: 'hass:bell-ring'
             },
+            ...this.device.deviceType.startsWith('chime_pro') ? {
+                nightlight_enabled: {
+                    component: 'switch',
+                    icon: "mdi:lightbulb-night",
+                    attributes: true
+                }
+            } : {},
             info: {
                 component: 'sensor',
                 device_class: 'timestamp',
@@ -77,6 +89,8 @@ class Chime extends RingPolledDevice {
         const volumeState = this.device.data.settings.volume
         const snoozeState = Boolean(this.device.data.do_not_disturb.seconds_left) ? 'ON' : 'OFF'
         const snoozeMinutesRemaining = Math.floor(this.device.data.do_not_disturb.seconds_left/60)
+        const nightlightEnabled = this.device.data.settings.night_light_settings.light_sensor_enabled ? 'ON' : 'OFF'
+        const nightlightState = this.device.data.night_light_state.toUpperCase()
 
         // Polled states are published only if value changes or it's a device publish
         if (volumeState !== this.data.volume || isPublish) { 
@@ -94,6 +108,19 @@ class Chime extends RingPolledDevice {
             this.data.snooze_minutes_remaining = snoozeMinutesRemaining
         }
 
+        if (this.entity.hasOwnProperty('nightlight_enabled')) {
+            if ((nightlightEnabled !== this.data.nightlight.enabled && Date.now()/1000 - this.data.nightlight.set_time > 30) || isPublish) {
+                this.data.nightlight.enabled = nightlightEnabled
+                this.mqttPublish(this.entity.nightlight_enabled.state_topic, this.data.nightlight.enabled)
+            }
+
+            if (nightlightState !== this.data.nightlight.state || isPublish) {
+                this.data.nightlight.state = nightlightState
+                const attributes = { nightlightState: this.data.nightlight.state }
+                this.mqttPublish(this.entity.nightlight_enabled.json_attributes_topic, JSON.stringify(attributes), 'attr')
+            }
+        }
+
         // Local states are published only for publish/republish
         if (isPublish) {
             this.mqttPublish(this.entity.snooze_minutes.state_topic, this.data.snooze_minutes.toString())
@@ -107,14 +134,24 @@ class Chime extends RingPolledDevice {
     async publishAttributes() {
         const deviceHealth = await this.device.getHealth()
         if (deviceHealth) {
-            const attributes = {}
-            attributes.wirelessNetwork = deviceHealth.wifi_name
-            attributes.wirelessSignal = deviceHealth.latest_signal_strength
-            attributes.firmwareStatus = deviceHealth.firmware
-            attributes.lastUpdate = deviceHealth.updated_at.slice(0,-6)+"Z"
+            const attributes = {
+                wirelessNetwork: deviceHealth.wifi_name,
+                wirelessSignal: deviceHealth.latest_signal_strength,
+                firmwareStatus: deviceHealth.firmware,
+                lastUpdate: deviceHealth.updated_at.slice(0,-6)+"Z"
+            }
             this.mqttPublish(this.entity.info.state_topic, JSON.stringify(attributes), 'attr')
             this.publishAttributeEntities(attributes)
         }
+    }
+
+    async setDeviceSettings(settings) {
+        const response = await this.device.restClient.request({
+            method: 'PATCH',
+            url: `https://api.ring.com/devices/v1/devices/${this.device.id}/settings`,
+            json: settings
+        })
+        return response
     }
 
     // Process messages from MQTT command topic
@@ -134,6 +171,9 @@ class Chime extends RingPolledDevice {
                 break;
             case 'play_motion_sound/command':
                 this.playSound(message, 'motion')
+                break;
+            case 'nightlight_enabled/command':
+                this.setNightlightState(message)
                 break;
             default:
                 this.debug(`Received message to unknown command topic: ${command}`)
@@ -203,6 +243,24 @@ class Chime extends RingPolledDevice {
                 this.debug('Received invalid command for play chime sound!')
         }
     }
-}
 
-module.exports = Chime
+    async setNightlightState(message) {
+        this.debug(`Received set nightlight enabled ${message}`)
+        const command = message.toUpperCase()
+        switch(command) {
+            case 'ON':
+            case 'OFF':
+                this.data.nightlight.set_time = Math.floor(Date.now()/1000)
+                await this.setDeviceSettings({
+                    "night_light_settings": { 
+                        "light_sensor_enabled": command === 'ON' ? true : false
+                    }
+                })
+                this.data.nightlight.enabled = command
+                this.mqttPublish(this.entity.nightlight_enabled.state_topic, this.data.nightlight.enabled)
+                break;
+            default:
+                this.debug('Received invalid command for nightlight enabled mode!')
+        }
+    }
+}

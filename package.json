@@ -1,20 +1,24 @@
 {
   "name": "ring-mqtt",
-  "version": "5.0.5",
+  "version": "5.1.0",
+  "type": "module",
   "description": "Ring Devices via MQTT",
   "main": "ring-mqtt.js",
   "dependencies": {
+    "aedes": "0.48.1",
     "body-parser": "^1.20.1",
+    "chalk": "^5.2.0",
     "debug": "^4.3.4",
     "express": "^4.18.2",
-    "got": "^11.8.5",
     "ip": "^1.1.8",
-    "is-online": "9.0.1",
-    "write-file-atomic": "^4.0.2",
-    "minimist": "^1.2.6",
-    "mqtt": "4.3.7",
-    "aedes": "0.48.0",
-    "ring-client-api": "^11.3.0"
+    "is-online": "^10.0.0",
+    "js-yaml": "^4.1.0",
+    "minimist": "^1.2.7",
+    "mqtt": "^4.3.7",
+    "ring-client-api": "11.7.1",
+    "write-file-atomic": "^5.0.0",
+    "werift": "^0.18.1",
+    "rxjs": "^7.8.0"
   },
   "devDependencies": {
     "eslint": "^7.19.0"

@@ -45,6 +45,8 @@ else
     fi
 fi
 
+export FORCE_COLOR=2
+
 if [ "${BRANCH}" = "latest" ] || [ "${BRANCH}" = "dev" ]; then
     cd "/app/ring-mqtt-${BRANCH}"
 else

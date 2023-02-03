@@ -19,5 +19,25 @@ if [ ! -d "/app/ring-mqtt-${BRANCH}" ]; then
     echo "-------------------------------------------------------"
 else
     # Branch has already been initialized, run any post-update command here
-    echo "The ring-mqtt-${BRANCH} has been updated."
+    echo "The ring-mqtt-${BRANCH} branch has been updated."
+    
+    APK_ARCH="$(apk --print-arch)"
+    GO2RTC_VERSION="v1.1.1"
+    case "${APK_ARCH}" in
+        x86_64)
+            GO2RTC_ARCH="amd64";;
+        aarch64)
+            GO2RTC_ARCH="arm64";;
+        armv7|armhf)
+            GO2RTC_ARCH="arm";;
+        *)
+            echo >&2 "ERROR: Unsupported architecture '$APK_ARCH'"
+            exit 1;;
+    esac
+    rm -f /usr/local/bin/go2rtc
+    curl -L -s -o /usr/local/bin/go2rtc "https://github.com/AlexxIT/go2rtc/releases/download/${GO2RTC_VERSION}/go2rtc_linux_${GO2RTC_ARCH}"
+    chmod +x /usr/local/bin/go2rtc
+
+    cp -f "/app/ring-mqtt-${BRANCH}/init/s6/services.d/ring-mqtt/run" /etc/services.d/ring-mqtt/run
+    chmod +x /etc/services.d/ring-mqtt/run
 fi

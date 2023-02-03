@@ -1,9 +1,9 @@
-const RingSocketDevice = require('./base-socket-device')
-const { allAlarmStates, RingDeviceType } = require('ring-client-api')
-const utils = require( '../lib/utils' )
-const state = require('../lib/state')
+import RingSocketDevice from './base-socket-device.js'
+import { allAlarmStates, RingDeviceType } from 'ring-client-api'
+import utils from '../lib/utils.js'
+import state from '../lib/state.js'
 
-class SecurityPanel extends RingSocketDevice {
+export default class SecurityPanel extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'alarm', 'alarmState')
         this.deviceData.mdl = 'Alarm Control Panel'
@@ -20,7 +20,7 @@ class SecurityPanel extends RingSocketDevice {
                 icon: 'mdi:alarm-light',
                 name: `${this.device.location.name} Siren`
             },
-            ...utils.config.enable_panic ? {
+            ...utils.config().enable_panic ? {
                 police: { 
                     component: 'switch',
                     name: `${this.device.location.name} Panic - Police`,
@@ -74,7 +74,7 @@ class SecurityPanel extends RingSocketDevice {
         const sirenState = (this.device.data.siren && this.device.data.siren.state === 'on') ? 'ON' : 'OFF'
         this.mqttPublish(this.entity.siren.state_topic, sirenState)
 
-        if (utils.config.enable_panic) {
+        if (utils.config().enable_panic) {
             let policeState = 'OFF'
             let fireState = 'OFF'
             const alarmState = this.device.data.alarmInfo ? this.device.data.alarmInfo.state : ''
@@ -268,5 +268,3 @@ class SecurityPanel extends RingSocketDevice {
         }
     }
 }
-
-module.exports = SecurityPanel

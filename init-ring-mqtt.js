@@ -1,9 +1,12 @@
 #!/usr/bin/env node
-const fs = require('fs')
-const writeFileAtomic = require('write-file-atomic')
-const { createHash, randomBytes } = require('crypto')
-const { RingRestClient } = require('./node_modules/ring-client-api/lib/api/rest-client')
-const { requestInput } = require('./node_modules/ring-client-api/lib/api/util')
+import fs from 'fs'
+import { dirname } from 'path'
+import { fileURLToPath } from 'url'
+import { readFile } from 'fs/promises'
+import writeFileAtomic from 'write-file-atomic'
+import { createHash, randomBytes } from 'crypto'
+import { RingRestClient } from 'ring-client-api/rest-client'
+import { requestInput } from './node_modules/ring-client-api/lib/util.js'
 
 async function getRefreshToken() {
     let generatedToken
@@ -37,16 +40,16 @@ const main = async() => {
     // If running in Docker set state file path as appropriate
     const stateFile = (fs.existsSync('/etc/cont-init.d/ring-mqtt.sh')) 
         ? '/data/ring-state.json'
-        : require('path').dirname(require.main.filename)+'/ring-state.json'
+        : dirname(fileURLToPath(new URL(import.meta.url)))+'/ring-state.json'
     
     const configFile = (fs.existsSync('/etc/cont-init.d/ring-mqtt.sh')) 
         ? '/data/config.json'
-        : require('path').dirname(require.main.filename)+'/config.json'
+        : dirname(fileURLToPath(new URL(import.meta.url)))+'/config.json'
 
     if (fs.existsSync(stateFile)) {
         console.log('Reading latest data from state file: '+stateFile)
         try {
-            stateData = require(stateFile)
+            stateData = JSON.parse(await readFile(stateFile))
         } catch(err) {
             console.log(err.message)
             console.log('Saved state file '+stateFile+' exist but could not be parsed!')
@@ -75,24 +78,25 @@ const main = async() => {
         console.log(err)
     }
 
-    const configData = {
-        "mqtt_url": "mqtt://localhost:1883",
-        "mqtt_options": "",
-        "livestream_user": "",
-        "livestream_pass": "",
-        "disarm_code": "",
-        "enable_cameras": true,
-        "enable_modes": false,
-        "enable_panic": false,
-        "hass_topic": "homeassistant/status",
-        "ring_topic": "ring",
-        "location_ids": [
-            ""
-        ]
-    }
-
     if (!fs.existsSync(configFile)) {
         try {
+            const configData = {
+                "mqtt_url": "mqtt://localhost:1883",
+                "mqtt_options": "",
+                "livestream_user": "",
+                "livestream_pass": "",
+                "disarm_code": "",
+                "enable_cameras": true,
+                "enable_modes": false,
+                "enable_panic": false,
+                "hass_topic": "homeassistant/status",
+                "ring_topic": "ring",
+                "location_ids": []
+            }
+
+            const mqttUrl = await requestInput('MQTT URL (enter to skip and edit config manually): ')
+            configData.mqtt_url = mqttUrl ? mqttUrl : configData.mqtt_url
+
             await writeFileAtomic(configFile, JSON.stringify(configData, null, 4))
             console.log('New config file written to '+configFile)
         } catch (err) {

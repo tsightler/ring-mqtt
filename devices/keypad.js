@@ -1,6 +1,6 @@
-const RingSocketDevice = require('./base-socket-device')
+import RingSocketDevice from './base-socket-device.js'
 
-class Keypad extends RingSocketDevice {
+export default class Keypad extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'alarm')
         this.deviceData.mdl = 'Security Keypad'
@@ -50,5 +50,3 @@ class Keypad extends RingSocketDevice {
     }
 
 }
-
-module.exports = Keypad

@@ -1,6 +1,6 @@
-const RingSocketDevice = require('./base-socket-device')
+import RingSocketDevice from './base-socket-device.js'
 
-class FloodFreezeSensor extends RingSocketDevice {
+export default class FloodFreezeSensor extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'alarm')
         this.deviceData.mdl = 'Flood & Freeze Sensor'
@@ -25,5 +25,3 @@ class FloodFreezeSensor extends RingSocketDevice {
         this.publishAttributes()
     }
 }
-
-module.exports = FloodFreezeSensor

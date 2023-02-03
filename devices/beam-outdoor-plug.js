@@ -1,7 +1,7 @@
-const RingSocketDevice = require('./base-socket-device')
-const { RingDeviceType } = require('ring-client-api')
+import RingSocketDevice from './base-socket-device.js'
+import { RingDeviceType } from 'ring-client-api'
 
-class BeamOutdoorPlug extends RingSocketDevice {
+export default class BeamOutdoorPlug extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'lighting')
         this.deviceData.mdl = 'Outdoor Smart Plug'
@@ -76,5 +76,3 @@ class BeamOutdoorPlug extends RingSocketDevice {
         }
     }
 }
-
-module.exports = BeamOutdoorPlug
