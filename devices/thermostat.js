@@ -87,9 +87,9 @@ export default class Thermostat extends RingSocketDevice {
         // settings even though these modes only have a single setpoint. For other thermostat integrations
         // the fix is to simply set the unsused setpoint for the current mode to a null value but I can
         // find no method to do this via the MQTT thermostat integration as it always attempt to parse a
-        // number. So, inatead, this hack sends an MQTT discovery message that temporarily exclused auto
-        // mode from the configuraiton for the device and then, just a few hundred milliseconds later, sens immediately sends the proper discovery data which effectively
-        // clears state with only a minor UI blip.
+        // number. So, inatead, this hack sends an MQTT discovery message that temporarily excludes auto
+        // mode from the configuraiton for the device and then, just a few hundred milliseconds later, 
+        // sends the proper discovery data.  This acts to effectively clears state with only a minor UI blip.
         if (this.entity.thermostat.modes.includes('auto') && mode !== this.data.publishedMode) {
             if (!this.data.publishedMode || mode === 'auto' || this.data.publishedMode === 'auto') {
                 const supportedModes = this.entity.thermostat.modes
