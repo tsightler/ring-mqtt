@@ -3,6 +3,7 @@ import utils from '../lib/utils.js'
 import pathToFfmpeg from 'ffmpeg-for-homebridge'
 import { Worker } from 'worker_threads'
 import { spawn } from 'child_process'
+import chalk from 'chalk'
 
 export default class Camera extends RingPolledDevice {
     constructor(deviceInfo) {
@@ -186,7 +187,11 @@ export default class Camera extends RingPolledDevice {
                     this.data.stream.live.session = false
                     break;
                 default:
-                    this.debug(message, 'wrtc')
+                    if (message.startsWith('ERROR')) {
+                        this.debug(chalk.redBright(message), 'wrtc')
+                    } else {
+                        this.debug(message, 'wrtc')
+                    }
                     return
             }
             this.publishStreamState()
