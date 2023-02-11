@@ -9,7 +9,6 @@
 **Dependency Updates**
 - Bump go2rtc version to v1.1.2
 - Bump s6-overlay to v3.1.3.0
-- Bump Alpine image to 3.17.2
 
 ## v5.1.2 (re-publish of v5.1.1)
 **Fixed Bugs**  
