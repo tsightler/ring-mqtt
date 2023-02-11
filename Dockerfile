@@ -1,4 +1,4 @@
-FROM alpine:3.17.1
+FROM alpine:3.17.2
 
 ENV LANG="C.UTF-8" \
     PS1="$(whoami)@$(hostname):$(pwd)$ " \
@@ -9,7 +9,7 @@ ENV LANG="C.UTF-8" \
     TERM="xterm-256color"
     
 COPY . /app/ring-mqtt
-RUN S6_VERSION="v3.1.2.1" && \
+RUN S6_VERSION="v3.1.3.0" && \
     BASHIO_VERSION="v0.14.3" && \
     GO2RTC_VERSION="v1.1.2" && \
     APK_ARCH="$(apk --print-arch)" && \
