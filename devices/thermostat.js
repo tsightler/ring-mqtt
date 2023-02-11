@@ -92,11 +92,8 @@ export default class Thermostat extends RingSocketDevice {
         // sends the proper discovery data.  This acts to effectively clears state with only a minor UI blip.
         if (this.entity.thermostat.modes.includes('auto') && mode !== this.data.publishedMode) {
             if (!this.data.publishedMode || mode === 'auto' || this.data.publishedMode === 'auto') {
-                const supportedModes = this.entity.thermostat.modes
-                this.entity.thermostat.modes = ["off", "cool", "heat"]
-                await this.publishDiscovery()
-                await utils.msleep(100)
-                this.entity.thermostat.modes = supportedModes
+                const configTopic = `homeassistant/climate/${this.locationId}/${this.deviceId}_thermostat/config`
+                this.mqttPublish(configTopic, '', false)
                 await this.publishDiscovery()
                 await utils.msleep(500)
             }
