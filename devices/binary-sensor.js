@@ -47,7 +47,6 @@ export default class BinarySensor extends RingSocketDevice {
                 } else {
                     this.entityName = 'binary_sensor'
                     this.deviceData.mdl = 'Generic Binary Sensor'
-                    device_class = 'None'
                 }
         }
 
