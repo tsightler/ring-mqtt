@@ -98,6 +98,7 @@ export default class Thermostat extends RingSocketDevice {
                 await utils.msleep(500)
                 this.mqttPublish(this.availabilityTopic, 'online', false)
                 await utils.msleep(100)
+                this.publishTemperature()
             }
         }
     }
