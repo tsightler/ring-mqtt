@@ -6,6 +6,9 @@
 - Include RTX as part of WebRTC codec negotiation which can improve robustness and reduce artifacting of the livestream in cases where there is minor UDP packet loss.
 - Disable WebRTC port on internal go2rtc instance.
 
+**Dependency Updates**
+- Bump go2rtc version to v1.1.2
+
 ## v5.1.2 (re-publish of v5.1.1)
 **Fixed Bugs**  
 - Fix crash on Chime Pro (1st Generation) models
