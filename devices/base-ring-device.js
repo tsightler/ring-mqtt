@@ -140,7 +140,7 @@ export default class RingDevice {
                                 temperature_high_state_template: '{{ value if value ~= "0" else "" }}',
                                 temperature_high_command_topic: `${entityTopic}/temperature_high_command`,
                                 temperature_low_state_topic: `${entityTopic}/temperature_low_state`,
-                                temperature_low_state_template: '{{ value if value ~= "0" else "" }}',
+                                temperature_low_state_template: '{{ value if value != "0" else "" }}',
                                 temperature_low_command_topic: `${entityTopic}/temperature_low_command`,
                             } : {},
                         temperature_unit: 'C' } : {},
