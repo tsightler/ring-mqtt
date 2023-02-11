@@ -1,6 +1,10 @@
 ## v5.1.3
+**Fixed Bugs**
+- Don't crash on codec mismatch.  This is caused by the fact that Ring has started rolling out support for the HEVC/H.265 video encoding format on some devices and cameras, however, this format still has many issues and incompatibilities in downstream browsers and devices.  For now the suggestion for ring-mqtt users is to enable [Legacy Video Mode](https://support.ring.com/hc/en-us/articles/4417503172116-Legacy-Video-Mode-) for any cameras that are using this codec as default.
+
 **Other Changes**
 - Include RTX as part of WebRTC codec negotiation which can improve robustness and reduce artifacting of the livestream in cases where there is minor UDP packet loss.
+- Disable WebRTC port on internal go2rtc instance.
 
 ## v5.1.2 (re-publish of v5.1.1)
 **Fixed Bugs**  
