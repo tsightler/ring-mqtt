@@ -95,7 +95,8 @@ export default class Thermostat extends RingSocketDevice {
                 const configTopic = `homeassistant/climate/${this.locationId}/${this.deviceId}_thermostat/config`
                 this.mqttPublish(configTopic, '', false)
                 await this.publishDiscovery()
-                await utils.msleep(500)
+                await utils.msleep(100)
+                this.mqttPublish(this.availabilityTopic, 'online', false)
             }
         }
     }
