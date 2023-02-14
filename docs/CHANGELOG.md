@@ -1,3 +1,15 @@
+## v5.2.0
+**New Features**
+- Basic support for Ring Intercom, the following features are supported
+  - Ding state - Simple binary sensors, stays "on" for 15 seconds after ding
+  - Lock state - Allows to send unlock and also triggers on unlock from Ring app.  Stays unlocked for 5 seconds and reverts to locked state
+  - Battery status
+
+**Fixed Bugs**
+- Implement improved Home Assistant behavior for thermostats when switch between auto->heat/cool modes.  This working is dependent on Home Assistant merging [PR# 87936](https://github.com/home-assistant/core/pull/87936), hopefully that will be soon.
+- Fixed an issue with generic binary sensors which caused them to fail automatic discovery in Home Assistant
+
+
 ## v5.1.3
 **Fixed Bugs**
 - Don't crash on codec mismatch.  This is caused by the fact that Ring has started rolling out support for the HEVC/H.265 video encoding format on some devices and cameras, however, this format still has many issues and incompatibilities in downstream browsers and devices.  For now the suggestion for ring-mqtt users is to enable [Legacy Video Mode](https://support.ring.com/hc/en-us/articles/4417503172116-Legacy-Video-Mode-) for any cameras that are using this codec as default.
