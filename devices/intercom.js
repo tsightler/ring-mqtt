@@ -3,8 +3,10 @@ import RingPolledDevice from './base-polled-device.js'
 export default class Lock extends RingPolledDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'intercom')
+        this.deviceData.mdl = 'Intercom'
 
         this.entity = {
+            ...this.entity,
             lock: {
                 component: 'lock'
             },
@@ -55,6 +57,17 @@ export default class Lock extends RingPolledDevice {
                 value_template: '{{ value_json["batteryLevel"] | default("") }}'
             }
         }
+        const deviceHealth = await this.getHealth()
+        if (deviceHealth && !(deviceHealth?.network_connection && deviceHealth.network_connection === 'ethernet')) {
+            this.entity.wireless = {
+                component: 'sensor',
+                device_class: 'signal_strength',
+                unit_of_measurement: 'dBm',
+                parent_state_topic: 'info/state',
+                attributes: 'wireless',
+                value_template: '{{ value_json["wirelessSignal"] | default("") }}'
+            }
+        }
     }
 
     publishState(data) {
@@ -84,15 +97,21 @@ export default class Lock extends RingPolledDevice {
 
     // Publish device data to info topic
     async publishAttributes() {
-        const attributes = {
-            lastUpdate: Math.floor(Date.now()/1000),
-            ...this.device?.batteryLevel
-                ? { batteryLevel: this.device.batteryLevel } : {},
-            ...this.device.data.hasOwnProperty('firemware_version')
-                ? { firmwareVersion: this.device.data.firmware_version } : {}
+        try {
+            const deviceHealth = await this.getHealth()
+            const attributes = {
+                ...this.device?.batteryLevel
+                    ? { batteryLevel: this.device.batteryLevel } : {},
+                firmwareStatus: deviceHealth.firmware,
+                lastUpdate: deviceHealth.updated_at.slice(0,-6)+"Z",
+                wirelessNetwork: deviceHealth.wifi_name,
+                wirelessSignal: deviceHealth.latest_signal_strength
+            }
+            this.mqttPublish(this.entity.info.state_topic, JSON.stringify(attributes), 'attr')
+            this.publishAttributeEntities(attributes)
+        } catch(error) {
+            this.debug('Could not publish attributes due to no health data')
         }
-        this.mqttPublish(this.entity.info.state_topic, JSON.stringify(attributes), 'attr')
-        this.publishAttributeEntities(attributes)
     }
 
     processDing() {
@@ -121,6 +140,22 @@ export default class Lock extends RingPolledDevice {
             this.publishLockState()
             this.data.lock.unlockTimeout = false
         }, 5000)
+    }
+
+    async getHealth() {
+        try {
+            const response = await this.device.restClient.request({
+                url: this.device.doorbotUrl('health')
+            })
+
+            if (response.hasOwnProperty('device_health')) {
+                return response.device_health
+            }
+        } catch(error) {
+            this.debug('Failed to retrieve health data for Intercom')
+            this.debug(error)
+        }
+        return false
     }
 
     // Process messages from MQTT command topic

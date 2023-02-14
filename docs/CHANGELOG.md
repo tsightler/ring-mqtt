@@ -1,9 +1,10 @@
 ## v5.2.0
 **New Features**
 - Basic support for Ring Intercom, the following features are supported
-  - Ding state - Simple binary sensors, stays "on" for 15 seconds after ding
+  - Ding state - Simple binary sensor, stays "on" for 15 seconds after ding
   - Lock state - Allows to send unlock and also triggers on unlock from Ring app.  Stays unlocked for 5 seconds and reverts to locked state
   - Battery status
+  - Wifi status
 
 **Fixed Bugs**
 - Implement improved Home Assistant behavior for thermostats when switch between auto->heat/cool modes.  This working is dependent on Home Assistant merging [PR# 87936](https://github.com/home-assistant/core/pull/87936), hopefully that will be soon.
