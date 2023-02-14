@@ -99,7 +99,7 @@ export default class RingSocketDevice extends RingDevice {
             ... this.device.data.hasOwnProperty('firmwareUpdate') 
                 ? { firmwareStatus: this.device.data.firmwareUpdate.state } : {},
             ... this.device.data.hasOwnProperty('lastCommTime') 
-                ? { lastCommTime: utils.getISOTime(this.device.data.lastUpdate) } : {},
+                ? { lastCommTime: utils.getISOTime(this.device.data.lastCommTime) } : {},
             ... this.device.data.hasOwnProperty('lastUpdate') 
                 ? { lastUpdate: utils.getISOTime(this.device.data.lastUpdate) } : {},
             ... this.device.data.hasOwnProperty('linkQuality') 
