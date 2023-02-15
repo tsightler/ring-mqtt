@@ -5,6 +5,19 @@ export default class Lock extends RingPolledDevice {
         super(deviceInfo, 'intercom')
         this.deviceData.mdl = 'Intercom'
 
+        this.data = {
+            lock: {
+                state: 'LOCKED',
+                publishedState: null,
+                unlockTimeout: false
+            },
+            ding: {
+                state: 'OFF',
+                publishedState: null,
+                timeout: false
+            }
+        }
+
         this.entity = {
             ...this.entity,
             lock: {
@@ -19,19 +32,6 @@ export default class Lock extends RingPolledDevice {
                 component: 'sensor',
                 device_class: 'timestamp',
                 value_template: '{{ value_json["lastUpdate"] | default("") }}'
-            }
-        }
-
-        this.data = {
-            lock: {
-                state: 'LOCKED',
-                publishedState: null,
-                unlockTimeout: false
-            },
-            ding: {
-                state: 'OFF',
-                publishedState: null,
-                timeout: false
             }
         }
 
@@ -73,7 +73,7 @@ export default class Lock extends RingPolledDevice {
     publishState(data) {
         const isPublish = data === undefined ? true : false
 
-        if (data) { this.debug('publishState was called with data') }
+        if (data) { this.debug(`publishState was called with data. Heatbeat count: ${this.heartbeat}`) }
 
         this.publishDingState(isPublish)
         this.publishLockState(isPublish)
