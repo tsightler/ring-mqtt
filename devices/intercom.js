@@ -43,8 +43,6 @@ export default class Lock extends RingPolledDevice {
         this.device.onDing.subscribe(() => {
             this.processDing()
         })
-
-        this.forcePolling()
     }
 
     async initAttributeEntities() {
@@ -161,15 +159,6 @@ export default class Lock extends RingPolledDevice {
             this.debug(error)
         }
         return false
-    }
-
-    async forcePolling() {
-        if (this.heartbeat < 2) {
-            this.debug(`Heartbeat is <2, forcing a device update`)
-            this.device.requestUpdate()
-        } 
-        await utils.sleep(5)
-        this.forcePolling()
     }
 
     // Process messages from MQTT command topic
