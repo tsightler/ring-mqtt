@@ -35,7 +35,6 @@ class RingApi extends subscribed_1.Subscribed {
         }
     }
     async fetchRingDevices() {
-        console.log('fetchRingDevices called')
         const { doorbots, chimes, authorized_doorbots: authorizedDoorbots, stickup_cams: stickupCams, base_stations: baseStations, beams_bridges: beamBridges, other: otherDevices, } = await this.restClient.request({ url: (0, rest_client_1.clientApi)('ring_devices') }), onvifCameras = [], intercoms = [], thirdPartyGarageDoorOpeners = [], unknownDevices = [];
         otherDevices.forEach((device) => {
             switch (device.kind) {
@@ -89,7 +88,7 @@ class RingApi extends subscribed_1.Subscribed {
             byId[intercom.id] = intercom;
             return byId;
         }, {});
-        if (!cameras.length && !chimes.length) {
+        if (!cameras.length && !chimes.length && !intercoms.length) {
             return;
         }
         this.addSubscriptions((0, rxjs_1.merge)(onDeviceRequestUpdate, onPollForStatusUpdate)

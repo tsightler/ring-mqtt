@@ -16,7 +16,6 @@ export default class RingPolledDevice extends RingDevice {
         }
 
         this.device.onData.subscribe((data) => {
-            this.debug(`onData was called.  Heartbeat count: ${this.heartbeat}`)
             // Reset heartbeat counter on every polled state
             this.heartbeat = 3
             if (this.isOnline()) { this.publishState(data) }
