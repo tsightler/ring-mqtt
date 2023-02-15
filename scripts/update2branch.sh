@@ -39,6 +39,7 @@ else
     chmod +x /usr/local/bin/go2rtc
 
     cp -f "/app/ring-mqtt-${BRANCH}/scripts/api.js" "/app/ring-mqtt-${BRANCH}/node_modules/ring-client-api/lib/api.js"
+    cp -f "/app/ring-mqtt-${BRANCH}/scripts/rest-client.js" "/app/ring-mqtt-${BRANCH}/node_modules/ring-client-api/lib/rest-client.js"
     cp -f "/app/ring-mqtt-${BRANCH}/init/s6/services.d/ring-mqtt/run" /etc/services.d/ring-mqtt/run
     chmod +x /etc/services.d/ring-mqtt/run
 fi

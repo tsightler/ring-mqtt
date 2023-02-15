@@ -95,7 +95,6 @@ class RingApi extends subscribed_1.Subscribed {
         this.addSubscriptions((0, rxjs_1.merge)(onDeviceRequestUpdate, onPollForStatusUpdate)
             .pipe((0, operators_1.throttleTime)(500), (0, operators_1.switchMap)(() => this.fetchRingDevices().catch(() => null)))
             .subscribe((response) => {
-            console.log(response)
             onUpdateReceived.next(null);
             if (!response) {
                 return;
