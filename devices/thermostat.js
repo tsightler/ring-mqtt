@@ -65,7 +65,7 @@ export default class Thermostat extends RingSocketDevice {
     async publishState(data) {
         const isPublish = data === undefined ? true : false
 
-        this.publishModeAndSetpoints(mode)
+        this.publishModeAndSetpoints()
         this.mqttPublish(this.entity.thermostat.fan_mode_state_topic, this.data.fanMode())
         this.mqttPublish(this.entity.thermostat.aux_state_topic, this.data.auxMode())
         this.publishOperatingMode()
@@ -74,7 +74,7 @@ export default class Thermostat extends RingSocketDevice {
         this.publishAttributes()
     }
 
-    publishModeAndSetpoints(mode) {
+    publishModeAndSetpoints() {
         const mode = this.data.currentMode()
 
         // Publish new mode
