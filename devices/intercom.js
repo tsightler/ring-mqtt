@@ -1,5 +1,4 @@
 import RingPolledDevice from './base-polled-device.js'
-import utils from '../lib/utils.js'
 
 export default class Lock extends RingPolledDevice {
     constructor(deviceInfo) {

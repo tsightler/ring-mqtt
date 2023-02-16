@@ -65,19 +65,7 @@ export default class Thermostat extends RingSocketDevice {
     async publishState(data) {
         const isPublish = data === undefined ? true : false
 
-        const mode = this.data.currentMode()
-        this.mqttPublish(this.entity.thermostat.mode_state_topic, mode)
-        this.publishSetpoints(mode)
-        // If switching between auto and single-setpoint modes (heat/cool) clear unused setpoint values
-        if (this.entity.thermostat.modes.includes('auto') && mode !== this.data.publishedMode) {
-            if (mode === 'auto') {
-                this.mqttPublish(this.entity.thermostat.temperature_state_topic, 'None')
-            } else if (this.data.publishedMode === 'auto') {
-                this.mqttPublish(this.entity.thermostat.temperature_low_state_topic, 'None')
-                this.mqttPublish(this.entity.thermostat.temperature_high_state_topic, 'None')
-            }
-        }
-        this.data.publishedMode = mode
+        this.publishModeAndSetpoints(mode)
         this.mqttPublish(this.entity.thermostat.fan_mode_state_topic, this.data.fanMode())
         this.mqttPublish(this.entity.thermostat.aux_state_topic, this.data.auxMode())
         this.publishOperatingMode()
@@ -86,7 +74,13 @@ export default class Thermostat extends RingSocketDevice {
         this.publishAttributes()
     }
 
-    publishSetpoints(mode) {        
+    publishModeAndSetpoints(mode) {
+        const mode = this.data.currentMode()
+
+        // Publish new mode
+        this.mqttPublish(this.entity.thermostat.mode_state_topic, mode)
+
+        // Publish setpoints for mode
         if (mode === 'auto') {
             // When in auto mode publish separate low/high set point values.  The Ring API
             // does not use low/high settings, but rather uses a single setpoint with deadBand
@@ -100,8 +94,25 @@ export default class Thermostat extends RingSocketDevice {
                 this.mqttPublish(this.entity.thermostat.temperature_low_state_topic, this.data.autoSetPoint.low)
                 this.mqttPublish(this.entity.thermostat.temperature_high_state_topic, this.data.autoSetPoint.high)
             }
-        } else {
+        } else if (mode !== 'off') {
             this.mqttPublish(this.entity.thermostat.temperature_state_topic, this.data.setPoint())
+        }
+
+        // Clear any unused setpoints from previous mode
+        if (mode !== this.data.publishedMode) {
+            if (mode === 'off') {
+                this.mqttPublish(this.entity.thermostat.temperature_state_topic, 'None')
+                this.mqttPublish(this.entity.thermostat.temperature_low_state_topic, 'None')
+                this.mqttPublish(this.entity.thermostat.temperature_high_state_topic, 'None')
+            } else if (this.entity.thermostat.modes.includes('auto') && mode !== this.data.publishedMode) {
+                if (mode === 'auto') {
+                    this.mqttPublish(this.entity.thermostat.temperature_state_topic, 'None')
+                } else if (this.data.publishedMode === 'auto') {
+                    this.mqttPublish(this.entity.thermostat.temperature_low_state_topic, 'None')
+                    this.mqttPublish(this.entity.thermostat.temperature_high_state_topic, 'None')
+                }
+            }
+            this.data.publishedMode = mode
         }
     }
 
