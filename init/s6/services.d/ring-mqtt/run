@@ -53,6 +53,9 @@ else
     cd /app/ring-mqtt
 fi
 
+# Hack for intercom only users, remove once ring-client-api is patched
+sed -i 's/if\ (!cameras.length \&\& !chimes.length) {/if (!cameras.length \&\& !chimes.length \&\& !intercoms.length) {/g' ./node_modules/ring-client-api/lib/api.js
+
 echo "-------------------------------------------------------"
 echo ring-mqtt.js version: $(cat package.json | grep version | cut -f4 -d'"')
 echo Node version $(node -v)
