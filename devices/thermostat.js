@@ -162,7 +162,7 @@ export default class Thermostat extends RingSocketDevice {
             case 'aux':
                 if (this.entity.thermostat.modes.map(e => e.toLocaleLowerCase()).includes(mode) || mode === 'aux') {
                     this.device.setInfo({ device: { v1: { mode } } })
-                    //this.mqttPublish(this.entity.thermostat.mode_state_topic, mode)
+                    this.mqttPublish(this.entity.thermostat.mode_state_topic, mode)
                 }
                 break;
             default:
