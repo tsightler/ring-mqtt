@@ -1,8 +1,8 @@
 ## v5.2.0
 **New Features**
-- Basic support for Ring Intercom, the following features are supported
-  - Ding state - Simple binary sensor, stays "on" for 15 seconds after ding
-  - Lock state - Allows to send unlock and also triggers on unlock from Ring app.  Stays unlocked for 5 seconds before reverting to locked state.
+- Basic support for Ring Intercom, the following features are supported:
+  - Ding state - Simple binary sensor, stays "on" for 20 seconds after ding
+  - Lock state - Unlock command is supported and also triggers on unlock from Ring app.  Stays in unlocked state for 5 seconds before reverting to locked state.
   - Battery status
   - Wifi status
 
@@ -10,7 +10,8 @@
 - Fixed an issue with generic binary sensors which caused them to fail automatic discovery in Home Assistant
 
 **Other Changes**
-- Implement improved Home Assistant behavior for thermostats when switching between auto->heat/cool modes.  Requires Home Assistant 2023.3 release before it will work correctly but is much improved behavior.
+- Reduce camera ding and motion events to 20 seconds, from previous value of 180 seconds (ding expire time).  This has been requested mulitple times, but be aware that this may impact automations as they will trigger more often when there are multiple events close together.  The previously used 180 seconds was based on the ding expire time send as part of the ding, and also aligned with Ring first generation motion detectors, however, second generation motion dection uses 20 seconds.
+- Implement improved Home Assistant behavior for thermostats when switching between auto->heat/cool modes.  Requires Home Assistant 2023.3 release before it will work correctly but is much improved behavior from the previously used hack.  https://github.com/home-assistant/core/pull/87936
 
 ## v5.1.3
 **Fixed Bugs**

@@ -125,7 +125,7 @@ export default class Lock extends RingPolledDevice {
             this.data.ding.state = 'OFF'
             this.publishDingState()
             this.data.ding.timeout = false
-        }, 15000)
+        }, 20000)
     }
 
     setDoorUnlocked() {
