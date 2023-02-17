@@ -4,7 +4,7 @@ import utils from '../lib/utils.js'
 // Base class for devices that communicate with hubs via websocket (alarm/smart lighting)
 export default class RingSocketDevice extends RingDevice {
     constructor(deviceInfo, category, primaryAttribute) {
-        super(deviceInfo, category, primaryAttribute, deviceInfo.device.id, deviceInfo.device.location.locationId)
+        super(deviceInfo, category, primaryAttribute, 'socket')
 
         // Set default device data for Home Assistant device registry
         this.deviceData = { 
