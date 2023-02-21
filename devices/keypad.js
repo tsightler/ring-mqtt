@@ -28,8 +28,8 @@ export default class Keypad extends RingSocketDevice {
             }
         }
 
-        // Ugly, but this listens raw data updates for all devices to
-        // find proximity detection events for this keypad.
+        // Ugly, but this listens to the raw data updates for all devices and
+        // picks out proximity detection events for this keypad.
         this.device.location.onDataUpdate.subscribe((message) => {
             if (message.datatype === 'DeviceInfoDocType' && 
                 Boolean(message.body) && 
