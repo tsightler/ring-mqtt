@@ -6,7 +6,7 @@
   - Battery status
   - Wifi status
 - Keypad proximity sensor is now exposed as a motion sensor (only tested with Keypad Gen2 model)
-- Implement improved Home Assistant behavior for MQTT thermostats when switching between auto->heat/cool modes.  Requires Home Assistant 2023.3 release to work, but provides much improved behavior which should mirror that of thermostats connected directly via Z-wave.  https://github.com/home-assistant/core/pull/87936
+- Implement improved Home Assistant behavior for MQTT thermostats when switching between auto->heat/cool modes.  Requires Home Assistant 2023.3 release or later, but provides much improved behavior which should mirror that of thermostats connected directly via Z-wave.  https://github.com/home-assistant/core/pull/87936
 - Due to popular demand, camera motion and ding event "on" duration can now be configured on a per-device basis.  For now, the default duration remains 180 seconds, which is based on the ding expire time property sent as part of the ding event in the Ring API and also aligned with first-generation motion sensors which would stay in "on" state for 180 seconds after any detected motion.  However, many users have requested a shorter "on" duration and second-generation motion sensors now use 20 seconds, so this new feature provides flexibility for those users.  Based on feedback, future versions may use the shorter "on" duration by default.
 
 **Fixed Bugs**
@@ -14,6 +14,8 @@
 
 **Other Changes**
 - Bump go2rtc to v1.2.0
+- Bump werift to v0.18.2 with fixes for some WebRTC stun negotiation issues.  May improve livestream reliability for users with more complex network setups.
+- Bump ring-client-api to v11.7.2
 
 ## v5.1.3
 **Fixed Bugs**
