@@ -68,7 +68,7 @@ export default class Keypad extends RingSocketDevice {
     
     processMotion() {
         if (this.data.motion.timeout) {
-            clearTimeout(this.motion.ding.timeout)
+            clearTimeout(this.data.motion.timeout)
             this.data.motion.timeout = false
         }
         this.data.motion.state = 'ON'

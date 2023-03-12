@@ -366,7 +366,7 @@ export default class Camera extends RingPolledDevice {
         const isPublish = data === undefined ? true : false
         this.publishPolledState(isPublish)
 
-        // Checks for new events or expired recording URL even 3 polling cycles (~1 minute)
+        // Checks for new events or expired recording URL every 3 polling cycles (~1 minute)
         if (this.entity.hasOwnProperty('event_select')) {
             this.data.event_select.pollCycle--
             if (this.data.event_select.pollCycle <= 0) {
@@ -418,10 +418,19 @@ export default class Camera extends RingPolledDevice {
     
     // Process a ding event
     async processNotification(pushData) {
+        let dingKind
         // Is it a motion or doorbell ding? (for others we do nothing)
-        if (pushData.action !== 'com.ring.push.HANDLE_NEW_DING' && pushData.action !== 'com.ring.push.HANDLE_NEW_motion') { return }
+        switch (pushData.action) {
+            case 'com.ring.push.HANDLE_NEW_DING':
+                dingKind = 'ding'
+                break
+            case 'com.ring.push.HANDLE_NEW_motion':
+                dingKind = 'motion'
+                break
+            default:
+                return
 
-        const dingKind = (pushData.action === 'com.ring.push.HANDLE_NEW_DING') ? 'ding' : 'motion'
+        }
         const ding = pushData.ding
         ding.created_at = Math.floor(Date.now()/1000)
         this.debug(`Received ${dingKind} push notification, expires in ${this.data[dingKind].duration} seconds`)
