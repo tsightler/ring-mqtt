@@ -17,7 +17,8 @@ export default class Camera extends RingPolledDevice {
         this.data = {
             motion: {
                 active_ding: false,
-                ding_duration: 180,
+                duration: savedState?.motion?.duration ? savedState.motion.duration : 180,
+                publishedDuration: false,
                 last_ding: 0,
                 last_ding_expires: 0,
                 last_ding_time: 'none',
@@ -27,7 +28,8 @@ export default class Camera extends RingPolledDevice {
             ...this.device.isDoorbot ? { 
                 ding: {
                     active_ding: false,
-                    ding_duration: 180,
+                    duration: savedState?.ding?.duration ? savedState.ding.duration : 180,
+                    publishedDurations: false,
                     last_ding: 0,
                     last_ding_expires: 0,
                     last_ding_time: 'none'
@@ -119,10 +121,10 @@ export default class Camera extends RingPolledDevice {
             event_select: {
                 component: 'select',
                 options: [
-                    ...(this.device.isDoorbot
+                    ...this.device.isDoorbot
                         ? [ 'Ding 1', 'Ding 2', 'Ding 3', 'Ding 4', 'Ding 5', 
                             'Ding 1 (Transcoded)', 'Ding 2 (Transcoded)', 'Ding 3 (Transcoded)', 'Ding 4 (Transcoded)', 'Ding 5 (Transcoded)' ]
-                        : []),
+                        : [],
                     'Motion 1', 'Motion 2', 'Motion 3', 'Motion 4', 'Motion 5',
                     'Motion 1 (Transcoded)', 'Motion 2 (Transcoded)', 'Motion 3 (Transcoded)', 'Motion 4 (Transcoded)', 'Motion 5 (Transcoded)',
                     'Person 1', 'Person 2', 'Person 3', 'Person 4', 'Person 5',
@@ -165,6 +167,20 @@ export default class Camera extends RingPolledDevice {
                 max: 604800,
                 icon: 'hass:timer'
             },
+            motion_duration: {
+                component: 'number',
+                min: 10,
+                max: 180,
+                icon: 'hass:timer'
+            },
+            ...this.device.isDoorbot ? {
+                ding_duration: {
+                    component: 'number',
+                    min: 10,
+                    max: 180,
+                    icon: 'hass:timer'
+                }
+            } : {},
             info: {
                 component: 'sensor',
                 device_class: 'timestamp',
@@ -216,7 +232,15 @@ export default class Camera extends RingPolledDevice {
             },
             event_select: {
                 state: this.data.event_select.state
-            }
+            },
+            motion: {
+                duration: this.data.motion.duration
+            },
+            ...this.device.isDoorbot ? {
+                ding: {
+                    duration: this.data.ding.duration
+                }
+            } : {}
         }
         this.setSavedState(stateData)
     }
@@ -342,7 +366,7 @@ export default class Camera extends RingPolledDevice {
         const isPublish = data === undefined ? true : false
         this.publishPolledState(isPublish)
 
-        // Checks for new events or expired recording URL even 3 polling cycles (~1 minute)
+        // Checks for new events or expired recording URL every 3 polling cycles (~1 minute)
         if (this.entity.hasOwnProperty('event_select')) {
             this.data.event_select.pollCycle--
             if (this.data.event_select.pollCycle <= 0) {
@@ -361,6 +385,7 @@ export default class Camera extends RingPolledDevice {
             }
  
             this.publishDingStates()
+            this.publishDingDurationState(isPublish)
             this.publishSnapshotMode()
             if (this.data.snapshot.motion || this.data.snapshot.interval) {
                 if (this.data.snapshot.currentImage) {
@@ -393,13 +418,22 @@ export default class Camera extends RingPolledDevice {
     
     // Process a ding event
     async processNotification(pushData) {
+        let dingKind
         // Is it a motion or doorbell ding? (for others we do nothing)
-        if (pushData.action !== 'com.ring.push.HANDLE_NEW_DING' && pushData.action !== 'com.ring.push.HANDLE_NEW_motion') { return }
+        switch (pushData.action) {
+            case 'com.ring.push.HANDLE_NEW_DING':
+                dingKind = 'ding'
+                break
+            case 'com.ring.push.HANDLE_NEW_motion':
+                dingKind = 'motion'
+                break
+            default:
+                return
 
-        const dingKind = (pushData.action === 'com.ring.push.HANDLE_NEW_DING') ? 'ding' : 'motion'
+        }
         const ding = pushData.ding
         ding.created_at = Math.floor(Date.now()/1000)
-        this.debug(`Received ${dingKind} push notification, expires in ${this.data[dingKind].ding_duration} seconds`)
+        this.debug(`Received ${dingKind} push notification, expires in ${this.data[dingKind].duration} seconds`)
 
         // Is this a new Ding or refresh of active ding?
         const newDing = (!this.data[dingKind].active_ding) ? true : false
@@ -408,7 +442,7 @@ export default class Camera extends RingPolledDevice {
         // Update last_ding and expire time
         this.data[dingKind].last_ding = ding.created_at
         this.data[dingKind].last_ding_time = utils.getISOTime(ding.created_at*1000)
-        this.data[dingKind].last_ding_expires = this.data[dingKind].last_ding+this.data[dingKind].ding_duration
+        this.data[dingKind].last_ding_expires = this.data[dingKind].last_ding+this.data[dingKind].duration
 
         // If motion ding and snapshots on motion are enabled, publish a new snapshot
         if (dingKind === 'motion') {
@@ -600,6 +634,16 @@ export default class Camera extends RingPolledDevice {
         }
         this.mqttPublish(this.entity.event_select.json_attributes_topic, JSON.stringify(attributes), 'attr', '<recording_url_masked>')
     }
+
+    publishDingDurationState(isPublish) {
+        const dingTypes = this.device.isDoorbot ? [ 'ding', 'motion' ] : [ 'motion' ]
+        dingTypes.forEach(dingType => {
+            if (this.data[dingType].duration !== this.data[dingType].publishedDuration || isPublish) {
+                this.mqttPublish(this.entity[`${dingType}_duration`].state_topic, this.data[dingType].duration)
+                this.data[dingType].publishedDuration = this.data[dingType].duration
+            }
+        })
+    } 
 
     // Publish snapshot image/metadata
     publishSnapshot() {
@@ -929,6 +973,12 @@ export default class Camera extends RingPolledDevice {
             case 'event_select/command':
                 this.setEventSelect(message)
                 break;
+            case 'ding_duration/command':
+                this.setDingDuration(message, 'ding')
+                break;
+            case 'motion_duration/command':
+                this.setDingDuration(message, 'motion')
+                break;
         }
     }
 
@@ -1104,6 +1154,20 @@ export default class Camera extends RingPolledDevice {
             this.publishEventSelectState()
         } else {
             this.debug('Received invalid value for event stream')
+        }
+    }
+
+    setDingDuration(message, dingType) {
+        this.debug(`Received set notification duration for ${dingType} events`)
+        if (isNaN(message)) {
+            this.debug(`New ${dingType} event notificaiton duration value received but is not a number`)
+        } else if (!(message >= 10 && message <= 180)) {
+            this.debug(`New ${dingType} event notification duration value received but out of range (10-180)`)
+        } else {
+            this.data[dingType].duration = Math.round(message)
+            this.publishDingDurationState()
+            this.debug(`Notificaition duration for ${dingType} events has been set to ${this.data[dingType].duration} seconds`)
+            this.updateDeviceState()
         }
     }
 }

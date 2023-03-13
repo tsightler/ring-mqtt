@@ -4,7 +4,7 @@ import { RingDeviceType } from 'ring-client-api'
 export default class BinarySensor extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'alarm')
-        let device_class = 'None'
+        let device_class = false
         let bypass_modes = false
 
         // Override icons and and topics
@@ -47,13 +47,12 @@ export default class BinarySensor extends RingSocketDevice {
                 } else {
                     this.entityName = 'binary_sensor'
                     this.deviceData.mdl = 'Generic Binary Sensor'
-                    device_class = 'None'
                 }
         }
 
         this.entity[this.entityName] = {
             component: 'binary_sensor',
-            device_class: device_class,
+            ...device_class ? { device_class: device_class } : {},
             isLegacyEntity: true  // Legacy compatibility
         }
 

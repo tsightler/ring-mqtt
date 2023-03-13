@@ -135,10 +135,10 @@ export default class Chime extends RingPolledDevice {
         const deviceHealth = await this.device.getHealth()
         if (deviceHealth) {
             const attributes = {
-                wirelessNetwork: deviceHealth.wifi_name,
-                wirelessSignal: deviceHealth.latest_signal_strength,
                 firmwareStatus: deviceHealth.firmware,
-                lastUpdate: deviceHealth.updated_at.slice(0,-6)+"Z"
+                lastUpdate: deviceHealth.updated_at.slice(0,-6)+"Z",
+                wirelessNetwork: deviceHealth.wifi_name,
+                wirelessSignal: deviceHealth.latest_signal_strength
             }
             this.mqttPublish(this.entity.info.state_topic, JSON.stringify(attributes), 'attr')
             this.publishAttributeEntities(attributes)

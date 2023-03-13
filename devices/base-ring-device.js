@@ -4,10 +4,10 @@ import chalk from 'chalk'
 
 // Base class with functions common to all devices
 export default class RingDevice {
-    constructor(deviceInfo, category, primaryAttribute, deviceId, locationId) {
+    constructor(deviceInfo, category, primaryAttribute, apiType) {
         this.device = deviceInfo.device
-        this.deviceId = deviceId
-        this.locationId = locationId
+        this.deviceId = apiType === 'socket' ? deviceInfo.device.id : deviceInfo.device.data.device_id
+        this.locationId = apiType === 'socket' ? deviceInfo.device.location.locationId : deviceInfo.device.data.location_id
         this.availabilityState = 'unpublished'
         this.entity = {}
         this.isOnline = () => { 

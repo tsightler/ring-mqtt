@@ -4,7 +4,7 @@ import utils from '../lib/utils.js'
 // Base class for devices that communicate with hubs via websocket (alarm/smart lighting)
 export default class RingSocketDevice extends RingDevice {
     constructor(deviceInfo, category, primaryAttribute) {
-        super(deviceInfo, category, primaryAttribute, deviceInfo.device.id, deviceInfo.device.location.locationId)
+        super(deviceInfo, category, primaryAttribute, 'socket')
 
         // Set default device data for Home Assistant device registry
         this.deviceData = { 
@@ -99,7 +99,7 @@ export default class RingSocketDevice extends RingDevice {
             ... this.device.data.hasOwnProperty('firmwareUpdate') 
                 ? { firmwareStatus: this.device.data.firmwareUpdate.state } : {},
             ... this.device.data.hasOwnProperty('lastCommTime') 
-                ? { lastCommTime: utils.getISOTime(this.device.data.lastUpdate) } : {},
+                ? { lastCommTime: utils.getISOTime(this.device.data.lastCommTime) } : {},
             ... this.device.data.hasOwnProperty('lastUpdate') 
                 ? { lastUpdate: utils.getISOTime(this.device.data.lastUpdate) } : {},
             ... this.device.data.hasOwnProperty('linkQuality') 

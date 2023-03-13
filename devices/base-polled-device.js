@@ -4,7 +4,7 @@ import utils from '../lib/utils.js'
 // Base class for devices/features that communicate via HTTP polling interface (cameras/chime/modes)
 export default class RingPolledDevice extends RingDevice {
     constructor(deviceInfo, category, primaryAttribute) {
-        super(deviceInfo, category, primaryAttribute, deviceInfo.device.data.device_id, deviceInfo.device.data.location_id)
+        super(deviceInfo, category, primaryAttribute, 'polled')
         this.heartbeat = 3
 
         // Sevice data for Home Assistant device registry 

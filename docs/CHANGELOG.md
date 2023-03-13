@@ -1,3 +1,23 @@
+## v5.2.0
+**New Features**
+- Basic support for Ring Intercom, the following features are supported:
+  - Ding state - Simple binary sensor, stays "on" for 20 seconds after ding
+  - Lock state - Unlock command is supported and also triggers on unlock from Ring app.  Stays in unlocked state for 5 seconds before reverting to locked state.
+  - Battery status
+  - Wifi status
+- Keypad proximity sensor is now exposed as a motion sensor (only tested with Keypad Gen2 model)
+- Implement improved Home Assistant behavior for MQTT thermostats when switching between auto and heat/cool modes.  Requires Home Assistant 2023.3 release or later, but provides much improved behavior which should mirror that of thermostats connected directly via Z-wave.
+- Based on requests, camera motion and ding event "on" duration can now be configured on a per-device basis.  For now, the default duration remains 180 seconds, which is based on the ding expire time property sent as part of the ding event in the Ring API and also aligned with first-generation motion sensors which would stay in "on" state for 180 seconds after any detected motion.  However, many users have requested a shorter "on" duration and second-generation motion sensors now use 20 seconds, so this new feature provides flexibility for those users.  Based on feedback, future versions may use the shorter "on" duration by default.
+
+**Fixed Bugs**
+- Fixed an issue with generic binary sensors which caused them to fail automatic discovery in Home Assistant.
+
+**Dependency Updates**
+- Bump go2rtc to v1.2.0
+- Bump werift to v0.18.2 with some WebRTC stun negotiation improvements.  May fix livestream failures for users with more complex network setups.
+- Bump ring-client-api to v11.7.2
+- Bump s6-overlay to v3.1.4.1
+
 ## v5.1.3
 **Fixed Bugs**
 - Don't crash on codec mismatch.  This is caused by the fact that Ring has started rolling out support for the HEVC/H.265 video encoding format on some devices and cameras, however, this format still has many issues and incompatibilities in downstream browsers and devices.  For now the suggestion for ring-mqtt users is to enable [Legacy Video Mode](https://support.ring.com/hc/en-us/articles/4417503172116-Legacy-Video-Mode-) for any cameras that are using this codec as default.
