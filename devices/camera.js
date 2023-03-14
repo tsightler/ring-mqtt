@@ -410,7 +410,7 @@ export default class Camera extends RingPolledDevice {
         if (!this.device.data.subscribed_motions === true) {
             this.debug('Camera lost subscription to motion events, attempting to resubscribe...')
             this.device.subscribeToMotionEvents().catch(e => {
-                this.debug('Failed to resubscribe camera  to motion events.  Will retry in 60 seconds.')
+                this.debug('Failed to resubscribe camera to motion events.  Will retry in 60 seconds.')
                 this.debug(e)
             })
         }
