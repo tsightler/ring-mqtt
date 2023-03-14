@@ -196,9 +196,6 @@ export default class Thermostat extends RingSocketDevice {
         const mode = this.data.currentMode()
         switch(mode) {
             case 'auto':
-                // Home Assistant always sends both low/high temps even when only one had changed.
-                // This lock prevents concurrent updates overwriting each other and instead
-                // waits 50ms to give time for the second value to be updated
                 if (isNaN(value)) {
                     this.debug(`Received set auto range ${type} temperature to ${value} which is not a number`)
                 } else if (!(value >= 10 && value <= 37.22223)) {
