@@ -400,7 +400,7 @@ export default class Camera extends RingPolledDevice {
         }
 
         // Check for subscription to ding and motion events and attempt to resubscribe
-        if (!this.device.data.subscribed === true) {
+        if (this.device.isDoorbot && !this.device.data.subscribed === true) {
             this.debug('Camera lost subscription to ding events, attempting to resubscribe...')
             this.device.subscribeToDingEvents().catch(e => { 
                 this.debug('Failed to resubscribe camera to ding events. Will retry in 60 seconds.') 
