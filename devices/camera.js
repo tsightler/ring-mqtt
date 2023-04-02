@@ -676,7 +676,7 @@ export default class Camera extends RingPolledDevice {
                     break;
                 case 'motion':
                     if (image_uuid) {
-                        image_uuid = image_uuid.split(":", 1)[0]
+                        image_uuid = image_uuid.split(":", 1)
                         this.debug(`Requesting motion snapshot using notification image UUID: ${image_uuid}`)
                         newSnapshot = await this.device.getSnapshot({ uuid: image_uuid })
                     } else if (!this.device.operatingOnBattery) {
