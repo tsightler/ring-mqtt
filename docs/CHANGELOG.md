@@ -1,3 +1,14 @@
+## v5.2.1
+**Fixed Bugs**
+- Update ring-client-api to v11.7.4 which should fix an issue with motion snapshots not working due to a change in push notification data sent by the Ring API.
+- Suppress spurious "Lost subscription to ding" messages in log which led to confusion for users.
+
+**Other Changes**
+- Tamper sensors now use "tamper" device class in Home Assistant vs the generic "problem" device class used previously.
+
+**Dependency Updates**
+- Bump go2rtc to v1.3.1
+
 ## v5.2.0
 **New Features**
 - Basic support for Ring Intercom, the following features are supported:
