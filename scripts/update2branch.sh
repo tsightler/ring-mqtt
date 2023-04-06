@@ -22,7 +22,7 @@ else
     echo "The ring-mqtt-${BRANCH} branch has been updated."
     
     APK_ARCH="$(apk --print-arch)"
-    GO2RTC_VERSION="v1.2.0"
+    GO2RTC_VERSION="v1.3.1"
     case "${APK_ARCH}" in
         x86_64)
             GO2RTC_ARCH="amd64";;
@@ -34,9 +34,12 @@ else
             echo >&2 "ERROR: Unsupported architecture '$APK_ARCH'"
             exit 1;;
     esac
-    rm -f /usr/local/bin/go2rtc
-    curl -L -s -o /usr/local/bin/go2rtc "https://github.com/AlexxIT/go2rtc/releases/download/${GO2RTC_VERSION}/go2rtc_linux_${GO2RTC_ARCH}"
-    chmod +x /usr/local/bin/go2rtc
+    #rm -f /usr/local/bin/go2rtc
+    #curl -L -s -o /usr/local/bin/go2rtc "https://github.com/AlexxIT/go2rtc/releases/download/${GO2RTC_VERSION}/go2rtc_linux_${GO2RTC_ARCH}"
+    #chmod +x /usr/local/bin/go2rtc
+
+    # Hack to fix authentication
+    sed -i "/^2fa-support.*/i 'User-Agent': 'Ring/6.9.0 (Nokia; Nokia 6.1; Android 9)'," /app/ring-mqtt-${BRANCH}/node_modules/ring-client-api/lib/rest-client.js
 
     cp -f "/app/ring-mqtt-${BRANCH}/init/s6/services.d/ring-mqtt/run" /etc/services.d/ring-mqtt/run
     chmod +x /etc/services.d/ring-mqtt/run
