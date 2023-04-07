@@ -1,6 +1,6 @@
 ## v5.2.2
 **Fixed Bugs**
-- Update ring-client-api to v11.7.5 to fix issues with web token generation caused by more changes in Ring API.
+- Update ring-client-api to v11.7.5 which should fix issues with web token generation caused by changes in Ring API.
 
 ## v5.2.1
 **Fixed Bugs**
