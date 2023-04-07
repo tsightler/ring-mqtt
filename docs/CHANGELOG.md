@@ -1,3 +1,7 @@
+## v5.2.2
+**Fixed Bugs**
+- Update ring-client-api to v11.7.5 to fix issues with web token generation caused by more changes in Ring API.
+
 ## v5.2.1
 **Fixed Bugs**
 - Update ring-client-api to v11.7.4 which should fix an issue with motion snapshots not working due to a change in push notification data sent by the Ring API.
