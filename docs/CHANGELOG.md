@@ -1,3 +1,8 @@
+## v5.2.3
+**Dependency Updates**
+- go2rtc to v1.3.2
+- s6-overlay to v3.1.4.2
+
 ## v5.2.2
 **Fixed Bugs**
 - Update ring-client-api to v11.7.5 which should fix issues with web token generation caused by changes in Ring API.
