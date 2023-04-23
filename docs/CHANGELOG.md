@@ -1,7 +1,7 @@
 ## v5.2.3
 **Dependency Updates**
-- go2rtc to v1.3.2
-- s6-overlay to v3.1.4.2
+- go2rtc v1.4.0
+- s6-overlay v3.1.4.2
 
 ## v5.2.2
 **Fixed Bugs**
