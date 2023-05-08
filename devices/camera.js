@@ -428,8 +428,8 @@ export default class Camera extends RingPolledDevice {
                 dingKind = 'motion'
                 break
             default:
+                this.debug(`Received push notification of unknown type ${pushData.action}`)
                 return
-
         }
         const ding = pushData.ding
         ding.created_at = Math.floor(Date.now()/1000)
