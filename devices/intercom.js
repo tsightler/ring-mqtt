@@ -152,7 +152,7 @@ export default class Lock extends RingPolledDevice {
                 return response.device_health
             } else {
                 this.debug('Failed to parse response from device health query')
-                this.debug(response)
+                this.debug(JSON.stringify(response))
             }
         } catch(error) {
             this.debug('Failed to retrieve health data for Intercom')
