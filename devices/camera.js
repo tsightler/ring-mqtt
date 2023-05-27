@@ -374,6 +374,17 @@ export default class Camera extends RingPolledDevice {
                 if (await this.updateEventStreamUrl() && !isPublish) {
                     this.publishEventSelectState()
                 }
+
+                this.device.subscribeToMotionEvents().catch(e => {
+                    this.debug('Failed to resubscribe camera to motion events.  Will retry in 60 seconds.')
+                    this.debug(e)
+                })
+                if (this.device.isDoorbot) {
+                    this.device.subscribeToDingEvents().catch(e => { 
+                        this.debug('Failed to resubscribe camera to ding events. Will retry in 60 seconds.') 
+                        this.debug(e)
+                    })
+                }
             }
         }
 
@@ -398,6 +409,11 @@ export default class Camera extends RingPolledDevice {
             }
             this.publishAttributes()
         }
+
+        this.device.subscribeToDingEvents().catch(e => { 
+            this.debug('Failed to resubscribe camera to ding events. Will retry in 60 seconds.') 
+            this.debug(e)
+        })
 
         // Check for subscription to ding and motion events and attempt to resubscribe
         if (this.device.isDoorbot && !this.device.data.subscribed === true) {
