@@ -11,8 +11,6 @@ export default class Camera extends RingPolledDevice {
 
         const savedState = this.getSavedState()
 
-        this.pollCycle = 0
-
         this.hasBattery1 = this.device.data.hasOwnProperty('battery_voltage') ? true : false
         this.hasBattery2 = this.device.data.hasOwnProperty('battery_voltage_2') ? true : false
 
@@ -83,6 +81,7 @@ export default class Camera extends RingPolledDevice {
                     ? savedState.event_select.state
                     : 'Motion 1',
                 publishedState: null,
+                pollCycle: 0,
                 recordingUrl: null,
                 recordingUrlExpire: null,
                 transcoded: false,
@@ -369,22 +368,20 @@ export default class Camera extends RingPolledDevice {
 
         // Checks for new events or expired recording URL every 3 polling cycles (~1 minute)
         if (this.entity.hasOwnProperty('event_select')) {
-            this.pollCycle++
-            if (this.pollCycle % 3 === 0) {
+            this.data.event_select.pollCycle--
+            if (this.data.event_select.pollCycle <= 0) {
+                this.data.event_select.pollCycle = 3
                 if (await this.updateEventStreamUrl() && !isPublish) {
                     this.publishEventSelectState()
                 }
-            }
 
-            // Attempt to resubscribe to events every 5 minutes
-            if (this.pollCycle === 1 || this.pollCycle % 15 === 0) {
                 this.device.subscribeToMotionEvents().catch(e => {
-                    this.debug('Failed to resubscribe camera to motion events.')
+                    this.debug('Failed to resubscribe camera to motion events.  Will retry in 60 seconds.')
                     this.debug(e)
                 })
                 if (this.device.isDoorbot) {
                     this.device.subscribeToDingEvents().catch(e => { 
-                        this.debug('Failed to resubscribe camera to ding events.') 
+                        this.debug('Failed to resubscribe camera to ding events. Will retry in 60 seconds.') 
                         this.debug(e)
                     })
                 }
