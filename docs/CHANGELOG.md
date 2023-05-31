@@ -5,8 +5,12 @@ Note that if you are having issues with motion/ding notifications, you will like
 
 **Fixed Bugs**
 - Remove doubled-up devices in Ring Control Center, including one "unknown device" when authenticating
+- Hopefully fix crash of go2rtc process which impacted some users (fixed by bumping go2rtc to v1.5.0)
 
 **Dependency Updates**
+- ring-client-api v11.7.7-custom3
+- werift v0.18.3
+- rxjs v7.8.1
 - go2rtc v1.5.0
 - s6-overlay v3.1.5.0
 
