@@ -1,7 +1,14 @@
-## v5.2.3
+## v5.3.0
+This version is experimental and is intended to test various fixes for notification/missed motion/dings for cameras/doorbells/intercoms which started due to changes made by Ring in early May.  While we still don't have a full understanding of why this is happening, this code includes experimental fixes that attempt to address this issue by using a persistent FCM token and updating the FCM token via the Ring API at least once every hour.  For me, this seems to fix the issue, but wider testing is required.
+
+Note that if you are having issues with motion/ding notifications, you will likely need to remove all previous authorized clients from Ring Control Center and re-authenticate to get them working again.  Hopefully they will stay working after that, but this is what this update is testing.  Please report results to https://github.com/tsightler/ring-mqtt/issues/643.
+
+**Fixed Bugs**
+- Remove doubled-up devices in Ring Control Center, including one "unknown device" when authenticating
+
 **Dependency Updates**
-- go2rtc v1.4.0
-- s6-overlay v3.1.4.2
+- go2rtc v1.5.0
+- s6-overlay v3.1.5.0
 
 ## v5.2.2
 **Fixed Bugs**
