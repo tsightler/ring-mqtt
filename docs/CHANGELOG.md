@@ -8,10 +8,10 @@ If you have cameras/doorbells/intercoms and are not receiving notifications you 
 2. In the official Ring App or using the Ring web based dashboard go to the Control Center
 3. Click on Authorized Client Devices
 4. In the list of authorized devices find and remove all devices associated with ring-mqtt, these devices will have names like the following:
-  - ring-mqtt
-  - ring-mqtt-addon
-  - Device name not found
-  - Unknown device
+  * ring-mqtt
+  * ring-mqtt-addon
+  * Device name not found
+  * Unknown device
 5. Once you have removed all of these devices restart the addon.
 6. View the addon logs and it should say that the existing token is invalid and you need to create a new one
 7. Use the addon web UI to authenticate with Ring and re-establish the connection
