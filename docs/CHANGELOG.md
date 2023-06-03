@@ -13,9 +13,9 @@ If you have cameras/doorbells/intercoms and are not receiving notifications you 
    - Device name not found
    - Unknown device
 5. Once you have removed all of these devices restart the addon.
-6. View the addon logs and it should say that the existing token is invalid and you need to create a new one
-7. Use the addon web UI to authenticate with Ring and re-establish the connection
-8. Notifications should now be working
+6. Review the addon logs and it should show that the existing token is invalid and you need to use the web UI to create a new one
+7. Use the addon web UI to authenticate with Ring and re-establish the connection with the Ring API
+8. Notifications should now be working!
 
 **Fixed Bugs**
 - Use persistent FCM tokens so that push notifications survive restarts
