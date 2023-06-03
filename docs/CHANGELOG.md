@@ -2,7 +2,7 @@
 The primary goal of this update is to address issues with camera/doorbell/intercom notifications that have impacted many users due to changes in the Ring API for push notifications.  This version uses a new upstream ring-client-api that persist the FCM token and hardware ID across restarts which will hopefully address these issues, however, it's important to note that addressing this will likely require users to re-authenticate following the instructions below:
 
 **Steps to fix notifications**
-If you have cameras/doorbells/intercoms and are not receiving notifications you will need to follow these steps to re-authenticate with the Ring API:
+If you have cameras/doorbells/intercoms and are not receiving notifications you will need to follow these steps to re-establish authentication with the Ring API:
 
 1. Stop the addon and verify that it is no longer running
 2. In the official Ring App or using the Ring web based dashboard go to the Control Center
