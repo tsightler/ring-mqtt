@@ -17,6 +17,10 @@ If you have cameras/doorbells/intercoms and are not receiving notifications you 
 7. Use the addon web UI to authenticate with Ring and re-establish the connection with the Ring API
 8. Notifications should now be working!
 
+
+**New Features**
+- Added support to enable/disable motion detection for cameras
+
 **Fixed Bugs**
 - Use persistent FCM tokens so that push notifications survive restarts
 - Remove doubled-up devices in Ring Control Center, including one "unknown device" when authenticating
