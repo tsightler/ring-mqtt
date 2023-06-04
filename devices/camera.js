@@ -536,12 +536,8 @@ export default class Camera extends RingPolledDevice {
 
         if (this.device.data.settings.motion_detection_enabled !== this.data.motion.detection_enabled || isPublish) {
             this.publishMotionAttributes()
-            this.publishMotionState()
+            this.mqttPublish(this.entity.motion_detection.state_topic, this.device.data?.settings?.motion_detection_enabled ? 'ON' : 'OFF')
         }
-    }
-
-    publishMotionState() {
-        this.mqttPublish(this.entity.motion_detection.state_topic, this.device.data?.settings?.motion_detection_enabled)
     }
 
     // Publish device data to info topic
