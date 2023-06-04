@@ -8,11 +8,16 @@ import { createHash, randomBytes } from 'crypto'
 import { RingRestClient } from 'ring-client-api/rest-client'
 import { requestInput } from './node_modules/ring-client-api/lib/util.js'
 
-async function getRefreshToken() {
+async function getRefreshToken(systemId) {
     let generatedToken
     const email = await requestInput('Email: ')
     const password = await requestInput('Password: ')
-    const restClient = new RingRestClient({ email, password })
+    const restClient = new RingRestClient({ 
+        email, 
+        password, 
+        controlCenterDisplayName: `ring-mqtt-${systemId.slice(-5)}`,
+        systemId: systemId 
+    })
     try {
         await restClient.getCurrentAuth()
     } catch(err) {
@@ -58,8 +63,12 @@ const main = async() => {
         }
     }
 
+    if (!stateData.hasOwnProperty('systemId') || (stateData.hasOwnProperty('systemId') && !stateData.systemId)) {
+        stateData.systemId = (createHash('sha256').update(randomBytes(32)).digest('hex'))
+    }
+
     try {
-        refresh_token = await getRefreshToken()
+        refresh_token = await getRefreshToken(stateData.systemId)
     } catch(err) {
         console.log(err)
         console.log('Please re-run this tool to retry authentication.')
@@ -67,9 +76,7 @@ const main = async() => {
     }
 
     stateData.ring_token = refresh_token
-    if (!stateData.hasOwnProperty('systemId') || (stateData.hasOwnProperty('systemId') && !stateData.systemId)) {
-        stateData.systemId = (createHash('sha256').update(randomBytes(32)).digest('hex'))
-    }
+
     try {
         await writeFileAtomic(stateFile, JSON.stringify(stateData))
         console.log('State file ' +stateFile+ ' saved with updated refresh token.')

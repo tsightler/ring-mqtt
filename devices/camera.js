@@ -167,6 +167,9 @@ export default class Camera extends RingPolledDevice {
                 max: 604800,
                 icon: 'hass:timer'
             },
+            motion_detection: {
+                component: 'switch'
+            },
             motion_duration: {
                 component: 'number',
                 min: 10,
@@ -428,8 +431,8 @@ export default class Camera extends RingPolledDevice {
                 dingKind = 'motion'
                 break
             default:
+                this.debug(`Received push notification of unknown type ${pushData.action}`)
                 return
-
         }
         const ding = pushData.ding
         ding.created_at = Math.floor(Date.now()/1000)
@@ -533,6 +536,7 @@ export default class Camera extends RingPolledDevice {
 
         if (this.device.data.settings.motion_detection_enabled !== this.data.motion.detection_enabled || isPublish) {
             this.publishMotionAttributes()
+            this.mqttPublish(this.entity.motion_detection.state_topic, this.device.data?.settings?.motion_detection_enabled ? 'ON' : 'OFF')
         }
     }
 
@@ -976,6 +980,9 @@ export default class Camera extends RingPolledDevice {
             case 'ding_duration/command':
                 this.setDingDuration(message, 'ding')
                 break;
+            case 'motion_detection/command':
+                this.setMotionDetectionState(message)
+                break;
             case 'motion_duration/command':
                 this.setDingDuration(message, 'motion')
                 break;
@@ -1009,6 +1016,25 @@ export default class Camera extends RingPolledDevice {
             case 'on':
             case 'off':
                 await this.device.setSiren(command === 'on' ? true : false)
+                break;
+            default:
+                this.debug('Received unknown command for siren')
+        }
+    }
+
+    // Set switch target state on received MQTT command message
+    async setMotionDetectionState(message) {
+        this.debug(`Received set motion detection state ${message}`)
+        const command = message.toLowerCase()
+
+        switch (command) {
+            case 'on':
+            case 'off':
+                await this.device.setDeviceSettings({
+                    "motion_settings": {
+                        "motion_detection_enabled": command === 'on' ? true : false
+                    }
+                })
                 break;
             default:
                 this.debug('Received unknown command for siren')
