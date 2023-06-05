@@ -81,11 +81,11 @@ Please enter your Ring account information below and the 2FA code on the followi
     var keyValue = document.cookie.match('(^|;) ?' + key + '=([^;]*)(;|$)');
     return keyValue ? keyValue[2] : null;
   }
-  if (getCookie('error')) {
-    document.getElementById("errormsg").innerHTML = getCookie('error')
-  }
   if (getCookie('systemId')) {
     document.getElementById("systemId").innerHTML = `Device Name: <span style='color:chartreuse'> ${getCookie('systemId')}</span>`
+  }
+  if (getCookie('error')) {
+    document.getElementById("errormsg").innerHTML = getCookie('error')
   }
 </script>
 </body>
