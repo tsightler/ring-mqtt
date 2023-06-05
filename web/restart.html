@@ -7,7 +7,17 @@ body {font-family: Arial, Helvetica, sans-serif; max-width: 500px; color: white;
 </style>
 </head>
 <body>
-<h3>Refresh Token Generation Complete</h3>
+<h2>Refresh Token Generation Complete</h2>
+<h3 id="systemId"></h3>
 The <b>Home Assistant ring-mqtt Add-on</b> will now automatically connect using the generated token.  No additional configuration steps are required, please check the addon logs to monitor progress.
+<script>
+  function getCookie(key) {
+    var keyValue = document.cookie.match('(^|;) ?' + key + '=([^;]*)(;|$)');
+      return keyValue ? keyValue[2] : null;
+    }
+    if (getCookie('systemId')) {
+      document.getElementById("systemId").innerHTML = `Device Name: <span style='color:chartreuse'> ${getCookie('systemId')}</span>`
+    }
+</script>
 </body>
 </html>

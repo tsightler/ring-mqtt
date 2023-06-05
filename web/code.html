@@ -41,7 +41,8 @@ input[type=submit]:hover {
 </head>
 <body>
 
-<h3>Enter 2FA Code</h3>
+<h2>Enter 2FA Code</h2>
+<h3 id="systemId"></h3>
 <p style="background-color:Red;" id="errormsg"></p></br>
 <div class="container">
   <form action="./submit-code" method="post">
@@ -52,11 +53,14 @@ input[type=submit]:hover {
 </div>
 <script>
   function getCookie(key) {
-      var keyValue = document.cookie.match('(^|;) ?' + key + '=([^;]*)(;|$)');
-      return keyValue ? keyValue[2] : null;
+    var keyValue = document.cookie.match('(^|;) ?' + key + '=([^;]*)(;|$)');
+    return keyValue ? keyValue[2] : null;
   }
   if (getCookie('error')) {
-      document.getElementById("errormsg").innerHTML = getCookie('error')
+    document.getElementById("errormsg").innerHTML = getCookie('error')
+  }
+  if (getCookie('systemId')) {
+    document.getElementById("systemId").innerHTML = `Device Name: <span style='color:chartreuse'> ${getCookie('systemId')}</span>`
   }
 </script>
 </body>

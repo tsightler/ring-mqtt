@@ -24,8 +24,8 @@ input[type=submit]:hover {
 </style>
 </head>
 <body>
-<h3>Ring Device Addon Connected</h3>
-<p style="color:darkgreen;" id="systemId"></p>
+<h2>Ring Device Addon Connected</h2>
+<h3 id="systemId"></h3>
 It appears that this addon is already authenticated and connected to the Ring API, no additional action is required.
 If you wish to force reauthentication, for example, to change the account used by this addon, clicking the button below will restart the authentication process.
 <div class="container">
@@ -35,11 +35,11 @@ If you wish to force reauthentication, for example, to change the account used b
 </div>
 <script>
   function getCookie(key) {
-      var keyValue = document.cookie.match('(^|;) ?' + key + '=([^;]*)(;|$)');
-      return keyValue ? keyValue[2] : null;
+    var keyValue = document.cookie.match('(^|;) ?' + key + '=([^;]*)(;|$)');
+    return keyValue ? keyValue[2] : null;
   }
   if (getCookie('systemId')) {
-      document.getElementById("systemId").innerHTML = `Device Name: ${getCookie('systemId')}`
+    document.getElementById("systemId").innerHTML = `Device Name: <span style='color:chartreuse'> ${getCookie('systemId')}</span>`
   }
 </script>
 </body>
