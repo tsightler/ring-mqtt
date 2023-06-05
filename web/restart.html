@@ -13,11 +13,11 @@ The <b>Home Assistant ring-mqtt Add-on</b> will now automatically connect using 
 <script>
   function getCookie(key) {
     var keyValue = document.cookie.match('(^|;) ?' + key + '=([^;]*)(;|$)');
-      return keyValue ? keyValue[2] : null;
-    }
-    if (getCookie('systemId')) {
-      document.getElementById("systemId").innerHTML = `Device Name: <span style='color:chartreuse'> ${getCookie('systemId')}</span>`
-    }
+    return keyValue ? keyValue[2] : null;
+  }
+  if (getCookie('systemId')) {
+    document.getElementById("systemId").innerHTML = `Device Name: <span style='color:chartreuse'> ${getCookie('systemId')}</span>`
+  }
 </script>
 </body>
 </html>
