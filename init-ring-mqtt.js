@@ -79,7 +79,8 @@ const main = async() => {
 
     try {
         await writeFileAtomic(stateFile, JSON.stringify(stateData))
-        console.log('State file ' +stateFile+ ' saved with updated refresh token.')
+        console.log(`State file ${stateFile} saved with updated refresh token.`)
+        console.log(`Device name: ring-mqtt-${systemId.slice(-5)}`)
     } catch (err) {
         console.log('Saving state file '+stateFile+' failed with error: ')
         console.log(err)
