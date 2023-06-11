@@ -8,11 +8,20 @@ export default class SecurityPanel extends RingSocketDevice {
         super(deviceInfo, 'alarm', 'alarmState')
         this.deviceData.mdl = 'Alarm Control Panel'
         this.deviceData.name = `${this.device.location.name} Alarm`
+
+        this.data = {
+            attributes: {
+                initiatingEntityId: 'Unknown',
+                initiatingEntityType: 'Unknown',
+                initiatingUserName: 'Unknown'
+            }
+        }
         
         this.entity = {
             ...this.entity,
             alarm: {
                 component: 'alarm_control_panel',
+                attributes: true,
                 isLegacyEntity: true  // Legacy compatibility
             },
             siren: {
@@ -33,15 +42,58 @@ export default class SecurityPanel extends RingSocketDevice {
                 }
             } : {}
         }
+
+        // Listen to raw data updates for all devices and pick out
+        // arm/disarm events for this security panel
+        this.device.location.onDataUpdate.subscribe(async (message) => {
+            if (message.datatype === 'DeviceInfoDocType' &&
+                message.body?.[0]?.general?.v2?.zid === this.deviceId &&
+                message.body[0].impulse?.v1?.[0] &&
+                message.body[0].impulse.v1.filter(i => i.data?.commandType === 'security-panel.switch-mode').length > 0
+            ) { 
+                if (message.context) {
+                    await this.updateAlarmAttributes(message.context)
+                    this.pubishAlarmState()
+                }
+             }
+        })
     }
 
     publishState(data) {
         const isPublish = data === undefined ? true : false
+
         if (isPublish) {
             // Eventually remove this but for now this attempts to delete the old light component based volume control from Home Assistant
             this.mqttPublish(`homeassistant/switch/${this.locationId}/${this.deviceId}_bypass/config`, '', false)
+            this.pubishAlarmState(isPublish)
         }
 
+        const sirenState = (this.device.data.siren && this.device.data.siren.state === 'on') ? 'ON' : 'OFF'
+        this.mqttPublish(this.entity.siren.state_topic, sirenState)
+
+        if (utils.config().enable_panic) {
+            let policeState = 'OFF'
+            let fireState = 'OFF'
+            const alarmState = this.device.data.alarmInfo ? this.device.data.alarmInfo.state : ''
+            switch (alarmState) {
+                case 'burglar-alarm':
+                case 'user-verified-burglar-alarm':
+                case 'burglar-accelerated-alarm':
+                    policeState = 'ON'
+                    this.debug('Burgler alarm is active for '+this.device.location.name)
+                case 'fire-alarm':
+                case 'co-alarm':
+                case 'user-verified-co-or-fire-alarm':
+                case 'fire-accelerated-alarm':
+                    fireState = 'ON'
+                    this.debug('Fire alarm is active for '+this.device.location.name)
+            }
+            this.mqttPublish(this.entity.police.state_topic, policeState)
+            this.mqttPublish(this.entity.fire.state_topic, fireState)
+        }
+    }
+
+    async pubishAlarmState() {
         let alarmMode
         const alarmInfo = this.device.data.alarmInfo ? this.device.data.alarmInfo : []
 
@@ -69,33 +121,37 @@ export default class SecurityPanel extends RingSocketDevice {
                     alarmMode = 'unknown'
             }
         }
+
         this.mqttPublish(this.entity.alarm.state_topic, alarmMode)
+        this.mqttPublish(this.entity.alarm.json_attributes_topic, JSON.stringify(this.data.attributes), 'attr')
+        this.publishAttributes()
+    }
 
-        const sirenState = (this.device.data.siren && this.device.data.siren.state === 'on') ? 'ON' : 'OFF'
-        this.mqttPublish(this.entity.siren.state_topic, sirenState)
-
-        if (utils.config().enable_panic) {
-            let policeState = 'OFF'
-            let fireState = 'OFF'
-            const alarmState = this.device.data.alarmInfo ? this.device.data.alarmInfo.state : ''
-            switch (alarmState) {
-                case 'burglar-alarm':
-                case 'user-verified-burglar-alarm':
-                case 'burglar-accelerated-alarm':
-                    policeState = 'ON'
-                    this.debug('Burgler alarm is active for '+this.device.location.name)
-                case 'fire-alarm':
-                case 'co-alarm':
-                case 'user-verified-co-or-fire-alarm':
-                case 'fire-accelerated-alarm':
-                    fireState = 'ON'
-                    this.debug('Fire alarm is active for '+this.device.location.name)
-            }
-            this.mqttPublish(this.entity.police.state_topic, policeState)
-            this.mqttPublish(this.entity.fire.state_topic, fireState)
+    async updateAlarmAttributes(contextData) {
+        this.data.attributes = {
+            initiatingEntityId: contextData.initiatingEntityId,
+            initiatingEntityType: contextData.initiatingEntityType
         }
 
-        this.publishAttributes()
+        if (contextData.initiatingEntityId) {
+            try {
+                const response = await this.device.location.restClient.request({
+                    url: `https://app.ring.com/api/v1/rs/users/summaries?locationId=${this.locationId}`,
+                    method: 'POST',
+                    json: [contextData.initiatingEntityId]
+                })
+
+                if (Array.isArray(response) && response.length > 0) {
+                    this.data.attributes.initiatingUserName = `${response[0].firstName} ${response[0].lastName}`
+                    this.data.attributes.initiatingUserEmail = `${response[0].email}`
+                }
+            } catch (err) {
+                this.debug(err)
+                this.debug('Could not get user information from Ring API')
+                this.data.attributes.initiatingUserName = 'Unknown'
+                this.data.attributes.initiatingUserEmail = 'Unknown'
+            }
+        }
     }
     
     async waitForExitDelay(exitDelayMs) {
