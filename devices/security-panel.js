@@ -65,30 +65,19 @@ export default class SecurityPanel extends RingSocketDevice {
         if (isPublish) {
             // Eventually remove this but for now this attempts to delete the old light component based volume control from Home Assistant
             this.mqttPublish(`homeassistant/switch/${this.locationId}/${this.deviceId}_bypass/config`, '', false)
-            this.pubishAlarmState(isPublish)
+            this.pubishAlarmState()
         }
 
-        const sirenState = (this.device.data.siren && this.device.data.siren.state === 'on') ? 'ON' : 'OFF'
+        const sirenState = (this.device.data.siren?.state === 'on') ? 'ON' : 'OFF'
         this.mqttPublish(this.entity.siren.state_topic, sirenState)
 
         if (utils.config().enable_panic) {
-            let policeState = 'OFF'
-            let fireState = 'OFF'
-            const alarmState = this.device.data.alarmInfo ? this.device.data.alarmInfo.state : ''
-            switch (alarmState) {
-                case 'burglar-alarm':
-                case 'user-verified-burglar-alarm':
-                case 'burglar-accelerated-alarm':
-                    policeState = 'ON'
-                    this.debug('Burgler alarm is active for '+this.device.location.name)
-                case 'fire-alarm':
-                case 'co-alarm':
-                case 'user-verified-co-or-fire-alarm':
-                case 'fire-accelerated-alarm':
-                    fireState = 'ON'
-                    this.debug('Fire alarm is active for '+this.device.location.name)
-            }
+            const policeState = this.device.data.alarmInfo?.state?.match(/burglar|panic/) ? 'ON' : 'OFF'
+            if (policeState === 'ON') { this.debug('Burgler alarm is triggered for '+this.device.location.name) }
             this.mqttPublish(this.entity.police.state_topic, policeState)
+
+            const fireState = this.device.data.alarmInfo?.state?.match(/co|fire/) ? 'ON' : 'OFF'
+            if (fireState === 'ON') { this.debug('Fire alarm is triggered for '+this.device.location.name) }
             this.mqttPublish(this.entity.fire.state_topic, fireState)
         }
     }

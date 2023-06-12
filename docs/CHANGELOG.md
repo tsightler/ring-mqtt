@@ -1,3 +1,13 @@
+## v5.4.0
+This update moves to ring-client-api 11.8.0 which includes updates to address camera/doorbell/intercom notifications.  If upgrading from the prior v5.3.0 version no additional steps should be required, however, if you are upgrading from older versions and have notification issuess, plese follow the "Steps to fix notifications" section from the v5.3.0 release notes below.
+
+**New Features**
+- Alarm now includes new attributes for initiating entity for arm/disarm actions.  With this you can determine who are what triggered an arm/disarm event.
+- Device Name/System ID is now displayed in the Web UI and CLI authentication tools so that it can be easy to identify the corresponding device in the Ring Control Center.
+
+**Bug Fixed**
+- Fixed an issue with panic switches where a burglar alarm could trigger both police and fire panic states.
+
 ## v5.3.0
 The primary goal of this update is to address issues with camera/doorbell/intercom notifications that have impacted many users due to changes in the Ring API for push notifications.  This version uses a new upstream ring-client-api that persist the FCM token and hardware ID across restarts which will hopefully address these issues, however, it's important to note that addressing this will likely require users to re-authenticate following the instructions below:
 
