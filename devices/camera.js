@@ -950,15 +950,12 @@ export default class Camera extends RingPolledDevice {
                     kind: eventType
                 })).events).filter(event => event.recording_status === 'ready')
             } else {
-                let loop = 0
-                while (loop <= 3 && events.length < eventNumber) {
-                    events = ((await this.device.getEvents({ 
-                        limit: 50,
-                        kind: 'motion'
-                    })).events).filter(event => event.recording_status === 'ready' && event.cv_properties.detection_type === 'human')
-                    loop++
-                    await utils.msleep(100)
-                }
+                events = ((await this.device.getEvents({ 
+                    limit: 100,
+                    kind: 'motion'
+                })).events).filter(event => event.recording_status === 'ready' && event.cv_properties.detection_type === 'human')
+                loop++
+                await utils.msleep(100)
             }
         } catch(error) {
             this.debug(error)
