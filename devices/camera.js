@@ -6,7 +6,7 @@ import { spawn } from 'child_process'
 import chalk from 'chalk'
 
 export default class Camera extends RingPolledDevice {
-    constructor(deviceInfo) {
+    constructor(deviceInfo, events) {
         super(deviceInfo, 'camera')
 
         const savedState = this.getSavedState()
@@ -23,7 +23,8 @@ export default class Camera extends RingPolledDevice {
                 last_ding_expires: 0,
                 last_ding_time: 'none',
                 is_person: false,
-                detection_enabled: null
+                detection_enabled: null,
+                events: events.filter(event => event.event_type === 'motion')
             },
             ...this.device.isDoorbot ? { 
                 ding: {
@@ -32,7 +33,8 @@ export default class Camera extends RingPolledDevice {
                     publishedDurations: false,
                     last_ding: 0,
                     last_ding_expires: 0,
-                    last_ding_time: 'none'
+                    last_ding_time: 'none',
+                    events: events.filter(event => event.event_type === 'ding')
                 } 
             } : {},
             snapshot: {
@@ -276,30 +278,55 @@ export default class Camera extends RingPolledDevice {
             }
         }
 
-        // Get most recent motion event data
-        const lastMotionEvent = (await this.device.getEvents({ limit: 1, kind: 'motion'})).events[0]
-        const lastMotionDate = (lastMotionEvent?.created_at) ? new Date(lastMotionEvent.created_at) : false
-        this.data.motion.last_ding = lastMotionDate ? Math.floor(lastMotionDate/1000) : 0
-        this.data.motion.last_ding_time = lastMotionDate ? utils.getISOTime(lastMotionDate) : ''
-        if (lastMotionEvent?.cv_properties) {
-            this.data.motion.is_person = (lastMotionEvent.cv_properties.detection_type === 'human') ? true : false
+        // If no motion events in device event cache, request recent motion events
+        if (this.data.motion.events.length === 0) {
+            const response = await this.getDeviceHistory({limit: 5, event_types: 'motion'})
+            if (Array.isArray(response?.items) && response.items.length > 0) {
+                this.data.motion.events = response.items
+            }
+        }
+
+        if (this.data.motion.events.length > 0) {
+            const lastMotionEvent = this.data.motion.events[0]
+            const lastMotionDate = lastMotionEvent?.start_time ? new Date(lastMotionEvent.start_time) : false
+            this.data.motion.last_ding = lastMotionDate ? Math.floor(lastMotionDate/1000) : 0
+            this.data.motion.last_ding_time = lastMotionDate ? utils.getISOTime(lastMotionDate) : ''
+            this.data.motion.is_person = lastMotionEvent?.cv?.person_detected ? true : false
+
+            // Try to get URL for most recent motion event, if it fails, assume there's no subscription
+            let recordingUrl = false
+            const recordingEvent = this.data.motion.events.find(e => e.recording_status === 'ready')
+            if (recordingEvent && Array.isArray(recordingEvent.visualizations?.cloud_media_visualization?.media)) {
+                recordingUrl = (recordingEvent.visualizations.cloud_media_visualization.media.find(e => e.file_type === 'VIDEO')).url
+            }
+
+            if (!recordingUrl) {
+                this.debug('Could not retrieve recording URL for any motion event, assuming no Ring Protect subscription')
+                delete this.entity.event_stream
+                delete this.entity.event_select
+            }
+        } else {
+            this.debug('Unable to retrieve most recent motion event for this camera')
         }
 
         // Get most recent ding event data
         if (this.device.isDoorbot) {
-            const lastDingEvent = (await this.device.getEvents({ limit: 1, kind: 'ding'})).events[0]
-            const lastDingDate = (lastDingEvent?.created_at) ? new Date(lastDingEvent.created_at) : false
-            this.data.ding.last_ding = lastDingDate ? Math.floor(lastDingDate/1000) : 0
-            this.data.ding.last_ding_time = lastDingDate ? utils.getISOTime(lastDingDate) : ''
-        }
+            // If no ding events in device event cache, request recent ding events
+            if (this.data.ding.events.length === 0) {
+                const response = await this.getDeviceHistory({limit: 5, event_types: 'ding'})
+                if (Array.isArray(response?.items) && response.items.length > 0) {
+                    this.data.ding.events = response.items
+                }
+            }
 
-        // Try to get URL for most recent motion event, if it fails, assume there's no subscription
-        const events = await(this.getRecordedEvents('motion', 1))
-        const recordingUrl = await this.device.getRecordingUrl(events[0].event_id, { transcoded: false })
-        if (!recordingUrl) {
-            this.debug('Could not retrieve recording URL for any motion event, assuming no Ring Protect subscription')
-            delete this.entity.event_stream
-            delete this.entity.event_select
+            if (this.data.ding.events.length > 0) {
+                const lastDingEvent = this.data.ding.events[0]
+                const lastDingDate = lastDingEvent?.start_time ? new Date(lastDingEvent.start_time) : false
+                this.data.ding.last_ding = lastDingDate ? Math.floor(lastDingDate/1000) : 0
+                this.data.ding.last_ding_time = lastDingDate ? utils.getISOTime(lastDingDate) : ''
+            } else {
+                this.debug('Unable to retrieve most recent ding event for this doorbell')
+            }
         }
 
         let stillImageUrlBase = 'localhost'
