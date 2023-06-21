@@ -967,9 +967,9 @@ export default class Camera extends RingPolledDevice {
                 
                 while (loop > 0) {
                     const history = await this.getDeviceHistory({
-                        limit: 50, 
-                        event_type: 'motion', 
-                        ...paginationKey ? { pagination_key: paginationKey }: {}
+                        ...paginationKey ? { pagination_key: paginationKey }: {},
+                        event_type: 'motion',
+                        limit: 50
                     })
 
                     if (Array.isArray(history.items) && history.items.length > 0) {
@@ -980,7 +980,7 @@ export default class Camera extends RingPolledDevice {
                         loop = 0
                     } else {
                         console.log(loop, history.pagination_key)
-                        paginationKey = history.pagination_key
+                        paginationKey = history.pagination_key.replace(/={1,2}$/, '')
                         loop--
                     }
                 }
