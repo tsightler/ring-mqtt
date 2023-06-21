@@ -973,15 +973,13 @@ export default class Camera extends RingPolledDevice {
                     })
 
                     if (Array.isArray(history.items) && history.items.length > 0) {
-                        const items = history.items.filter(i => i.recording_status === 'ready' && i.cv.person_detected)
-                        events = [...events, ...items]
-                        console.log(JSON.stringify(events, null, 2))
-
+                        events = [...events, ...history.items.filter(i => i.recording_status === 'ready' && i.cv.person_detected)]
                     }
                     
                     if (events.length >= eventNumber || !history.hasOwnProperty('pagination_key') ) {
                         loop = 0
                     } else {
+                        console.log(loop, history.pagination_key)
                         paginationKey = history.pagination_key
                         loop--
                     }
