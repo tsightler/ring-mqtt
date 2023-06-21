@@ -24,7 +24,8 @@ export default class Camera extends RingPolledDevice {
                 last_ding_time: 'none',
                 is_person: false,
                 detection_enabled: null,
-                events: events.filter(event => event.event_type === 'motion')
+                events: events.filter(event => event.event_type === 'motion'),
+                latestEventId: ''
             },
             ...this.device.isDoorbot ? { 
                 ding: {
@@ -34,8 +35,9 @@ export default class Camera extends RingPolledDevice {
                     last_ding: 0,
                     last_ding_expires: 0,
                     last_ding_time: 'none',
-                    events: events.filter(event => event.event_type === 'ding')
-                } 
+                    events: events.filter(event => event.event_type === 'ding'),
+                    latestEventId: ''
+                }
             } : {},
             snapshot: {
                 mode: savedState?.snapshot?.mode
@@ -292,6 +294,7 @@ export default class Camera extends RingPolledDevice {
             this.data.motion.last_ding = lastMotionDate ? Math.floor(lastMotionDate/1000) : 0
             this.data.motion.last_ding_time = lastMotionDate ? utils.getISOTime(lastMotionDate) : ''
             this.data.motion.is_person = lastMotionEvent?.cv?.person_detected ? true : false
+            this.data.motion.latestEventId = lastMotionEvent.event_id
 
             // Try to get URL for most recent motion event, if it fails, assume there's no subscription
             let recordingUrl = false
@@ -324,6 +327,7 @@ export default class Camera extends RingPolledDevice {
                 const lastDingDate = lastDingEvent?.start_time ? new Date(lastDingEvent.start_time) : false
                 this.data.ding.last_ding = lastDingDate ? Math.floor(lastDingDate/1000) : 0
                 this.data.ding.last_ding_time = lastDingDate ? utils.getISOTime(lastDingDate) : ''
+                this.data.ding.latestEventId = lastDingEvent.event_id
             } else {
                 this.debug('Unable to retrieve most recent ding event for this doorbell')
             }
@@ -898,18 +902,22 @@ export default class Camera extends RingPolledDevice {
 
         try {
             const events = await(this.getRecordedEvents(eventType, eventNumber))
-            selectedEvent = events[eventNumber-1]
+            if (events.length >= eventNumber) {
+                selectedEvent = events[eventNumber-1]
 
-            if (selectedEvent) {
-                if (selectedEvent.event_id !== this.data.event_select.eventId || this.data.event_select.transcoded !== transcoded) {
-                    if (this.data.event_select.recordingUrl) {
-                        this.debug(`New ${this.data.event_select.state} event detected, updating the recording URL`)
+                if (selectedEvent) {
+                    if (selectedEvent.event_id !== this.data.event_select.eventId || this.data.event_select.transcoded !== transcoded) {
+                        if (this.data.event_select.recordingUrl) {
+                            this.debug(`New ${this.data.event_select.state} event detected, updating the recording URL`)
+                        }
+                        recordingUrl = await this.device.getRecordingUrl(selectedEvent.event_id, { transcoded })
+                    } else if (urlExpired) {
+                        this.debug(`Previous ${this.data.event_select.state} URL has expired, updating the recording URL`)
+                        recordingUrl = await this.device.getRecordingUrl(selectedEvent.event_id, { transcoded })
                     }
-                    recordingUrl = await this.device.getRecordingUrl(selectedEvent.event_id, { transcoded })
-                } else if (urlExpired) {
-                    this.debug(`Previous ${this.data.event_select.state} URL has expired, updating the recording URL`)
-                    recordingUrl = await this.device.getRecordingUrl(selectedEvent.event_id, { transcoded })
                 }
+            } else {
+                this.debug(`No event recording corresponding to ${this.data.event_select.state} was found in device event history`)
             }
         } catch(error) {
             this.debug(error)
@@ -945,22 +953,39 @@ export default class Camera extends RingPolledDevice {
         let events = []
         try {
             if (eventType !== 'person') {
-                events = ((await this.device.getEvents({ 
-                    limit: eventNumber+2,
+                const history = await this.getDeviceHistory({
+                    limit: eventNumber,
                     kind: eventType
-                })).events).filter(event => event.recording_status === 'ready')
+                })
+
+                if (Array.isArray(history.items) && history.items.length > 0) {
+                    events = history.items.filter(i => i.recording_status === 'ready')
+                }
             } else {
-                events = ((await this.device.getEvents({ 
-                    limit: 100,
-                    kind: 'motion'
-                })).events).filter(event => event.recording_status === 'ready' && event.cv_properties.detection_type === 'human')
+                let loop = 4
+                let paginationKey = false
+                
+                if (loop > 0) {
+                    const history = await this.getDeviceHistory({
+                        limit: 50, 
+                        event_type: 'motion', 
+                        ...paginationKey ? { pagination_key: paginationKey }: {}
+                    })
+
+                    if (Array.isArray(history.items) && history.items.length > 0) {
+                        events.concat(history.items.filter(i => i.recording_status === 'ready' && i.cv.detection_type === 'human'))
+                    }
+                    
+                    if (events.length >= eventNumber || !history.hasOwnProperty('pagination_key') ) {
+                        loop = 0
+                    } else {
+                        paginationKey = history.pagination_key
+                        loop--
+                    }
+                }
             }
         } catch(error) {
             this.debug(error)
-        }
-
-        if (events.length === 0) {
-            this.debug(`No recording corresponding to ${this.data.event_select.state} was found in event history`)
         }
 
         return events
