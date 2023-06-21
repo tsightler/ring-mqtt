@@ -896,24 +896,24 @@ export default class Camera extends RingPolledDevice {
         const eventType = eventSelect[0].toLowerCase().replace('-', '_')
         const eventNumber = eventSelect[1]
         const transcoded = eventSelect[2] === '(Transcoded)' ? true : false
-        const urlExpired = Math.floor(Date.now()/1000) - this.data.event_select.recordingUrlExpire > 0 ? true : false
-        let selectedEvent
-        let recordingUrl
+        let recordingUrl = false
 
         try {
             const events = await(this.getRecordedEvents(eventType, eventNumber))
             if (events.length >= eventNumber) {
-                selectedEvent = events[eventNumber-1]
+                const selectedEvent = events[eventNumber-1]
 
                 if (selectedEvent) {
-                    if (selectedEvent.event_id !== this.data.event_select.eventId || this.data.event_select.transcoded !== transcoded) {
-                        if (this.data.event_select.recordingUrl) {
-                            this.debug(`New ${this.data.event_select.state} event detected, updating the recording URL`)
+                    recordingUrl = await this.getRecordingUrl(selectedEvent, transcoded)
+                    if (this.data.event_select.recordingUrl !== recordingUrl) {
+                        if ((selectedEvent.event_id !== this.data.event_select.eventId || this.data.event_select.transcoded !== transcoded) &&
+                            !this.data.event_select.recordingUrl) {
+                                this.debug(`New ${this.data.event_select.state} event detected, updating the recording URL`)
+                        } else {
+                            this.debug(`Previous ${this.data.event_select.state} URL has expired, updating the recording URL`)
                         }
-                        recordingUrl = await this.device.getRecordingUrl(selectedEvent.event_id, { transcoded })
-                    } else if (urlExpired) {
-                        this.debug(`Previous ${this.data.event_select.state} URL has expired, updating the recording URL`)
-                        recordingUrl = await this.device.getRecordingUrl(selectedEvent.event_id, { transcoded })
+                    } else {
+                        recordingUrl = false
                     }
                 }
             } else {
@@ -924,28 +924,21 @@ export default class Camera extends RingPolledDevice {
             this.debug(`Failed to retrieve recording URL for ${this.data.event_select.state} event`)
         }
 
-        if (recordingUrl) {
-            this.data.event_select.recordingUrl = recordingUrl
-            this.data.event_select.transcoded = transcoded
-            this.data.event_select.eventId = selectedEvent.event_id
+        this.data.event_select.recordingUrl = recordingUrl ? recordingUrl : '<URL_Not_Found>'
+        this.data.event_select.transcoded = transcoded
+        this.data.event_select.eventId = recordingUrl ? selectedEvent.event_id : '0'
+        return recordingUrl ? recordingUrl : false
+    }
 
-            // Try to parse URL parameters to set expire time
-            const urlSearch = new URLSearchParams(recordingUrl)
-            const amzExpires = Number(urlSearch.get('X-Amz-Expires'))
-            const amzDate = urlSearch.get('X-Amz-Date')
-            if (amzDate && amzExpires && amzExpires !== 'NaN') {
-                const [_, year, month, day, hour, min, sec] = amzDate.match(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})/)
-                this.data.event_select.recordingUrlExpire = Math.floor(Date.UTC(year, month-1, day, hour, min, sec)/1000)+amzExpires-75
-            } else {
-                this.data.event_select.recordingUrlExpire = Math.floor(Date.now()/1000) + 600
+    async getRecordingUrl(event, transcoded) {
+        let recordingUrl
+        if (transcoded) {
+            recordingUrl = await getTranscodedUrl(event.event_id)
+        } else {
+            if (recordingEvent && Array.isArray(recordingEvent.visualizations?.cloud_media_visualization?.media)) {
+                recordingUrl = (recordingEvent.visualizations.cloud_media_visualization.media.find(e => e.file_type === 'VIDEO')).url
             }
-        } else if (urlExpired || !selectedEvent) {
-            this.data.event_select.recordingUrl = '<No Valid URL>'
-            this.data.event_select.transcoded = transcoded
-            this.data.event_select.eventId = '0'
-            return false
         }
-
         return recordingUrl
     }
 
