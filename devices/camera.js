@@ -970,10 +970,10 @@ export default class Camera extends RingPolledDevice {
                 }
                 
                 // Remove base64 padding characters from pagination key
-                paginationKey = history.hasOwnProperty('pagination_key') ? history.pagination_key.replace(/={1,2}$/, '') : false
+                paginationKey = history.pagination_key ? history.pagination_key.replace(/={1,2}$/, '') : false
 
                 // If we have enough events, break the loop, otherwise decrease the loop counter
-                loop = (events.length >= eventNumber || history.paginationKey === false) ? 0 : loop-1
+                loop = (events.length >= eventNumber || !history.paginationKey) ? 0 : loop-1
             }
         } catch(error) {
             this.debug(error)

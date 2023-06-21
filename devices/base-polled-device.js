@@ -62,6 +62,10 @@ export default class RingPolledDevice extends RingDevice {
     }
 
     async getDeviceHistory(options) {
+        console.log(`https://api.ring.com/evm/v2/history/devices/${this.device.id}/${this.getSearchQueryString({
+            capabilities: 'vehicle%2Coffline_event',
+            ...options,
+        })}`)
         try {
             const response = await this.device.restClient.request({
                 method: 'GET',
