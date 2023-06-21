@@ -952,7 +952,7 @@ export default class Camera extends RingPolledDevice {
     async getRecordedEvents(eventType, eventNumber) {
         let events = []
         let paginationKey = false
-        let loop = event_type === 'person' ? 4 : 1
+        let loop = eventType === 'person' ? 4 : 1
 
         try {
             while (loop > 0) {
