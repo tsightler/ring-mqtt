@@ -965,7 +965,7 @@ export default class Camera extends RingPolledDevice {
                 let loop = 4
                 let paginationKey = false
                 
-                if (loop > 0) {
+                while (loop > 0) {
                     const history = await this.getDeviceHistory({
                         limit: 50, 
                         event_type: 'motion', 
