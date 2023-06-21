@@ -896,12 +896,13 @@ export default class Camera extends RingPolledDevice {
         const eventType = eventSelect[0].toLowerCase().replace('-', '_')
         const eventNumber = eventSelect[1]
         const transcoded = eventSelect[2] === '(Transcoded)' ? true : false
+        let selectedEvent
         let recordingUrl = false
 
         try {
             const events = await(this.getRecordedEvents(eventType, eventNumber))
             if (events.length >= eventNumber) {
-                const selectedEvent = events[eventNumber-1]
+                selectedEvent = events[eventNumber-1]
 
                 if (selectedEvent) {
                     recordingUrl = await this.getRecordingUrl(selectedEvent, transcoded)
