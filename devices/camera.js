@@ -935,8 +935,8 @@ export default class Camera extends RingPolledDevice {
         if (transcoded) {
             recordingUrl = await getTranscodedUrl(event.event_id)
         } else {
-            if (recordingEvent && Array.isArray(recordingEvent.visualizations?.cloud_media_visualization?.media)) {
-                recordingUrl = (recordingEvent.visualizations.cloud_media_visualization.media.find(e => e.file_type === 'VIDEO')).url
+            if (event && Array.isArray(event.visualizations?.cloud_media_visualization?.media)) {
+                recordingUrl = (event.visualizations.cloud_media_visualization.media.find(e => e.file_type === 'VIDEO')).url
             }
         }
         return recordingUrl
