@@ -956,26 +956,24 @@ export default class Camera extends RingPolledDevice {
 
         try {
             while (loop > 0) {
-                if (eventType !== 'person') {
-                    const history = await this.getDeviceHistory({
-                        ...paginationKey ? { pagination_key: paginationKey }: {},
-                        event_type: eventType === 'person' ? 'motion' : eventType,
-                        limit: eventType === 'person' ? 50 : eventNumber
-                    })
+                const history = await this.getDeviceHistory({
+                    ...paginationKey ? { pagination_key: paginationKey }: {},
+                    event_type: eventType === 'person' ? 'motion' : eventType,
+                    limit: eventType === 'person' ? 50 : eventNumber
+                })
 
-                    if (Array.isArray(history.items) && history.items.length > 0) {
-                        const newEvents = eventType === 'person'
-                            ? history.items.filter(i => i.recording_status === 'ready' && i.cv.person_detected)
-                            : history.items.filter(i => i.recording_status === 'ready')
-                        events = [...events, ...newEvents]
-                    }
-                    
-                    // Remove base64 padding characters from pagination key
-                    paginationKey = history.hasOwnProperty('pagination_key') ? history.pagination_key.replace(/={1,2}$/, '') : false
-
-                    // If we have enough events, break the loop, otherwise decrease the loop counter
-                    loop = (events.length >= eventNumber || history.paginationKey === false) ? 0 : loop-1
+                if (Array.isArray(history.items) && history.items.length > 0) {
+                    const newEvents = eventType === 'person'
+                        ? history.items.filter(i => i.recording_status === 'ready' && i.cv.person_detected)
+                        : history.items.filter(i => i.recording_status === 'ready')
+                    events = [...events, ...newEvents]
                 }
+                
+                // Remove base64 padding characters from pagination key
+                paginationKey = history.hasOwnProperty('pagination_key') ? history.pagination_key.replace(/={1,2}$/, '') : false
+
+                // If we have enough events, break the loop, otherwise decrease the loop counter
+                loop = (events.length >= eventNumber || history.paginationKey === false) ? 0 : loop-1
             }
         } catch(error) {
             this.debug(error)
