@@ -997,22 +997,16 @@ export default class Camera extends RingPolledDevice {
     }
 
     async getTranscodedUrl(event) {
-        /*
         let response = await this.device.restClient.request({
             method: 'POST',
-            url: 'https://account.ring.com/api/share_service/v2/transcodings/shares',
+            url: 'https://api.ring.com/share_service/v2/transcodings/shares',
             json: {
                 "ding_id": event.event_id,
-                "share_platform": "link",
-                "add_download_headers": false,
-                "device_id": event.source_id,
                 "file_type": "VIDEO",
-                "start_timestamp": Date.parse(event.start_time),
-                "end_timestamp": Date.parse(event.end_time)
+                "send_push_notification": false
             }
         })
         console.log(response)
-        */
         return 'https://share.ring.com/test.mp4'
     }
 
