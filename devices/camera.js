@@ -997,17 +997,40 @@ export default class Camera extends RingPolledDevice {
     }
 
     async getTranscodedUrl(event) {
-        let response = await this.device.restClient.request({
-            method: 'POST',
-            url: 'https://api.ring.com/share_service/v2/transcodings/shares',
-            json: {
-                "ding_id": event.event_id,
-                "file_type": "VIDEO",
-                "send_push_notification": false
+        let response
+        let loop = 30
+
+        try {
+            response = await this.device.restClient.request({
+                method: 'POST',
+                url: 'https://api.ring.com/share_service/v2/transcodings/shares',
+                json: {
+                    "ding_id": event.event_id,
+                    "file_type": "VIDEO",
+                    "send_push_notification": false
+                }
+            })
+        } catch(err) {
+            console.log(err)
+            return false
+        }
+
+        while (response?.status === 'pending' && loop > 0) {
+            try {
+                response = await this.device.restClient.request({
+                    method: 'GET',
+                    url: `https://api.ring.com/share_service/v2/transcodings/shares/${event.event_id}?file_type=VIDEO`
+                })
+            } catch(err) {
+                console.log(err)
+                return false
             }
-        })
-        console.log(response)
-        return 'https://share.ring.com/test.mp4'
+            await utils.sleep(1)
+            loop--
+            console.log(response)
+        }
+
+        return response?.status === 'done' ? response.result_url : false 
     }
 
     // Process messages from MQTT command topic
