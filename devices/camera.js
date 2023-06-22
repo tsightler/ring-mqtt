@@ -997,6 +997,7 @@ export default class Camera extends RingPolledDevice {
     }
 
     async getTranscodedUrl(event) {
+        /*
         let response = await this.device.restClient.request({
             method: 'POST',
             url: 'https://account.ring.com/api/share_service/v2/transcodings/shares',
@@ -1011,6 +1012,7 @@ export default class Camera extends RingPolledDevice {
             }
         })
         console.log(response)
+        */
         return 'https://share.ring.com/test.mp4'
     }
 
