@@ -1011,7 +1011,8 @@ export default class Camera extends RingPolledDevice {
                 }
             })
         } catch(err) {
-            console.log(err)
+            this.debug(err)
+            this.debug('Request to generate transcoded video failed')
             return false
         }
 
@@ -1022,8 +1023,8 @@ export default class Camera extends RingPolledDevice {
                     url: `https://api.ring.com/share_service/v2/transcodings/shares/${event.event_id}?file_type=VIDEO`
                 })
             } catch(err) {
-                console.log(err)
-                return false
+                this.debug(err)
+                this.debug('Request for transcoded video status failed')
             }
             await utils.sleep(1)
             loop--
@@ -1032,6 +1033,11 @@ export default class Camera extends RingPolledDevice {
         if (response?.status === 'done') {
             return `https://share.ring.com/${new URL(response.result_url).pathname.split('/').pop()}.mp4`
         } else {
+            if (loop < 1) {
+                this.debug('Timeout waiting for transcoded video to be processed')
+            } else {
+                this.debug('Failed to retrieve transcoded video URL')
+            }
             return false
         }
     }

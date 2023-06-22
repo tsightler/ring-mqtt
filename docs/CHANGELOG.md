@@ -1,12 +1,16 @@
 ## v5.4.0
-This update moves to ring-client-api 11.8.0 which includes updates to address camera/doorbell/intercom notifications.  If upgrading from the prior v5.3.0 version no additional steps should be required, however, if you are upgrading from older versions and have notification issuess, plese follow the "Steps to fix notifications" section from the v5.3.0 release notes below.
-
 **New Features**
-- Alarm now includes new attributes for initiating entity for arm/disarm actions.  With this you can determine who are what triggered an arm/disarm event.
-- Device Name/System ID is now displayed in the Web UI and CLI authentication tools so that it can be easy to identify the corresponding device in the Ring Control Center.
+- Alarm now includes attributes for initiating entity for arm/disarm actions making it possible to determine who/what triggered an arm/disarm event.
+- Device Name/System ID is now displayed in the Web UI and CLI authentication tools providing easier identification of the corresponding device in the Authorized Devices section of the Ring Control Center.
+- Camera event management has been completely reworked using a newer event management API.  Primary goal was to avoid API throttling issues that could occur with large numbers of cameras (>50% reduction in API calls, even more during startup).
+- Transcoded videos now use Ring perma-links instead of short-term links (180 seconds), avoiding constant refreshes for updated links.  Perma-links are the same links you get if you choose "Get Share Link" in Ring app.  
 
 **Bug Fixed**
 - Fixed an issue with panic switches where a burglar alarm could trigger both police and fire panic states.
+
+**Dependency Updates**
+- ring-client-api v11.8.0
+- basio v0.15.0
 
 ## v5.3.0
 The primary goal of this update is to address issues with camera/doorbell/intercom notifications that have impacted many users due to changes in the Ring API for push notifications.  This version uses a new upstream ring-client-api that persist the FCM token and hardware ID across restarts which will hopefully address these issues, however, it's important to note that addressing this will likely require users to re-authenticate following the instructions below:
