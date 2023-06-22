@@ -904,8 +904,7 @@ export default class Camera extends RingPolledDevice {
         try {
             const events = await(this.getRecordedEvents(eventType, eventNumber))
             if (events.length >= eventNumber) {
-                selectedEvent = events[eventNumber-1]
-                
+                selectedEvent = events[eventNumber-1]     
                 if (selectedEvent.event_id !== this.data.event_select.eventId || this.data.event_select.transcoded !== transcoded) {
                     if (this.data.event_select.recordingUrl) {
                         this.debug(`New ${this.data.event_select.state} event detected, updating the recording URL`)
@@ -914,8 +913,6 @@ export default class Camera extends RingPolledDevice {
                 } else if (urlExpired) {
                     this.debug(`Previous ${this.data.event_select.state} URL has expired, updating the recording URL`)
                     recordingUrl = await this.getRecordingUrl(selectedEvent, transcoded)
-                } else {
-                    recordingUrl = false
                 }
             } else {
                 this.debug(`No event recording corresponding to ${this.data.event_select.state} was found in device event history`)
@@ -945,7 +942,6 @@ export default class Camera extends RingPolledDevice {
             this.data.event_select.recordingUrl = '<No Valid URL>'
             this.data.event_select.transcoded = transcoded
             this.data.event_select.eventId = '0'
-            return false
         }
 
         return recordingUrl
