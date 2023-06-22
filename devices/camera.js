@@ -1030,7 +1030,12 @@ export default class Camera extends RingPolledDevice {
             console.log(response)
         }
 
-        return response?.status === 'done' ? response.result_url : false 
+        if (response?.status === 'done') {
+            const mp4file = (new URL(response.result_url)).path.split('/')[1]
+            return `https://share.ring.com/${mp4file}.mp4`
+        } else {
+            return false
+        }
     }
 
     // Process messages from MQTT command topic
