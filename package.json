@@ -8,6 +8,7 @@
     "aedes": "0.49.0",
     "body-parser": "^1.20.2",
     "chalk": "^5.2.0",
+    "date-fns": "^2.30.0",
     "debug": "^4.3.4",
     "express": "^4.18.2",
     "ip": "^1.1.8",
@@ -16,9 +17,9 @@
     "minimist": "^1.2.8",
     "mqtt": "^4.3.7",
     "ring-client-api": "11.8.0",
-    "write-file-atomic": "^5.0.1",
+    "rxjs": "^7.8.1",
     "werift": "^0.18.3",
-    "rxjs": "^7.8.1"
+    "write-file-atomic": "^5.0.1"
   },
   "devDependencies": {
     "eslint": "^7.19.0"
