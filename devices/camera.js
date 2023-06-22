@@ -951,18 +951,6 @@ export default class Camera extends RingPolledDevice {
         return recordingUrl
     }
 
-    async getRecordingUrl(event, transcoded) {
-        let recordingUrl
-        if (transcoded) {
-            recordingUrl = await getTranscodedUrl(event.event_id)
-        } else {
-            if (event && Array.isArray(event.visualizations?.cloud_media_visualization?.media)) {
-                recordingUrl = (event.visualizations.cloud_media_visualization.media.find(e => e.file_type === 'VIDEO')).url
-            }
-        }
-        return recordingUrl
-    }
-
     async getRecordedEvents(eventType, eventNumber) {
         let events = []
         let paginationKey = false
@@ -994,6 +982,45 @@ export default class Camera extends RingPolledDevice {
         }
 
         return events
+    }
+
+    async getRecordingUrl(event, transcoded) {
+        let recordingUrl
+        if (transcoded) {
+            recordingUrl = await this.getTranscodedUrl(event)
+        } else {
+            if (event && Array.isArray(event.visualizations?.cloud_media_visualization?.media)) {
+                recordingUrl = (event.visualizations.cloud_media_visualization.media.find(e => e.file_type === 'VIDEO')).url
+            }
+        }
+        return recordingUrl
+    }
+
+    async getTranscodedUrl(event) {
+        console.log({
+            "ding_id": event.event_id,
+            "share_platform": "link",
+            "add_download_headers": false,
+            "device_id": event.source_id,
+            "file_type": "VIDEO",
+            "start_timestamp": Date.parse(event.start_time),
+            "end_timestamp": Date.parse(event.end_time)
+        })
+
+        let response = await this.device.restClient.request({
+            method: 'POST',
+            url: 'https://account.ring.com/api/share_service/v2/transcodings/shares',
+            json: {
+                "ding_id": event.event_id,
+                "share_platform": "link",
+                "add_download_headers": false,
+                "device_id": event.source_id,
+                "file_type": "VIDEO",
+                "start_timestamp": Date.parse(event.start_time),
+                "end_timestamp": Date.parse(event.end_time)
+            }
+        })
+        console.log(response)
     }
 
     // Process messages from MQTT command topic
