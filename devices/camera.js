@@ -1029,7 +1029,10 @@ export default class Camera extends RingPolledDevice {
             loop--
         }
 
+        console.log(response)
+
         if (response?.status === 'done') {
+            console.log(`https://share.ring.com/${new URL(result_url).pathname.split('/').pop()}.mp4`)
             return `https://share.ring.com/${new URL(result_url).pathname.split('/').pop()}.mp4`
         } else {
             return false
