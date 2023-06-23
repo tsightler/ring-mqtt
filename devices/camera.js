@@ -897,7 +897,7 @@ export default class Camera extends RingPolledDevice {
         const eventType = eventSelect[0].toLowerCase().replace('-', '_')
         const eventNumber = eventSelect[1]
         const transcoded = eventSelect[2] === '(Transcoded)' ? true : false
-        const urlExpired = transcoded ? false : this.data.event_select.recordingUrlExpire < Date.now()
+        const urlExpired = this.data.event_select.recordingUrlExpire < Date.now()
         let selectedEvent
         let recordingUrl = false
 
@@ -927,16 +927,13 @@ export default class Camera extends RingPolledDevice {
             this.data.event_select.transcoded = transcoded
             this.data.event_select.eventId = selectedEvent.event_id
 
-            if (!transcoded) {
-                // Try to parse URL parameters to set expire time
-                try {
-                    const urlSearch = new URLSearchParams(recordingUrl)
-                    const amzExpires = Number(urlSearch.get('X-Amz-Expires'))
-                    const amzDate = parseISO(urlSearch.get('X-Amz-Date'))
-                    this.data.event_select.recordingUrlExpire = Date.parse(addSeconds(amzDate, amzExpires/3*2))
-                } catch {
-                    this.data.event_select.recordingUrlExpire = Date.now() + 600000
-                }
+            try {
+                const urlSearch = new URLSearchParams(recordingUrl)
+                const amzExpires = Number(urlSearch.get('X-Amz-Expires'))
+                const amzDate = parseISO(urlSearch.get('X-Amz-Date'))
+                this.data.event_select.recordingUrlExpire = Date.parse(addSeconds(amzDate, amzExpires/3*2))
+            } catch {
+                this.data.event_select.recordingUrlExpire = Date.now() + 600000
             }
         } else if (urlExpired || !selectedEvent) {
             this.data.event_select.recordingUrl = '<Recording Not Found>'
@@ -1032,7 +1029,7 @@ export default class Camera extends RingPolledDevice {
         }
 
         if (response?.status === 'done') {
-            return `https://share.ring.com/${new URL(response.result_url).pathname.split('/').pop()}.mp4`
+            return response.result_url
         } else {
             if (loop < 1) {
                 this.debug('Timeout waiting for transcoded video to be processed')
