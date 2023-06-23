@@ -1,9 +1,11 @@
 ## v5.4.0
 **New Features**
-- Alarm now includes attributes for initiating entity for arm/disarm actions making it possible to determine who/what triggered an arm/disarm event.
+- Alarm now includes lastArmedBy/lastDisarmedBy attributes making it possible to determine who/what triggered an arm/disarm event.
 - Device Name/System ID is now displayed in the Web UI and CLI authentication tools providing easier identification of the corresponding device in the Authorized Devices section of the Ring Control Center.
+
+**Other Changes**
 - Camera event management has been completely reworked using a newer event management API.  Primary goal was to avoid API throttling issues that could occur with large numbers of cameras (>50% reduction in API calls, even more during startup).
-- Transcoded videos now use Ring perma-links instead of short-term links (180 seconds), avoiding constant refreshes for updated links.  Perma-links are the same links you get if you choose "Get Share Link" in Ring app.  
+- Transcoded videos now use Ring perma-links instead of short-term links (180 seconds), this avoids constant refreshes for updated links with transcoded videos.  Perma-links are the same links you get if you choose "Get Share Link" in Ring app.
 
 **Bug Fixed**
 - Fixed an issue with panic switches where a burglar alarm could trigger both police and fire panic states.
