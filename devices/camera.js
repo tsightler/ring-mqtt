@@ -1001,12 +1001,16 @@ export default class Camera extends RingPolledDevice {
                 method: 'POST',
                 url: 'https://api.ring.com/share_service/v2/transcodings/downloads',
                 json: {
-                    "device_id": this.device.id,
                     "ding_id": event.event_id,
-                    "file_type": "VIDEO"
+                    "device_id": this.device.id,
+                    "file_type": "VIDEO",
+                    "start_timestamp": new Date(event.start_time),
+                    "end_timestamp": new Date(event.end_time)
                 }
             })
 
+            console.log(response)
+            
             if (response?.status === 'pending') {
                 this.data.event_select.recordingUrl = '<Transcoding in Progress>'
                 this.publishEventSelectState()
