@@ -12,7 +12,7 @@
 
 **Dependency Updates**
 - ring-client-api v11.8.0
-- basio v0.15.0
+- bashio v0.15.0
 
 ## v5.3.0
 The primary goal of this update is to address issues with camera/doorbell/intercom notifications that have impacted many users due to changes in the Ring API for push notifications.  This version uses a new upstream ring-client-api that persist the FCM token and hardware ID across restarts which will hopefully address these issues, however, it's important to note that addressing this will likely require users to re-authenticate following the instructions below:
