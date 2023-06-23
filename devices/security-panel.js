@@ -11,9 +11,10 @@ export default class SecurityPanel extends RingSocketDevice {
 
         this.data = {
             attributes: {
-                initiatingEntityId: 'Unknown',
-                initiatingEntityType: 'Unknown',
-                initiatingUserName: 'Unknown'
+                lastArmedBy: 'Unknown',
+                lastArmedTime: '',
+                lastDisarmedBy: 'Unknown',
+                lastDisarmedTime: ''
             }
         }
         
@@ -43,6 +44,8 @@ export default class SecurityPanel extends RingSocketDevice {
             } : {}
         }
 
+        this.initAlarmAttributes()
+
         // Listen to raw data updates for all devices and pick out
         // arm/disarm events for this security panel
         this.device.location.onDataUpdate.subscribe(async (message) => {
@@ -51,12 +54,63 @@ export default class SecurityPanel extends RingSocketDevice {
                 message.body[0].impulse?.v1?.[0] &&
                 message.body[0].impulse.v1.filter(i => i.data?.commandType === 'security-panel.switch-mode').length > 0
             ) { 
+                const impulse = message.body[0].impulse.v1
                 if (message.context) {
-                    await this.updateAlarmAttributes(message.context)
-                    this.pubishAlarmState()
+                    if (impulse.filter(i => i.data?.data?.mode.match(/some|all/)).length > 0) {
+                        await this.updateAlarmAttributes(message.context, 'Armed') 
+                    } else if (impulse.filter(i => i.data?.data?.mode === 'none').length > 0) {
+                        await this.updateAlarmAttributes(message.context, 'Disarmed')
+                    }
                 }
+                this.pubishAlarmState()
              }
         })
+    }
+
+    async initAlarmAttributes() {
+        const alarmEvents = await this.device.location.getHistory({ affectedId: this.deviceId })
+        const armEvents = alarmEvents.filter(e =>
+            Array.isArray(e.body?.[0]?.impulse?.v1) &&
+            e.body[0].impulse.v1.filter(i =>
+                i.data?.commandType === 'security-panel.switch-mode' &&
+                i.data?.data?.mode.match(/some|all/)
+            ).length > 0
+        )
+        if (armEvents.length > 0) {
+            this.updateAlarmAttributes(armEvents[0].context, 'Armed')
+        }
+
+        const disarmEvents = alarmEvents.filter(e =>
+            Array.isArray(e.body?.[0]?.impulse?.v1) &&
+            e.body[0].impulse.v1.filter(i =>
+                i.data?.commandType === 'security-panel.switch-mode' &&
+                i.data?.data?.mode === 'none'
+            ).length > 0
+        )
+        if (disarmEvents.length > 0) {
+            this.updateAlarmAttributes(disarmEvents[0].context, 'Disarmed')
+        }
+    }
+
+    async updateAlarmAttributes(contextData, mode) {
+        let initiatingUser = contextData.initiatingEntityType
+
+        if (contextData.initiatingEntityType === 'user' && contextData.initiatingEntityId) {
+            try {
+                const userInfo = await this.getUserInfo(contextData.initiatingEntityId)
+                if (userInfo) {
+                    initiatingUser = `${userInfo.firstName} ${userInfo.lastName}`
+                } else {
+                    throw new Error('Invalid user information was returned by API')
+                }
+            } catch (err) {
+                this.debug(err.message)
+                this.debug('Could not get user information from Ring API')
+            }
+        }
+
+        this.data.attributes[`last${mode}By`] = initiatingUser
+        this.data.attributes[`last${mode}Time`] = new Date(contextData.eventOccurredTsMs).toISOString()
     }
 
     publishState(data) {
@@ -114,33 +168,6 @@ export default class SecurityPanel extends RingSocketDevice {
         this.mqttPublish(this.entity.alarm.state_topic, alarmMode)
         this.mqttPublish(this.entity.alarm.json_attributes_topic, JSON.stringify(this.data.attributes), 'attr')
         this.publishAttributes()
-    }
-
-    async updateAlarmAttributes(contextData) {
-        this.data.attributes = {
-            initiatingEntityId: contextData.initiatingEntityId,
-            initiatingEntityType: contextData.initiatingEntityType
-        }
-
-        if (contextData.initiatingEntityId) {
-            try {
-                const response = await this.device.location.restClient.request({
-                    url: `https://app.ring.com/api/v1/rs/users/summaries?locationId=${this.locationId}`,
-                    method: 'POST',
-                    json: [contextData.initiatingEntityId]
-                })
-
-                if (Array.isArray(response) && response.length > 0) {
-                    this.data.attributes.initiatingUserName = `${response[0].firstName} ${response[0].lastName}`
-                    this.data.attributes.initiatingUserEmail = `${response[0].email}`
-                }
-            } catch (err) {
-                this.debug(err)
-                this.debug('Could not get user information from Ring API')
-                this.data.attributes.initiatingUserName = 'Unknown'
-                this.data.attributes.initiatingUserEmail = 'Unknown'
-            }
-        }
     }
     
     async waitForExitDelay(exitDelayMs) {
