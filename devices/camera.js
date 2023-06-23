@@ -781,8 +781,8 @@ export default class Camera extends RingPolledDevice {
         const eventType = eventSelect[0].toLowerCase().replace('-', '_')
         const eventNumber = eventSelect[1]
 
-        if (this.data.event_select.recordingUrl === '<No Valid URL>') {
-            this.debug(`No valid recording was found for the ${(eventNumber==1?"":eventNumber==2?"2nd ":eventNumber==3?"3rd ":eventNumber+"th ")}most recent ${eventType} event!`)
+        if (this.data.event_select.recordingUrl.match(/Recording Not Found|Transcoding in Progress/)) {
+            this.debug(`No recording available for the ${(eventNumber==1?"":eventNumber==2?"2nd ":eventNumber==3?"3rd ":eventNumber+"th ")}most recent ${eventType} event!`)
             this.data.stream.event.status = 'failed'
             this.data.stream.event.session = false
             this.publishStreamState()
@@ -1008,7 +1008,7 @@ export default class Camera extends RingPolledDevice {
             })
 
             if (response?.status === 'pending') {
-                this.data.event_select.recordingUrl === '<Transcoding in Progress>'
+                this.data.event_select.recordingUrl = '<Transcoding in Progress>'
                 this.publishEventSelectState()
             }
         } catch(err) {
