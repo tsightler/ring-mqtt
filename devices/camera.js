@@ -999,11 +999,11 @@ export default class Camera extends RingPolledDevice {
         try {
             response = await this.device.restClient.request({
                 method: 'POST',
-                url: 'https://api.ring.com/share_service/v2/transcodings/shares',
+                url: 'https://api.ring.com/share_service/v2/transcodings/downloads',
                 json: {
+                    "device_id": this.device.id,
                     "ding_id": event.event_id,
-                    "file_type": "VIDEO",
-                    "send_push_notification": false
+                    "file_type": "VIDEO"
                 }
             })
 
@@ -1021,7 +1021,7 @@ export default class Camera extends RingPolledDevice {
             try {
                 response = await this.device.restClient.request({
                     method: 'GET',
-                    url: `https://api.ring.com/share_service/v2/transcodings/shares/${event.event_id}?file_type=VIDEO`
+                    url: `https://api.ring.com/share_service/v2/transcodings/downloads/${event.event_id}?file_type=VIDEO`
                 })
             } catch(err) {
                 this.debug(err)
