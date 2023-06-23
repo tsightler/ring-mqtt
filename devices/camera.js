@@ -939,7 +939,7 @@ export default class Camera extends RingPolledDevice {
                 }
             }
         } else if (urlExpired || !selectedEvent) {
-            this.data.event_select.recordingUrl = '<No Valid URL>'
+            this.data.event_select.recordingUrl = '<Recording Not Found>'
             this.data.event_select.transcoded = transcoded
             this.data.event_select.eventId = '0'
         }
@@ -1006,6 +1006,11 @@ export default class Camera extends RingPolledDevice {
                     "send_push_notification": false
                 }
             })
+
+            if (response?.status === 'pending') {
+                this.data.event_select.recordingUrl === '<Transcoding in Progress>'
+                this.publishEventSelectState()
+            }
         } catch(err) {
             this.debug(err)
             this.debug('Request to generate transcoded video failed')
@@ -1265,9 +1270,11 @@ export default class Camera extends RingPolledDevice {
     async setEventSelect(message) {
         this.debug(`Received set event stream to ${message}`)
         if (this.entity.event_select.options.includes(message)) {
+            // Kill any active event streams
             if (this.data.stream.event.session) {
                 this.data.stream.event.session.kill()
             }
+            // Set the new value and save the state
             this.data.event_select.state = message
             this.updateDeviceState()
             await this.updateEventStreamUrl()
