@@ -1001,8 +1001,8 @@ export default class Camera extends RingPolledDevice {
                 "ding_id": event.event_id,
                 "device_id": this.device.id,
                 "file_type": "VIDEO",
-                "start_timestamp": new Date(event.start_time),
-                "end_timestamp": new Date(event.end_time)
+                "start_timestamp": new Date(event.start_time).getTime(),
+                "end_timestamp": new Date(event.end_time).getTime()
             }, null, 4))
 
             response = await this.device.restClient.request({
@@ -1012,8 +1012,8 @@ export default class Camera extends RingPolledDevice {
                     "ding_id": event.event_id,
                     "device_id": this.device.id,
                     "file_type": "VIDEO",
-                    "start_timestamp": new Date(event.start_time),
-                    "end_timestamp": new Date(event.end_time)
+                    "start_timestamp": new Date(event.start_time).getTime(),
+                    "end_timestamp": new Date(event.end_time).getTime()
                 }
             })
 
