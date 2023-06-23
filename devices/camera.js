@@ -997,23 +997,13 @@ export default class Camera extends RingPolledDevice {
         let loop = 30
 
         try {
-            console.log(JSON.stringify({
-                "ding_id": event.event_id,
-                "device_id": this.device.id,
-                "file_type": "VIDEO",
-                "start_timestamp": new Date(event.start_time).getTime(),
-                "end_timestamp": new Date(event.end_time).getTime()
-            }, null, 4))
-
             response = await this.device.restClient.request({
                 method: 'POST',
                 url: 'https://api.ring.com/share_service/v2/transcodings/downloads',
                 json: {
-                    "ding_id": event.event_id,
-                    "device_id": this.device.id,
-                    "file_type": "VIDEO",
-                    "start_timestamp": new Date(event.start_time).getTime(),
-                    "end_timestamp": new Date(event.end_time).getTime()
+                    'ding_id': event.event_id,
+                    'file_type': 'VIDEO',
+                    'send_push_notification': false
                 }
             })
 
