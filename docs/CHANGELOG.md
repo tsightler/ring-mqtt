@@ -9,6 +9,7 @@ This release is mostly to get back to stable ring-client-api version with final 
 - Camera event management has been completely reworked using a new event management API.  Primary goal was to avoid API throttling issues that could occur with large numbers of cameras (>50% reduction in API calls, even more during startup).
 
 **Bug Fixed**
+- Fixed an issue where motion snapshots might return an cached snapshot instead
 - Fixed an issue with panic switches where a burglar alarm could trigger both police and fire panic states.
 
 **Dependency Updates**
