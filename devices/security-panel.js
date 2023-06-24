@@ -8,11 +8,21 @@ export default class SecurityPanel extends RingSocketDevice {
         super(deviceInfo, 'alarm', 'alarmState')
         this.deviceData.mdl = 'Alarm Control Panel'
         this.deviceData.name = `${this.device.location.name} Alarm`
+
+        this.data = {
+            attributes: {
+                lastArmedBy: 'Unknown',
+                lastArmedTime: '',
+                lastDisarmedBy: 'Unknown',
+                lastDisarmedTime: ''
+            }
+        }
         
         this.entity = {
             ...this.entity,
             alarm: {
                 component: 'alarm_control_panel',
+                attributes: true,
                 isLegacyEntity: true  // Legacy compatibility
             },
             siren: {
@@ -33,15 +43,100 @@ export default class SecurityPanel extends RingSocketDevice {
                 }
             } : {}
         }
+
+        this.initAlarmAttributes()
+
+        // Listen to raw data updates for all devices and pick out
+        // arm/disarm events for this security panel
+        this.device.location.onDataUpdate.subscribe(async (message) => {
+            if (message.datatype === 'DeviceInfoDocType' &&
+                message.body?.[0]?.general?.v2?.zid === this.deviceId &&
+                message.body[0].impulse?.v1?.[0] &&
+                message.body[0].impulse.v1.filter(i => i.data?.commandType === 'security-panel.switch-mode').length > 0
+            ) { 
+                const impulse = message.body[0].impulse.v1
+                if (message.context) {
+                    if (impulse.filter(i => i.data?.data?.mode.match(/some|all/)).length > 0) {
+                        await this.updateAlarmAttributes(message.context, 'Armed') 
+                    } else if (impulse.filter(i => i.data?.data?.mode === 'none').length > 0) {
+                        await this.updateAlarmAttributes(message.context, 'Disarmed')
+                    }
+                }
+                this.pubishAlarmState()
+             }
+        })
+    }
+
+    async initAlarmAttributes() {
+        const alarmEvents = await this.device.location.getHistory({ affectedId: this.deviceId })
+        const armEvents = alarmEvents.filter(e =>
+            Array.isArray(e.body?.[0]?.impulse?.v1) &&
+            e.body[0].impulse.v1.filter(i =>
+                i.data?.commandType === 'security-panel.switch-mode' &&
+                i.data?.data?.mode.match(/some|all/)
+            ).length > 0
+        )
+        if (armEvents.length > 0) {
+            this.updateAlarmAttributes(armEvents[0].context, 'Armed')
+        }
+
+        const disarmEvents = alarmEvents.filter(e =>
+            Array.isArray(e.body?.[0]?.impulse?.v1) &&
+            e.body[0].impulse.v1.filter(i =>
+                i.data?.commandType === 'security-panel.switch-mode' &&
+                i.data?.data?.mode === 'none'
+            ).length > 0
+        )
+        if (disarmEvents.length > 0) {
+            this.updateAlarmAttributes(disarmEvents[0].context, 'Disarmed')
+        }
+    }
+
+    async updateAlarmAttributes(contextData, mode) {
+        let initiatingUser = contextData.initiatingEntityType
+
+        if (contextData.initiatingEntityType === 'user' && contextData.initiatingEntityId) {
+            try {
+                const userInfo = await this.getUserInfo(contextData.initiatingEntityId)
+                if (userInfo) {
+                    initiatingUser = `${userInfo.firstName} ${userInfo.lastName}`
+                } else {
+                    throw new Error('Invalid user information was returned by API')
+                }
+            } catch (err) {
+                this.debug(err.message)
+                this.debug('Could not get user information from Ring API')
+            }
+        }
+
+        this.data.attributes[`last${mode}By`] = initiatingUser
+        this.data.attributes[`last${mode}Time`] = new Date(contextData.eventOccurredTsMs).toISOString()
     }
 
     publishState(data) {
         const isPublish = data === undefined ? true : false
+
         if (isPublish) {
             // Eventually remove this but for now this attempts to delete the old light component based volume control from Home Assistant
             this.mqttPublish(`homeassistant/switch/${this.locationId}/${this.deviceId}_bypass/config`, '', false)
+            this.pubishAlarmState()
         }
 
+        const sirenState = (this.device.data.siren?.state === 'on') ? 'ON' : 'OFF'
+        this.mqttPublish(this.entity.siren.state_topic, sirenState)
+
+        if (utils.config().enable_panic) {
+            const policeState = this.device.data.alarmInfo?.state?.match(/burglar|panic/) ? 'ON' : 'OFF'
+            if (policeState === 'ON') { this.debug('Burgler alarm is triggered for '+this.device.location.name) }
+            this.mqttPublish(this.entity.police.state_topic, policeState)
+
+            const fireState = this.device.data.alarmInfo?.state?.match(/co|fire/) ? 'ON' : 'OFF'
+            if (fireState === 'ON') { this.debug('Fire alarm is triggered for '+this.device.location.name) }
+            this.mqttPublish(this.entity.fire.state_topic, fireState)
+        }
+    }
+
+    async pubishAlarmState() {
         let alarmMode
         const alarmInfo = this.device.data.alarmInfo ? this.device.data.alarmInfo : []
 
@@ -69,32 +164,9 @@ export default class SecurityPanel extends RingSocketDevice {
                     alarmMode = 'unknown'
             }
         }
+
         this.mqttPublish(this.entity.alarm.state_topic, alarmMode)
-
-        const sirenState = (this.device.data.siren && this.device.data.siren.state === 'on') ? 'ON' : 'OFF'
-        this.mqttPublish(this.entity.siren.state_topic, sirenState)
-
-        if (utils.config().enable_panic) {
-            let policeState = 'OFF'
-            let fireState = 'OFF'
-            const alarmState = this.device.data.alarmInfo ? this.device.data.alarmInfo.state : ''
-            switch (alarmState) {
-                case 'burglar-alarm':
-                case 'user-verified-burglar-alarm':
-                case 'burglar-accelerated-alarm':
-                    policeState = 'ON'
-                    this.debug('Burgler alarm is active for '+this.device.location.name)
-                case 'fire-alarm':
-                case 'co-alarm':
-                case 'user-verified-co-or-fire-alarm':
-                case 'fire-accelerated-alarm':
-                    fireState = 'ON'
-                    this.debug('Fire alarm is active for '+this.device.location.name)
-            }
-            this.mqttPublish(this.entity.police.state_topic, policeState)
-            this.mqttPublish(this.entity.fire.state_topic, fireState)
-        }
-
+        this.mqttPublish(this.entity.alarm.json_attributes_topic, JSON.stringify(this.data.attributes), 'attr')
         this.publishAttributes()
     }
     

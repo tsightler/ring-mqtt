@@ -235,6 +235,15 @@ export default class RingDevice {
         state.setDeviceSavedState(this.deviceId, stateData)
     }
 
+    async getUserInfo(userId) {
+        const response = await this.device.location.restClient.request({
+            url: `https://app.ring.com/api/v1/rs/users/summaries?locationId=${this.locationId}`,
+            method: 'POST',
+            json: [userId]
+        })
+        return (Array.isArray(response) && response.length > 0) ? response[0] : false
+    }
+
     // Set state topic online
     async online() {
         if (this.shutdown) { return } // Supress any delayed online state messages if ring-mqtt is shutting down

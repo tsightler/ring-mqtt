@@ -37,7 +37,7 @@ cleanup() {
     exit 0
 }
 
-# go2rtc does not pass stdout through from child processes so send debug loggins
+# go2rtc does not pass stdout through from child processes so send debug logs
 # via main process using MQTT messages
 logger() {
     mosquitto_pub -i "${client_id}_pub" -L "mqtt://127.0.0.1:51883/${debug_topic}" -m "${1}"

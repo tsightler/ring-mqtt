@@ -60,4 +60,33 @@ export default class RingPolledDevice extends RingDevice {
         await utils.sleep(20)
         this.monitorHeartbeat()
     }
+
+    async getDeviceHistory(options) {
+        try {
+            const response = await this.device.restClient.request({
+                method: 'GET',
+                url: `https://api.ring.com/evm/v2/history/devices/${this.device.id}${this.getSearchQueryString({
+                    capabilities: 'offline_event',
+                    ...options,
+                })}`
+            })
+            return response
+        } catch (err) {
+            this.debug(err)
+            this.debug('Failed to retrieve device event history from Ring API')
+        }
+    }
+
+    getSearchQueryString(options) {
+        const queryString = Object.entries(options)
+            .map(([key, value]) => {
+            if (value === undefined) {
+                return '';
+            }
+            return `${key}=${value}`;
+        })
+            .filter((x) => x)
+            .join('&');
+        return queryString.length ? `?${queryString}` : '';
+    }
 }

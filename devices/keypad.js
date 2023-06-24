@@ -28,21 +28,13 @@ export default class Keypad extends RingSocketDevice {
             }
         }
 
-        // Ugly, but this listens to the raw data updates for all devices and
-        // picks out proximity detection events for this keypad.
+        // Listen to raw data updates for all devices and pick out
+        // proximity detection events for this keypad.
         this.device.location.onDataUpdate.subscribe((message) => {
-            if (message.datatype === 'DeviceInfoDocType' && 
-                Boolean(message.body) && 
-                Array.isArray(message.body) &&
-                message.body[0]?.general?.v2?.zid === this.deviceId &&
-                message.body[0]?.impulse?.v1 &&
-                Boolean(message.body[0].impulse.v1) &&
-                Array.isArray(message.body[0].impulse.v1)
-            ) {
-                if (message.body[0].impulse.v1[0].impulseType === 'keypad.motion') {
-                    this.processMotion()
-                }
-            }
+            if (message.datatype === 'DeviceInfoDocType' &&
+                message.body?.[0]?.general?.v2?.zid === this.deviceId &&
+                message.body[0].impulse?.v1?.[0]?.impulseType === 'keypad.motion'
+            ) { this.processMotion() }
         })
     }
 

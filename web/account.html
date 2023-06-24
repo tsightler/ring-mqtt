@@ -52,7 +52,8 @@ input[type=submit]:hover {
 </head>
 <body>
 
-<h3>Acquire Refresh Token</h3>
+<h2>Acquire Refresh Token</h2>
+<h3 id="systemId"></h3>
 Please enter your Ring account information below and the 2FA code on the following page to generate the refresh token required for this application to access the Ring API.<br>
 <p style="background-color:red" id="errormsg"></p>
 <h3>Login</h3>
@@ -68,21 +69,24 @@ Please enter your Ring account information below and the 2FA code on the followi
   </form>
 </div>
 <script>
-function showPassword() {
+  function showPassword() {
     var x = document.getElementById("password");
     if (x.type === "password") {
         x.type = "text";
     } else {
         x.type = "password";
     }
-}
-function getCookie(key) {
+  }
+  function getCookie(key) {
     var keyValue = document.cookie.match('(^|;) ?' + key + '=([^;]*)(;|$)');
     return keyValue ? keyValue[2] : null;
-}
-if (getCookie('error')) {
+  }
+  if (getCookie('error')) {
     document.getElementById("errormsg").innerHTML = getCookie('error')
-}
+  }
+  if (getCookie('systemId')) {
+    document.getElementById("systemId").innerHTML = `Device Name: <span style='color:chartreuse'> ${getCookie('systemId')}</span>`
+  }
 </script>
 </body>
 </html>

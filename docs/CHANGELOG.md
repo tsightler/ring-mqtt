@@ -1,3 +1,21 @@
+## v5.4.0
+This release is mostly to get back to stable ring-client-api version with final fixes for camera notification issues, however, managed to sneak in one highly requested feature and a few minor improvements as well.
+
+**New Features**
+- Alarm control panel now includes lastArmedBy/lastDisarmedBy attributes making it possible to determine who/what triggered an arm/disarm event.
+
+**Other Changes**
+- Device Name/System ID is now displayed in the Web UI and CLI authentication tools providing easier identification of the corresponding device in the Authorized Devices section of the Ring Control Center.
+- Camera event management has been completely reworked using a new event management API.  Primary goal was to avoid API throttling issues that could occur with large numbers of cameras (>50% reduction in API calls, even more during startup).
+
+**Bug Fixed**
+- Fixed an issue where motion snapshots might return an cached snapshot instead
+- Fixed an issue with panic switches where a burglar alarm could trigger both police and fire panic states.
+
+**Dependency Updates**
+- ring-client-api v11.8.0
+- bashio v0.15.0
+
 ## v5.3.0
 The primary goal of this update is to address issues with camera/doorbell/intercom notifications that have impacted many users due to changes in the Ring API for push notifications.  This version uses a new upstream ring-client-api that persist the FCM token and hardware ID across restarts which will hopefully address these issues, however, it's important to note that addressing this will likely require users to re-authenticate following the instructions below:
 
@@ -16,7 +34,6 @@ If you have cameras/doorbells/intercoms and are not receiving notifications you 
 6. Review the addon logs and it should show that the existing token is invalid and you need to use the web UI to create a new one
 7. Use the addon web UI to authenticate with Ring and re-establish the connection with the Ring API
 8. Notifications should now be working!
-
 
 **New Features**
 - Added support to enable/disable motion detection for cameras
