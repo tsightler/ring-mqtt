@@ -17,7 +17,7 @@ export default class SecurityPanel extends RingSocketDevice {
                 lastDisarmedTime: ''
             }
         }
-        
+
         this.entity = {
             ...this.entity,
             alarm: {
@@ -31,12 +31,12 @@ export default class SecurityPanel extends RingSocketDevice {
                 name: `${this.device.location.name} Siren`
             },
             ...utils.config().enable_panic ? {
-                police: { 
+                police: {
                     component: 'switch',
                     name: `${this.device.location.name} Panic - Police`,
                     icon: 'mdi:police-badge'
                 },
-                fire: { 
+                fire: {
                     component: 'switch',
                     name: `${this.device.location.name} Panic - Fire`,
                     icon: 'mdi:fire'
@@ -53,17 +53,17 @@ export default class SecurityPanel extends RingSocketDevice {
                 message.body?.[0]?.general?.v2?.zid === this.deviceId &&
                 message.body[0].impulse?.v1?.[0] &&
                 message.body[0].impulse.v1.filter(i => i.data?.commandType === 'security-panel.switch-mode').length > 0
-            ) { 
+            ) {
                 const impulse = message.body[0].impulse.v1
                 if (message.context) {
                     if (impulse.filter(i => i.data?.data?.mode.match(/some|all/)).length > 0) {
-                        await this.updateAlarmAttributes(message.context, 'Armed') 
+                        await this.updateAlarmAttributes(message.context, 'Armed')
                     } else if (impulse.filter(i => i.data?.data?.mode === 'none').length > 0) {
                         await this.updateAlarmAttributes(message.context, 'Disarmed')
                     }
                 }
-                this.pubishAlarmState()
-             }
+                this.publishAlarmState()
+            }
         })
     }
 
@@ -119,7 +119,7 @@ export default class SecurityPanel extends RingSocketDevice {
         if (isPublish) {
             // Eventually remove this but for now this attempts to delete the old light component based volume control from Home Assistant
             this.mqttPublish(`homeassistant/switch/${this.locationId}/${this.deviceId}_bypass/config`, '', false)
-            this.pubishAlarmState()
+            this.publishAlarmState()
         }
 
         const sirenState = (this.device.data.siren?.state === 'on') ? 'ON' : 'OFF'
@@ -127,35 +127,41 @@ export default class SecurityPanel extends RingSocketDevice {
 
         if (utils.config().enable_panic) {
             const policeState = this.device.data.alarmInfo?.state?.match(/burglar|panic/) ? 'ON' : 'OFF'
-            if (policeState === 'ON') { this.debug('Burgler alarm is triggered for '+this.device.location.name) }
+            if (policeState === 'ON') { this.debug('Burglar alarm is triggered for ' + this.device.location.name) }
             this.mqttPublish(this.entity.police.state_topic, policeState)
 
             const fireState = this.device.data.alarmInfo?.state?.match(/co|fire/) ? 'ON' : 'OFF'
-            if (fireState === 'ON') { this.debug('Fire alarm is triggered for '+this.device.location.name) }
+            if (fireState === 'ON') { this.debug('Fire alarm is triggered for ' + this.device.location.name) }
             this.mqttPublish(this.entity.fire.state_topic, fireState)
         }
     }
 
-    async pubishAlarmState() {
+    async publishAlarmState() {
         let alarmMode
         const alarmInfo = this.device.data.alarmInfo ? this.device.data.alarmInfo : []
 
         // If alarm is active report triggered or, if entry-delay, pending
-        if (allAlarmStates.includes(alarmInfo.state))  {
+        if (allAlarmStates.includes(alarmInfo.state)) {
             alarmMode = alarmInfo.state === 'entry-delay' ? 'pending' : 'triggered'
         } else {
-            switch(this.device.data.mode) {
+            const exitDelayMs = this.device.data.transitionDelayEndTimestamp - Date.now();
+
+            switch (this.device.data.mode) {
                 case 'none':
                     alarmMode = 'disarmed'
                     break;
                 case 'some':
-                    alarmMode = 'armed_home'
+                    if (exitDelayMs > 0) {
+                        alarmMode = 'arming';
+                        this.waitForExitDelay(exitDelayMs, 'armed_home');
+                    } else {
+                        alarmMode = 'armed_home'
+                    }
                     break;
                 case 'all':
-                    const exitDelayMs = this.device.data.transitionDelayEndTimestamp - Date.now()
                     if (exitDelayMs > 0) {
-                        alarmMode = 'arming'
-                        this.waitForExitDelay(exitDelayMs)
+                        alarmMode = 'arming';
+                        this.waitForExitDelay(exitDelayMs, 'armed_away');
                     } else {
                         alarmMode = 'armed_away'
                     }
@@ -169,15 +175,16 @@ export default class SecurityPanel extends RingSocketDevice {
         this.mqttPublish(this.entity.alarm.json_attributes_topic, JSON.stringify(this.data.attributes), 'attr')
         this.publishAttributes()
     }
-    
-    async waitForExitDelay(exitDelayMs) {
+
+    async waitForExitDelay(exitDelayMs, delayedState) {
         await utils.msleep(exitDelayMs)
-        if (this.device.data.mode === 'all') {
-            exitDelayMs = this.device.data.transitionDelayEndTimestamp - Date.now()
-            if (exitDelayMs <= 0) {
-                // Publish device sensor state
-                this.mqttPublish(this.entity.alarm.state_topic, 'armed_away')
-            }
+
+        const isInExpectedState = (this.device.data.mode === 'all' && delayedState == 'armed_away') || (this.device.data.mode === 'some' && delayedState === "armed_home");
+        const isDelayCompleted = !this.device.data.transitionDelayEndTimestamp || (this.device.data.transitionDelayEndTimestamp - Date.now() <= 0); //timestamp could be undefined which would break the <= comparison
+
+        if (isInExpectedState && isDelayCompleted) {
+            // Publish device sensor state
+            this.mqttPublish(this.entity.alarm.state_topic, delayedState)
         }
     }
 
@@ -220,15 +227,15 @@ export default class SecurityPanel extends RingSocketDevice {
             if (message.toLowerCase() !== 'disarm') {
                 // During arming, check for sensors that require bypass
                 // Get all devices that allow bypass 
-                const bypassDevices = (await this.device.location.getDevices()).filter(device => 
+                const bypassDevices = (await this.device.location.getDevices()).filter(device =>
                     device.deviceType === RingDeviceType.ContactSensor ||
                     device.deviceType === RingDeviceType.RetrofitZone ||
                     device.deviceType === RingDeviceType.MotionSensor ||
                     device.deviceType === RingDeviceType.TiltSensor ||
                     device.deviceType === RingDeviceType.GlassbreakSensor
                 ),
-                savedStates = state.getAllSavedStates(),
-                bypassDeviceNames = []
+                    savedStates = state.getAllSavedStates(),
+                    bypassDeviceNames = []
 
                 // Loop through all bypass eligible devices and bypass based on settings/state
                 for (const device of bypassDevices) {
@@ -263,7 +270,7 @@ export default class SecurityPanel extends RingSocketDevice {
     async trySetAlarmMode(message, bypassDeviceIds) {
         let alarmTargetMode
         this.debug(`Set alarm mode: ${message}`)
-        switch(message.toLowerCase()) {
+        switch (message.toLowerCase()) {
             case 'disarm':
                 this.device.location.disarm().catch(err => { this.debug(err) })
                 alarmTargetMode = 'none'
@@ -293,7 +300,7 @@ export default class SecurityPanel extends RingSocketDevice {
     }
 
     async setSirenMode(message) {
-        switch(message.toLowerCase()) {
+        switch (message.toLowerCase()) {
             case 'on':
                 this.debug(`Activating siren for ${this.device.location.name}`)
                 this.device.location.soundSiren().catch(err => { this.debug(err) })
@@ -309,7 +316,7 @@ export default class SecurityPanel extends RingSocketDevice {
     }
 
     async setPoliceMode(message) {
-        switch(message.toLowerCase()) {
+        switch (message.toLowerCase()) {
             case 'on':
                 this.debug(`Activating burglar alarm for ${this.device.location.name}`)
                 this.device.location.triggerBurglarAlarm().catch(err => { this.debug(err) })
@@ -325,7 +332,7 @@ export default class SecurityPanel extends RingSocketDevice {
     }
 
     async setFireMode(message) {
-        switch(message.toLowerCase()) {
+        switch (message.toLowerCase()) {
             case 'on':
                 this.debug(`Activating fire alarm for ${this.device.location.name}`)
                 this.device.location.triggerFireAlarm().catch(err => { this.debug(err) })
