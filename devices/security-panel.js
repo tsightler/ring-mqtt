@@ -62,7 +62,7 @@ export default class SecurityPanel extends RingSocketDevice {
                         await this.updateAlarmAttributes(message.context, 'Disarmed')
                     }
                 }
-                this.pubishAlarmState()
+                this.publishAlarmState()
              }
         })
     }
@@ -119,7 +119,7 @@ export default class SecurityPanel extends RingSocketDevice {
         if (isPublish) {
             // Eventually remove this but for now this attempts to delete the old light component based volume control from Home Assistant
             this.mqttPublish(`homeassistant/switch/${this.locationId}/${this.deviceId}_bypass/config`, '', false)
-            this.pubishAlarmState()
+            this.publishAlarmState()
         }
 
         const sirenState = (this.device.data.siren?.state === 'on') ? 'ON' : 'OFF'
@@ -127,16 +127,16 @@ export default class SecurityPanel extends RingSocketDevice {
 
         if (utils.config().enable_panic) {
             const policeState = this.device.data.alarmInfo?.state?.match(/burglar|panic/) ? 'ON' : 'OFF'
-            if (policeState === 'ON') { this.debug('Burgler alarm is triggered for '+this.device.location.name) }
+            if (policeState === 'ON') { this.debug('Burglar alarm is triggered for ' + this.device.location.name) }
             this.mqttPublish(this.entity.police.state_topic, policeState)
 
             const fireState = this.device.data.alarmInfo?.state?.match(/co|fire/) ? 'ON' : 'OFF'
-            if (fireState === 'ON') { this.debug('Fire alarm is triggered for '+this.device.location.name) }
+            if (fireState === 'ON') { this.debug('Fire alarm is triggered for ' + this.device.location.name) }
             this.mqttPublish(this.entity.fire.state_topic, fireState)
         }
     }
 
-    async pubishAlarmState() {
+    async publishAlarmState() {
         let alarmMode
         const alarmInfo = this.device.data.alarmInfo ? this.device.data.alarmInfo : []
 
