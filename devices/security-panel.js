@@ -49,25 +49,24 @@ export default class SecurityPanel extends RingSocketDevice {
         // Listen to raw data updates for all devices and pick out
         // arm/disarm events for this security panel
         this.device.location.onDataUpdate.subscribe(async (message) => {
-            if (this.isOnline()) {
-                if (message.datatype === 'DeviceInfoDocType' &&
-                    message.body?.[0]?.general?.v2?.zid === this.deviceId &&
-                    message.body[0].impulse?.v1?.[0] &&
-                    message.body[0].impulse.v1.filter(i => 
-                        i.impulseType.match('security-panel.mode-switched.') ||
-                        i.impulseType.match('security-panel.exit-delay')
-                    ).length > 0
-                ) { 
-                    const impulse = message.body[0].impulse.v1
-                    if (message.context) {
-                        if (impulse.filter(i => i.impulseType.match(/some|all|exit-delay/)).length > 0) {
-                            await this.updateAlarmAttributes(message.context, 'Armed') 
-                        } else if (impulse.filter(i => i.impulseType.includes('none')).length > 0) {
-                            await this.updateAlarmAttributes(message.context, 'Disarmed')
-                        }
+            if (this.isOnline() && 
+                message.datatype === 'DeviceInfoDocType' &&
+                message.body?.[0]?.general?.v2?.zid === this.deviceId &&
+                message.body[0].impulse?.v1?.[0] &&
+                message.body[0].impulse.v1.filter(i => 
+                    i.impulseType.match('security-panel.mode-switched.') ||
+                    i.impulseType.match('security-panel.exit-delay')
+                ).length > 0
+            ) { 
+                const impulse = message.body[0].impulse.v1
+                if (message.context) {
+                    if (impulse.filter(i => i.impulseType.match(/some|all|exit-delay/)).length > 0) {
+                        await this.updateAlarmAttributes(message.context, 'Armed') 
+                    } else if (impulse.filter(i => i.impulseType.includes('none')).length > 0) {
+                        await this.updateAlarmAttributes(message.context, 'Disarmed')
                     }
-                    this.publishAlarmState()
                 }
+                this.publishAlarmState()
             }
         })
     }
