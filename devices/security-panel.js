@@ -120,7 +120,6 @@ export default class SecurityPanel extends RingSocketDevice {
 
     publishState(data) {
         const isPublish = data === undefined ? true : false
-        const alarmStateDate = this.device.data.alarmInfo ? this.device.data.alarmInfo : []
 
         if (allAlarmStates.includes(this.device.data.alarmInfo?.state) || isPublish) {
             this.publishAlarmState()
