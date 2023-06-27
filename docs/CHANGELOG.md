@@ -1,3 +1,7 @@
+## v5.4.1
+**Bugs Fixed**
+- Fix an issue where alarm state would not update if alarm is armed/disarmed with keypad.
+
 ## v5.4.0
 This release is mostly to get back to stable ring-client-api version with final fixes for camera notification issues, however, managed to sneak in one highly requested feature and a few minor improvements as well.
 
@@ -8,7 +12,7 @@ This release is mostly to get back to stable ring-client-api version with final 
 - Device Name/System ID is now displayed in the Web UI and CLI authentication tools providing easier identification of the corresponding device in the Authorized Devices section of the Ring Control Center.
 - Camera event management has been completely reworked using a new event management API.  Primary goal was to avoid API throttling issues that could occur with large numbers of cameras (>50% reduction in API calls, even more during startup).
 
-**Bug Fixed**
+**Bugs Fixed**
 - Fixed an issue where motion snapshots might return an cached snapshot instead
 - Fixed an issue with panic switches where a burglar alarm could trigger both police and fire panic states.
 

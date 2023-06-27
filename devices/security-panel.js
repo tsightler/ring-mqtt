@@ -52,13 +52,16 @@ export default class SecurityPanel extends RingSocketDevice {
             if (message.datatype === 'DeviceInfoDocType' &&
                 message.body?.[0]?.general?.v2?.zid === this.deviceId &&
                 message.body[0].impulse?.v1?.[0] &&
-                message.body[0].impulse.v1.filter(i => i.data?.commandType === 'security-panel.switch-mode').length > 0
+                message.body[0].impulse.v1.filter(i => 
+                    i.impulseType.match('security-panel.mode-switched.') ||
+                    i.impulseType.match('security-panel.exit-delay')
+                ).length > 0
             ) { 
                 const impulse = message.body[0].impulse.v1
                 if (message.context) {
-                    if (impulse.filter(i => i.data?.data?.mode.match(/some|all/)).length > 0) {
+                    if (impulse.filter(i => i.impulseType.match(/some|all|exit-delay/)).length > 0) {
                         await this.updateAlarmAttributes(message.context, 'Armed') 
-                    } else if (impulse.filter(i => i.data?.data?.mode === 'none').length > 0) {
+                    } else if (impulse.filter(i => i.impulseType.includes('none')).length > 0) {
                         await this.updateAlarmAttributes(message.context, 'Disarmed')
                     }
                 }
@@ -115,10 +118,9 @@ export default class SecurityPanel extends RingSocketDevice {
 
     publishState(data) {
         const isPublish = data === undefined ? true : false
+        const alarmStateDate = this.device.data.alarmInfo ? this.device.data.alarmInfo : []
 
-        if (isPublish) {
-            // Eventually remove this but for now this attempts to delete the old light component based volume control from Home Assistant
-            this.mqttPublish(`homeassistant/switch/${this.locationId}/${this.deviceId}_bypass/config`, '', false)
+        if (allAlarmStates.includes(this.device.data.alarmInfo?.state) || isPublish) {
             this.publishAlarmState()
         }
 
@@ -137,35 +139,34 @@ export default class SecurityPanel extends RingSocketDevice {
     }
 
     async publishAlarmState() {
-        let alarmMode
-        const alarmInfo = this.device.data.alarmInfo ? this.device.data.alarmInfo : []
+        let alarmState
 
         // If alarm is active report triggered or, if entry-delay, pending
-        if (allAlarmStates.includes(alarmInfo.state))  {
-            alarmMode = alarmInfo.state === 'entry-delay' ? 'pending' : 'triggered'
+        if (allAlarmStates.includes(this.device.data.alarmInfo?.state))  {
+            alarmState = this.device.data.alarmInfo.state === 'entry-delay' ? 'pending' : 'triggered'
         } else {
             switch(this.device.data.mode) {
                 case 'none':
-                    alarmMode = 'disarmed'
+                    alarmState = 'disarmed'
                     break;
                 case 'some':
-                    alarmMode = 'armed_home'
+                    alarmState = 'armed_home'
                     break;
                 case 'all':
                     const exitDelayMs = this.device.data.transitionDelayEndTimestamp - Date.now()
                     if (exitDelayMs > 0) {
-                        alarmMode = 'arming'
+                        alarmState = 'arming'
                         this.waitForExitDelay(exitDelayMs)
                     } else {
-                        alarmMode = 'armed_away'
+                        alarmState = 'armed_away'
                     }
                     break;
                 default:
-                    alarmMode = 'unknown'
+                    alarmState = 'unknown'
             }
         }
 
-        this.mqttPublish(this.entity.alarm.state_topic, alarmMode)
+        this.mqttPublish(this.entity.alarm.state_topic, alarmState)
         this.mqttPublish(this.entity.alarm.json_attributes_topic, JSON.stringify(this.data.attributes), 'attr')
         this.publishAttributes()
     }
