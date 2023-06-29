@@ -301,7 +301,7 @@ export default class Camera extends RingPolledDevice {
             let recordingUrl = false
             const recordingEvent = this.data.motion.events.find(e => e.recording_status === 'ready')
             if (recordingEvent && Array.isArray(recordingEvent.visualizations?.cloud_media_visualization?.media)) {
-                recordingUrl = (recordingEvent.visualizations.cloud_media_visualization.media.find(e => e.file_type === 'VIDEO')).url
+                recordingUrl = (recordingEvent.visualizations.cloud_media_visualization.media.find(e => e.file_type === 'VIDEO'))?.url
             }
 
             if (!recordingUrl) {
@@ -983,7 +983,7 @@ export default class Camera extends RingPolledDevice {
             recordingUrl = await this.getTranscodedUrl(event)
         } else {
             if (event && Array.isArray(event.visualizations?.cloud_media_visualization?.media)) {
-                recordingUrl = (event.visualizations.cloud_media_visualization.media.find(e => e.file_type === 'VIDEO')).url
+                recordingUrl = (event.visualizations.cloud_media_visualization.media.find(e => e.file_type === 'VIDEO'))?.url
             }
         }
         return recordingUrl
