@@ -574,7 +574,10 @@ export default class Camera extends RingPolledDevice {
 
     // Publish device data to info topic
     async publishAttributes() {
-        const attributes = {}
+        const attributes = {
+            stream_Source: this.data.stream.live.streamSource,
+            still_Image_URL: this.data.stream.live.stillImageURL
+        }
         const deviceHealth = await this.device.getHealth()
 
         if (this.device.batteryLevel || this.hasBattery1 || this.hasBattery2) {
@@ -608,8 +611,6 @@ export default class Camera extends RingPolledDevice {
                 attributes.wirelessNetwork = deviceHealth.wifi_name
                 attributes.wirelessSignal = deviceHealth.latest_signal_strength
             }
-            attributes.stream_Source = this.data.stream.live.streamSource
-            attributes.still_Image_URL = this.data.stream.live.stillImageURL
         }
 
         if (Object.keys(attributes).length > 0) {
@@ -716,7 +717,7 @@ export default class Camera extends RingPolledDevice {
                         newSnapshot = await this.device.getNextSnapshot({ uuid: image_uuid })
                     } else if (!this.device.operatingOnBattery) {
                         this.debug('Requesting an updated motion snapshot')
-                        newSnapshot = await this.device.getSnapshot()
+                        newSnapshot = await this.device.getNextSnapshot()
                     } else {
                         this.debug('Motion snapshot needed but notification did not contain image UUID and battery cameras are unable to snapshot while recording')
                     }            
