@@ -39,7 +39,7 @@ parentPort.on("message", async(data) => {
 
             parentPort.postMessage('Live stream transcoding process is starting')
             await liveStream.startTranscoding({
-                // The native AVC video stream is copied to the RTSP server unmodified while the audio 
+                // The native AVC video stream is copied to the RTSP server unmodified while the audio
                 // stream is converted into two output streams using both AAC and Opus codecs.  This
                 // provides a stream with wide compatibility across various media player technologies.
                 audio: [
@@ -86,4 +86,4 @@ parentPort.on("message", async(data) => {
             liveStream = false
         }
     }
-})  
+})

@@ -29,7 +29,7 @@ export default class Fan extends RingSocketDevice {
         } else {
             this.debug(`ERROR - Could not determine fan preset value.  Raw percent value: ${fanPercent}%`)
         }
-        
+
         // Publish device state
         // targetFanPercent is a small hack to work around Home Assistant UI behavior
         if (this.data.targetFanPercent && this.data.targetFanPercent !== fanPercent) {
@@ -44,7 +44,7 @@ export default class Fan extends RingSocketDevice {
         // Publish device attributes (batterylevel, tamper status)
         this.publishAttributes()
     }
-    
+
     // Process messages from MQTT command topic
     processCommand(command, message) {
         switch (command) {
@@ -92,7 +92,7 @@ export default class Fan extends RingSocketDevice {
             return
         } else if (setFanPercent < 10) {
             this.debug(`Received fan speed of ${setFanPercent}% which is < 10%, overriding to 10%`)
-            setFanPercent = 10 
+            setFanPercent = 10
         } else if (setFanPercent > 100) {
             this.debug(`Received fan speed of ${setFanPercent}% which is > 100%, overriding to 100%`)
             setFanPercent = 100

@@ -5,7 +5,7 @@ export default class Switch extends RingSocketDevice {
         super(deviceInfo, 'alarm')
         this.deviceData.mdl = (this.device.data.categoryId === 2) ? 'Light' : 'Switch'
         this.component = (this.device.data.categoryId === 2) ? 'light' : 'switch'
-        
+
         this.entity[this.component] = {
             component: this.component,
             isLegacyEntity: true  // Legacy compatibility

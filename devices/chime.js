@@ -89,7 +89,7 @@ export default class Chime extends RingPolledDevice {
 
         // Polled states are published only if value changes or it's a device publish
         const volumeState = this.device.data.settings.volume
-        if (volumeState !== this.data.volume || isPublish) { 
+        if (volumeState !== this.data.volume || isPublish) {
             this.mqttPublish(this.entity.volume.state_topic, volumeState.toString())
             this.data.volume = volumeState
         }
@@ -108,7 +108,7 @@ export default class Chime extends RingPolledDevice {
 
         if (this.entity.hasOwnProperty('nightlight_enabled')) {
             const nightlightEnabled = this.device.data.settings.night_light_settings.light_sensor_enabled ? 'ON' : 'OFF'
-            const nightlightState = this.device.data.night_light_state.toUpperCase()    
+            const nightlightState = this.device.data.night_light_state.toUpperCase()
             if ((nightlightEnabled !== this.data.nightlight.enabled && Date.now()/1000 - this.data.nightlight.set_time > 30) || isPublish) {
                 this.data.nightlight.enabled = nightlightEnabled
                 this.mqttPublish(this.entity.nightlight_enabled.state_topic, this.data.nightlight.enabled)
@@ -162,7 +162,7 @@ export default class Chime extends RingPolledDevice {
                 break;
             case 'snooze_minutes/command':
                 this.setSnoozeMinutes(message)
-                break;    
+                break;
             case 'volume/command':
                 this.setVolumeLevel(message)
                 break;
@@ -252,7 +252,7 @@ export default class Chime extends RingPolledDevice {
             case 'OFF':
                 this.data.nightlight.set_time = Math.floor(Date.now()/1000)
                 await this.setDeviceSettings({
-                    "night_light_settings": { 
+                    "night_light_settings": {
                         "light_sensor_enabled": command === 'ON' ? true : false
                     }
                 })

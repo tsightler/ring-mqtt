@@ -16,7 +16,7 @@ export default class FloodFreezeSensor extends RingSocketDevice {
             unique_id: `${this.deviceId}_cold`  // Legacy compatibility
         }
     }
-        
+
     publishState() {
         const floodState = this.device.data.flood && this.device.data.flood.faulted ? 'ON' : 'OFF'
         const freezeState = this.device.data.freeze && this.device.data.freeze.faulted ? 'ON' : 'OFF'

@@ -1,5 +1,5 @@
 {
-    "mqtt_url": "mqtt://localhost:1883",
+    "mqtt_url": "mqtt://192.168.1.57:1883",
     "mqtt_options": "",
     "livestream_user": "",
     "livestream_pass": "",

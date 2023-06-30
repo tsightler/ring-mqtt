@@ -28,7 +28,7 @@ export default class Camera extends RingPolledDevice {
                 events: events.filter(event => event.event_type === 'motion'),
                 latestEventId: ''
             },
-            ...this.device.isDoorbot ? { 
+            ...this.device.isDoorbot ? {
                 ding: {
                     active_ding: false,
                     duration: savedState?.ding?.duration ? savedState.ding.duration : 180,
@@ -75,7 +75,7 @@ export default class Camera extends RingPolledDevice {
                     session: false,
                     publishedStatus: ''
                 },
-                keepalive:{ 
+                keepalive:{
                     active: false,
                     session: false,
                     expires: 0
@@ -104,7 +104,7 @@ export default class Camera extends RingPolledDevice {
                 }
             } : {}
         }
-      
+
         this.entity = {
             ...this.entity,
             motion: {
@@ -127,7 +127,7 @@ export default class Camera extends RingPolledDevice {
                 component: 'select',
                 options: [
                     ...this.device.isDoorbot
-                        ? [ 'Ding 1', 'Ding 2', 'Ding 3', 'Ding 4', 'Ding 5', 
+                        ? [ 'Ding 1', 'Ding 2', 'Ding 3', 'Ding 4', 'Ding 5',
                             'Ding 1 (Transcoded)', 'Ding 2 (Transcoded)', 'Ding 3 (Transcoded)', 'Ding 4 (Transcoded)', 'Ding 5 (Transcoded)' ]
                         : [],
                     'Motion 1', 'Motion 2', 'Motion 3', 'Motion 4', 'Motion 5',
@@ -418,7 +418,7 @@ export default class Camera extends RingPolledDevice {
             if (this.entity.event_select) {
                 this.publishEventSelectState(isPublish)
             }
- 
+
             this.publishDingStates()
             this.publishDingDurationState(isPublish)
             this.publishSnapshotMode()
@@ -437,8 +437,8 @@ export default class Camera extends RingPolledDevice {
         // Check for subscription to ding and motion events and attempt to resubscribe
         if (this.device.isDoorbot && !this.device.data.subscribed === true) {
             this.debug('Camera lost subscription to ding events, attempting to resubscribe...')
-            this.device.subscribeToDingEvents().catch(e => { 
-                this.debug('Failed to resubscribe camera to ding events. Will retry in 60 seconds.') 
+            this.device.subscribeToDingEvents().catch(e => {
+                this.debug('Failed to resubscribe camera to ding events. Will retry in 60 seconds.')
                 this.debug(e)
             })
         }
@@ -450,7 +450,7 @@ export default class Camera extends RingPolledDevice {
             })
         }
     }
-    
+
     // Process a ding event
     async processNotification(pushData) {
         let dingKind
@@ -509,8 +509,8 @@ export default class Camera extends RingPolledDevice {
     // Publishes all current ding states for this camera
     publishDingStates() {
         this.publishDingState('motion')
-        if (this.device.isDoorbot) { 
-            this.publishDingState('ding') 
+        if (this.device.isDoorbot) {
+            this.publishDingState('ding')
         }
     }
 
@@ -586,15 +586,15 @@ export default class Camera extends RingPolledDevice {
             }
 
             // Reports the level of the currently active battery, might be null if removed so report 0% in that case
-            attributes.batteryLevel = this.device.batteryLevel && utils.isNumeric(this.device.batteryLevel) 
-                ? this.device.batteryLevel 
+            attributes.batteryLevel = this.device.batteryLevel && utils.isNumeric(this.device.batteryLevel)
+                ? this.device.batteryLevel
                 : 0
 
             // Must have at least one battery, but it might not be inserted, so report 0% in that case
-            attributes.batteryLife = this.device.data.hasOwnProperty('battery_life') && utils.isNumeric(this.device.data.battery_life) 
+            attributes.batteryLife = this.device.data.hasOwnProperty('battery_life') && utils.isNumeric(this.device.data.battery_life)
                 ? Number.parseFloat(this.device.data.battery_life)
                 : 0
-            
+
             if (this.hasBattery2) {
                 attributes.batteryLife2 = this.device.data.hasOwnProperty('battery_life_2') && utils.isNumeric(this.device.data.battery_life_2)
                     ? Number.parseFloat(this.device.data.battery_life_2)
@@ -665,7 +665,7 @@ export default class Camera extends RingPolledDevice {
             this.data.event_select.publishedState = this.data.event_select.state
             this.mqttPublish(this.entity.event_select.state_topic, this.data.event_select.state)
         }
-        const attributes = { 
+        const attributes = {
             recordingUrl: this.data.event_select.recordingUrl,
             eventId: this.data.event_select.eventId
         }
@@ -680,7 +680,7 @@ export default class Camera extends RingPolledDevice {
                 this.data[dingType].publishedDuration = this.data[dingType].duration
             }
         })
-    } 
+    }
 
     // Publish snapshot image/metadata
     publishSnapshot() {
@@ -720,10 +720,10 @@ export default class Camera extends RingPolledDevice {
                         newSnapshot = await this.device.getNextSnapshot()
                     } else {
                         this.debug('Motion snapshot needed but notification did not contain image UUID and battery cameras are unable to snapshot while recording')
-                    }            
+                    }
             }
         } catch (error) {
-            this.debug(error) 
+            this.debug(error)
             this.debug('Failed to retrieve updated snapshot')
         }
 
@@ -794,7 +794,7 @@ export default class Camera extends RingPolledDevice {
 
         try {
             if (this.data.event_select.transcoded) {
-                // Ring transcoded videos are poorly optimized for RTSP streaming so they must be re-encoded on-the-fly
+                // Ring videos transcoded for download are poorly optimized for RTSP streaming so they must be re-encoded on-the-fly
                 this.data.stream.event.session = spawn(pathToFfmpeg, [
                     '-re',
                     '-i', this.data.event_select.recordingUrl,
@@ -858,10 +858,10 @@ export default class Camera extends RingPolledDevice {
         const rtspPublishUrl = (utils.config().livestream_user && utils.config().livestream_pass)
             ? `rtsp://${utils.config().livestream_user}:${utils.config().livestream_pass}@localhost:8554/${this.deviceId}_live`
             : `rtsp://localhost:8554/${this.deviceId}_live`
-        
+
         this.debug(`Starting a keepalive stream for camera`)
 
-        // Keepalive stream is used only when the live stream is started 
+        // Keepalive stream is used only when the live stream is started
         // manually. It copies only the audio stream to null output just to
         // trigger rtsp server to start the on-demand stream and keep it running
         // when there are no other RTSP readers.
@@ -905,7 +905,7 @@ export default class Camera extends RingPolledDevice {
         try {
             const events = await(this.getRecordedEvents(eventType, eventNumber))
             if (events.length >= eventNumber) {
-                selectedEvent = events[eventNumber-1]     
+                selectedEvent = events[eventNumber-1]
                 if (selectedEvent.event_id !== this.data.event_select.eventId || this.data.event_select.transcoded !== transcoded) {
                     if (this.data.event_select.recordingUrl) {
                         this.debug(`New ${this.data.event_select.state} event detected, updating the recording URL`)
@@ -964,7 +964,7 @@ export default class Camera extends RingPolledDevice {
                         : history.items.filter(i => i.recording_status === 'ready')
                     events = [...events, ...newEvents]
                 }
-                
+
                 // Remove base64 padding characters from pagination key
                 paginationKey = history.pagination_key ? history.pagination_key.replace(/={1,2}$/, '') : false
 
@@ -1150,7 +1150,7 @@ export default class Camera extends RingPolledDevice {
             this.data.snapshot.autoInterval = false
             if (this.data.snapshot.mode === 'auto') {
                 if (this.data.snapshot.motion && this.data.snapshot.interval) {
-                    this.data.snapshot.mode = 'all'               
+                    this.data.snapshot.mode = 'all'
                 } else if (this.data.snapshot.interval) {
                     this.data.snapshot.mode = 'interval'
                 } else if (this.data.snapshot.motion) {
@@ -1159,7 +1159,7 @@ export default class Camera extends RingPolledDevice {
                     this.data.snapshot.mode = 'disabled'
                 }
                 this.updateSnapshotMode()
-                this.publishSnapshotMode()    
+                this.publishSnapshotMode()
             }
             clearInterval(this.data.snapshot.intervalTimerId)
             this.scheduleSnapshotRefresh()
@@ -1174,7 +1174,7 @@ export default class Camera extends RingPolledDevice {
         const mode = message[0].toUpperCase() + message.slice(1)
         switch(mode) {
             case 'Auto':
-                this.data.snapshot.autoInterval = true                
+                this.data.snapshot.autoInterval = true
             case 'Disabled':
             case 'Motion':
             case 'Interval':

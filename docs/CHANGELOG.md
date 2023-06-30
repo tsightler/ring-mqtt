@@ -1,3 +1,9 @@
+## v5.4.2
+**Bugs Fixed**
+- Suppress spurrious error message when user has no subscription
+- Don't make stream source and still image URL attributes dependent on successful heath check data
+- For high-power cameras request a non-cached snapshot for motion events even if no UUID (e.g. no subscription)
+
 ## v5.4.1
 **Bugs Fixed**
 - Fix alarm state not updating for various conditions (armed/disarmed with keypad, exit-delay, etc)

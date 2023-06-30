@@ -10,8 +10,8 @@ export default class RingDevice {
         this.locationId = apiType === 'socket' ? deviceInfo.device.location.locationId : deviceInfo.device.data.location_id
         this.availabilityState = 'unpublished'
         this.entity = {}
-        this.isOnline = () => { 
-            return this.availabilityState === 'online' ? true : false 
+        this.isOnline = () => {
+            return this.availabilityState === 'online' ? true : false
         }
 
         this.debug = (message, debugType) => {
@@ -54,7 +54,7 @@ export default class RingDevice {
                 : entity.component === 'camera'
                     ? `${entityTopic}/image`
                     : `${entityTopic}/state`
-            
+
             // ***** Build a Home Assistant style MQTT discovery message *****
             // Legacy versions of ring-mqtt created entity names and IDs for single function devices
             // without using any type of suffix. To maintain compatibility with older versions, entities
@@ -77,7 +77,7 @@ export default class RingDevice {
                     : entity.hasOwnProperty('isLegacyEntity') // Use legacy entity ID generation
                         ? { unique_id: `${this.deviceId}` }
                         : { unique_id: `${this.deviceId}_${entityKey}` },
-                ... entity.component === 'camera' 
+                ... entity.component === 'camera'
                     ? { topic: entityStateTopic }
                     : entity.component === 'climate'
                         ? { mode_state_topic: entityStateTopic }
@@ -97,19 +97,19 @@ export default class RingDevice {
                 ... entity.hasOwnProperty('max')
                     ? { max: entity.max } : {},
                 ... entity.hasOwnProperty('attributes')
-                    ? { json_attributes_topic: `${entityTopic}/attributes` } 
+                    ? { json_attributes_topic: `${entityTopic}/attributes` }
                     : entityKey === "info"
                         ? { json_attributes_topic: `${entityStateTopic}` } : {},
                 ... entity.hasOwnProperty('icon')
-                    ? { icon: entity.icon } 
-                    : entityKey === "info" 
+                    ? { icon: entity.icon }
+                    : entityKey === "info"
                         ? { icon: 'mdi:information-outline' } : {},
                 ... entity.component === 'alarm_control_panel' && utils.config().disarm_code
                     ? { code: utils.config().disarm_code.toString(),
                         code_arm_required: false,
                         code_disarm_required: true } : {},
                 ... entity.hasOwnProperty('brightness_scale')
-                    ? { brightness_state_topic: `${entityTopic}/brightness_state`, 
+                    ? { brightness_state_topic: `${entityTopic}/brightness_state`,
                         brightness_command_topic: `${entityTopic}/brightness_command`,
                         brightness_scale: entity.brightness_scale } : {},
                 ... entity.component === 'fan'
@@ -169,7 +169,7 @@ export default class RingDevice {
                                 this.debug(`Received invalid or null value to command topic ${command}`)
                             }
                         })
-                        
+
                         // For camera stream entities subscribe to IPC broker topics as well
                         if (entityKey === 'stream' || entityKey === 'event_stream') {
                             utils.event.emit('mqtt_ipc_subscribe', discoveryMessage[topic])

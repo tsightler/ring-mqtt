@@ -10,6 +10,7 @@ export default class SecurityPanel extends RingSocketDevice {
         this.deviceData.name = `${this.device.location.name} Alarm`
 
         this.data = {
+            mode: this.device.data.mode,
             attributes: {
                 lastArmedBy: 'Unknown',
                 lastArmedTime: '',
@@ -17,7 +18,7 @@ export default class SecurityPanel extends RingSocketDevice {
                 lastDisarmedTime: ''
             }
         }
-        
+
         this.entity = {
             ...this.entity,
             alarm: {
@@ -31,12 +32,12 @@ export default class SecurityPanel extends RingSocketDevice {
                 name: `${this.device.location.name} Siren`
             },
             ...utils.config().enable_panic ? {
-                police: { 
+                police: {
                     component: 'switch',
                     name: `${this.device.location.name} Panic - Police`,
                     icon: 'mdi:police-badge'
                 },
-                fire: { 
+                fire: {
                     component: 'switch',
                     name: `${this.device.location.name} Panic - Fire`,
                     icon: 'mdi:fire'
@@ -49,19 +50,20 @@ export default class SecurityPanel extends RingSocketDevice {
         // Listen to raw data updates for all devices and pick out
         // arm/disarm events for this security panel
         this.device.location.onDataUpdate.subscribe(async (message) => {
-            if (this.isOnline() && 
+            console.log(JSON.stringify(message, null, 4))
+            if (this.isOnline() &&
                 message.datatype === 'DeviceInfoDocType' &&
                 message.body?.[0]?.general?.v2?.zid === this.deviceId &&
                 message.body[0].impulse?.v1?.[0] &&
-                message.body[0].impulse.v1.filter(i => 
+                message.body[0].impulse.v1.filter(i =>
                     i.impulseType.match('security-panel.mode-switched.') ||
                     i.impulseType.match('security-panel.exit-delay')
                 ).length > 0
-            ) { 
+            ) {
                 const impulse = message.body[0].impulse.v1
                 if (message.context) {
                     if (impulse.filter(i => i.impulseType.match(/some|all|exit-delay/)).length > 0) {
-                        await this.updateAlarmAttributes(message.context, 'Armed') 
+                        await this.updateAlarmAttributes(message.context, 'Armed')
                     } else if (impulse.filter(i => i.impulseType.includes('none')).length > 0) {
                         await this.updateAlarmAttributes(message.context, 'Disarmed')
                     }
@@ -170,7 +172,7 @@ export default class SecurityPanel extends RingSocketDevice {
         this.mqttPublish(this.entity.alarm.json_attributes_topic, JSON.stringify(this.data.attributes), 'attr')
         this.publishAttributes()
     }
-    
+
     async waitForExitDelay(exitDelayMs) {
         await utils.msleep(exitDelayMs)
         if (this.device.data.mode === 'all') {
@@ -220,8 +222,8 @@ export default class SecurityPanel extends RingSocketDevice {
 
             if (message.toLowerCase() !== 'disarm') {
                 // During arming, check for sensors that require bypass
-                // Get all devices that allow bypass 
-                const bypassDevices = (await this.device.location.getDevices()).filter(device => 
+                // Get all devices that allow bypass
+                const bypassDevices = (await this.device.location.getDevices()).filter(device =>
                     device.deviceType === RingDeviceType.ContactSensor ||
                     device.deviceType === RingDeviceType.RetrofitZone ||
                     device.deviceType === RingDeviceType.MotionSensor ||

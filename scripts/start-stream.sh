@@ -2,7 +2,7 @@
 # Activate video stream on Ring cameras via ring-mqtt
 # Intended only for use as on-demand script for rtsp-simple-server
 # Requires mosquitto MQTT clients package to be installed
-# Uses ring-mqtt internal IPC broker for communications with main process 
+# Uses ring-mqtt internal IPC broker for communications with main process
 # Provides status updates and termintates stream on script exit
 
 # Required command line arguments
@@ -47,7 +47,7 @@ logger() {
 trap cleanup INT TERM QUIT
 
 # This loop starts mosquitto_sub with a subscription on the camera stream topic that sends all received
-# messages via file descriptor to the read process. On initial startup the script publishes the message 
+# messages via file descriptor to the read process. On initial startup the script publishes the message
 # 'ON-DEMAND' to the stream command topic which lets ring-mqtt know that an RTSP client has requested
 # the stream.  Stream state is determined via the the detailed stream state messages received via the
 # json_attributes_topic:
