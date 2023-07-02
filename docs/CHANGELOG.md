@@ -2,9 +2,9 @@
 **New Features**
 - Implement new logic for entry/exit delay.
   - Exit delay now supports both home and away modes
-  - Exit delay wil now show aborted arming immediately
-  - Alarm attributes now include "targetMode" so it's possible to know what mode alarm is attempting to enter even while exit delay is in progress, or to know what mode alarm was in when entry delay was triggered.  This allows creating different automations for both home and away arming modes that can occur during entry/exit delay.
+  - An aborted exit delay will now be reflected immediately
   - Alarm attributes now include "exitSecondsLeft" and "entrySecondsLeft" which will count down during entry/exit delay.
+  - Alarm attributes now include "targetMode" so it's possible to know what mode alarm is attempting to enter even while exit delay is in progress.  For entry delay this attribute makes it possoble to know what mode the alarm was in when the entry delay was triggered.  This allows creating different automations for entry/exit delays based on the home and away arming modes.
 
 **Bugs Fixed**
 - Suppress spurrious error message when user has no subscription
