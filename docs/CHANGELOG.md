@@ -3,7 +3,7 @@
 - Implement new logic for entry/exit delay.
   - Exit delay now supports both home and away modes
   - Exit delay wil now show aborted arming immediately
-  - Alarm attributes now include "targetMode" so it's possible to know what mode alarm is attempting to enter even while exit delay is in progress.  This allows creating different automations for both home and away arming modes that can occur during exit delay.
+  - Alarm attributes now include "targetMode" so it's possible to know what mode alarm is attempting to enter even while exit delay is in progress, or to know what mode alarm was in when entry delay was triggered.  This allows creating different automations for both home and away arming modes that can occur during entry/exit delay.
   - Alarm attributes now include "exitSecondsLeft" and "entrySecondsLeft" which will count down during entry/exit delay.
 
 **Bugs Fixed**
