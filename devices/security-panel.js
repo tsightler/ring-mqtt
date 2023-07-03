@@ -154,14 +154,11 @@ export default class SecurityPanel extends RingSocketDevice {
         switch(impulseType.split('.').pop()) {
             case 'some':
             case 'all':
-                this.data.attributes.targetState = this.ringModeToMqttState()
-                await this.updateAlarmAttributes(message, 'Armed')
-                break;
             case 'exit-delay':
-                if (this.ringModeToMqttState() === 'arming') {
-                    this.data.attributes.targetState = this.ringModeToMqttState(this.device.data.mode)
-                    await this.updateAlarmAttributes(message, 'Armed')
-                }
+                this.data.attributes.targetState = this.ringModeToMqttState() === 'arming'
+                    ? this.ringModeToMqttState(this.device.data.mode)
+                    : this.ringModeToMqttState()
+                await this.updateAlarmAttributes(message, 'Armed')
                 break;
             case 'none':
                 this.data.attributes.targetState = this.ringModeToMqttState()
@@ -180,6 +177,9 @@ export default class SecurityPanel extends RingSocketDevice {
                 this.data.attributes.exitSecondsLeft = 0
             }
 
+            // Sometimes a countdown event comes in just before the mode switch event
+            // so suppress publhsing of attribute state in this case to avoid any
+            // inconsistency since the attributes will be publsihed as part of mode switch
             if (this.data.publishedState !== this.data.attributes.targetState) {
                 this.publishAlarmAttributes()
             }
@@ -189,8 +189,8 @@ export default class SecurityPanel extends RingSocketDevice {
     publishState(data) {
         const isPublish = data === undefined ? true : false
 
-        // Publish states for events not handled by processAlarmMode and also for
-        // explicit publish requests
+        // Publish alarm states for events not handled by processAlarmMode() as well as
+        // any explicit publish requests
         if (this.ringModeToMqttState().match(/pending|triggered/) || isPublish) {
             this.publishAlarmState()
         }
@@ -221,7 +221,7 @@ export default class SecurityPanel extends RingSocketDevice {
     }
 
     publishAlarmAttributes() {
-        // If published state is not a state with a countdown timer, zero out entry/exit time
+        // If published state is not a state with a countdown timer, zero out entry/exit times
         if (!this.data.publishedState.match(/arming|pending/)) {
             this.data.attributes.entrySecondsLeft = 0
             this.data.attributes.exitSecondsLeft = 0
