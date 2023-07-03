@@ -51,7 +51,7 @@ export default class SecurityPanel extends RingSocketDevice {
         this.initAlarmAttributes()
 
         // Listen to raw data updates for all devices and pick out
-        // arm/disarm events for this security panel
+        // arm/disarm and countdown events for this security panel
         this.device.location.onDataUpdate.subscribe(async (message) => {
             if (!this.isOnline()) { return }
 
