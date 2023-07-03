@@ -10,7 +10,7 @@ export default class SecurityPanel extends RingSocketDevice {
         this.deviceData.name = `${this.device.location.name} Alarm`
 
         this.data = {
-            publishedState: this.ringModeToMqttState(this.device.data.mode),
+            publishedState: this.ringModeToMqttState(),
             attributes: {
                 entrySecondsLeft: 0,
                 exitSecondsLeft: 0,
