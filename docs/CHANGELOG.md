@@ -1,15 +1,15 @@
 ## v5.5.0
 **New Features**
-- Implement new logic for entry/exit delay.
+- Implement new logic for entry/exit delay (inspired by @amura11):
   - Exit delay now supports both home and away modes
-  - An aborted exit delay will now be reflected immediately
+  - Depends on actual events from Ring API vs previous blind wait function
   - Alarm attributes now include "exitSecondsLeft" and "entrySecondsLeft" which will count down during entry/exit delay.
   - Alarm attributes now include "targetMode" so it's possible to know what mode alarm is attempting to enter even while exit delay is in progress.  For entry delay this attribute makes it possoble to know what mode the alarm was in when the entry delay was triggered.  This allows creating different automations for entry/exit delays based on the home and away arming modes.
 
 **Bugs Fixed**
-- Suppress spurrious error message when user has no subscription
-- Don't make stream source and still image URL attributes dependent on successful heath check data
-- For high-power cameras request a non-cached snapshot for motion events even if no UUID (e.g. no subscription)
+- Suppress spurrious error message from cameras when an account has no paid subscription
+- Make stream source and still image URL attributes independent of successful heath check
+- Request non-cached snapshots for motion events on high-powered cameras even if no UUID is available (e.g. no subscription)
 
 ## v5.4.1
 **Bugs Fixed**
