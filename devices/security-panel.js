@@ -189,7 +189,8 @@ export default class SecurityPanel extends RingSocketDevice {
     publishState(data) {
         const isPublish = data === undefined ? true : false
 
-        // Publish states for events not handled by custom alarm function or if explicit publish
+        // Publish states for events not handled by processAlarmMode and also for
+        // explicit publish requests
         if (this.ringModeToMqttState().match(/pending|triggered/) || isPublish) {
             this.publishAlarmState()
         }
