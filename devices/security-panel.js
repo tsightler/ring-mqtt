@@ -149,6 +149,7 @@ export default class SecurityPanel extends RingSocketDevice {
     }
 
     async processAlarmMode(message) {
+        // Pending and triggered modes are handled by publishState()
         const { impulseType } = message.body[0].impulse.v1.find(i => i.impulseType.match(/some|all|none|exit-delay/))
         switch(impulseType.split('.').pop()) {
             case 'some':
