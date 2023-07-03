@@ -89,7 +89,6 @@ export default class SecurityPanel extends RingSocketDevice {
 
         // If mode was passed to the function use it, oterwise use currently active device mode
         mode = mode ? mode : this.device.data.mode
-
         switch (mode) {
             case 'none':
                 return 'disarmed'
