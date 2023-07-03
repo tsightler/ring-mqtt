@@ -152,27 +152,22 @@ export default class SecurityPanel extends RingSocketDevice {
 
     async processAlarmMode(message) {
         const { impulseType } = message.body[0].impulse.v1.find(i => i.impulseType.match(/some|all|none|exit-delay/))
-        const alarmState = this.ringModeToMqttState()
         switch(impulseType.split('.').pop()) {
             case 'some':
-                this.data.attributes.targetState = alarmState
-                await this.updateAlarmAttributes(message, 'Armed')
-                break;
             case 'all':
-                this.data.attributes.targetState = alarmState
+                this.data.attributes.targetState = this.ringModeToMqttState()
                 await this.updateAlarmAttributes(message, 'Armed')
                 break;
             case 'exit-delay':
-                if (alarmState === 'arming') {
+                if (this.ringModeToMqttState() === 'arming') {
                     this.data.attributes.targetState = this.ringModeToMqttState(this.device.data.mode)
                     await this.updateAlarmAttributes(message, 'Armed')
                 }
                 break;
             case 'none':
-                this.data.attributes.targetState = alarmState
+                this.data.attributes.targetState = this.ringModeToMqttState()
                 await this.updateAlarmAttributes(message, 'Disarmed')
         }
-
         this.publishAlarmState()
     }
 
@@ -205,16 +200,20 @@ export default class SecurityPanel extends RingSocketDevice {
 
         if (utils.config().enable_panic) {
             const policeState = this.device.data.alarmInfo?.state?.match(/burglar|panic/) ? 'ON' : 'OFF'
-            if (policeState === 'ON') { this.debug('Burglar alarm is triggered for ' + this.device.location.name) }
+            if (policeState === 'ON') {
+                this.debug('Burglar alarm is triggered for ' + this.device.location.name)
+            }
             this.mqttPublish(this.entity.police.state_topic, policeState)
 
             const fireState = this.device.data.alarmInfo?.state?.match(/co|fire/) ? 'ON' : 'OFF'
-            if (fireState === 'ON') { this.debug('Fire alarm is triggered for ' + this.device.location.name) }
+            if (fireState === 'ON') {
+                this.debug('Fire alarm is triggered for ' + this.device.location.name)
+            }
             this.mqttPublish(this.entity.fire.state_topic, fireState)
         }
     }
 
-    async publishAlarmState() {
+    publishAlarmState() {
         this.data.publishedState = this.ringModeToMqttState()
         this.mqttPublish(this.entity.alarm.state_topic, this.data.publishedState)
         this.publishAlarmAttributes()
