@@ -178,8 +178,7 @@ export default class SecurityPanel extends RingSocketDevice {
             }
 
             // Sometimes a countdown event comes in just before the mode switch event
-            // so suppress publhsing of attribute state in this case to avoid any
-            // inconsistency since the attributes will be publsihed as part of mode switch
+            // so suppress publish of attribute state in this case
             if (this.data.publishedState !== this.data.attributes.targetState) {
                 this.publishAlarmAttributes()
             }
