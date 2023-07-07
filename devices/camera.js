@@ -793,6 +793,7 @@ export default class Camera extends RingPolledDevice {
         this.debug(`Streaming the ${(eventNumber==1?"":eventNumber==2?"2nd ":eventNumber==3?"3rd ":eventNumber+"th ")}most recently recorded ${eventType} event`)
 
         try {
+            /*
             if (this.data.event_select.transcoded) {
                 // Ring videos transcoded for download are poorly optimized for RTSP streaming so they must be re-encoded on-the-fly
                 this.data.stream.event.session = spawn(pathToFfmpeg, [
@@ -814,6 +815,7 @@ export default class Camera extends RingPolledDevice {
                     rtspPublishUrl
                 ])
             } else {
+            */
                 this.data.stream.event.session = spawn(pathToFfmpeg, [
                     '-re',
                     '-i', this.data.event_select.recordingUrl,
@@ -828,7 +830,7 @@ export default class Camera extends RingPolledDevice {
                     '-f', 'rtsp',
                     rtspPublishUrl
                 ])
-            }
+            //}
 
             this.data.stream.event.session.on('spawn', async () => {
                 this.debug(`The recorded ${eventType} event stream has started`)
