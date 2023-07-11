@@ -7,11 +7,11 @@ ENV LANG="C.UTF-8" \
     S6_CMD_WAIT_FOR_SERVICES_MAXTIME=0 \
     S6_SERVICES_GRACETIME=10000 \
     TERM="xterm-256color"
-    
+
 COPY . /app/ring-mqtt
 RUN S6_VERSION="v3.1.5.0" && \
     BASHIO_VERSION="v0.15.0" && \
-    GO2RTC_VERSION="v1.5.0" && \
+    GO2RTC_VERSION="v1.6.0" && \
     APK_ARCH="$(apk --print-arch)" && \
     apk add --no-cache tar xz git libcrypto3 libssl3 musl-utils musl bash curl jq tzdata nodejs npm mosquitto-clients && \
     curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/${S6_VERSION}/s6-overlay-noarch.tar.xz" | tar -Jxpf - -C / && \
@@ -29,7 +29,7 @@ RUN S6_VERSION="v3.1.5.0" && \
     cp -a /app/ring-mqtt/init/s6/* /etc/. && \
     chmod +x /etc/cont-init.d/*.sh && \
     chmod +x /etc/services.d/ring-mqtt/* && \
-    rm -Rf /app/ring-mqtt/init && \ 
+    rm -Rf /app/ring-mqtt/init && \
     case "${APK_ARCH}" in \
         x86_64) \
             GO2RTC_ARCH="amd64";; \
