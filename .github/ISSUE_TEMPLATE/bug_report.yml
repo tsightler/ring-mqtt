@@ -17,7 +17,7 @@ body:
         timely manner (at least every few days).  Issues that receive no followup responses will be
         subject to closure after 72 hours.
         
-        Please include the information requested in the fields below completely or the issue will
+        Please include the information requested in the fields below completely as possible or the issue will
         likely be closed immediately.
   - type: input
     attributes:
