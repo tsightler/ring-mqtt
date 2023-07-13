@@ -16,6 +16,7 @@ parentPort.on("message", async(data) => {
                 name: deviceName,
                 id: doorbotId
             }
+
             const streamConnection = (streamData.sessionId)
                 ? new WebrtcConnection(streamData.sessionId, cameraData)
                 : new RingEdgeConnection(streamData.authToken, cameraData)
@@ -50,7 +51,11 @@ parentPort.on("message", async(data) => {
                     '-c:a:1', 'copy',
                 ],
                 video: [
-                    '-c:v', 'copy',
+                    '-c:v', 'libx264',
+                    '-g', '20',
+                    '-keyint_min', '10',
+                    '-crf', '18',
+                    '-preset', 'ultrafast',
                 ],
                 output: [
                     '-flags', '+global_header',
