@@ -54,7 +54,7 @@ parentPort.on("message", async(data) => {
                     '-c:v', 'libx264',
                     '-g', '20',
                     '-keyint_min', '10',
-                    '-crf', '18',
+                    '-crf', '23',
                     '-preset', 'ultrafast',
                 ],
                 output: [
