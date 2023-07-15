@@ -1218,10 +1218,6 @@ export default class Camera extends RingPolledDevice {
                         this.debug('Stopping the keepalive stream')
                         this.data.stream.keepalive.session.kill()
                     } else if (this.data.stream.live.session) {
-                        const streamData = {
-                            deviceId: this.deviceId,
-                            deviceName: this.device.name
-                        }
                         this.data.stream.live.worker.postMessage({ command: 'stop' })
                     } else {
                         this.data.stream.live.status = 'inactive'
