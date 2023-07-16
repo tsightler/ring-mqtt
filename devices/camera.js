@@ -180,7 +180,7 @@ export default class Camera extends RingPolledDevice {
             motion_detection: {
                 component: 'switch'
             },
-            ...!this.device.operatingOnBattery ? {
+            ...!this.device.operatingOnBattery && this.device.data.settings.hasOwnProperty('motion_announcement') ? {
                 motion_warning: {
                     component: 'switch'
                 }
@@ -584,7 +584,11 @@ export default class Camera extends RingPolledDevice {
         if (this.device.data.settings.motion_detection_enabled !== this.data.motion.detection_enabled || isPublish) {
             this.publishMotionAttributes()
             this.mqttPublish(this.entity.motion_detection.state_topic, this.device.data?.settings?.motion_detection_enabled ? 'ON' : 'OFF')
-            this.mqttPublish(this.entity.motion_warning.state_topic, this.device.data?.settings?.motion_announcement ? 'ON' : 'OFF')
+        }
+
+        if (this.entity.hasOwnProperty('motion_warning') && (this.device.data.settings.motion_announcement !== this.data.motion.warning_enabled || isPublish)) {
+            this.mqttPublish(this.entity.motion_warning.state_topic, this.device.data.settings.motion_announcement ? 'ON' : 'OFF')
+            this.data.motion.warning_enabled = this.device.data.settings.motion_announcement
         }
     }
 
