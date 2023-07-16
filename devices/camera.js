@@ -1175,6 +1175,7 @@ export default class Camera extends RingPolledDevice {
                     url: this.device.doorbotUrl(`motion_announcement?motion_announcement=${command === 'on' ? 'true' : 'false'}`)
                 })
                 this.mqttPublish(this.entity.motion_warning.state_topic, command === 'on' ? 'ON' : 'OFF')
+                this.data.motion.warning_enabled = command === 'on' ? true : false
                 break;
             default:
                 this.debug('Received unknown command for motion warning state')
