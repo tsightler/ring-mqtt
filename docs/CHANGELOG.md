@@ -1,9 +1,11 @@
 ## v5.5.0
 **New Features**
 - Initial support for HEVC mode cameras\
-  Ring is actively enabling H.265/HEVC mode on some newer camera models and the Ring app API used by ring-mqtt actively refuses to negotiate H.264/AVC encoding for these cameras.  Ring does have an API that appears to allow negotiating H.264 with these cameras via the web (they use it for the web based Ring dashbaord since most browsers don't support HEVC yet), but I haven't been able to get it to work reliably.  Because of that, when ring-mqtt detects a camera in HEVC mode, it will attempt to transcode the stream back to H.264/AVC.  This offers wide compatibility, but has the side effect that it uses a lot of CPU.
+  Ring is actively enabling H.265/HEVC mode on some newer camera models and the Ring Andriod API used by ring-mqtt actively rejects any other protocol for these cameras.  The Ring web based dashboard uses a different API which appears to support negotiating H.264/AVC with these devices as a fallback but, so far, I haven't been able to get it to work correctly with ring-mqtt, hopefully we will resolve that eventually.
 
-  Hopefully, at some point in the future, either Chrome will add native WebRTC support for H.265/HEVC, or we will figure out how to use the web based livecall API to negotiate H.264, but for now transcoding was a quick a dirty hack that should work for many cases, even with high CPU.  Note that if you are on a RPi3 this will probably not work, and an RPI4 will barely be able to support a single stream.
+  Passing HEVC through natively prsents too many compatibility issues with downstream devices so, for now, ring-mqtt will transcode these streams back to H.264/AVC on-the-fly.  This provides wide compatibiltiy with downstream devices, basically the same as other cameras, but at the cost of high CPU usage to perform the transcoding.
+
+  Hopefully over time more browsers will add H.265/HEVC support to their WebRTC implementations so passthrough will again become an option, or perhaps the web based API will eventually be figured out, but, for now, transcoding is a quick a dirty hack that will at least make these cameras work in some cases.  Note that if you are on a RPi3 this will probably not work, and an RPI4 will barely be able to support a single stream.
 - Add switch to toggle motion warning for cameras that support this feature
 - Implement new logic for entry/exit delay (inspired by @amura11):
   - Exit delay now supports both home and away modes
