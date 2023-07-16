@@ -6,6 +6,10 @@
   - Alarm attributes now include "exitSecondsLeft" and "entrySecondsLeft" which will count down during entry/exit delay.
   - Alarm attributes now include "targetMode" so it's possible to know what mode alarm is attempting to enter even while exit delay is in progress.  For entry delay this attribute makes it possoble to know what mode the alarm was in when the entry delay was triggered.  This allows creating different automations for entry/exit delays based on the home and away arming modes.
 
+- Initial support for HEVC mode cameras
+  Ring is actively enabling H.265/HEVC mode on some newer camera models and the Ring app API used by ring-mqtt actively refuses to negotiate H.264/AVC encoding for devices where this has been enabled.  While it is fully possible
+
+
 **Bugs Fixed**
 - Fix an issue detecting subscriptions and suppress spurrious error messages from cameras in case of accounts with no paid subscription.
 - Request non-cached snapshots for motion events on high-powered cameras even if no UUID is available (e.g. no subscription).
