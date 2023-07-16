@@ -206,6 +206,10 @@ export default class Camera extends RingPolledDevice {
             }
         }
 
+        if (this.entity.hasOwnProperty('motion_warning')) {
+            this.detectMotionWarning()
+        }
+
         this.data.stream.live.worker.on('message', (message) => {
             if (message.type === 'state') {
                 switch (message.data) {
@@ -265,6 +269,18 @@ export default class Camera extends RingPolledDevice {
             } : {}
         }
         this.setSavedState(stateData)
+    }
+
+    async detectMotionWarning() {
+        const motionAnnouncement = this.device.data.settings.motion_announcement
+        try {
+            await this.device.restClient.request({
+                method: 'PUT',
+                url: this.device.doorbotUrl(`motion_announcement?motion_announcement=${motionAnnouncement ? 'true' : 'false'}`)
+            })
+        } catch {
+            delete this.entity.motion_warning
+        }
     }
 
     // Build standard and optional entities for device
