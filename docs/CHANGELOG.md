@@ -1,14 +1,15 @@
 ## v5.5.0
 **New Features**
+- Initial support for HEVC mode cameras
+  Ring is actively enabling H.265/HEVC mode on some newer camera models and the Ring app API used by ring-mqtt actively refuses to negotiate H.264/AVC encoding for these cameras.  Ring does have an API that appears to allow negotiating H.264 with these cameras via the web (they use it for the web based Ring dashbaord since most browsers don't support HEVC yet), but I haven't been able to get it to work reliably.  Because of that, when ring-mqtt detects a camera in HEVC mode, it will attempt to transcode the stream back to H.264/AVC.  This offers wide compatibility, but has the side effect that it uses a lot of CPU.
+
+  Hopefully, at some point in the future, either Chrome will add native WebRTC support for H.265/HEVC, or we will figure out how to use the web based livecall API to negotiate H.264, but for now transcoding was a quick a dirty hack that should work for many cases, even with high CPU.  Note that if you are on a RPi3 this will probably not work, and an RPI4 will barely be able to support a single stream.
+
 - Implement new logic for entry/exit delay (inspired by @amura11):
   - Exit delay now supports both home and away modes
   - Depends on actual events from Ring API vs previous blind wait function
   - Alarm attributes now include "exitSecondsLeft" and "entrySecondsLeft" which will count down during entry/exit delay.
   - Alarm attributes now include "targetMode" so it's possible to know what mode alarm is attempting to enter even while exit delay is in progress.  For entry delay this attribute makes it possoble to know what mode the alarm was in when the entry delay was triggered.  This allows creating different automations for entry/exit delays based on the home and away arming modes.
-
-- Initial support for HEVC mode cameras
-  Ring is actively enabling H.265/HEVC mode on some newer camera models and the Ring app API used by ring-mqtt actively refuses to negotiate H.264/AVC encoding for devices where this has been enabled.  While it is fully possible
-
 
 **Bugs Fixed**
 - Fix an issue detecting subscriptions and suppress spurrious error messages from cameras in case of accounts with no paid subscription.
