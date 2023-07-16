@@ -24,7 +24,7 @@ parentPort.on("message", async(data) => {
 })
 
 async function startLiveStream(streamData) {
-    parentPort.postMessage('Live stream WebRTC worker received start command')
+    parentPort.postMessage({type: 'log_info', data: 'Live stream WebRTC worker received start command'})
     try {
         const cameraData = {
             name: deviceName,
@@ -39,12 +39,12 @@ async function startLiveStream(streamData) {
         liveStream.connection.pc.onConnectionState.subscribe(async (data) => {
             switch(data) {
                 case 'connected':
-                    parentPort.postMessage('active')
-                    parentPort.postMessage('Live stream WebRTC session is connected')
+                    parentPort.postMessage({type: 'state', data: 'active'})
+                    parentPort.postMessage({type: 'log_info', data: 'Live stream WebRTC session is connected'})
                     break;
                 case 'failed':
-                    parentPort.postMessage('failed')
-                    parentPort.postMessage('Live stream WebRTC connection has failed')
+                    parentPort.postMessage({type: 'state', data: 'failed'})
+                    parentPort.postMessage({type: 'log_info', data: 'Live stream WebRTC connection has failed'})
                     liveStream.stop()
                     await new Promise(res => setTimeout(res, 2000))
                     liveStream = false
@@ -52,7 +52,7 @@ async function startLiveStream(streamData) {
             }
         })
 
-        parentPort.postMessage('Live stream transcoding process is starting')
+        parentPort.postMessage({type: 'log_info', data: 'Live stream transcoding process is starting'})
         await liveStream.startTranscoding({
             // The native AVC video stream is copied to the RTSP server unmodified while the audio
             // stream is converted into two output streams using both AAC and Opus codecs.  This
@@ -65,9 +65,17 @@ async function startLiveStream(streamData) {
                 '-c:a:1', 'copy',
             ],
             video: [
-                '-c:v', 'libx264',
-                '-crf', '23',
-                '-preset', 'ultrafast',
+                ...streamData.hevcEnabled
+                    ? [
+                        '-c:v', 'libx264',
+                        '-g', '20',
+                        '-keyint_min', '10',
+                        '-crf', '23',
+                        '-preset', 'ultrafast'
+                    ]
+                    : [
+                        '-c:v', 'copy'
+                    ]
             ],
             output: [
                 '-flags', '+global_header',
@@ -76,16 +84,16 @@ async function startLiveStream(streamData) {
                 streamData.rtspPublishUrl
             ]
         })
-        parentPort.postMessage('Live stream transcoding process has started')
+        parentPort.postMessage({type: 'log_info', data: 'Live stream transcoding process has started'})
 
         liveStream.onCallEnded.subscribe(() => {
-            parentPort.postMessage('Live stream WebRTC session has disconnected')
-            parentPort.postMessage('inactive')
+            parentPort.postMessage({type: 'log_info', data: 'Live stream WebRTC session has disconnected'})
+            parentPort.postMessage({type: 'state', data: 'inactive'})
             liveStream = false
         })
     } catch(error) {
-        parentPort.postMessage(error)
-        parentPort.postMessage('failed')
+        parentPort.postMessage({type: 'log_error', data: error})
+        parentPort.postMessage({type: 'state', data: 'failed'})
         liveStream = false
     }
 }
@@ -94,8 +102,8 @@ async function stopLiveStream() {
     liveStream.stop()
     await new Promise(res => setTimeout(res, 2000))
     if (liveStream) {
-        parentPort.postMessage('Live stream failed to stop on request, deleting anyway...')
-        parentPort.postMessage('inactive')
+        parentPort.postMessage({type: 'log_info', data: 'Live stream failed to stop on request, deleting anyway...'})
+        parentPort.postMessage({type: 'state', data: 'inactive'})
         liveStream = false
     }
 }

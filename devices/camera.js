@@ -15,6 +15,10 @@ export default class Camera extends RingPolledDevice {
         this.hasBattery1 = this.device.data.hasOwnProperty('battery_voltage') ? true : false
         this.hasBattery2 = this.device.data.hasOwnProperty('battery_voltage_2') ? true : false
 
+        this.hevcEnabled = this.device.data?.settings?.video_settings?.hevc_enabled
+            ? this.device.data.settings.video_settings.hevc_enabled
+            : false
+
         this.data = {
             motion: {
                 active_ding: false,
@@ -197,28 +201,32 @@ export default class Camera extends RingPolledDevice {
         }
 
         this.data.stream.live.worker.on('message', (message) => {
-            switch (message) {
-                case 'active':
-                    this.data.stream.live.status = 'active'
-                    this.data.stream.live.session = true
-                    break;
-                case 'inactive':
-                    this.data.stream.live.status = 'inactive'
-                    this.data.stream.live.session = false
-                    break;
-                case 'failed':
-                    this.data.stream.live.status = 'failed'
-                    this.data.stream.live.session = false
-                    break;
-                default:
-                    if (message.startsWith('ERROR')) {
-                        this.debug(chalk.redBright(message), 'wrtc')
-                    } else {
-                        this.debug(message, 'wrtc')
-                    }
-                    return
+            if (message.type === 'state') {
+                switch (message.data) {
+                    case 'active':
+                        this.data.stream.live.status = 'active'
+                        this.data.stream.live.session = true
+                        break;
+                    case 'inactive':
+                        this.data.stream.live.status = 'inactive'
+                        this.data.stream.live.session = false
+                        break;
+                    case 'failed':
+                        this.data.stream.live.status = 'failed'
+                        this.data.stream.live.session = false
+                        break;
+                }
+                this.publishStreamState()
+            } else {
+                switch (message.type) {
+                    case 'log_info':
+                        this.debug(message.data, 'wrtc')
+                        break;
+                    case 'log_error':
+                        this.debug(chalk.redBright(message.data), 'wrtc')
+                        break;
+                }
             }
-            this.publishStreamState()
         })
 
         this.device.onNewNotification.subscribe(notification => {
@@ -740,7 +748,8 @@ export default class Camera extends RingPolledDevice {
         const streamData = {
             rtspPublishUrl,
             sessionId: false,
-            authToken: false
+            authToken: false,
+            hevcEnabled: this.hevcEnabled
         }
 
         try {
@@ -793,7 +802,7 @@ export default class Camera extends RingPolledDevice {
         this.debug(`Streaming the ${(eventNumber==1?"":eventNumber==2?"2nd ":eventNumber==3?"3rd ":eventNumber+"th ")}most recently recorded ${eventType} event`)
 
         try {
-            if (this.data.event_select.transcoded) {
+            if (this.data.event_select.transcoded || this.hevcEnabled) {
                 // Ring videos transcoded for download are poorly optimized for RTSP streaming so they must be re-encoded on-the-fly
                 this.data.stream.event.session = spawn(pathToFfmpeg, [
                     '-re',
@@ -804,7 +813,7 @@ export default class Camera extends RingPolledDevice {
                     '-c:v', 'libx264',
                     '-g', '20',
                     '-keyint_min', '10',
-                    '-crf', '18',
+                    '-crf', '23',
                     '-preset', 'ultrafast',
                     '-c:a:0', 'copy',
                     '-c:a:1', 'libopus',
