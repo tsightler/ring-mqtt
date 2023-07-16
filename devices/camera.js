@@ -180,7 +180,7 @@ export default class Camera extends RingPolledDevice {
             motion_detection: {
                 component: 'switch'
             },
-            ...this.data.features?.motion_message_enabled && !this.data.shared_at ? {
+            ...this.data.features?.motion_message_enabled ? {
                 motion_warning: {
                     component: 'switch'
                 }
@@ -1147,18 +1147,26 @@ export default class Camera extends RingPolledDevice {
     async setMotionDetectionState(message) {
         this.debug(`Received set motion detection state ${message}`)
         const command = message.toLowerCase()
-
-        switch (command) {
-            case 'on':
-            case 'off':
-                await this.device.setDeviceSettings({
-                    "motion_settings": {
-                        "motion_detection_enabled": command === 'on' ? true : false
-                    }
-                })
-                break;
-            default:
-                this.debug('Received unknown command for motion detection state')
+        try {
+            switch (command) {
+                case 'on':
+                case 'off':
+                    await this.device.setDeviceSettings({
+                        "motion_settings": {
+                            "motion_detection_enabled": command === 'on' ? true : false
+                        }
+                    })
+                    break;
+                default:
+                    this.debug('Received unknown command for motion detection state')
+            }
+        } catch(err) {
+            if (err.message === 'Response code 404 (Not Found)') {
+                this.debug('Shared accounts cannot change motion detection settings!')
+            } else {
+                this.debug(chalk.yellow(err.message))
+                this.debug(err.stack)
+            }
         }
     }
 
@@ -1166,19 +1174,27 @@ export default class Camera extends RingPolledDevice {
     async setMotionWarningState(message) {
         this.debug(`Received set motion warning state ${message}`)
         const command = message.toLowerCase()
-
-        switch (command) {
-            case 'on':
-            case 'off':
-                await this.device.restClient.request({
-                    method: 'PUT',
-                    url: this.device.doorbotUrl(`motion_announcement?motion_announcement=${command === 'on' ? 'true' : 'false'}`)
-                })
-                this.mqttPublish(this.entity.motion_warning.state_topic, command === 'on' ? 'ON' : 'OFF')
-                this.data.motion.warning_enabled = command === 'on' ? true : false
-                break;
-            default:
-                this.debug('Received unknown command for motion warning state')
+        try {
+            switch (command) {
+                case 'on':
+                case 'off':
+                    await this.device.restClient.request({
+                        method: 'PUT',
+                        url: this.device.doorbotUrl(`motion_announcement?motion_announcement=${command === 'on' ? 'true' : 'false'}`)
+                    })
+                    this.mqttPublish(this.entity.motion_warning.state_topic, command === 'on' ? 'ON' : 'OFF')
+                    this.data.motion.warning_enabled = command === 'on' ? true : false
+                    break;
+                default:
+                    this.debug('Received unknown command for motion warning state')
+            }
+        } catch(err) {
+            if (err.message === 'Response code 404 (Not Found)') {
+                this.debug('Shared accounts cannot change motion warning settings!')
+            } else {
+                this.debug(chalk.yellow(err.message))
+                this.debug(err.stack)
+            }
         }
     }
 
