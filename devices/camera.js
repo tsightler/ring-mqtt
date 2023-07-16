@@ -180,7 +180,7 @@ export default class Camera extends RingPolledDevice {
             motion_detection: {
                 component: 'switch'
             },
-            ...!this.device.operatingOnBattery && this.device.data.settings.hasOwnProperty('motion_announcement') ? {
+            ...this.data.features?.motion_message_enabled && !this.data.shared_at ? {
                 motion_warning: {
                     component: 'switch'
                 }
@@ -204,10 +204,6 @@ export default class Camera extends RingPolledDevice {
                 device_class: 'timestamp',
                 value_template: '{{ value_json["lastUpdate"] | default("") }}'
             }
-        }
-
-        if (this.entity.hasOwnProperty('motion_warning')) {
-            this.detectMotionWarning()
         }
 
         this.data.stream.live.worker.on('message', (message) => {
@@ -269,18 +265,6 @@ export default class Camera extends RingPolledDevice {
             } : {}
         }
         this.setSavedState(stateData)
-    }
-
-    async detectMotionWarning() {
-        const motionAnnouncement = this.device.data.settings.motion_announcement
-        try {
-            await this.device.restClient.request({
-                method: 'PUT',
-                url: this.device.doorbotUrl(`motion_announcement?motion_announcement=${motionAnnouncement ? 'true' : 'false'}`)
-            })
-        } catch {
-            delete this.entity.motion_warning
-        }
     }
 
     // Build standard and optional entities for device
