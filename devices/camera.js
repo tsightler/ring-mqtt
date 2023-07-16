@@ -180,7 +180,7 @@ export default class Camera extends RingPolledDevice {
             motion_detection: {
                 component: 'switch'
             },
-            ...this.data.features?.motion_message_enabled ? {
+            ...this.device.data.features?.motion_message_enabled ? {
                 motion_warning: {
                     component: 'switch'
                 }
