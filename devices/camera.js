@@ -1152,7 +1152,9 @@ export default class Camera extends RingPolledDevice {
             case 'on':
             case 'off':
                 await this.device.setDeviceSettings({
-                    "motion_announcement": command === 'on' ? true : false
+                    "motion_settings": {
+                        "motion_detection_enabled": command === 'on' ? true : false
+                    }
                 })
                 break;
             default:
