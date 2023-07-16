@@ -29,6 +29,7 @@ export default class Camera extends RingPolledDevice {
                 last_ding_time: 'none',
                 is_person: false,
                 detection_enabled: null,
+                warning_enabled: null,
                 events: events.filter(event => event.event_type === 'motion'),
                 latestEventId: ''
             },
@@ -179,6 +180,11 @@ export default class Camera extends RingPolledDevice {
             motion_detection: {
                 component: 'switch'
             },
+            ...!this.device.operatingOnBattery ? {
+                motion_warning: {
+                    component: 'switch'
+                }
+            } : {},
             motion_duration: {
                 component: 'number',
                 min: 10,
@@ -574,9 +580,11 @@ export default class Camera extends RingPolledDevice {
             }
         }
 
+        // Publish motion switch settings and attributes
         if (this.device.data.settings.motion_detection_enabled !== this.data.motion.detection_enabled || isPublish) {
             this.publishMotionAttributes()
             this.mqttPublish(this.entity.motion_detection.state_topic, this.device.data?.settings?.motion_detection_enabled ? 'ON' : 'OFF')
+            this.mqttPublish(this.entity.motion_warning.state_topic, this.device.data?.settings?.motion_announcement ? 'ON' : 'OFF')
         }
     }
 
@@ -1089,6 +1097,9 @@ export default class Camera extends RingPolledDevice {
             case 'motion_detection/command':
                 this.setMotionDetectionState(message)
                 break;
+            case 'motion_warning/command':
+                this.setMotionWarningState(message)
+                break;
             case 'motion_duration/command':
                 this.setDingDuration(message, 'motion')
                 break;
@@ -1143,7 +1154,25 @@ export default class Camera extends RingPolledDevice {
                 })
                 break;
             default:
-                this.debug('Received unknown command for siren')
+                this.debug('Received unknown command for motion detection state')
+        }
+    }
+
+    // Set switch target state on received MQTT command message
+    async setMotionWarningState(message) {
+        this.debug(`Received set motion warning state ${message}`)
+        const command = message.toLowerCase()
+
+        switch (command) {
+            case 'on':
+            case 'off':
+                await this.device.restClient.request({
+                    method: 'PUT',
+                    url: this.device.doorbotUrl(`motion_announcement?motion_announcement=${command === 'on' ? 'true' : 'false'}`)
+                })
+                break;
+            default:
+                this.debug('Received unknown command for motion warning state')
         }
     }
 
