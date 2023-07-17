@@ -18,6 +18,10 @@
 - Request non-cached snapshots for motion events on high-powered cameras even if no UUID is available (e.g. no subscription).
 - Make stream source and still image URL attributes work even if calls to heath check API fail.
 
+**Dependency Updates**
+- go2rtc v1.6.0
+- werift v0.18.4
+
 ## v5.4.1
 **Bugs Fixed**
 - Fix alarm state not updating for various conditions (armed/disarmed with keypad, exit-delay, etc)
