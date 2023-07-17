@@ -719,32 +719,39 @@ export default class Camera extends RingPolledDevice {
 
     async refreshSnapshot(type, image_uuid) {
         let newSnapshot = false
+        let loop = 3
 
         if (this.device.snapshotsAreBlocked) {
             this.debug('Snapshots are unavailable, check if motion capture is disabled manually or via modes settings')
             return
         }
 
-        try {
-            switch (type) {
-                case 'interval':
-                    this.debug('Requesting an updated interval snapshot')
-                    newSnapshot = await this.device.getSnapshot()
-                    break;
-                case 'motion':
-                    if (image_uuid) {
-                        this.debug(`Requesting motion snapshot using notification image UUID: ${image_uuid}`)
-                        newSnapshot = await this.device.getNextSnapshot({ uuid: image_uuid })
-                    } else if (!this.device.operatingOnBattery) {
-                        this.debug('Requesting an updated motion snapshot')
-                        newSnapshot = await this.device.getNextSnapshot()
-                    } else {
-                        this.debug('Motion snapshot needed but notification did not contain image UUID and battery cameras are unable to snapshot while recording')
-                    }
+        while (!newSnapshot && loop > 0) {
+            try {
+                switch (type) {
+                    case 'interval':
+                        this.debug('Requesting an updated interval snapshot')
+                        newSnapshot = await this.device.getNextSnapshot({ afterMs: Date.now(), maxWaitMs: 5000 })
+                        break;
+                    case 'motion':
+                        if (image_uuid) {
+                            this.debug(`Requesting motion snapshot using notification image UUID: ${image_uuid}`)
+                            newSnapshot = await this.device.getNextSnapshot({ uuid: image_uuid })
+                        } else if (!this.device.operatingOnBattery) {
+                            this.debug('Requesting an updated motion snapshot')
+                            newSnapshot = await this.device.getNextSnapshot({ afterMs: Date.now(), maxWaitMs: 5000 })
+                        } else {
+                            this.debug('Motion snapshot needed but notification did not contain image UUID and battery cameras are unable to snapshot while recording')
+                        }
+                }
+            } catch (err) {
+                this.debug(err)
+                if (loop > 1) {
+                    this.debug('Failed to retrieve updated snapshot, retrying...')
+                } else {
+                    this.debug('Failed to retrieve updated snapshot after three attempts, aborting')
+                }
             }
-        } catch (error) {
-            this.debug(error)
-            this.debug('Failed to retrieve updated snapshot')
         }
 
         if (newSnapshot) {
