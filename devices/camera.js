@@ -731,7 +731,7 @@ export default class Camera extends RingPolledDevice {
                 switch (type) {
                     case 'interval':
                         this.debug('Requesting an updated interval snapshot')
-                        newSnapshot = await this.device.getNextSnapshot({ afterMs: Date.now(), maxWaitMs: 5000 })
+                        newSnapshot = await this.device.getNextSnapshot({ force: true })
                         break;
                     case 'motion':
                         if (image_uuid) {
@@ -739,7 +739,7 @@ export default class Camera extends RingPolledDevice {
                             newSnapshot = await this.device.getNextSnapshot({ uuid: image_uuid })
                         } else if (!this.device.operatingOnBattery) {
                             this.debug('Requesting an updated motion snapshot')
-                            newSnapshot = await this.device.getNextSnapshot({ afterMs: Date.now(), maxWaitMs: 5000 })
+                            newSnapshot = await this.device.getNextSnapshot({ force: true })
                         } else {
                             this.debug('Motion snapshot needed but notification did not contain image UUID and battery cameras are unable to snapshot while recording')
                         }
@@ -747,11 +747,13 @@ export default class Camera extends RingPolledDevice {
             } catch (err) {
                 this.debug(err)
                 if (loop > 1) {
-                    this.debug('Failed to retrieve updated snapshot, retrying...')
+                    this.debug('Failed to retrieve updated snapshot, retrying in one second...')
+                    await utils.sleep(1)
                 } else {
                     this.debug('Failed to retrieve updated snapshot after three attempts, aborting')
                 }
             }
+            loop--
         }
 
         if (newSnapshot) {
