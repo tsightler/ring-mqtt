@@ -1013,7 +1013,7 @@ export default class Camera extends RingPolledDevice {
 
     async getTranscodedUrl(event) {
         let response
-        let loop = 30
+        let loop = 60
 
         try {
             response = await this.device.restClient.request({
@@ -1056,7 +1056,7 @@ export default class Camera extends RingPolledDevice {
             if (loop < 1) {
                 this.debug('Timeout waiting for transcoded video to be processed')
             } else {
-                this.debug('Failed to retrieve transcoded video URL')
+                this.debug('Failed to retrieve transcoded video URL after 60')
             }
             return false
         }
