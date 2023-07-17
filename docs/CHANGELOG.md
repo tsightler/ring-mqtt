@@ -1,3 +1,8 @@
+## v5.5.1
+**Bugs Fixed**
+- Use non-cached snapshot for all cases.
+- Implement multiple retries if initial request for snapshot update fails
+
 ## v5.5.0
 **New Features**
 - Initial support for HEVC mode cameras\
