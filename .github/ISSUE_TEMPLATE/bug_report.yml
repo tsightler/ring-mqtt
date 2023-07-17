@@ -17,18 +17,8 @@ body:
         timely manner (at least every few days).  Issues that receive no followup responses will be
         subject to closure after 72 hours.
         
-        Please include the information requested in the fields below completely or the issue will
+        Please include the information requested in the fields below completely as possible or the issue will
         likely be closed immediately.
-        
-        **Important note regarding camera support**    
-        The ring-mqtt project does not turn Ring cameras into 24x7 CCTV cameras capable of continous
-        streaming.  Ring cameras are designed to work with Ring cloud servers for on-demand streaming
-        based on detected events (motion/ding) or for on-demand interactive viewing.  Even when using
-        ring-mqtt, all streaming still goes through Ring cloud servers and is not local.  Using this
-        project for continuous streaming is not a supported use case and attempts to do so will almost
-        certainly end in disappointment.  Any support cases opened for issues with continuous streaming
-         (i.e. more than one streaming session back-to-back) will be closed as unsupported.  This
-         includes use with NVR tools like Frigate or motionEye.
   - type: input
     attributes:
       label: Describe the Bug
