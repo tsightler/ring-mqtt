@@ -7,7 +7,7 @@ export default class RingSocketDevice extends RingDevice {
         super(deviceInfo, category, primaryAttribute, 'socket')
 
         // Set default device data for Home Assistant device registry
-        this.deviceData = { 
+        this.deviceData = {
             ids: [ this.deviceId ],
             name: this.device.name,
             mf: (this.device.data && this.device.data.manufacturerName) ? this.device.data.manufacturerName : 'Ring',
@@ -40,7 +40,7 @@ export default class RingSocketDevice extends RingDevice {
                     ? { value_template: `{{ value_json["${primaryAttribute}"] | default("") }}` }
                     : { value_template: '{{ value_json["commStatus"] | default("") }}' }
             },
-            ...this.device.data.hasOwnProperty('batteryLevel') ? { 
+            ...this.device.data.hasOwnProperty('batteryLevel') ? {
                 battery: {
                     component: 'sensor',
                     device_class: 'battery',
@@ -90,27 +90,27 @@ export default class RingSocketDevice extends RingDevice {
                 ? { auxBatteryLevel: this.device.data.auxBattery.level === 99 ? 100 : this.device.data.auxBattery.level } : {},
             ... (this.device.data.hasOwnProperty('auxBattery') && this.device.data.auxBattery.hasOwnProperty('status'))
                 ? { auxBatteryStatus: this.device.data.auxBattery.status } : {},
-            ... this.device.data.hasOwnProperty('brightness') 
+            ... this.device.data.hasOwnProperty('brightness')
                 ? { brightness: this.device.data.brightness } : {},
-            ... this.device.data.hasOwnProperty('chirps') && this.device.deviceType == 'security-keypad' 
+            ... this.device.data.hasOwnProperty('chirps') && this.device.deviceType == 'security-keypad'
                 ? { chirps: this.device.data.chirps } : {},
-            ... this.device.data.hasOwnProperty('commStatus') 
+            ... this.device.data.hasOwnProperty('commStatus')
                 ? { commStatus: this.device.data.commStatus } : {},
-            ... this.device.data.hasOwnProperty('firmwareUpdate') 
+            ... this.device.data.hasOwnProperty('firmwareUpdate')
                 ? { firmwareStatus: this.device.data.firmwareUpdate.state } : {},
-            ... this.device.data.hasOwnProperty('lastCommTime') 
+            ... this.device.data.hasOwnProperty('lastCommTime')
                 ? { lastCommTime: utils.getISOTime(this.device.data.lastCommTime) } : {},
-            ... this.device.data.hasOwnProperty('lastUpdate') 
+            ... this.device.data.hasOwnProperty('lastUpdate')
                 ? { lastUpdate: utils.getISOTime(this.device.data.lastUpdate) } : {},
-            ... this.device.data.hasOwnProperty('linkQuality') 
+            ... this.device.data.hasOwnProperty('linkQuality')
                 ? { linkQuality: this.device.data.linkQuality } : {},
-            ... this.device.data.hasOwnProperty('powerSave') 
+            ... this.device.data.hasOwnProperty('powerSave')
                 ? { powerSave: this.device.data.powerSave } : {},
-            ... this.device.data.hasOwnProperty('serialNumber') 
+            ... this.device.data.hasOwnProperty('serialNumber')
                 ? { serialNumber: this.device.data.serialNumber } : {},
-            ... this.device.data.hasOwnProperty('tamperStatus') 
+            ... this.device.data.hasOwnProperty('tamperStatus')
                 ? { tamperStatus: this.device.data.tamperStatus } : {},
-            ... this.device.data.hasOwnProperty('volume') 
+            ... this.device.data.hasOwnProperty('volume')
                 ? {volume: this.device.data.volume } : {},
             ... this.device.data.hasOwnProperty('maxVolume')
                 ? {maxVolume: this.device.data.maxVolume } : {},

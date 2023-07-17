@@ -26,18 +26,18 @@ export default class Thermostat extends RingSocketDevice {
             setPoint: (() => {
                 return this.device.data.setPoint
                     ? this.device.data.setPoint
-                    : this.temperatureSensor.data.celsius 
+                    : this.temperatureSensor.data.celsius
                 }),
-            operatingMode: (() => { 
+            operatingMode: (() => {
                 return this.operatingStatus.data.operatingMode !== 'off'
                     ? `${this.operatingStatus.data.operatingMode}ing`
                     : this.device.data.mode === 'off'
                         ? 'off'
-                        : this.device.data.fanMode === 'on' ? 'fan' : 'idle' 
+                        : this.device.data.fanMode === 'on' ? 'fan' : 'idle'
                 }),
             temperature: (() => { return this.temperatureSensor.data.celsius }),
             ... this.entity.thermostat.modes.includes('auto')
-                ? { 
+                ? {
                     autoSetPointInProgress: false,
                     autoSetPoint: {
                         low: this.device.data.modeSetpoints.auto.setPoint-this.device.data.modeSetpoints.auto.deadBand,
@@ -47,15 +47,15 @@ export default class Thermostat extends RingSocketDevice {
                 } : {}
         }
 
-        this.operatingStatus.onData.subscribe(() => { 
-            if (this.isOnline()) { 
+        this.operatingStatus.onData.subscribe(() => {
+            if (this.isOnline()) {
                 this.publishOperatingMode()
                 this.publishAttributes()
             }
         })
 
         this.temperatureSensor.onData.subscribe(() => {
-            if (this.isOnline()) { 
+            if (this.isOnline()) {
                 this.publishTemperature()
                 this.publishAttributes()
             }
@@ -169,7 +169,7 @@ export default class Thermostat extends RingSocketDevice {
                 this.debug(`Received invalid set mode command`)
         }
     }
-    
+
     async setSetPoint(value) {
         const mode = this.data.currentMode()
         switch(mode) {
@@ -205,7 +205,7 @@ export default class Thermostat extends RingSocketDevice {
                     this.data.autoSetPoint[type] = Number(value)
                     // Home Assistant always sends both low/high values when changing range on dual-setpoint mode
                     // so this function will be called twice for every change.  The code below locks for 100 milliseconds
-                    // to allow time for the second value to be updated before proceeding to call the set function once.  
+                    // to allow time for the second value to be updated before proceeding to call the set function once.
                     if (!this.data.setPointInProgress) {
                         this.data.setPointInProgress = true
                         await utils.msleep(100)

@@ -3,7 +3,7 @@ import RingSocketDevice from './base-socket-device.js'
 export default class Siren extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'alarm')
-        this.deviceData.mdl = (this.device.data.deviceType === 'siren.outdoor-strobe') ? 'Outdoor Siren' : 'Siren'        
+        this.deviceData.mdl = (this.device.data.deviceType === 'siren.outdoor-strobe') ? 'Outdoor Siren' : 'Siren'
         this.entity = {
             ...this.entity,
             siren: {

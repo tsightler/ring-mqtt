@@ -8,7 +8,7 @@ export default class BeamOutdoorPlug extends RingSocketDevice {
 
         this.outlet1 = this.childDevices.find(d => d.deviceType === RingDeviceType.BeamsSwitch && d.data.relToParentZid === "1"),
         this.outlet2 = this.childDevices.find(d => d.deviceType === RingDeviceType.BeamsSwitch && d.data.relToParentZid === "2")
-        
+
         this.entity.outlet1 = {
             component: (this.outlet1.data.categoryId === 2) ? 'light' : 'switch',
             name: `${this.outlet1.name}`

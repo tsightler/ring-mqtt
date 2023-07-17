@@ -5,7 +5,7 @@ export default class Beam extends RingSocketDevice {
         super(deviceInfo, 'lighting')
 
         this.data = {}
-        
+
         // Setup device topics based on capabilities.
         switch (this.device.data.deviceType) {
             case 'group.light-group.beams':
@@ -30,7 +30,7 @@ export default class Beam extends RingSocketDevice {
                 break;
         }
     }
-    
+
     initMotionEntity() {
         this.entity.motion = {
             component: 'binary_sensor',
@@ -158,7 +158,7 @@ export default class Beam extends RingSocketDevice {
             this.debug('Light duration command received but out of range (0-32767)')
         } else {
             this.data.beam_duration = parseInt(duration)
-            this.mqttPublish(this.entity.beam_duration.state_topic, this.data.beam_duration)            
+            this.mqttPublish(this.entity.beam_duration.state_topic, this.data.beam_duration)
         }
     }
 }

@@ -10,14 +10,18 @@ export default class SecurityPanel extends RingSocketDevice {
         this.deviceData.name = `${this.device.location.name} Alarm`
 
         this.data = {
+            publishedState: this.ringModeToMqttState(),
             attributes: {
+                entrySecondsLeft: 0,
+                exitSecondsLeft: 0,
                 lastArmedBy: 'Unknown',
                 lastArmedTime: '',
                 lastDisarmedBy: 'Unknown',
-                lastDisarmedTime: ''
+                lastDisarmedTime: '',
+                targetState: this.ringModeToMqttState(this.device.data.mode),
             }
         }
-        
+
         this.entity = {
             ...this.entity,
             alarm: {
@@ -31,12 +35,12 @@ export default class SecurityPanel extends RingSocketDevice {
                 name: `${this.device.location.name} Siren`
             },
             ...utils.config().enable_panic ? {
-                police: { 
+                police: {
                     component: 'switch',
                     name: `${this.device.location.name} Panic - Police`,
                     icon: 'mdi:police-badge'
                 },
-                fire: { 
+                fire: {
                     component: 'switch',
                     name: `${this.device.location.name} Panic - Fire`,
                     icon: 'mdi:fire'
@@ -47,28 +51,53 @@ export default class SecurityPanel extends RingSocketDevice {
         this.initAlarmAttributes()
 
         // Listen to raw data updates for all devices and pick out
-        // arm/disarm events for this security panel
+        // arm/disarm and countdown events for this security panel
         this.device.location.onDataUpdate.subscribe(async (message) => {
-            if (this.isOnline() && 
-                message.datatype === 'DeviceInfoDocType' &&
+            if (!this.isOnline()) { return }
+
+            if (message.datatype === 'DeviceInfoDocType' &&
                 message.body?.[0]?.general?.v2?.zid === this.deviceId &&
                 message.body[0].impulse?.v1?.[0] &&
-                message.body[0].impulse.v1.filter(i => 
+                message.body[0].impulse.v1.filter(i =>
                     i.impulseType.match('security-panel.mode-switched.') ||
                     i.impulseType.match('security-panel.exit-delay')
                 ).length > 0
-            ) { 
-                const impulse = message.body[0].impulse.v1
-                if (message.context) {
-                    if (impulse.filter(i => i.impulseType.match(/some|all|exit-delay/)).length > 0) {
-                        await this.updateAlarmAttributes(message.context, 'Armed') 
-                    } else if (impulse.filter(i => i.impulseType.includes('none')).length > 0) {
-                        await this.updateAlarmAttributes(message.context, 'Disarmed')
-                    }
-                }
-                this.publishAlarmState()
+            ) {
+                this.processAlarmMode(message)
+            }
+
+            if (message.datatype === 'PassthruType' &&
+                message.body?.[0]?.zid === this.deviceId &&
+                message.body?.[0]?.type === 'security-panel.countdown' &&
+                message.body[0]?.data
+            ) {
+                this.processCountdown(message.body[0].data)
             }
         })
+    }
+
+    // Convert Ring alarm modes to Home Asisstan Alarm Control Panel MQTT state
+    ringModeToMqttState(mode) {
+        // If using actual device mode, return arming/pending/triggered states
+        if (!mode) {
+            if (this.device.data.mode.match(/some|all/) && (this.device.data?.transitionDelayEndTimestamp - Date.now() > 0)) {
+                return 'arming'
+            } else if (allAlarmStates.includes(this.device.data.alarmInfo?.state)) {
+                return this.device.data.alarmInfo.state === 'entry-delay' ? 'pending' : 'triggered'
+            }
+        }
+
+        // If mode was passed to the function use it, oterwise use currently active device mode
+        switch (mode ? mode : this.device.data.mode) {
+            case 'none':
+                return 'disarmed'
+            case 'some':
+                return 'armed_home'
+            case 'all':
+                return 'armed_away'
+            default:
+                return 'unknown'
+        }
     }
 
     async initAlarmAttributes() {
@@ -81,7 +110,7 @@ export default class SecurityPanel extends RingSocketDevice {
             ).length > 0
         )
         if (armEvents.length > 0) {
-            this.updateAlarmAttributes(armEvents[0].context, 'Armed')
+            this.updateAlarmAttributes(armEvents[0], 'Armed')
         }
 
         const disarmEvents = alarmEvents.filter(e =>
@@ -92,16 +121,16 @@ export default class SecurityPanel extends RingSocketDevice {
             ).length > 0
         )
         if (disarmEvents.length > 0) {
-            this.updateAlarmAttributes(disarmEvents[0].context, 'Disarmed')
+            this.updateAlarmAttributes(disarmEvents[0], 'Disarmed')
         }
     }
 
-    async updateAlarmAttributes(contextData, mode) {
-        let initiatingUser = contextData.initiatingEntityType
+    async updateAlarmAttributes(message, mode) {
+        let initiatingUser = message.context.initiatingEntityType
 
-        if (contextData.initiatingEntityType === 'user' && contextData.initiatingEntityId) {
+        if (message.context.initiatingEntityType === 'user' && message.context.initiatingEntityId) {
             try {
-                const userInfo = await this.getUserInfo(contextData.initiatingEntityId)
+                const userInfo = await this.getUserInfo(message.context.initiatingEntityId)
                 if (userInfo) {
                     initiatingUser = `${userInfo.firstName} ${userInfo.lastName}`
                 } else {
@@ -114,13 +143,54 @@ export default class SecurityPanel extends RingSocketDevice {
         }
 
         this.data.attributes[`last${mode}By`] = initiatingUser
-        this.data.attributes[`last${mode}Time`] = new Date(contextData.eventOccurredTsMs).toISOString()
+        this.data.attributes[`last${mode}Time`] = message?.context?.eventOccurredTsMs
+            ? new Date(message.context.eventOccurredTsMs).toISOString()
+            : new Date(now).toISOString()
+    }
+
+    async processAlarmMode(message) {
+        // Pending and triggered modes are handled by publishState()
+        const { impulseType } = message.body[0].impulse.v1.find(i => i.impulseType.match(/some|all|none|exit-delay/))
+        switch(impulseType.split('.').pop()) {
+            case 'some':
+            case 'all':
+            case 'exit-delay':
+                this.data.attributes.targetState = this.ringModeToMqttState() === 'arming'
+                    ? this.ringModeToMqttState(this.device.data.mode)
+                    : this.ringModeToMqttState()
+                await this.updateAlarmAttributes(message, 'Armed')
+                break;
+            case 'none':
+                this.data.attributes.targetState = this.ringModeToMqttState()
+                await this.updateAlarmAttributes(message, 'Disarmed')
+        }
+        this.publishAlarmState()
+    }
+
+    processCountdown(countdown) {
+        if (countdown) {
+            if (countdown.transition === 'exit') {
+                this.data.attributes.entrySecondsLeft = 0
+                this.data.attributes.exitSecondsLeft = countdown.timeLeft
+            } else {
+                this.data.attributes.entrySecondsLeft = countdown.timeLeft
+                this.data.attributes.exitSecondsLeft = 0
+            }
+
+            // Sometimes a countdown event comes in just before the mode switch event
+            // so suppress publish of attribute state in this case
+            if (this.data.publishedState !== this.data.attributes.targetState) {
+                this.publishAlarmAttributes()
+            }
+        }
     }
 
     publishState(data) {
         const isPublish = data === undefined ? true : false
 
-        if (allAlarmStates.includes(this.device.data.alarmInfo?.state) || isPublish) {
+        // Publish alarm states for events not handled by processAlarmMode() as well as
+        // any explicit publish requests
+        if (this.ringModeToMqttState().match(/pending|triggered/) || isPublish) {
             this.publishAlarmState()
         }
 
@@ -129,57 +199,33 @@ export default class SecurityPanel extends RingSocketDevice {
 
         if (utils.config().enable_panic) {
             const policeState = this.device.data.alarmInfo?.state?.match(/burglar|panic/) ? 'ON' : 'OFF'
-            if (policeState === 'ON') { this.debug('Burglar alarm is triggered for ' + this.device.location.name) }
+            if (policeState === 'ON') {
+                this.debug('Burglar alarm is triggered for ' + this.device.location.name)
+            }
             this.mqttPublish(this.entity.police.state_topic, policeState)
 
             const fireState = this.device.data.alarmInfo?.state?.match(/co|fire/) ? 'ON' : 'OFF'
-            if (fireState === 'ON') { this.debug('Fire alarm is triggered for ' + this.device.location.name) }
+            if (fireState === 'ON') {
+                this.debug('Fire alarm is triggered for ' + this.device.location.name)
+            }
             this.mqttPublish(this.entity.fire.state_topic, fireState)
         }
     }
 
-    async publishAlarmState() {
-        let alarmState
-
-        // If alarm is active report triggered or, if entry-delay, pending
-        if (allAlarmStates.includes(this.device.data.alarmInfo?.state))  {
-            alarmState = this.device.data.alarmInfo.state === 'entry-delay' ? 'pending' : 'triggered'
-        } else {
-            switch(this.device.data.mode) {
-                case 'none':
-                    alarmState = 'disarmed'
-                    break;
-                case 'some':
-                    alarmState = 'armed_home'
-                    break;
-                case 'all':
-                    const exitDelayMs = this.device.data.transitionDelayEndTimestamp - Date.now()
-                    if (exitDelayMs > 0) {
-                        alarmState = 'arming'
-                        this.waitForExitDelay(exitDelayMs)
-                    } else {
-                        alarmState = 'armed_away'
-                    }
-                    break;
-                default:
-                    alarmState = 'unknown'
-            }
-        }
-
-        this.mqttPublish(this.entity.alarm.state_topic, alarmState)
-        this.mqttPublish(this.entity.alarm.json_attributes_topic, JSON.stringify(this.data.attributes), 'attr')
+    publishAlarmState() {
+        this.data.publishedState = this.ringModeToMqttState()
+        this.mqttPublish(this.entity.alarm.state_topic, this.data.publishedState)
+        this.publishAlarmAttributes()
         this.publishAttributes()
     }
-    
-    async waitForExitDelay(exitDelayMs) {
-        await utils.msleep(exitDelayMs)
-        if (this.device.data.mode === 'all') {
-            exitDelayMs = this.device.data.transitionDelayEndTimestamp - Date.now()
-            if (exitDelayMs <= 0) {
-                // Publish device sensor state
-                this.mqttPublish(this.entity.alarm.state_topic, 'armed_away')
-            }
+
+    publishAlarmAttributes() {
+        // If published state is not a state with a countdown timer, zero out entry/exit times
+        if (!this.data.publishedState.match(/arming|pending/)) {
+            this.data.attributes.entrySecondsLeft = 0
+            this.data.attributes.exitSecondsLeft = 0
         }
+        this.mqttPublish(this.entity.alarm.json_attributes_topic, JSON.stringify(this.data.attributes), 'attr')
     }
 
     // Process messages from MQTT command topic
@@ -220,8 +266,8 @@ export default class SecurityPanel extends RingSocketDevice {
 
             if (message.toLowerCase() !== 'disarm') {
                 // During arming, check for sensors that require bypass
-                // Get all devices that allow bypass 
-                const bypassDevices = (await this.device.location.getDevices()).filter(device => 
+                // Get all devices that allow bypass
+                const bypassDevices = (await this.device.location.getDevices()).filter(device =>
                     device.deviceType === RingDeviceType.ContactSensor ||
                     device.deviceType === RingDeviceType.RetrofitZone ||
                     device.deviceType === RingDeviceType.MotionSensor ||

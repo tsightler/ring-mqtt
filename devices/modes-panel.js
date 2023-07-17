@@ -16,7 +16,7 @@ export default class ModesPanel extends RingPolledDevice {
             currentMode: undefined
         }
     }
-    
+
     publishState(data) {
         const isPublish = data === undefined ? true : false
         const mode = (isPublish) ? this.device.location.getLocationMode() : data
@@ -51,7 +51,7 @@ export default class ModesPanel extends RingPolledDevice {
                 this.debug(`Received message to unknown command topic: ${command}`)
         }
     }
-    
+
     // Set Alarm Mode on received MQTT command message
     async setLocationMode(message) {
         this.debug(`Received command set mode ${message} for location ${this.device.location.name} (${this.locationId})`)

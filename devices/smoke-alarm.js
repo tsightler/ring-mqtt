@@ -10,7 +10,7 @@ export default class SmokeAlarm extends RingSocketDevice {
         if (this.hasOwnProperty('childDevices')) {
             delete this.childDevices
         }
-        
+
         this.entity.smoke = {
             component: 'binary_sensor',
             device_class: 'smoke',

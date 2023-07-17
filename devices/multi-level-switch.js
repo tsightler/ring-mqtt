@@ -4,7 +4,7 @@ export default class MultiLevelSwitch extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'alarm')
         this.deviceData.mdl = 'Dimming Light'
-        
+
         this.entity.light = {
             component: 'light',
             brightness_scale: 100,
@@ -14,12 +14,12 @@ export default class MultiLevelSwitch extends RingSocketDevice {
 
     publishState() {
         const switchState = this.device.data.on ? "ON" : "OFF"
-        const switchLevel = (this.device.data.level && !isNaN(this.device.data.level) ? Math.round(100 * this.device.data.level) : 0) 
+        const switchLevel = (this.device.data.level && !isNaN(this.device.data.level) ? Math.round(100 * this.device.data.level) : 0)
         this.mqttPublish(this.entity.light.state_topic, switchState)
         this.mqttPublish(this.entity.light.brightness_state_topic, switchLevel.toString())
         this.publishAttributes()
     }
-    
+
     // Process messages from MQTT command topic
     processCommand(command, message) {
         switch (command) {

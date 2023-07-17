@@ -7,8 +7,8 @@ export default class RingPolledDevice extends RingDevice {
         super(deviceInfo, category, primaryAttribute, 'polled')
         this.heartbeat = 3
 
-        // Sevice data for Home Assistant device registry 
-        this.deviceData = { 
+        // Sevice data for Home Assistant device registry
+        this.deviceData = {
             ids: [ this.deviceId ],
             name: this.device.name,
             mf: 'Ring',
@@ -38,7 +38,7 @@ export default class RingPolledDevice extends RingDevice {
     // the heartbeat is constantly reset in the data publish function due to data
     // polling events however, if something interrupts the connection, polling stops
     // and this function will decrement until the heartbeat reaches zero.  In this case
-    // this function sets the device status offline.  When polling resumes the heartbeat 
+    // this function sets the device status offline.  When polling resumes the heartbeat
     // is set > 0 and this function will set the device back online after a short delay.
     async monitorHeartbeat() {
         if (this.heartbeat > 0) {
@@ -53,10 +53,10 @@ export default class RingPolledDevice extends RingDevice {
             }
             this.heartbeat--
         } else {
-            if (this.availabilityState !== 'offline') { 
+            if (this.availabilityState !== 'offline') {
                 this.offline()
             }
-        } 
+        }
         await utils.sleep(20)
         this.monitorHeartbeat()
     }
