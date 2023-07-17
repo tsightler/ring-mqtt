@@ -742,6 +742,7 @@ export default class Camera extends RingPolledDevice {
                             newSnapshot = await this.device.getNextSnapshot({ force: true })
                         } else {
                             this.debug('Motion snapshot needed but notification did not contain image UUID and battery cameras are unable to snapshot while recording')
+                            loop = 0  // Don't retry in this case
                         }
                 }
             } catch (err) {
