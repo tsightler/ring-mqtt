@@ -1,11 +1,11 @@
 ## v5.5.0
 **New Features**
 - Initial support for HEVC mode cameras\
-  Ring is actively enabling H.265/HEVC mode on some newer camera models and the Ring Andriod API used by ring-mqtt actively rejects any other protocol for these cameras.  The Ring web based dashboard uses a different API which appears to support negotiating H.264/AVC with these devices as a fallback but, so far, I haven't been able to get it to work correctly with ring-mqtt, hopefully we will resolve that eventually.
+  Ring is actively enabling the H.265/HEVC codec on some newer camera models and the Ring Andriod-app based API used by ring-mqtt actively rejects any other protocol for these cameras.  The Ring web based dashboard uses a different API which appears to support negotiating H.264/AVC with these devices as a fallback but, so far, I haven't been able to get it to work correctly with ring-mqtt, hopefully that will be resolved eventually.
 
-  Passing HEVC through natively prsents too many compatibility issues with downstream devices so, for now, ring-mqtt will transcode these streams back to H.264/AVC on-the-fly.  This provides wide compatibiltiy with downstream devices, basically the same as other cameras, but at the cost of high CPU usage to perform the transcoding.
+  Passing HEVC through unchanged presents too many compatibility issues with downstream devices to be practical so, for now, ring-mqtt will attempt to transcode these streams back to H.264/AVC on-the-fly.  This provides wide compatibiltiy with downstream devices, but at the cost of significantly increased CPU usage during streaming.
 
-  Hopefully over time more browsers will add H.265/HEVC support to their WebRTC implementations so passthrough will again become an option, or perhaps the web based API will eventually be figured out, but, for now, transcoding is a quick a dirty hack that will at least make these cameras work in some cases.  Note that if you are on a RPi3 this will probably not work, and an RPI4 will barely be able to support a single stream.
+  Ideally, over time, more browsers will add H.265/HEVC support to their WebRTC implementations so passthrough will become a viable option, but, for now, transcoding provides a quick and dirty hack that will at least allow these cameras work in many cases.  Note that if you are running on a RPi3 this will probably not work, and an RPi4 will barely be able to support a single stream.
 - Add switch to toggle motion warning for cameras that support this feature
 - Implement new logic for entry/exit delay (inspired by @amura11):
   - Exit delay now supports both home and away modes
