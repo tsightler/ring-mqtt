@@ -1,5 +1,9 @@
 ## v5.5.1
-**Bugs Fixed**
+**New Features**
+- Improved support for HEVC mode cameras\
+  While the initial support for HEVC required transcoding, this new version uses a different Ring streaming API that negotiates down to H.264/AVC on-the-fly which means these camera should now work fine even on lower-performance hardware like RPi3/4 devices.  Hopefully this new API does not break streaming for other cases.
+
+**Other Changes**
 - Use non-cached snapshot for all cases.
 - Implement multiple retries if initial request for snapshot update fails
 
