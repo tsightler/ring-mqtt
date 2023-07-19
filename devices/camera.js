@@ -770,40 +770,16 @@ export default class Camera extends RingPolledDevice {
 
         const streamData = {
             rtspPublishUrl,
-            sessionId: false,
-            authToken: false
+            ticket: null
         }
 
-
         try {
-            this.debug('Initializing a live stream WebRTC signaling session')
+            this.debug('Acquiring a live stream WebRTC signaling session ticket')
             const response = await this.device.restClient.request({
                 method: 'POST',
                 url: 'https://app.ring.com/api/v1/clap/ticket/request/signalsocket'
             })
-            streamData.authToken = response.ticket
-            /*
-            if (!this.device.isRingEdgeEnabled) {
-                this.debug('Initializing a live stream session for Ring Edge')
-                const auth = await this.device.restClient.getCurrentAuth()
-                streamData.authToken = auth.access_token
-                const response = await this.device.restClient.request({
-                    method: 'POST',
-                    url: 'https://app.ring.com/api/v1/clap/ticket/request/signalsocket'
-                })
-                streamData.authToken = response.ticket
-
-            } else {
-                this.debug('Initializing a live stream session for Ring cloud')
-                const liveCall = await this.device.restClient.request({
-                    method: 'POST',
-                    url: this.device.doorbotUrl('live_call')
-                })
-                if (liveCall.data?.session_id) {
-                    streamData.sessionId = liveCall.data.session_id
-                }
-            }
-            */
+            streamData.ticket = response.ticket
         } catch(error) {
             if (error?.response?.statusCode === 403) {
                 this.debug(`Camera returned 403 when starting a live stream.  This usually indicates that live streaming is blocked by Modes settings.  Check your Ring app and verify that you are able to stream from this camera with the current Modes settings.`)
@@ -812,11 +788,11 @@ export default class Camera extends RingPolledDevice {
             }
         }
 
-        if (streamData.sessionId || streamData.authToken) {
-            this.debug('Live stream WebRTC signalling session ticket successfully acquired, starting live stream worker')
+        if (streamData.ticket) {
+            this.debug('Live stream WebRTC signaling session ticket acquired, starting live stream worker')
             this.data.stream.live.worker.postMessage({ command: 'start', streamData })
         } else {
-            this.debug('Live stream activation failed to initialize session data')
+            this.debug('Live stream failed to initialize WebRTC signaling session')
             this.data.stream.live.status = 'failed'
             this.data.stream.live.session = false
             this.publishStreamState()
