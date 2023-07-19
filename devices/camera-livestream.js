@@ -65,17 +65,7 @@ async function startLiveStream(streamData) {
                 '-c:a:1', 'copy',
             ],
             video: [
-                ...streamData.hevcEnabled
-                    ? [
-                        '-c:v', 'libx264',
-                        '-g', '20',
-                        '-keyint_min', '10',
-                        '-crf', '23',
-                        '-preset', 'ultrafast'
-                    ]
-                    : [
-                        '-c:v', 'copy'
-                    ]
+                '-c:v', 'copy'
             ],
             output: [
                 '-flags', '+global_header',

@@ -767,18 +767,32 @@ export default class Camera extends RingPolledDevice {
 
     async startLiveStream(rtspPublishUrl) {
         this.data.stream.live.session = true
+
         const streamData = {
             rtspPublishUrl,
             sessionId: false,
-            authToken: false,
-            hevcEnabled: this.hevcEnabled
+            authToken: false
         }
 
+
         try {
-            if (this.device.isRingEdgeEnabled) {
+            this.debug('Initializing a live stream WebRTC signaling session')
+            const response = await this.device.restClient.request({
+                method: 'POST',
+                url: 'https://app.ring.com/api/v1/clap/ticket/request/signalsocket'
+            })
+            streamData.authToken = response.ticket
+            /*
+            if (!this.device.isRingEdgeEnabled) {
                 this.debug('Initializing a live stream session for Ring Edge')
                 const auth = await this.device.restClient.getCurrentAuth()
                 streamData.authToken = auth.access_token
+                const response = await this.device.restClient.request({
+                    method: 'POST',
+                    url: 'https://app.ring.com/api/v1/clap/ticket/request/signalsocket'
+                })
+                streamData.authToken = response.ticket
+
             } else {
                 this.debug('Initializing a live stream session for Ring cloud')
                 const liveCall = await this.device.restClient.request({
@@ -789,6 +803,7 @@ export default class Camera extends RingPolledDevice {
                     streamData.sessionId = liveCall.data.session_id
                 }
             }
+            */
         } catch(error) {
             if (error?.response?.statusCode === 403) {
                 this.debug(`Camera returned 403 when starting a live stream.  This usually indicates that live streaming is blocked by Modes settings.  Check your Ring app and verify that you are able to stream from this camera with the current Modes settings.`)
@@ -798,7 +813,7 @@ export default class Camera extends RingPolledDevice {
         }
 
         if (streamData.sessionId || streamData.authToken) {
-            this.debug('Live stream session successfully initialized, starting worker')
+            this.debug('Live stream WebRTC signalling session ticket successfully acquired, starting live stream worker')
             this.data.stream.live.worker.postMessage({ command: 'start', streamData })
         } else {
             this.debug('Live stream activation failed to initialize session data')
@@ -825,7 +840,9 @@ export default class Camera extends RingPolledDevice {
 
         try {
             if (this.data.event_select.transcoded || this.hevcEnabled) {
-                // Ring videos transcoded for download are poorly optimized for RTSP streaming so they must be re-encoded on-the-fly
+                // If camera is in HEVC mode, recordings are also in HEVC so transcode the video back to H.264/AVC on the fly
+                // Ring videos transcoded for download are not optimized for RTSP streaming (limited keyframes) so they must
+                // also be re-transcoded on-the-fly to allow streamers to join early
                 this.data.stream.event.session = spawn(pathToFfmpeg, [
                     '-re',
                     '-i', this.data.event_select.recordingUrl,
