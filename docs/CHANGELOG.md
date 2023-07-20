@@ -7,6 +7,9 @@
 - Use non-cached snapshot for all cases.
 - Implement multiple retries if initial request for snapshot update fails
 
+**Dependency Updates**
+- go2rtc v1.6.1
+
 ## v5.5.0
 **New Features**
 - Initial support for HEVC mode cameras\
