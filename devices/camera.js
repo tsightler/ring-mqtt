@@ -565,6 +565,13 @@ export default class Camera extends RingPolledDevice {
     // Writes state to custom property to keep from publishing state except
     // when values change from previous polling interval
     publishPolledState(isPublish) {
+        // Publish connection status
+        const connectionState = this.device.data.alerts.connection
+        if( connectionState !== this.connectionState || isPublish) {
+            this.mqttPublish(this.connectionTopic, connectionState)
+            this.connectionState = connectionState
+        }
+
         if (this.device.hasLight) {
             const lightState = this.device.data.led_status === 'on' ? 'ON' : 'OFF'
             if ((lightState !== this.data.light.state && Date.now()/1000 - this.data.light.setTime > 30) || isPublish) {

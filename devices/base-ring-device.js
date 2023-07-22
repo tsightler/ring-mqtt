@@ -9,6 +9,7 @@ export default class RingDevice {
         this.deviceId = apiType === 'socket' ? deviceInfo.device.id : deviceInfo.device.data.device_id
         this.locationId = apiType === 'socket' ? deviceInfo.device.location.locationId : deviceInfo.device.data.location_id
         this.availabilityState = 'unpublished'
+        this.connectionTopic = 'unavailable'
         this.entity = {}
         this.isOnline = () => {
             return this.availabilityState === 'online' ? true : false
@@ -32,6 +33,12 @@ export default class RingDevice {
         if (primaryAttribute !== 'disable') {
             this.initAttributeEntities(primaryAttribute)
             this.schedulePublishAttributes()
+        }
+
+        // data.alerts.connection is available for all polled devices except modes-panel
+        if (category === 'camera' || category === 'chime' || category === 'intercom') {
+            this.connectionState = this.device.data.alerts.connection
+            this.connectionTopic = `${this.deviceTopic}/connection`
         }
     }
 
@@ -147,6 +154,7 @@ export default class RingDevice {
                 availability_topic: this.availabilityTopic,
                 payload_available: 'online',
                 payload_not_available: 'offline',
+                connection_topic: this.connectionTopic,
                 device: this.deviceData
             }
 

@@ -87,6 +87,13 @@ export default class Chime extends RingPolledDevice {
     publishState(data) {
         const isPublish = data === undefined ? true : false
 
+        // Publish connection status
+        const connectionState = this.device.data.alerts.connection
+        if( connectionState !== this.connectionState || isPublish) {
+            this.mqttPublish(this.connectionTopic, connectionState)
+            this.connectionState = connectionState
+        }
+
         // Polled states are published only if value changes or it's a device publish
         const volumeState = this.device.data.settings.volume
         if (volumeState !== this.data.volume || isPublish) {

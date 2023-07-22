@@ -73,6 +73,13 @@ export default class Lock extends RingPolledDevice {
     publishState(data) {
         const isPublish = data === undefined ? true : false
 
+        // Publish connection status
+        const connectionState = this.device.data.alerts.connection
+        if( connectionState !== this.connectionState || isPublish) {
+            this.mqttPublish(this.connectionTopic, connectionState)
+            this.connectionState = connectionState
+        }
+
         this.publishDingState(isPublish)
         this.publishLockState(isPublish)
 
