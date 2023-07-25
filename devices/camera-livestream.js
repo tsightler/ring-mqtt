@@ -1,6 +1,5 @@
 import { parentPort, workerData } from 'worker_threads'
 import { WebrtcConnection } from '../lib/streaming/webrtc-connection.js'
-import { RingEdgeConnection } from '../lib/streaming/ring-edge-connection.js'
 import { StreamingSession } from '../lib/streaming/streaming-session.js'
 
 const deviceName = workerData.deviceName
@@ -31,9 +30,7 @@ async function startLiveStream(streamData) {
             id: doorbotId
         }
 
-        const streamConnection = (streamData.sessionId)
-            ? new WebrtcConnection(streamData.sessionId, cameraData)
-            : new RingEdgeConnection(streamData.authToken, cameraData)
+        const streamConnection = new WebrtcConnection(streamData.ticket, cameraData)
         liveStream = new StreamingSession(cameraData, streamConnection)
 
         liveStream.connection.pc.onConnectionState.subscribe(async (data) => {
@@ -65,17 +62,7 @@ async function startLiveStream(streamData) {
                 '-c:a:1', 'copy',
             ],
             video: [
-                ...streamData.hevcEnabled
-                    ? [
-                        '-c:v', 'libx264',
-                        '-g', '20',
-                        '-keyint_min', '10',
-                        '-crf', '23',
-                        '-preset', 'ultrafast'
-                    ]
-                    : [
-                        '-c:v', 'copy'
-                    ]
+                '-c:v', 'copy'
             ],
             output: [
                 '-flags', '+global_header',

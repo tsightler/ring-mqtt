@@ -11,7 +11,7 @@ ENV LANG="C.UTF-8" \
 COPY . /app/ring-mqtt
 RUN S6_VERSION="v3.1.5.0" && \
     BASHIO_VERSION="v0.15.0" && \
-    GO2RTC_VERSION="v1.6.0" && \
+    GO2RTC_VERSION="v1.6.2" && \
     APK_ARCH="$(apk --print-arch)" && \
     apk add --no-cache tar xz git libcrypto3 libssl3 musl-utils musl bash curl jq tzdata nodejs npm mosquitto-clients && \
     curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/${S6_VERSION}/s6-overlay-noarch.tar.xz" | tar -Jxpf - -C / && \

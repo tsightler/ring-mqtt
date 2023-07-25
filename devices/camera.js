@@ -719,32 +719,42 @@ export default class Camera extends RingPolledDevice {
 
     async refreshSnapshot(type, image_uuid) {
         let newSnapshot = false
+        let loop = 3
 
         if (this.device.snapshotsAreBlocked) {
             this.debug('Snapshots are unavailable, check if motion capture is disabled manually or via modes settings')
             return
         }
 
-        try {
-            switch (type) {
-                case 'interval':
-                    this.debug('Requesting an updated interval snapshot')
-                    newSnapshot = await this.device.getSnapshot()
-                    break;
-                case 'motion':
-                    if (image_uuid) {
-                        this.debug(`Requesting motion snapshot using notification image UUID: ${image_uuid}`)
-                        newSnapshot = await this.device.getNextSnapshot({ uuid: image_uuid })
-                    } else if (!this.device.operatingOnBattery) {
-                        this.debug('Requesting an updated motion snapshot')
-                        newSnapshot = await this.device.getNextSnapshot()
-                    } else {
-                        this.debug('Motion snapshot needed but notification did not contain image UUID and battery cameras are unable to snapshot while recording')
-                    }
+        while (!newSnapshot && loop > 0) {
+            try {
+                switch (type) {
+                    case 'interval':
+                        this.debug('Requesting an updated interval snapshot')
+                        newSnapshot = await this.device.getNextSnapshot({ force: true })
+                        break;
+                    case 'motion':
+                        if (image_uuid) {
+                            this.debug(`Requesting motion snapshot using notification image UUID: ${image_uuid}`)
+                            newSnapshot = await this.device.getNextSnapshot({ uuid: image_uuid })
+                        } else if (!this.device.operatingOnBattery) {
+                            this.debug('Requesting an updated motion snapshot')
+                            newSnapshot = await this.device.getNextSnapshot({ force: true })
+                        } else {
+                            this.debug('Motion snapshot needed but notification did not contain image UUID and battery cameras are unable to snapshot while recording')
+                            loop = 0  // Don't retry in this case
+                        }
+                }
+            } catch (err) {
+                this.debug(err)
+                if (loop > 1) {
+                    this.debug('Failed to retrieve updated snapshot, retrying in one second...')
+                    await utils.sleep(1)
+                } else {
+                    this.debug('Failed to retrieve updated snapshot after three attempts, aborting')
+                }
             }
-        } catch (error) {
-            this.debug(error)
-            this.debug('Failed to retrieve updated snapshot')
+            loop--
         }
 
         if (newSnapshot) {
@@ -757,28 +767,19 @@ export default class Camera extends RingPolledDevice {
 
     async startLiveStream(rtspPublishUrl) {
         this.data.stream.live.session = true
+
         const streamData = {
             rtspPublishUrl,
-            sessionId: false,
-            authToken: false,
-            hevcEnabled: this.hevcEnabled
+            ticket: null
         }
 
         try {
-            if (this.device.isRingEdgeEnabled) {
-                this.debug('Initializing a live stream session for Ring Edge')
-                const auth = await this.device.restClient.getCurrentAuth()
-                streamData.authToken = auth.access_token
-            } else {
-                this.debug('Initializing a live stream session for Ring cloud')
-                const liveCall = await this.device.restClient.request({
-                    method: 'POST',
-                    url: this.device.doorbotUrl('live_call')
-                })
-                if (liveCall.data?.session_id) {
-                    streamData.sessionId = liveCall.data.session_id
-                }
-            }
+            this.debug('Acquiring a live stream WebRTC signaling session ticket')
+            const response = await this.device.restClient.request({
+                method: 'POST',
+                url: 'https://app.ring.com/api/v1/clap/ticket/request/signalsocket'
+            })
+            streamData.ticket = response.ticket
         } catch(error) {
             if (error?.response?.statusCode === 403) {
                 this.debug(`Camera returned 403 when starting a live stream.  This usually indicates that live streaming is blocked by Modes settings.  Check your Ring app and verify that you are able to stream from this camera with the current Modes settings.`)
@@ -787,11 +788,11 @@ export default class Camera extends RingPolledDevice {
             }
         }
 
-        if (streamData.sessionId || streamData.authToken) {
-            this.debug('Live stream session successfully initialized, starting worker')
+        if (streamData.ticket) {
+            this.debug('Live stream WebRTC signaling session ticket acquired, starting live stream worker')
             this.data.stream.live.worker.postMessage({ command: 'start', streamData })
         } else {
-            this.debug('Live stream activation failed to initialize session data')
+            this.debug('Live stream failed to initialize WebRTC signaling session')
             this.data.stream.live.status = 'failed'
             this.data.stream.live.session = false
             this.publishStreamState()
@@ -815,7 +816,9 @@ export default class Camera extends RingPolledDevice {
 
         try {
             if (this.data.event_select.transcoded || this.hevcEnabled) {
-                // Ring videos transcoded for download are poorly optimized for RTSP streaming so they must be re-encoded on-the-fly
+                // If camera is in HEVC mode, recordings are also in HEVC so transcode the video back to H.264/AVC on the fly
+                // Ring videos transcoded for download are not optimized for RTSP streaming (limited keyframes) so they must
+                // also be re-transcoded on-the-fly to allow streamers to join early
                 this.data.stream.event.session = spawn(pathToFfmpeg, [
                     '-re',
                     '-i', this.data.event_select.recordingUrl,
