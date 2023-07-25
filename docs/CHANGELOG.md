@@ -8,7 +8,7 @@
 - Implement multiple retries if initial request for snapshot update fails
 
 **Dependency Updates**
-- go2rtc v1.6.1
+- go2rtc v1.6.2
 
 ## v5.5.0
 **New Features**
