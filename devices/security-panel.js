@@ -76,7 +76,7 @@ export default class SecurityPanel extends RingSocketDevice {
         })
     }
 
-    // Convert Ring alarm modes to Home Asisstan Alarm Control Panel MQTT state
+    // Convert Ring alarm modes to Home Assistant Alarm Control Panel MQTT state
     ringModeToMqttState(mode) {
         // If using actual device mode, return arming/pending/triggered states
         if (!mode) {
@@ -87,7 +87,7 @@ export default class SecurityPanel extends RingSocketDevice {
             }
         }
 
-        // If mode was passed to the function use it, oterwise use currently active device mode
+        // If mode was passed to the function use it, otherwise use currently active device mode
         switch (mode ? mode : this.device.data.mode) {
             case 'none':
                 return 'disarmed'
