@@ -1,6 +1,6 @@
 {
   "name": "ring-mqtt",
-  "version": "5.5.1",
+  "version": "5.5.2",
   "type": "module",
   "description": "Ring Devices via MQTT",
   "main": "ring-mqtt.js",
@@ -16,7 +16,7 @@
     "js-yaml": "^4.1.0",
     "minimist": "^1.2.8",
     "mqtt": "^4.3.7",
-    "ring-client-api": "11.8.0",
+    "ring-client-api": "11.8.1",
     "rxjs": "^7.8.1",
     "werift": "^0.18.4",
     "write-file-atomic": "^5.0.1"
