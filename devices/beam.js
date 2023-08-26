@@ -53,7 +53,7 @@ export default class Beam extends RingSocketDevice {
         }
 
         this.entity.beam_duration = {
-            name: this.device.name+' Duration',
+            name: 'Duration',
             unique_id: this.deviceId+'_duration',
             component: 'number',
             min: 0,

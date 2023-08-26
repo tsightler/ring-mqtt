@@ -53,7 +53,7 @@ export default class BinarySensor extends RingSocketDevice {
         this.entity[this.entityName] = {
             component: 'binary_sensor',
             ...device_class ? { device_class: device_class } : {},
-            isLegacyEntity: true  // Legacy compatibility
+            name: 'None'  // Indicates primary entity to Home Assistant
         }
 
         // Only official Ring sensors can be bypassed

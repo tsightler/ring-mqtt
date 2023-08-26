@@ -9,7 +9,7 @@ export default class ModesPanel extends RingPolledDevice {
 
         this.entity.mode = {
             component: 'alarm_control_panel',
-            isLegacyEntity: true  // Legacy compatibility
+            name: 'None'  // Indicates primary entity to Home Assistant
         }
 
         this.data = {

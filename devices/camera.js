@@ -120,7 +120,7 @@ export default class Camera extends RingPolledDevice {
             stream: {
                 component: 'switch',
                 attributes: true,
-                name: `${this.deviceData.name} Live Stream`,
+                name: 'Live Stream',
                 icon: 'mdi:cctv'
             },
             event_stream: {

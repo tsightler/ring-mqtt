@@ -7,7 +7,7 @@ export default class Lock extends RingSocketDevice {
 
         this.entity.lock = {
             component: 'lock',
-            isLegacyEntity: true  // Legacy compatibility
+            name: 'None'  // Indicates primary entity to Home Assistant
         }
     }
 

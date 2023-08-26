@@ -8,7 +8,7 @@ export default class Switch extends RingSocketDevice {
 
         this.entity[this.component] = {
             component: this.component,
-            isLegacyEntity: true  // Legacy compatibility
+            name: 'None'  // Indicates primary entity to Home Assistant
         }
     }
 

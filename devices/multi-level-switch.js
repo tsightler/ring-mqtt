@@ -8,7 +8,7 @@ export default class MultiLevelSwitch extends RingSocketDevice {
         this.entity.light = {
             component: 'light',
             brightness_scale: 100,
-            isLegacyEntity: true  // Legacy compatibility
+            name: 'None'  // Indicates primary entity to Home Assistant
         }
     }
 

@@ -8,7 +8,7 @@ export default class Fan extends RingSocketDevice {
 
         this.entity.fan = {
             component: 'fan',
-            isLegacyEntity: true  // Legacy compatibility
+            name: 'None'  // Indicates primary entity to Home Assistant
         }
 
         this.data = {
