@@ -1,3 +1,16 @@
+## v5.6.0
+Although this is a minor version bump, there are no new features in this release.  The focus of this release is to address the warnings due to the device/entity naming changes that were introduced in the 2023.8 release of Home Assistant.  I've tried to address this as cleanly as possible, but I'm not sure if I've caught all the corner cases.
+
+**Other Changes**
+- Tweak tamper template for better compatibility with OpenHAB (thanks @zolakk for the PR)
+- Minor tweaks to WebRTC connection process
+- Try to capture and log null responses during web token generation
+
+**Dependcy Updates**
+- ring-client-api v12.0.0
+- aedes v0.50.0
+- wrtift 0.18.5
+
 ## v5.5.1
 **New Features**
 - Improved support for HEVC mode cameras\
