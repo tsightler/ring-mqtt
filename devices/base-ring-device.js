@@ -68,13 +68,11 @@ export default class RingDevice {
             // decided I can live with it.
             let discoveryMessage = {
                 ...entity.hasOwnProperty('name')
-                    ? { name: entity.name }
+                    ? { name: entity.name === 'None' ? '' : entity.name }
                     : { name: `${entityKey.replace(/_/g," ").replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())}` },
                 ...entity.hasOwnProperty('unique_id') // If device provides own unique_id use that in all cases
                     ? { unique_id: entity.unique_id }
-                    : entity.name === 'None' // Use legacy entity ID generation the for primary device entity
-                        ? { unique_id: `${this.deviceId}` }
-                        : { unique_id: `${this.deviceId}_${entityKey}` },
+                    : { unique_id: entity.name === 'None' ? `${this.deviceId}` : `${this.deviceId}_${entityKey}`},
                 ...entity.component === 'camera'
                     ? { topic: entityStateTopic }
                     : entity.component === 'climate'
