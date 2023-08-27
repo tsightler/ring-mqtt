@@ -9,7 +9,7 @@ export default class Siren extends RingSocketDevice {
             siren: {
                 component: 'switch',
                 icon: 'mdi:alarm-light',
-                name: 'None'  // Indicates primary entity to Home Assistant
+                unique_id: `${this.deviceId}` // Force backward compatible unique ID for this entity
             },
             ...(this.device.data.deviceType === 'siren.outdoor-strobe') ? {
                 volume: {

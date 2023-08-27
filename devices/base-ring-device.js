@@ -55,24 +55,14 @@ export default class RingDevice {
                     ? `${entityTopic}/image`
                     : `${entityTopic}/state`
 
-            // ***** Build a Home Assistant style MQTT discovery message *****
-            // Legacy versions of ring-mqtt created entity names and IDs for single function devices
-            // without using any type of suffix. Modern versions of Home Assistant do not allow
-            // the device name to be part of the entity name so now the code simply sets the name
-            // of these entities to "None" which tells Home Assistant that this entity represents
-            // the primary function of the device.
-            //
-            // I know the code below will offend the sensibilities of some people, especially with
-            // regards to formatting and nested ternaries, but, for whatever reason, my brain reads
-            // and parses the logic out easily, more so than other methods I've tried, so I've
-            // decided I can live with it.
+            // Build a Home Assistant style MQTT discovery message for the entity
             let discoveryMessage = {
                 ...entity.hasOwnProperty('name')
-                    ? { name: entity.name === 'None' ? '' : entity.name }
+                    ? { name: entity.name }
                     : { name: `${entityKey.replace(/_/g," ").replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())}` },
-                ...entity.hasOwnProperty('unique_id') // If device provides own unique_id use that in all cases
+                ...entity.hasOwnProperty('unique_id')
                     ? { unique_id: entity.unique_id }
-                    : { unique_id: entity.name === 'None' ? `${this.deviceId}` : `${this.deviceId}_${entityKey}`},
+                    : { unique_id: `${this.deviceId}_${entityKey}`},
                 ...entity.component === 'camera'
                     ? { topic: entityStateTopic }
                     : entity.component === 'climate'

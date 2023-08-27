@@ -8,7 +8,7 @@ export default class Switch extends RingSocketDevice {
 
         this.entity[this.component] = {
             component: this.component,
-            name: 'None'  // Indicates primary entity to Home Assistant
+            unique_id: `${this.deviceId}` // Force backward compatible unique ID for this entity
         }
     }
 

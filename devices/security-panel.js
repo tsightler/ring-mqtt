@@ -27,22 +27,22 @@ export default class SecurityPanel extends RingSocketDevice {
             alarm: {
                 component: 'alarm_control_panel',
                 attributes: true,
-                name: 'None'  // Indicates primary entity to Home Assistant
+                unique_id: `${this.deviceId}` // Force backward compatible unique ID for this entity
             },
             siren: {
                 component: 'switch',
                 icon: 'mdi:alarm-light',
-                name: 'Siren'
+                name: `Siren`
             },
             ...utils.config().enable_panic ? {
                 police: {
                     component: 'switch',
-                    name: 'Panic - Police',
+                    name: `Panic - Police`,
                     icon: 'mdi:police-badge'
                 },
                 fire: {
                     component: 'switch',
-                    name: 'Panic - Fire',
+                    name: `Panic - Fire`,
                     icon: 'mdi:fire'
                 }
             } : {}

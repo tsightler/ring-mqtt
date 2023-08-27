@@ -9,7 +9,7 @@ export default class ModesPanel extends RingPolledDevice {
 
         this.entity.mode = {
             component: 'alarm_control_panel',
-            name: 'None'  // Indicates primary entity to Home Assistant
+            unique_id: `${this.deviceId}` // Force backward compatible unique ID for this entity
         }
 
         this.data = {

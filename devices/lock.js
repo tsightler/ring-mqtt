@@ -7,7 +7,7 @@ export default class Lock extends RingSocketDevice {
 
         this.entity.lock = {
             component: 'lock',
-            name: 'None'  // Indicates primary entity to Home Assistant
+            unique_id: `${this.deviceId}` // Force backward compatible unique ID for this entity
         }
     }
 
