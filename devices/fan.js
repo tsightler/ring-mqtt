@@ -8,7 +8,7 @@ export default class Fan extends RingSocketDevice {
 
         this.entity.fan = {
             component: 'fan',
-            unique_id: `${this.deviceId}` // Force backward compatible unique ID for this entity
+            isMainEntity: true
         }
 
         this.data = {

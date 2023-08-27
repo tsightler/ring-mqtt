@@ -27,7 +27,7 @@ export default class SecurityPanel extends RingSocketDevice {
             alarm: {
                 component: 'alarm_control_panel',
                 attributes: true,
-                unique_id: `${this.deviceId}` // Force backward compatible unique ID for this entity
+                isMainEntity: true
             },
             siren: {
                 component: 'switch',

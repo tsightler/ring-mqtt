@@ -57,11 +57,11 @@ export default class RingDevice {
 
             // Build a Home Assistant style MQTT discovery message for the entity
             let discoveryMessage = {
-                ...entity.hasOwnProperty('name')
-                    ? { name: entity.name }
+                ...entity.hasOwnProperty('isMainEntity') || entity.hasOwnProperty('name')
+                    ? { name: entity.hasOwnProperty('name') ? entity.name : '' }
                     : { name: `${entityKey.replace(/_/g," ").replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())}` },
-                ...entity.hasOwnProperty('unique_id')
-                    ? { unique_id: entity.unique_id }
+                ...entity.hasOwnProperty('isMainEntity') || entity.hasOwnProperty('unique_id')
+                    ? { unique_id: entity.hasOwnProperty('unique_id') ? entity.unique_id : `${this.deviceId}` }
                     : { unique_id: `${this.deviceId}_${entityKey}`},
                 ...entity.component === 'camera'
                     ? { topic: entityStateTopic }

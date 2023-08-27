@@ -8,7 +8,7 @@ export default class MultiLevelSwitch extends RingSocketDevice {
         this.entity.light = {
             component: 'light',
             brightness_scale: 100,
-            unique_id: `${this.deviceId}` // Force backward compatible unique ID for this entity
+            isMainEntity: true
         }
     }
 

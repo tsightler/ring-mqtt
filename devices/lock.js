@@ -7,7 +7,7 @@ export default class Lock extends RingSocketDevice {
 
         this.entity.lock = {
             component: 'lock',
-            unique_id: `${this.deviceId}` // Force backward compatible unique ID for this entity
+            isMainEntity: true
         }
     }
 

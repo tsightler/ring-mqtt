@@ -9,7 +9,7 @@ export default class ModesPanel extends RingPolledDevice {
 
         this.entity.mode = {
             component: 'alarm_control_panel',
-            unique_id: `${this.deviceId}` // Force backward compatible unique ID for this entity
+            isMainEntity: true
         }
 
         this.data = {

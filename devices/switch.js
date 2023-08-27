@@ -8,7 +8,7 @@ export default class Switch extends RingSocketDevice {
 
         this.entity[this.component] = {
             component: this.component,
-            unique_id: `${this.deviceId}` // Force backward compatible unique ID for this entity
+            isMainEntity: true
         }
     }
 

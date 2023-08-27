@@ -11,7 +11,7 @@ export default class CoAlarm extends RingSocketDevice {
         this.entity.co = {
             component: 'binary_sensor',
             device_class: 'gas',
-            unique_id: `${this.deviceId}` // Force backward compatible unique ID for this entity
+            isMainEntity: true
         }
     }
 
