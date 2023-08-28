@@ -67,14 +67,12 @@ async function startLiveStream(streamData) {
             output: [
                 '-flags', '+global_header',
                 '-f', 'rtsp',
-                '-pkt_size', '564',
                 '-rtsp_transport', 'tcp',
                 streamData.rtspPublishUrl
             ]
         })
 
         parentPort.postMessage({type: 'log_info', data: 'Live stream transcoding process has started'})
-        liveStream.requestKeyFrame()
 
         liveStream.onCallEnded.subscribe(() => {
             parentPort.postMessage({type: 'log_info', data: 'Live stream WebRTC session has disconnected'})
