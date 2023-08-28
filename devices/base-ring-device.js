@@ -63,12 +63,14 @@ export default class RingDevice {
                 ...entity.hasOwnProperty('isMainEntity') || entity.hasOwnProperty('unique_id')
                     ? { unique_id: entity.hasOwnProperty('unique_id') ? entity.unique_id : `${this.deviceId}` }
                     : { unique_id: `${this.deviceId}_${entityKey}`},
-                ...entity.component === 'camera'
-                    ? { topic: entityStateTopic }
+                ...!entity.component.match(/^(camera|climate|button)$/)
+                    ? { state_topic: entityStateTopic }
                     : entity.component === 'climate'
                         ? { mode_state_topic: entityStateTopic }
-                        : { state_topic: entityStateTopic },
-                ...entity.component.match(/^(switch|number|light|fan|lock|alarm_control_panel|select)$/)
+                        : entity.component === 'camera'
+                            ? { topic: entityStateTopic }
+                            : {},
+                ...entity.component.match(/^(switch|number|light|fan|lock|alarm_control_panel|select|button)$/)
                     ? { command_topic: `${entityTopic}/command` } : {},
                 ...entity.hasOwnProperty('device_class')
                     ? { device_class: entity.device_class } : {},

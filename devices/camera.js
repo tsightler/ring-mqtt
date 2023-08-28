@@ -60,7 +60,8 @@ export default class Camera extends RingPolledDevice {
                     : (this.device.operatingOnBattery) ? 600 : 30,
                 intervalTimerId: null,
                 currentImage: null,
-                timestamp: null
+                timestamp: null,
+                onDemandTimestamp: 0
             },
             stream: {
                 live: {
@@ -187,6 +188,10 @@ export default class Camera extends RingPolledDevice {
                 min: 10,
                 max: 604800,
                 icon: 'hass:timer'
+            },
+            take_snapshot: {
+                component: 'button',
+                icon: 'mdi:camera'
             },
             motion_detection: {
                 component: 'switch'
@@ -732,7 +737,8 @@ export default class Camera extends RingPolledDevice {
             try {
                 switch (type) {
                     case 'interval':
-                        this.debug('Requesting an updated interval snapshot')
+                    case 'on-demand':
+                        this.debug(`Requesting an updated ${type} snapshot`)
                         newSnapshot = await this.device.getNextSnapshot({ force: true })
                         break;
                     case 'motion':
@@ -1084,14 +1090,14 @@ export default class Camera extends RingPolledDevice {
             case 'siren/command':
                 this.setSirenState(message)
                 break;
-            case 'snapshot/command':
-                this.setSnapshotInterval(message)
-                break;
             case 'snapshot_mode/command':
                 this.setSnapshotMode(message)
                 break;
             case 'snapshot_interval/command':
                 this.setSnapshotInterval(message)
+                break;
+            case 'take_snapshot/command':
+                this.takeSnapshot(message)
                 break;
             case 'stream/command':
                 this.setLiveStreamState(message)
@@ -1245,6 +1251,20 @@ export default class Camera extends RingPolledDevice {
             this.publishSnapshotInterval()
             this.debug('Snapshot refresh interval has been set to '+this.data.snapshot.intervalDuration+' seconds')
             this.updateDeviceState()
+        }
+    }
+
+    takeSnapshot(message) {
+        if (message.toLowerCase() === 'press') {
+            this.debug('Received command to take an on-demand snapshot')
+            if (this.data.snapshot.onDemandTimestamp + 10 < Math.round(Date.now()/1000 ) ) {
+                this.debug('On-demand snapshots are limited to one snapshot every 10 seconds')
+            } else {
+                this.data.snapshot.onDemandTimestamp = Math.round(Date.now()/1000)
+                this.refreshSnapshot('on-demand')
+            }
+        } else {
+            this.debug(`Received invalid take snapshot command`)
         }
     }
 

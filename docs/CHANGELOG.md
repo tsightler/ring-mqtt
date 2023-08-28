@@ -2,7 +2,8 @@
 While there are some minor features in this release, the primary focus is to address the warnings due to the device/entity naming changes that were introduced in the 2023.8 release of Home Assistant.  I've tried to address this as cleanly as possible, so that entitiy names and behaviors are presented in the UI as cleanly as possible, but there could be corner cases that were missed.
 
 **New Features**
-- It is now possible to get snapshots from ding events in additional to motion events
+- It is now possible to get snapshots from ding events in addition to motion events (new snapshot modes are added for this as well)
+- A new button entity is now available to request a snapshot on-demand.  This was a much requested feature and is intended primarily to allow snapshots to be triggered from automations.  Note that on-demand snapshots are limited to no more than one request every 10 seconds, more frequent requests will be logged, but otherwise ignored.
 
 **Other Changes**
 - Minor tweak to tamper sensor for better compatibility with OpenHAB (thanks to @zolakk for the PR)
