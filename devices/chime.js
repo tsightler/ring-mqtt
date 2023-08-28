@@ -28,6 +28,7 @@ export default class Chime extends RingPolledDevice {
                 component: 'number',
                 min: 0,
                 max: 11,
+                mode: 'slider',
                 icon: 'hass:volume-high'
             },
             snooze: {
@@ -39,6 +40,7 @@ export default class Chime extends RingPolledDevice {
                 component: 'number',
                 min: 1,
                 max: 1440,
+                mode: 'box',
                 icon: 'hass:timer-sand'
             },
             play_ding_sound: {

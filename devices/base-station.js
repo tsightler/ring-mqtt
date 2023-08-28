@@ -22,6 +22,7 @@ export default class BaseStation extends RingSocketDevice {
                 component: 'number',
                 min: 0,
                 max: 100,
+                mode: 'slider',
                 icon: 'hass:volume-high'
             }
         } else {

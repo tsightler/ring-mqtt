@@ -187,6 +187,7 @@ export default class Camera extends RingPolledDevice {
                 component: 'number',
                 min: 10,
                 max: 604800,
+                mode: 'box',
                 icon: 'hass:timer'
             },
             take_snapshot: {
@@ -205,6 +206,7 @@ export default class Camera extends RingPolledDevice {
                 component: 'number',
                 min: 10,
                 max: 180,
+                mode: 'box',
                 icon: 'hass:timer'
             },
             ...this.device.isDoorbot ? {

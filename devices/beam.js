@@ -58,6 +58,7 @@ export default class Beam extends RingSocketDevice {
             component: 'number',
             min: 0,
             max: 32767,
+            mode: 'box',
             icon: 'hass:timer'
         }
 

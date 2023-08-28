@@ -84,6 +84,8 @@ export default class RingDevice {
                     ? { min: entity.min } : {},
                 ...entity.hasOwnProperty('max')
                     ? { max: entity.max } : {},
+                ...entity.hasOwnProperty('mode')
+                    ? { mode: entity.mode } : {},
                 ...entity.hasOwnProperty('attributes')
                     ? { json_attributes_topic: `${entityTopic}/attributes` }
                     : entityKey === "info"

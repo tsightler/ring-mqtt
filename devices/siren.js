@@ -16,6 +16,7 @@ export default class Siren extends RingSocketDevice {
                     component: 'number',
                     min: 0,
                     max: 4,
+                    mode: 'slider',
                     icon: 'hass:volume-high'
                 }
             } : {}
