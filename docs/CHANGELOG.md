@@ -1,15 +1,18 @@
 ## v5.6.0
-Although this is a minor version bump, there are no new features in this release.  The focus of this release is to address the warnings due to the device/entity naming changes that were introduced in the 2023.8 release of Home Assistant.  I've tried to address this as cleanly as possible, but I'm not sure if I've caught all the corner cases.
+While there are some minor features in this release, the primary focus is to address the warnings due to the device/entity naming changes that were introduced in the 2023.8 release of Home Assistant.  I've tried to address this as cleanly as possible, so that entitiy names and behaviors are presented in the UI as cleanly as possible, but there could be corner cases that were missed.
+
+**New Features**
+- It is now possible to get snapshots from ding events in additional to motion events
 
 **Other Changes**
-- Tweak tamper template for better compatibility with OpenHAB (thanks @zolakk for the PR)
+- Minor tweak to tamper sensor for better compatibility with OpenHAB (thanks to @zolakk for the PR)
 - Minor tweaks to WebRTC connection process
 - Try to capture and log null responses during web token generation
 
 **Dependcy Updates**
 - ring-client-api v12.0.0
 - aedes v0.50.0
-- wrtift 0.18.5
+- werift 0.18.5
 
 ## v5.5.1
 **New Features**
