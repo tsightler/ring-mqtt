@@ -392,14 +392,12 @@ export default class Camera extends RingPolledDevice {
     updateSnapshotMode() {
         const snapshotMode = this.data.snapshot.mode.toLowerCase()
 
-        this.data.snapshot.ding = snapshotMode.match(/^(ding|all|auto)$/) ? true : false
-        this.data.snapshot.motion = snapshotMode.match(/^(motion|all|auto)$/) ? true : false
+        this.data.snapshot.ding = Boolean(snapshotMode.match(/^(ding|all|auto)$/))
+        this.data.snapshot.motion = Boolean(snapshotMode.match(/^(motion|all|auto)$/))
 
-        if (snapshotMode.match(/^(interval|all)$/)) {
-            this.data.snapshot.interval = true
-        } else if (snapshotMode === 'auto') {
-            this.data.snapshot.interval = (this.device.operatingOnBattery) ? false : true
-        }
+        this.data.snapshot.interval = snapshotMode === 'auto'
+            ? Boolean(!this.device.operatingOnBattery)
+            : Boolean(snapshotMode.match(/^(interval|all)$/))
 
         if (this.data.snapshot.interval && this.data.snapshot.autoInterval) {
             // If interval snapshots are enabled but interval is not manually set, try to detect a reasonable defaults
@@ -410,7 +408,7 @@ export default class Camera extends RingPolledDevice {
                     this.data.snapshot.intervalDuration = 600
                 }
             } else {
-                // For wired cameras default to 30 seconds o
+                // For wired cameras default to 30 seconds
                 this.data.snapshot.intervalDuration = 30
             }
         }
@@ -1275,6 +1273,7 @@ export default class Camera extends RingPolledDevice {
         const snapshotMode = message.toLowerCase().replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())
         switch(snapshotMode) {
             case 'Auto':
+                this.debug(`Snapshot mode has been set to ${snapshotMode}, resetting to default values for camera type`)
                 this.data.snapshot.autoInterval = true
             case 'All':
             case 'Ding':
@@ -1291,8 +1290,9 @@ export default class Camera extends RingPolledDevice {
                     clearInterval(this.data.snapshot.intervalTimerId)
                     this.scheduleSnapshotRefresh()
                     this.publishSnapshotInterval()
+                } else {
+                    this.debug(`Snapshot mode has been set to ${snapshotMode}`)
                 }
-                this.debug(`Snapshot mode has been set to ${snapshotMode}`)
                 this.updateDeviceState()
                 break;
             default:
