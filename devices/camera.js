@@ -1257,7 +1257,7 @@ export default class Camera extends RingPolledDevice {
     takeSnapshot(message) {
         if (message.toLowerCase() === 'press') {
             this.debug('Received command to take an on-demand snapshot')
-            if (this.data.snapshot.onDemandTimestamp + 10 < Math.round(Date.now()/1000 ) ) {
+            if (this.data.snapshot.onDemandTimestamp + 10 > Math.round(Date.now()/1000 ) ) {
                 this.debug('On-demand snapshots are limited to one snapshot every 10 seconds')
             } else {
                 this.data.snapshot.onDemandTimestamp = Math.round(Date.now()/1000)
