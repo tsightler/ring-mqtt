@@ -758,17 +758,17 @@ export default class Camera extends RingPolledDevice {
             } catch (err) {
                 this.debug(err)
                 if (loop > 1) {
-                    this.debug('Failed to retrieve updated snapshot, retrying in one second...')
+                    this.debug(`Failed to retrieve updated ${type} snapshot, retrying in one second...`)
                     await utils.sleep(1)
                 } else {
-                    this.debug('Failed to retrieve updated snapshot after three attempts, aborting')
+                    this.debug(`Failed to retrieve updated ${type} snapshot after three attempts, aborting`)
                 }
             }
             loop--
         }
 
         if (newSnapshot) {
-            this.debug('Successfully retrieved updated snapshot')
+            this.debug(`Successfully retrieved updated ${type} snapshot`)
             this.data.snapshot.currentImage = newSnapshot
             this.data.snapshot.timestamp = Math.round(Date.now()/1000)
             this.publishSnapshot()
