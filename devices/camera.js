@@ -1266,7 +1266,7 @@ export default class Camera extends RingPolledDevice {
                 this.refreshSnapshot('on-demand')
             }
         } else {
-            this.debug(`Received invalid take snapshot command`)
+            this.debug(`Received invalid command via on-demand snapshot topic: ${message}`)
         }
     }
 
