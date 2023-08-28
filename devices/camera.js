@@ -47,8 +47,9 @@ export default class Camera extends RingPolledDevice {
             } : {},
             snapshot: {
                 mode: savedState?.snapshot?.mode
-                    ?  savedState.snapshot.mode[0].toUpperCase() + savedState.snapshot.mode.slice(1)
+                    ?  savedState.snapshot.mode.replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())
                     : 'Auto',
+                ding: false,
                 motion: false,
                 interval: false,
                 autoInterval: savedState?.snapshot?.autoInterval
@@ -169,7 +170,17 @@ export default class Camera extends RingPolledDevice {
             },
             snapshot_mode: {
                 component: 'select',
-                options: [ 'Auto', 'Disabled', 'Motion', 'Interval', 'All' ]
+                options: [
+                    'All',
+                    'Auto',
+                    'Ding',
+                    'Interval',
+                    'Interval + Ding',
+                    'Interval + Motion',
+                    'Motion',
+                    'Motion + Ding',
+                    'Disabled'
+                ]
             },
             snapshot_interval: {
                 component: 'number',
@@ -372,27 +383,15 @@ export default class Camera extends RingPolledDevice {
     }
 
     updateSnapshotMode() {
-        switch (this.data.snapshot.mode.toLowerCase()) {
-            case 'disabled':
-                this.data.snapshot.motion = false
-                this.data.snapshot.interval = false
-                break;
-            case 'motion':
-                this.data.snapshot.motion = true
-                this.data.snapshot.interval = false
-                break;
-            case 'interval':
-                this.data.snapshot.motion = false
-                this.data.snapshot.interval = true
-                break;
-            case 'all':
-                this.data.snapshot.motion = true
-                this.data.snapshot.interval = true
-                break;
-            case 'auto':
-                this.data.snapshot.motion = true
-                this.data.snapshot.interval = (this.device.operatingOnBattery) ? false : true
-                break;
+        const snapshotMode = this.data.snapshot.mode.toLowerCase()
+
+        this.data.snapshot.ding = snapshotMode.match(/^(ding|all|auto)$/) ? true : false
+        this.data.snapshot.motion = snapshotMode.match(/^(motion|all|auto)$/) ? true : false
+
+        if (snapshotMode.match(/^(interval|all)$/)) {
+            this.data.snapshot.interval = true
+        } else if (snapshotMode === 'auto') {
+            this.data.snapshot.interval = (this.device.operatingOnBattery) ? false : true
         }
 
         if (this.data.snapshot.interval && this.data.snapshot.autoInterval) {
@@ -499,6 +498,9 @@ export default class Camera extends RingPolledDevice {
             if (this.data.snapshot.motion) {
                 this.refreshSnapshot('motion', ding.image_uuid)
             }
+        } else if (this.data.snapshot.ding) {
+            // If doorbell press and snapshots on ding are enabled, publish a new snapshot
+            this.refreshSnapshot('ding', ding.image_uuid)
         }
 
         // Publish MQTT active sensor state
@@ -734,16 +736,18 @@ export default class Camera extends RingPolledDevice {
                         newSnapshot = await this.device.getNextSnapshot({ force: true })
                         break;
                     case 'motion':
+                    case 'ding':
                         if (image_uuid) {
-                            this.debug(`Requesting motion snapshot using notification image UUID: ${image_uuid}`)
+                            this.debug(`Requesting ${type} snapshot using notification image UUID: ${image_uuid}`)
                             newSnapshot = await this.device.getNextSnapshot({ uuid: image_uuid })
                         } else if (!this.device.operatingOnBattery) {
-                            this.debug('Requesting an updated motion snapshot')
+                            this.debug(`Requesting an updated ${type} snapshot`)
                             newSnapshot = await this.device.getNextSnapshot({ force: true })
                         } else {
-                            this.debug('Motion snapshot needed but notification did not contain image UUID and battery cameras are unable to snapshot while recording')
+                            this.debug(`The ${type} notification did not contain image UUID and battery cameras are unable to snapshot while recording`)
                             loop = 0  // Don't retry in this case
                         }
+                        break;
                 }
             } catch (err) {
                 this.debug(err)
@@ -1211,15 +1215,27 @@ export default class Camera extends RingPolledDevice {
         } else {
             this.data.snapshot.intervalDuration = Math.round(message)
             this.data.snapshot.autoInterval = false
-            if (this.data.snapshot.mode === 'auto') {
-                if (this.data.snapshot.motion && this.data.snapshot.interval) {
-                    this.data.snapshot.mode = 'all'
-                } else if (this.data.snapshot.interval) {
-                    this.data.snapshot.mode = 'interval'
+            if (this.data.snapshot.mode === 'Auto') {
+                if (this.data.snapshot.interval) {
+                    if (this.data.snapshot.motion && this.data.snapshot.ding) {
+                        this.data.snapshot.mode = 'All'
+                    } else if (this.data.snapshot.ding) {
+                        this.data.snapshot.mode = 'Interval + Ding'
+                    } else if (this.data.snapshot.motion) {
+                        this.data.snapshot.mode = 'Interval + Motion'
+                    } else {
+                        this.data.snapshot.mode = 'Interval'
+                    }
                 } else if (this.data.snapshot.motion) {
-                    this.data.snapshot.mode = 'motion'
+                    if (this.data.snapshot.ding) {
+                        this.data.snapshot.mode = 'Motion + Ding'
+                    } else {
+                        this.data.snapshot.mode = 'Motion'
+                    }
+                } else if (this.data.snapshot.ding) {
+                    this.data.snapshot.mode = 'Ding'
                 } else {
-                    this.data.snapshot.mode = 'disabled'
+                    this.data.snapshot.mode = 'Disabled'
                 }
                 this.updateSnapshotMode()
                 this.publishSnapshotMode()
@@ -1234,15 +1250,19 @@ export default class Camera extends RingPolledDevice {
 
     setSnapshotMode(message) {
         this.debug(`Received set snapshot mode to ${message}`)
-        const mode = message[0].toUpperCase() + message.slice(1)
-        switch(mode) {
+        const snapshotMode = message.toLowerCase().replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())
+        switch(snapshotMode) {
             case 'Auto':
                 this.data.snapshot.autoInterval = true
-            case 'Disabled':
-            case 'Motion':
-            case 'Interval':
             case 'All':
-                this.data.snapshot.mode = mode
+            case 'Ding':
+            case 'Interval':
+            case 'Interval + Ding':
+            case 'Interval + Motion':
+            case 'Motion':
+            case 'Motion + Ding':
+            case 'Disabled':
+                this.data.snapshot.mode = snapshotMode
                 this.updateSnapshotMode()
                 this.publishSnapshotMode()
                 if (message === 'Auto') {
@@ -1250,7 +1270,7 @@ export default class Camera extends RingPolledDevice {
                     this.scheduleSnapshotRefresh()
                     this.publishSnapshotInterval()
                 }
-                this.debug(`Snapshot mode has been set to ${mode}`)
+                this.debug(`Snapshot mode has been set to ${snapshotMode}`)
                 this.updateDeviceState()
                 break;
             default:
