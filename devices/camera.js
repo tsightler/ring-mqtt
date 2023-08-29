@@ -1222,27 +1222,30 @@ export default class Camera extends RingPolledDevice {
             this.data.snapshot.intervalDuration = Math.round(message)
             this.data.snapshot.autoInterval = false
             if (this.data.snapshot.mode === 'Auto') {
-                if (this.data.snapshot.interval) {
-                    if (this.data.snapshot.motion && this.data.snapshot.ding) {
+                const modes = []
+                if (this.data.snapshot.interval) { modes.push('Interval') }
+                if (this.data.snapshot.motion) { modes.push('Motion') }
+                if (this.data.snapshot.ding) { modes.push('Ding') }
+                const snapshotMode = (modes.join(' + '))
+
+                switch(snapshotMode) {
+                    case 'Interval + Motion + Ding':
                         this.data.snapshot.mode = 'All'
-                    } else if (this.data.snapshot.ding) {
-                        this.data.snapshot.mode = 'Interval + Ding'
-                    } else if (this.data.snapshot.motion) {
-                        this.data.snapshot.mode = this.device.isDoorbot ? 'Interval + Motion' : 'All'
-                    } else {
-                        this.data.snapshot.mode = 'Interval'
-                    }
-                } else if (this.data.snapshot.motion) {
-                    if (this.data.snapshot.ding) {
-                        this.data.snapshot.mode = 'Motion + Ding'
-                    } else {
-                        this.data.snapshot.mode = 'Motion'
-                    }
-                } else if (this.data.snapshot.ding) {
-                    this.data.snapshot.mode = 'Ding'
-                } else {
-                    this.data.snapshot.mode = 'Disabled'
+                        break;
+                    case 'Interval + Motion':
+                        this.data.snapshot.mode = this.device.isDoorbot ? snapshotMode : 'All'
+                        break;
+                    case 'Interval':
+                    case 'Interval + Ding':
+                    case 'Motion':
+                    case 'Motion + Ding':
+                    case 'Ding':
+                        this.data.snapshot.mode = snapshotMode
+                        break;
+                    default:
+                        this.data.snapshot.mode = 'Disabled'
                 }
+
                 this.updateSnapshotMode()
                 this.publishSnapshotMode()
             }
