@@ -389,11 +389,11 @@ export default class Camera extends RingPolledDevice {
 
     updateSnapshotMode() {
         this.data.snapshot.ding = Boolean(this.device.isDoorbot && this.data.snapshot.mode.match(/(ding|^all|auto$)/i))
-        this.data.snapshot.motion = Boolean(snapshotMode.match(/(motion|^all|auto$)/i))
+        this.data.snapshot.motion = Boolean(this.data.snapshot.mode.match(/(motion|^all|auto$)/i))
 
-        this.data.snapshot.interval = snapshotMode === 'Auto'
+        this.data.snapshot.interval = this.data.snapshot.mode === 'Auto'
             ? Boolean(!this.device.operatingOnBattery)
-            : Boolean(snapshotMode.match(/(interval|^all$)/i))
+            : Boolean(this.data.snapshot.mode.match(/(interval|^all$)/i))
 
         if (this.data.snapshot.interval && this.data.snapshot.autoInterval) {
             // If interval snapshots are enabled but interval is not manually set, try to detect a reasonable defaults
