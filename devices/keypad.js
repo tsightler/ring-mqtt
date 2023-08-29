@@ -108,8 +108,8 @@ export default class Keypad extends RingSocketDevice {
     }
 
     // Set chirps target state on received MQTT command message
-    setChripsState(message) {
-        this.debug(`Received set chrips state ${message}`)
+    setChirpsState(message) {
+        this.debug(`Received set chirps state ${message}`)
         const command = message.toLowerCase()
         switch(command) {
             case 'on':
