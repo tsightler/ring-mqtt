@@ -258,7 +258,7 @@ export default class Chime extends RingPolledDevice {
                         "light_sensor_enabled": Boolean(command === 'on')
                     }
                 })
-                this.data.nightlight.enabled = command
+                this.data.nightlight.enabled = command.toUpperCase()
                 this.mqttPublish(this.entity.nightlight_enabled.state_topic, this.data.nightlight.enabled)
                 break;
             default:

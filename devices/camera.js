@@ -1133,7 +1133,7 @@ export default class Camera extends RingPolledDevice {
             case 'off':
                 this.data.light.setTime = Math.floor(Date.now()/1000)
                 await this.device.setLight(Boolean(command === 'on'))
-                this.data.light.state = command
+                this.data.light.state = command.toUpperCase()
                 this.mqttPublish(this.entity.light.state_topic, this.data.light.state)
                 break;
             default:
