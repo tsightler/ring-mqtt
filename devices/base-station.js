@@ -31,7 +31,7 @@ export default class BaseStation extends RingSocketDevice {
     }
 
     publishState(data) {
-        const isPublish = data === undefined ? true : false
+        const isPublish = Boolean(data === undefined)
 
         if (this.entity.hasOwnProperty('volume')) {
             const currentVolume = (this.device.data.volume && !isNaN(this.device.data.volume) ? Math.round(100 * this.device.data.volume) : 0)

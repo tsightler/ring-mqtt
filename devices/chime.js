@@ -87,7 +87,7 @@ export default class Chime extends RingPolledDevice {
     }
 
     publishState(data) {
-        const isPublish = data === undefined ? true : false
+        const isPublish = Boolean(data === undefined)
 
         // Polled states are published only if value changes or it's a device publish
         const volumeState = this.device.data.settings.volume
@@ -248,14 +248,14 @@ export default class Chime extends RingPolledDevice {
 
     async setNightlightState(message) {
         this.debug(`Received set nightlight enabled ${message}`)
-        const command = message.toUpperCase()
+        const command = message.toLowerCase()
         switch(command) {
-            case 'ON':
-            case 'OFF':
+            case 'on':
+            case 'off':
                 this.data.nightlight.set_time = Math.floor(Date.now()/1000)
                 await this.setDeviceSettings({
                     "night_light_settings": {
-                        "light_sensor_enabled": command === 'ON' ? true : false
+                        "light_sensor_enabled": Boolean(command === 'on')
                     }
                 })
                 this.data.nightlight.enabled = command

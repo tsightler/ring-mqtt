@@ -36,7 +36,7 @@ export default class Switch extends RingSocketDevice {
             case 'on':
             case 'off':
                 this.debug(`Received set switch state ${message}`)
-                this.device.setInfo({ device: { v1: { on: (command === 'on') ? true : false } } })
+                this.device.setInfo({ device: { v1: { on: Boolean(command === 'on') } } })
                 break;
             default:
                 this.debug(`Received invalid switch state command`)

@@ -123,11 +123,10 @@ export default class Beam extends RingSocketDevice {
             case 'on':
             case 'off': {
                 const duration = this.data.beam_duration ? Math.min(this.data.beam_duration, 32767) : undefined
-                const on = command === 'on' ? true : false
                 if (this.isLightGroup && this.groupId) {
-                    this.device.location.setLightGroup(this.groupId, on, duration)
+                    this.device.location.setLightGroup(this.groupId, Boolean(command === 'on'), duration)
                 } else {
-                    const data = on ? { lightMode: 'on', duration } : { lightMode: 'default' }
+                    const data = Boolean(command === 'on') ? { lightMode: 'on', duration } : { lightMode: 'default' }
                     this.device.sendCommand('light-mode.set', data)
                 }
                 break;

@@ -12,8 +12,8 @@ export default class Camera extends RingPolledDevice {
 
         const savedState = this.getSavedState()
 
-        this.hasBattery1 = this.device.data.hasOwnProperty('battery_voltage') ? true : false
-        this.hasBattery2 = this.device.data.hasOwnProperty('battery_voltage_2') ? true : false
+        this.hasBattery1 = Boolean(this.device.data.hasOwnProperty('battery_voltage'))
+        this.hasBattery2 = Boolean(this.device.data.hasOwnProperty('battery_voltage_2'))
 
         this.hevcEnabled = this.device.data?.settings?.video_settings?.hevc_enabled
             ? this.device.data.settings.video_settings.hevc_enabled
@@ -135,15 +135,19 @@ export default class Camera extends RingPolledDevice {
                 options: [
                     ...this.device.isDoorbot
                         ? [ 'Ding 1', 'Ding 2', 'Ding 3', 'Ding 4', 'Ding 5',
-                            'Ding 1 (Transcoded)', 'Ding 2 (Transcoded)', 'Ding 3 (Transcoded)', 'Ding 4 (Transcoded)', 'Ding 5 (Transcoded)'
+                            'Ding 1 (Transcoded)', 'Ding 2 (Transcoded)', 'Ding 3 (Transcoded)',
+                            'Ding 4 (Transcoded)', 'Ding 5 (Transcoded)'
                         ]
                         : [],
                     'Motion 1', 'Motion 2', 'Motion 3', 'Motion 4', 'Motion 5',
-                    'Motion 1 (Transcoded)', 'Motion 2 (Transcoded)', 'Motion 3 (Transcoded)', 'Motion 4 (Transcoded)', 'Motion 5 (Transcoded)',
+                    'Motion 1 (Transcoded)', 'Motion 2 (Transcoded)', 'Motion 3 (Transcoded)',
+                    'Motion 4 (Transcoded)', 'Motion 5 (Transcoded)',
                     'Person 1', 'Person 2', 'Person 3', 'Person 4', 'Person 5',
-                    'Person 1 (Transcoded)', 'Person 2 (Transcoded)', 'Person 3 (Transcoded)', 'Person 4 (Transcoded)', 'Person 5 (Transcoded)',
+                    'Person 1 (Transcoded)', 'Person 2 (Transcoded)', 'Person 3 (Transcoded)',
+                    'Person 4 (Transcoded)', 'Person 5 (Transcoded)',
                     'On-demand 1', 'On-demand 2', 'On-demand 3', 'On-demand 4', 'On-demand 5',
-                    'On-demand 1 (Transcoded)', 'On-demand 2 (Transcoded)', 'On-demand 3 (Transcoded)', 'On-demand 4 (Transcoded)', 'On-demand 5 (Transcoded)',
+                    'On-demand 1 (Transcoded)', 'On-demand 2 (Transcoded)', 'On-demand 3 (Transcoded)',
+                    'On-demand 4 (Transcoded)', 'On-demand 5 (Transcoded)',
                 ],
                 attributes: true
             },
@@ -324,7 +328,7 @@ export default class Camera extends RingPolledDevice {
             const lastMotionDate = lastMotionEvent?.start_time ? new Date(lastMotionEvent.start_time) : false
             this.data.motion.last_ding = lastMotionDate ? Math.floor(lastMotionDate/1000) : 0
             this.data.motion.last_ding_time = lastMotionDate ? utils.getISOTime(lastMotionDate) : ''
-            this.data.motion.is_person = lastMotionEvent?.cv?.person_detected ? true : false
+            this.data.motion.is_person = Boolean(lastMotionEvent?.cv?.person_detected)
             this.data.motion.latestEventId = lastMotionEvent.event_id
 
             // Try to get URL for most recent motion event, if it fails, assume there's no subscription
@@ -412,7 +416,7 @@ export default class Camera extends RingPolledDevice {
 
     // Publish camera capabilities and state and subscribe to events
     async publishState(data) {
-        const isPublish = data === undefined ? true : false
+        const isPublish = Boolean(data === undefined)
         this.publishPolledState(isPublish)
 
         // Checks for new events or expired recording URL every 3 polling cycles (~1 minute)
@@ -485,7 +489,7 @@ export default class Camera extends RingPolledDevice {
         this.debug(`Received ${dingKind} push notification, expires in ${this.data[dingKind].duration} seconds`)
 
         // Is this a new Ding or refresh of active ding?
-        const newDing = (!this.data[dingKind].active_ding) ? true : false
+        const newDing = Boolean(!this.data[dingKind].active_ding)
         this.data[dingKind].active_ding = true
 
         // Update last_ding and expire time
@@ -495,7 +499,7 @@ export default class Camera extends RingPolledDevice {
 
         // If motion ding and snapshots on motion are enabled, publish a new snapshot
         if (dingKind === 'motion') {
-            this.data[dingKind].is_person = (ding.detection_type === 'human') ? true : false
+            this.data[dingKind].is_person = Boolean(ding.detection_type === 'human')
             if (this.data.snapshot.motion) {
                 this.refreshSnapshot('motion', ding.image_uuid)
             }
@@ -927,7 +931,7 @@ export default class Camera extends RingPolledDevice {
         const eventSelect = this.data.event_select.state.split(' ')
         const eventType = eventSelect[0].toLowerCase().replace('-', '_')
         const eventNumber = eventSelect[1]
-        const transcoded = eventSelect[2] === '(Transcoded)' ? true : false
+        const transcoded = Boolean(eventSelect[2] === '(Transcoded)')
         const urlExpired = this.data.event_select.recordingUrlExpire < Date.now()
         let selectedEvent
         let recordingUrl = false
@@ -1122,13 +1126,13 @@ export default class Camera extends RingPolledDevice {
     // Set switch target state on received MQTT command message
     async setLightState(message) {
         this.debug(`Received set light state ${message}`)
-        const command = message.toUpperCase()
+        const command = message.toLowerCase()
 
         switch (command) {
-            case 'ON':
-            case 'OFF':
+            case 'on':
+            case 'off':
                 this.data.light.setTime = Math.floor(Date.now()/1000)
-                await this.device.setLight(command === 'ON' ? true : false)
+                await this.device.setLight(Boolean(command === 'on'))
                 this.data.light.state = command
                 this.mqttPublish(this.entity.light.state_topic, this.data.light.state)
                 break;
@@ -1145,7 +1149,7 @@ export default class Camera extends RingPolledDevice {
         switch (command) {
             case 'on':
             case 'off':
-                await this.device.setSiren(command === 'on' ? true : false)
+                await this.device.setSiren(Boolean(command === 'on'))
                 break;
             default:
                 this.debug('Received unknown command for siren')
@@ -1162,7 +1166,7 @@ export default class Camera extends RingPolledDevice {
                 case 'off':
                     await this.device.setDeviceSettings({
                         "motion_settings": {
-                            "motion_detection_enabled": command === 'on' ? true : false
+                            "motion_detection_enabled": Boolean(command === 'on')
                         }
                     })
                     break;
@@ -1189,10 +1193,10 @@ export default class Camera extends RingPolledDevice {
                 case 'off':
                     await this.device.restClient.request({
                         method: 'PUT',
-                        url: this.device.doorbotUrl(`motion_announcement?motion_announcement=${command === 'on' ? 'true' : 'false'}`)
+                        url: this.device.doorbotUrl(`motion_announcement?motion_announcement=${Boolean(command === 'on')}`)
                     })
                     this.mqttPublish(this.entity.motion_warning.state_topic, command === 'on' ? 'ON' : 'OFF')
-                    this.data.motion.warning_enabled = command === 'on' ? true : false
+                    this.data.motion.warning_enabled = Boolean(command === 'on')
                     break;
                 default:
                     this.debug('Received unknown command for motion warning state')

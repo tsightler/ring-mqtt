@@ -71,7 +71,7 @@ export default class Lock extends RingPolledDevice {
     }
 
     publishState(data) {
-        const isPublish = data === undefined ? true : false
+        const isPublish = Boolean(data === undefined)
 
         this.publishDingState(isPublish)
         this.publishLockState(isPublish)

@@ -185,7 +185,7 @@ export default class SecurityPanel extends RingSocketDevice {
     }
 
     publishState(data) {
-        const isPublish = data === undefined ? true : false
+        const isPublish = Boolean(data === undefined)
 
         // Publish alarm states for events not handled by processAlarmMode() as well as
         // any explicit publish requests

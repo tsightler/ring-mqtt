@@ -43,7 +43,7 @@ export default class Keypad extends RingSocketDevice {
     }
 
     publishState(data) {
-        const isPublish = data === undefined ? true : false
+        const isPublish = Boolean(data === undefined)
         if (isPublish) {
             // Eventually remove this but for now this attempts to delete the old light component based volume control from Home Assistant
             this.mqttPublish(`homeassistant/light/${this.locationId}/${this.deviceId}_audio/config`, '', false)

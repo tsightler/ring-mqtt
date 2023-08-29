@@ -71,7 +71,7 @@ export default class Thermostat extends RingSocketDevice {
     }
 
     async publishState(data) {
-        const isPublish = data === undefined ? true : false
+        const isPublish = Boolean(data === undefined)
 
         this.publishModeAndSetpoints()
         this.mqttPublish(this.entity.thermostat.fan_mode_state_topic, this.data.fanMode())
