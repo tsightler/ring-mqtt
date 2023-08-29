@@ -1222,30 +1222,14 @@ export default class Camera extends RingPolledDevice {
             this.data.snapshot.intervalDuration = Math.round(message)
             this.data.snapshot.autoInterval = false
             if (this.data.snapshot.mode === 'Auto') {
-                const modes = []
-                if (this.data.snapshot.interval) { modes.push('Interval') }
-                if (this.data.snapshot.motion) { modes.push('Motion') }
-                if (this.data.snapshot.ding) { modes.push('Ding') }
-                const snapshotMode = (modes.join(' + '))
-
-                switch(snapshotMode) {
-                    case 'Interval + Motion + Ding':
-                        this.data.snapshot.mode = 'All'
-                        break;
-                    case 'Interval + Motion':
-                        this.data.snapshot.mode = this.device.isDoorbot ? snapshotMode : 'All'
-                        break;
-                    case 'Interval':
-                    case 'Interval + Ding':
-                    case 'Motion':
-                    case 'Motion + Ding':
-                    case 'Ding':
-                        this.data.snapshot.mode = snapshotMode
-                        break;
-                    default:
-                        this.data.snapshot.mode = 'Disabled'
-                }
-
+                const activeModes =
+                    (this.device.isDoorbot ? ['Interval', 'Motion', 'Ding'] : ['Interval', 'Motion'])
+                        .filter(e => this.data.snapshot[e.toLowerCase()])
+                this.data.snapshot.mode = activeModes.length === 0
+                    ? 'Disabled' // No snapshot modes are active
+                    : activeModes.length === (isDoorbot ? 3 : 2)
+                        ? 'All' // All snapshot modes this device supports are active
+                        : activeModes.join(' + ') // Some snapshot modes this device supports are active
                 this.updateSnapshotMode()
                 this.publishSnapshotMode()
             }
