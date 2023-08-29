@@ -135,7 +135,8 @@ export default class Camera extends RingPolledDevice {
                 options: [
                     ...this.device.isDoorbot
                         ? [ 'Ding 1', 'Ding 2', 'Ding 3', 'Ding 4', 'Ding 5',
-                            'Ding 1 (Transcoded)', 'Ding 2 (Transcoded)', 'Ding 3 (Transcoded)', 'Ding 4 (Transcoded)', 'Ding 5 (Transcoded)' ]
+                            'Ding 1 (Transcoded)', 'Ding 2 (Transcoded)', 'Ding 3 (Transcoded)', 'Ding 4 (Transcoded)', 'Ding 5 (Transcoded)'
+                        ]
                         : [],
                     'Motion 1', 'Motion 2', 'Motion 3', 'Motion 4', 'Motion 5',
                     'Motion 1 (Transcoded)', 'Motion 2 (Transcoded)', 'Motion 3 (Transcoded)', 'Motion 4 (Transcoded)', 'Motion 5 (Transcoded)',
@@ -172,15 +173,12 @@ export default class Camera extends RingPolledDevice {
             snapshot_mode: {
                 component: 'select',
                 options: [
-                    'All',
-                    'Auto',
-                    'Ding',
-                    'Interval',
-                    'Interval + Ding',
-                    'Interval + Motion',
-                    'Motion',
-                    'Motion + Ding',
-                    'Disabled'
+                    ...this.device.isDoorbot
+                        ? [
+                            'All', 'Auto', 'Ding', 'Interval', 'Interval + Ding',
+                            'Interval + Motion', 'Motion', 'Motion + Ding', 'Disabled'
+                        ]
+                        : [ 'All', 'Auto', 'Interval', 'Motion', 'Disabled' ]
                 ]
             },
             snapshot_interval: {
@@ -390,14 +388,12 @@ export default class Camera extends RingPolledDevice {
     }
 
     updateSnapshotMode() {
-        const snapshotMode = this.data.snapshot.mode.toLowerCase()
+        this.data.snapshot.ding = Boolean(this.device.isDoorbot && this.data.snapshot.mode.match(/(ding|^all|auto$)/i))
+        this.data.snapshot.motion = Boolean(snapshotMode.match(/(motion|^all|auto$)/i))
 
-        this.data.snapshot.ding = Boolean(snapshotMode.match(/^(ding|all|auto)$/))
-        this.data.snapshot.motion = Boolean(snapshotMode.match(/^(motion|all|auto)$/))
-
-        this.data.snapshot.interval = snapshotMode === 'auto'
+        this.data.snapshot.interval = snapshotMode === 'Auto'
             ? Boolean(!this.device.operatingOnBattery)
-            : Boolean(snapshotMode.match(/^(interval|all)$/))
+            : Boolean(snapshotMode.match(/(interval|^all$)/i))
 
         if (this.data.snapshot.interval && this.data.snapshot.autoInterval) {
             // If interval snapshots are enabled but interval is not manually set, try to detect a reasonable defaults
@@ -1228,7 +1224,7 @@ export default class Camera extends RingPolledDevice {
                     } else if (this.data.snapshot.ding) {
                         this.data.snapshot.mode = 'Interval + Ding'
                     } else if (this.data.snapshot.motion) {
-                        this.data.snapshot.mode = 'Interval + Motion'
+                        this.data.snapshot.mode = this.device.isDoorbot ? 'Interval + Motion' : 'All'
                     } else {
                         this.data.snapshot.mode = 'Interval'
                     }
@@ -1271,34 +1267,27 @@ export default class Camera extends RingPolledDevice {
     setSnapshotMode(message) {
         this.debug(`Received set snapshot mode to ${message}`)
         const snapshotMode = message.toLowerCase().replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())
-        switch(snapshotMode) {
-            case 'Auto':
+
+        if (this.entity.snapshot_mode.options.map(o => o.includes(snapshotMode))) {
+            this.data.snapshot.mode = snapshotMode
+            this.data.snapshot.autoInterval = snapshotMode === 'Auto' ? true : this.data.snapshot.autoInterval
+            this.updateSnapshotMode()
+            this.publishSnapshotMode()
+
+            if (snapshotMode === 'Auto') {
                 this.debug(`Snapshot mode has been set to ${snapshotMode}, resetting to default values for camera type`)
-                this.data.snapshot.autoInterval = true
-            case 'All':
-            case 'Ding':
-            case 'Interval':
-            case 'Interval + Ding':
-            case 'Interval + Motion':
-            case 'Motion':
-            case 'Motion + Ding':
-            case 'Disabled':
-                this.data.snapshot.mode = snapshotMode
-                this.updateSnapshotMode()
-                this.publishSnapshotMode()
-                if (message === 'Auto') {
-                    clearInterval(this.data.snapshot.intervalTimerId)
-                    this.scheduleSnapshotRefresh()
-                    this.publishSnapshotInterval()
-                } else {
-                    this.debug(`Snapshot mode has been set to ${snapshotMode}`)
-                }
-                this.updateDeviceState()
-                break;
-            default:
-                this.debug(`Received invalid snapshot mode command`)
+                clearInterval(this.data.snapshot.intervalTimerId)
+                this.scheduleSnapshotRefresh()
+                this.publishSnapshotInterval()
+            } else {
+                this.debug(`Snapshot mode has been set to ${snapshotMode}`)
+            }
+
+            this.updateDeviceState()
+        } else {
+            this.debug(`Received invalid command for snapshot mode`)
         }
-    }
+}
 
     setLiveStreamState(message) {
         const command = message.toLowerCase()
