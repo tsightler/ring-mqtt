@@ -1227,7 +1227,7 @@ export default class Camera extends RingPolledDevice {
                         .filter(e => this.data.snapshot[e.toLowerCase()])
                 this.data.snapshot.mode = activeModes.length === 0
                     ? 'Disabled' // No snapshot modes are active
-                    : activeModes.length === (isDoorbot ? 3 : 2)
+                    : activeModes.length === (this.device.isDoorbot ? 3 : 2)
                         ? 'All' // All snapshot modes this device supports are active
                         : activeModes.join(' + ') // Some snapshot modes this device supports are active
                 this.updateSnapshotMode()
