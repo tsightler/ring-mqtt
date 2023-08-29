@@ -1222,6 +1222,7 @@ export default class Camera extends RingPolledDevice {
             this.data.snapshot.intervalDuration = Math.round(message)
             this.data.snapshot.autoInterval = false
             if (this.data.snapshot.mode === 'Auto') {
+                // Creates an array containing only currently active snapshot modes
                 const activeModes =
                     (this.device.isDoorbot ? ['Interval', 'Motion', 'Ding'] : ['Interval', 'Motion'])
                         .filter(e => this.data.snapshot[e.toLowerCase()])
