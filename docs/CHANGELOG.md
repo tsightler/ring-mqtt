@@ -1,19 +1,19 @@
 ## v5.6.0
-While there are some minor features in this release, the primary focus is to address the warnings due to the device/entity naming changes that were introduced in the 2023.8 release of Home Assistant.  I've tried to address this as cleanly as possible, so that entitiy names and behaviors are presented in the UI as cleanly as possible, but there could be corner cases that were missed.
-
 **New Features**
-- Cameras now include a new button entity to request an on-demand snapshot.  This was a much requested feature and is intended primarily to allow snapshots to be triggered from automations (in Home Assistant this can be doen via the button press service).  Note that on-demand snapshots are limited to no more than one request every 10 seconds, more frequent requests will be logged, but otherwise ignored.  Also, low-power Ring cameras are unable to take snapshots while recording so there is no guarantee that a request for a snapshot on these cameras will be possible.
-- It is now possible to get snapshots from ding events in addition to motion events and new snapshot modes have been introduced to select which options of ding, motion, and interval snapshots are desired.  Ding snapshots are enabled by default for both Auto and All modes.
+- Cameras now include a button entity to request an on-demand snapshot.  This was a much requested feature and is intended primarily to allow snapshots to be triggered from automations (in Home Assistant this can be doen via the button press service).  Note that on-demand snapshots are limited to no more than one request every 10 seconds, more frequent requests will be logged, but otherwise ignored.  Also, low-power Ring cameras are unable to take snapshots while recording so there is no guarantee that a request for a snapshot on these cameras will be possible.
+- For doorbells it's now possible to get snapshots from ding events in addition to motion events and new snapshot modes have been introduced to select which options of ding, motion, and interval snapshots are desired.  Ding snapshots are enabled by default for both Auto and All modes, but note that battery cameras will likely require a Ring subscription to get reliable snapshots from dings, just like motion.
 
 **Other Changes**
-- Minor tweak to tamper sensor for better compatibility with OpenHAB (thanks to @zolakk for the PR)
-- Minor tweaks to WebRTC connection process
+- Adapt MQTT discovery messages to new entity naming guidelines introduced in Home Assistant 2023.8
+- Minor tweak for tamper sensor to increase compatibility with OpenHAB (thanks to @zolakk for the PR)
+- Merge and simplify WebRTC connection code and include recent minor updates for better reliability
 - Try to capture and log null responses during web token generation
 
 **Dependcy Updates**
 - ring-client-api v12.0.0
 - aedes v0.50.0
 - werift 0.18.5
+
 
 ## v5.5.1
 **New Features**
