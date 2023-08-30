@@ -9,13 +9,14 @@ export default class Siren extends RingSocketDevice {
             siren: {
                 component: 'switch',
                 icon: 'mdi:alarm-light',
-                isLegacyEntity: true  // Legacy compatibility
+                isMainEntity: true
             },
             ...(this.device.data.deviceType === 'siren.outdoor-strobe') ? {
                 volume: {
                     component: 'number',
                     min: 0,
                     max: 4,
+                    mode: 'slider',
                     icon: 'hass:volume-high'
                 }
             } : {}
@@ -23,7 +24,7 @@ export default class Siren extends RingSocketDevice {
     }
 
     publishState(data) {
-        const isPublish = data === undefined ? true : false
+        const isPublish = Boolean(data === undefined)
         if (isPublish) {
             // Eventually remove this but for now this attempts to delete the old siren binary_sensor
             this.mqttPublish('homeassistant/binary_sensor/'+this.locationId+'/'+this.deviceId+'_siren/config', '', false)
@@ -63,7 +64,7 @@ export default class Siren extends RingSocketDevice {
                 if (this.device.data.deviceType === 'siren.outdoor-strobe') {
                     this.device.sendCommand((command ==='on') ? 'siren-test.start' : 'siren-test.stop')
                 } else {
-                    this.device.setInfo({ device: { v1: { on: (command === 'on') ? true : false } } })
+                    this.device.setInfo({ device: { v1: { on: Boolean(command === 'on') } } })
                 }
                 break;
             default:

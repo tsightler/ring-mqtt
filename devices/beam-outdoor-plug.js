@@ -66,8 +66,7 @@ export default class BeamOutdoorPlug extends RingSocketDevice {
             case 'on':
             case 'off': {
                 const duration = 32767
-                const on = command === 'on' ? true : false
-                const data = on ? { lightMode: 'on', duration } : { lightMode: 'default' }
+                const data = Boolean(command === 'on') ? { lightMode: 'on', duration } : { lightMode: 'default' }
                 this[outletId].sendCommand('light-mode.set', data)
                 break;
             }

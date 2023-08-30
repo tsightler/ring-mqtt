@@ -19,12 +19,17 @@ export default class Keypad extends RingSocketDevice {
                 component: 'number',
                 min: 0,
                 max: 100,
+                mode: 'slider',
                 icon: 'hass:volume-high'
             },
             motion: {
                 component: 'binary_sensor',
                 device_class: 'motion',
                 attributes: true
+            },
+            chirps: {
+                component: 'switch',
+                icon: 'mdi:bird'
             }
         }
 
@@ -42,14 +47,14 @@ export default class Keypad extends RingSocketDevice {
     }
 
     publishState(data) {
-        const isPublish = data === undefined ? true : false
+        const isPublish = Boolean(data === undefined)
         if (isPublish) {
             // Eventually remove this but for now this attempts to delete the old light component based volume control from Home Assistant
             this.mqttPublish(`homeassistant/light/${this.locationId}/${this.deviceId}_audio/config`, '', false)
         }
-
         const currentVolume = (this.device.data.volume && !isNaN(this.device.data.volume) ? Math.round(100 * this.device.data.volume) : 0)
         this.mqttPublish(this.entity.volume.state_topic, currentVolume.toString())
+        this.mqttPublish(this.entity.chirps.state_topic, this.device.data?.chirps === 'enabled' ? 'ON' : 'OFF')
         this.publishMotionState(isPublish)
         this.publishAttributes()
     }
@@ -81,6 +86,9 @@ export default class Keypad extends RingSocketDevice {
             case 'volume/command':
                 this.setVolumeLevel(message)
                 break;
+            case 'chirps/command':
+                this.setChirpsState(message)
+                break;
             default:
                 this.debug(`Received message to unknown command topic: ${command}`)
         }
@@ -96,6 +104,21 @@ export default class Keypad extends RingSocketDevice {
             this.debug('Volume command received but out of range (0-100)')
         } else {
             this.device.setVolume(volume/100)
+        }
+    }
+
+    // Set chirps target state on received MQTT command message
+    setChirpsState(message) {
+        this.debug(`Received set chirps state ${message}`)
+        const command = message.toLowerCase()
+        switch(command) {
+            case 'on':
+            case 'off': {
+                this.device.setInfo({ device: { v1: { chirps: command === 'on' ? 'enabled' : 'disabled' } } })
+                break;
+            }
+            default:
+                this.debug('Received invalid command for chirps switch!')
         }
     }
 

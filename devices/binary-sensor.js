@@ -53,7 +53,7 @@ export default class BinarySensor extends RingSocketDevice {
         this.entity[this.entityName] = {
             component: 'binary_sensor',
             ...device_class ? { device_class: device_class } : {},
-            isLegacyEntity: true  // Legacy compatibility
+            isMainEntity: true
         }
 
         // Only official Ring sensors can be bypassed
@@ -82,7 +82,7 @@ export default class BinarySensor extends RingSocketDevice {
     }
 
     publishState(data) {
-        const isPublish = data === undefined ? true : false
+        const isPublish = Boolean(data === undefined)
         const contactState = this.device.data.faulted ? 'ON' : 'OFF'
         this.mqttPublish(this.entity[this.entityName].state_topic, contactState)
         this.publishBypassModeState(isPublish)

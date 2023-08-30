@@ -71,6 +71,7 @@ async function startLiveStream(streamData) {
                 streamData.rtspPublishUrl
             ]
         })
+
         parentPort.postMessage({type: 'log_info', data: 'Live stream transcoding process has started'})
 
         liveStream.onCallEnded.subscribe(() => {

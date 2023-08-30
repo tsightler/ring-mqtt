@@ -8,12 +8,12 @@ export default class FloodFreezeSensor extends RingSocketDevice {
         this.entity.flood = {
             component: 'binary_sensor',
             device_class: 'moisture',
-            unique_id: `${this.deviceId}_moisture` // Legacy compatibility
+            unique_id: `${this.deviceId}_moisture` // Force backward compatible unique ID for this entity
         }
         this.entity.freeze = {
             component: 'binary_sensor',
             device_class: 'cold',
-            unique_id: `${this.deviceId}_cold`  // Legacy compatibility
+            unique_id: `${this.deviceId}_cold`  // Force backward compatible unique ID for this entity
         }
     }
 

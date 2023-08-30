@@ -8,7 +8,7 @@ export default class MultiLevelSwitch extends RingSocketDevice {
         this.entity.light = {
             component: 'light',
             brightness_scale: 100,
-            isLegacyEntity: true  // Legacy compatibility
+            isMainEntity: true
         }
     }
 
@@ -41,8 +41,7 @@ export default class MultiLevelSwitch extends RingSocketDevice {
         switch(command) {
             case 'on':
             case 'off': {
-                const on = (command === 'on') ? true : false
-                this.device.setInfo({ device: { v1: { on } } })
+                this.device.setInfo({ device: { v1: { on: Boolean(command === 'on') } } })
                 break;
             }
             default:

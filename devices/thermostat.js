@@ -19,24 +19,32 @@ export default class Thermostat extends RingSocketDevice {
         }
 
         this.data = {
-            currentMode: (() => { return this.device.data.mode === 'aux' ? 'heat' : this.device.data.mode }),
+            currentMode: (() => {
+                return this.device.data.mode === 'aux' ? 'heat' : this.device.data.mode
+            }),
             publishedMode: false,
-            fanMode: (() => { return this.device.data.fanMode.replace(/^./, str => str.toUpperCase()) }),
-            auxMode: (() => { return this.device.data.mode === 'aux' ? 'ON' : 'OFF' }),
+            fanMode: (() => {
+                return this.device.data.fanMode.replace(/^./, str => str.toUpperCase())
+            }),
+            auxMode: (() => {
+                return this.device.data.mode === 'aux' ? 'ON' : 'OFF'
+            }),
             setPoint: (() => {
                 return this.device.data.setPoint
                     ? this.device.data.setPoint
                     : this.temperatureSensor.data.celsius
-                }),
+            }),
             operatingMode: (() => {
                 return this.operatingStatus.data.operatingMode !== 'off'
                     ? `${this.operatingStatus.data.operatingMode}ing`
                     : this.device.data.mode === 'off'
                         ? 'off'
                         : this.device.data.fanMode === 'on' ? 'fan' : 'idle'
-                }),
-            temperature: (() => { return this.temperatureSensor.data.celsius }),
-            ... this.entity.thermostat.modes.includes('auto')
+            }),
+            temperature: (() => {
+                return this.temperatureSensor.data.celsius
+            }),
+            ...this.entity.thermostat.modes.includes('auto')
                 ? {
                     autoSetPointInProgress: false,
                     autoSetPoint: {
@@ -63,7 +71,7 @@ export default class Thermostat extends RingSocketDevice {
     }
 
     async publishState(data) {
-        const isPublish = data === undefined ? true : false
+        const isPublish = Boolean(data === undefined)
 
         this.publishModeAndSetpoints()
         this.mqttPublish(this.entity.thermostat.fan_mode_state_topic, this.data.fanMode())
@@ -204,7 +212,7 @@ export default class Thermostat extends RingSocketDevice {
                     this.debug(`Received set auto range ${type} temperature to ${value}`)
                     this.data.autoSetPoint[type] = Number(value)
                     // Home Assistant always sends both low/high values when changing range on dual-setpoint mode
-                    // so this function will be called twice for every change.  The code below locks for 100 milliseconds
+                    // so this function will be called twice for every change.  The code below blocks for 100 milliseconds
                     // to allow time for the second value to be updated before proceeding to call the set function once.
                     if (!this.data.setPointInProgress) {
                         this.data.setPointInProgress = true

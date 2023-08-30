@@ -8,7 +8,7 @@ export default class Fan extends RingSocketDevice {
 
         this.entity.fan = {
             component: 'fan',
-            isLegacyEntity: true  // Legacy compatibility
+            isMainEntity: true
         }
 
         this.data = {
@@ -69,8 +69,7 @@ export default class Fan extends RingSocketDevice {
         switch(command) {
             case 'on':
             case 'off':
-                const on = (command === 'on') ? true : false
-                this.device.setInfo({ device: { v1: { on } } })
+                this.device.setInfo({ device: { v1: { on: Boolean(command === 'on') } } })
                 break;
             default:
                 this.debug('Received invalid command for fan!')

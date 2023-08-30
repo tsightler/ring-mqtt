@@ -12,8 +12,8 @@ export default class Camera extends RingPolledDevice {
 
         const savedState = this.getSavedState()
 
-        this.hasBattery1 = this.device.data.hasOwnProperty('battery_voltage') ? true : false
-        this.hasBattery2 = this.device.data.hasOwnProperty('battery_voltage_2') ? true : false
+        this.hasBattery1 = Boolean(this.device.data.hasOwnProperty('battery_voltage'))
+        this.hasBattery2 = Boolean(this.device.data.hasOwnProperty('battery_voltage_2'))
 
         this.hevcEnabled = this.device.data?.settings?.video_settings?.hevc_enabled
             ? this.device.data.settings.video_settings.hevc_enabled
@@ -47,8 +47,9 @@ export default class Camera extends RingPolledDevice {
             } : {},
             snapshot: {
                 mode: savedState?.snapshot?.mode
-                    ?  savedState.snapshot.mode[0].toUpperCase() + savedState.snapshot.mode.slice(1)
+                    ?  savedState.snapshot.mode.replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())
                     : 'Auto',
+                ding: false,
                 motion: false,
                 interval: false,
                 autoInterval: savedState?.snapshot?.autoInterval
@@ -59,7 +60,8 @@ export default class Camera extends RingPolledDevice {
                     : (this.device.operatingOnBattery) ? 600 : 30,
                 intervalTimerId: null,
                 currentImage: null,
-                timestamp: null
+                timestamp: null,
+                onDemandTimestamp: 0
             },
             stream: {
                 live: {
@@ -120,7 +122,7 @@ export default class Camera extends RingPolledDevice {
             stream: {
                 component: 'switch',
                 attributes: true,
-                name: `${this.deviceData.name} Live Stream`,
+                name: 'Live Stream',
                 icon: 'mdi:cctv'
             },
             event_stream: {
@@ -133,14 +135,19 @@ export default class Camera extends RingPolledDevice {
                 options: [
                     ...this.device.isDoorbot
                         ? [ 'Ding 1', 'Ding 2', 'Ding 3', 'Ding 4', 'Ding 5',
-                            'Ding 1 (Transcoded)', 'Ding 2 (Transcoded)', 'Ding 3 (Transcoded)', 'Ding 4 (Transcoded)', 'Ding 5 (Transcoded)' ]
+                            'Ding 1 (Transcoded)', 'Ding 2 (Transcoded)', 'Ding 3 (Transcoded)',
+                            'Ding 4 (Transcoded)', 'Ding 5 (Transcoded)'
+                        ]
                         : [],
                     'Motion 1', 'Motion 2', 'Motion 3', 'Motion 4', 'Motion 5',
-                    'Motion 1 (Transcoded)', 'Motion 2 (Transcoded)', 'Motion 3 (Transcoded)', 'Motion 4 (Transcoded)', 'Motion 5 (Transcoded)',
+                    'Motion 1 (Transcoded)', 'Motion 2 (Transcoded)', 'Motion 3 (Transcoded)',
+                    'Motion 4 (Transcoded)', 'Motion 5 (Transcoded)',
                     'Person 1', 'Person 2', 'Person 3', 'Person 4', 'Person 5',
-                    'Person 1 (Transcoded)', 'Person 2 (Transcoded)', 'Person 3 (Transcoded)', 'Person 4 (Transcoded)', 'Person 5 (Transcoded)',
+                    'Person 1 (Transcoded)', 'Person 2 (Transcoded)', 'Person 3 (Transcoded)',
+                    'Person 4 (Transcoded)', 'Person 5 (Transcoded)',
                     'On-demand 1', 'On-demand 2', 'On-demand 3', 'On-demand 4', 'On-demand 5',
-                    'On-demand 1 (Transcoded)', 'On-demand 2 (Transcoded)', 'On-demand 3 (Transcoded)', 'On-demand 4 (Transcoded)', 'On-demand 5 (Transcoded)',
+                    'On-demand 1 (Transcoded)', 'On-demand 2 (Transcoded)', 'On-demand 3 (Transcoded)',
+                    'On-demand 4 (Transcoded)', 'On-demand 5 (Transcoded)',
                 ],
                 attributes: true
             },
@@ -169,13 +176,25 @@ export default class Camera extends RingPolledDevice {
             },
             snapshot_mode: {
                 component: 'select',
-                options: [ 'Auto', 'Disabled', 'Motion', 'Interval', 'All' ]
+                options: [
+                    ...this.device.isDoorbot
+                        ? [
+                            'All', 'Auto', 'Ding', 'Interval', 'Interval + Ding',
+                            'Interval + Motion', 'Motion', 'Motion + Ding', 'Disabled'
+                        ]
+                        : [ 'All', 'Auto', 'Interval', 'Motion', 'Disabled' ]
+                ]
             },
             snapshot_interval: {
                 component: 'number',
                 min: 10,
                 max: 604800,
+                mode: 'box',
                 icon: 'hass:timer'
+            },
+            take_snapshot: {
+                component: 'button',
+                icon: 'mdi:camera'
             },
             motion_detection: {
                 component: 'switch'
@@ -189,6 +208,7 @@ export default class Camera extends RingPolledDevice {
                 component: 'number',
                 min: 10,
                 max: 180,
+                mode: 'box',
                 icon: 'hass:timer'
             },
             ...this.device.isDoorbot ? {
@@ -308,7 +328,7 @@ export default class Camera extends RingPolledDevice {
             const lastMotionDate = lastMotionEvent?.start_time ? new Date(lastMotionEvent.start_time) : false
             this.data.motion.last_ding = lastMotionDate ? Math.floor(lastMotionDate/1000) : 0
             this.data.motion.last_ding_time = lastMotionDate ? utils.getISOTime(lastMotionDate) : ''
-            this.data.motion.is_person = lastMotionEvent?.cv?.person_detected ? true : false
+            this.data.motion.is_person = Boolean(lastMotionEvent?.cv?.person_detected)
             this.data.motion.latestEventId = lastMotionEvent.event_id
 
             // Try to get URL for most recent motion event, if it fails, assume there's no subscription
@@ -372,28 +392,12 @@ export default class Camera extends RingPolledDevice {
     }
 
     updateSnapshotMode() {
-        switch (this.data.snapshot.mode.toLowerCase()) {
-            case 'disabled':
-                this.data.snapshot.motion = false
-                this.data.snapshot.interval = false
-                break;
-            case 'motion':
-                this.data.snapshot.motion = true
-                this.data.snapshot.interval = false
-                break;
-            case 'interval':
-                this.data.snapshot.motion = false
-                this.data.snapshot.interval = true
-                break;
-            case 'all':
-                this.data.snapshot.motion = true
-                this.data.snapshot.interval = true
-                break;
-            case 'auto':
-                this.data.snapshot.motion = true
-                this.data.snapshot.interval = (this.device.operatingOnBattery) ? false : true
-                break;
-        }
+        this.data.snapshot.ding = Boolean(this.device.isDoorbot && this.data.snapshot.mode.match(/(ding|^all|auto$)/i))
+        this.data.snapshot.motion = Boolean(this.data.snapshot.mode.match(/(motion|^all|auto$)/i))
+
+        this.data.snapshot.interval = this.data.snapshot.mode === 'Auto'
+            ? Boolean(!this.device.operatingOnBattery)
+            : Boolean(this.data.snapshot.mode.match(/(interval|^all$)/i))
 
         if (this.data.snapshot.interval && this.data.snapshot.autoInterval) {
             // If interval snapshots are enabled but interval is not manually set, try to detect a reasonable defaults
@@ -404,7 +408,7 @@ export default class Camera extends RingPolledDevice {
                     this.data.snapshot.intervalDuration = 600
                 }
             } else {
-                // For wired cameras default to 30 seconds o
+                // For wired cameras default to 30 seconds
                 this.data.snapshot.intervalDuration = 30
             }
         }
@@ -412,7 +416,7 @@ export default class Camera extends RingPolledDevice {
 
     // Publish camera capabilities and state and subscribe to events
     async publishState(data) {
-        const isPublish = data === undefined ? true : false
+        const isPublish = Boolean(data === undefined)
         this.publishPolledState(isPublish)
 
         // Checks for new events or expired recording URL every 3 polling cycles (~1 minute)
@@ -485,7 +489,7 @@ export default class Camera extends RingPolledDevice {
         this.debug(`Received ${dingKind} push notification, expires in ${this.data[dingKind].duration} seconds`)
 
         // Is this a new Ding or refresh of active ding?
-        const newDing = (!this.data[dingKind].active_ding) ? true : false
+        const newDing = Boolean(!this.data[dingKind].active_ding)
         this.data[dingKind].active_ding = true
 
         // Update last_ding and expire time
@@ -495,10 +499,13 @@ export default class Camera extends RingPolledDevice {
 
         // If motion ding and snapshots on motion are enabled, publish a new snapshot
         if (dingKind === 'motion') {
-            this.data[dingKind].is_person = (ding.detection_type === 'human') ? true : false
+            this.data[dingKind].is_person = Boolean(ding.detection_type === 'human')
             if (this.data.snapshot.motion) {
                 this.refreshSnapshot('motion', ding.image_uuid)
             }
+        } else if (this.data.snapshot.ding) {
+            // If doorbell press and snapshots on ding are enabled, publish a new snapshot
+            this.refreshSnapshot('ding', ding.image_uuid)
         }
 
         // Publish MQTT active sensor state
@@ -730,35 +737,38 @@ export default class Camera extends RingPolledDevice {
             try {
                 switch (type) {
                     case 'interval':
-                        this.debug('Requesting an updated interval snapshot')
+                    case 'on-demand':
+                        this.debug(`Requesting an updated ${type} snapshot`)
                         newSnapshot = await this.device.getNextSnapshot({ force: true })
                         break;
                     case 'motion':
+                    case 'ding':
                         if (image_uuid) {
-                            this.debug(`Requesting motion snapshot using notification image UUID: ${image_uuid}`)
+                            this.debug(`Requesting ${type} snapshot using notification image UUID: ${image_uuid}`)
                             newSnapshot = await this.device.getNextSnapshot({ uuid: image_uuid })
                         } else if (!this.device.operatingOnBattery) {
-                            this.debug('Requesting an updated motion snapshot')
+                            this.debug(`Requesting an updated ${type} snapshot`)
                             newSnapshot = await this.device.getNextSnapshot({ force: true })
                         } else {
-                            this.debug('Motion snapshot needed but notification did not contain image UUID and battery cameras are unable to snapshot while recording')
+                            this.debug(`The ${type} notification did not contain image UUID and battery cameras are unable to snapshot while recording`)
                             loop = 0  // Don't retry in this case
                         }
+                        break;
                 }
             } catch (err) {
                 this.debug(err)
                 if (loop > 1) {
-                    this.debug('Failed to retrieve updated snapshot, retrying in one second...')
+                    this.debug(`Failed to retrieve updated ${type} snapshot, retrying in one second...`)
                     await utils.sleep(1)
                 } else {
-                    this.debug('Failed to retrieve updated snapshot after three attempts, aborting')
+                    this.debug(`Failed to retrieve updated ${type} snapshot after three attempts, aborting`)
                 }
             }
             loop--
         }
 
         if (newSnapshot) {
-            this.debug('Successfully retrieved updated snapshot')
+            this.debug(`Successfully retrieved updated ${type} snapshot`)
             this.data.snapshot.currentImage = newSnapshot
             this.data.snapshot.timestamp = Math.round(Date.now()/1000)
             this.publishSnapshot()
@@ -921,7 +931,7 @@ export default class Camera extends RingPolledDevice {
         const eventSelect = this.data.event_select.state.split(' ')
         const eventType = eventSelect[0].toLowerCase().replace('-', '_')
         const eventNumber = eventSelect[1]
-        const transcoded = eventSelect[2] === '(Transcoded)' ? true : false
+        const transcoded = Boolean(eventSelect[2] === '(Transcoded)')
         const urlExpired = this.data.event_select.recordingUrlExpire < Date.now()
         let selectedEvent
         let recordingUrl = false
@@ -1080,14 +1090,14 @@ export default class Camera extends RingPolledDevice {
             case 'siren/command':
                 this.setSirenState(message)
                 break;
-            case 'snapshot/command':
-                this.setSnapshotInterval(message)
-                break;
             case 'snapshot_mode/command':
                 this.setSnapshotMode(message)
                 break;
             case 'snapshot_interval/command':
                 this.setSnapshotInterval(message)
+                break;
+            case 'take_snapshot/command':
+                this.takeSnapshot(message)
                 break;
             case 'stream/command':
                 this.setLiveStreamState(message)
@@ -1116,14 +1126,14 @@ export default class Camera extends RingPolledDevice {
     // Set switch target state on received MQTT command message
     async setLightState(message) {
         this.debug(`Received set light state ${message}`)
-        const command = message.toUpperCase()
+        const command = message.toLowerCase()
 
         switch (command) {
-            case 'ON':
-            case 'OFF':
+            case 'on':
+            case 'off':
                 this.data.light.setTime = Math.floor(Date.now()/1000)
-                await this.device.setLight(command === 'ON' ? true : false)
-                this.data.light.state = command
+                await this.device.setLight(Boolean(command === 'on'))
+                this.data.light.state = command.toUpperCase()
                 this.mqttPublish(this.entity.light.state_topic, this.data.light.state)
                 break;
             default:
@@ -1139,7 +1149,7 @@ export default class Camera extends RingPolledDevice {
         switch (command) {
             case 'on':
             case 'off':
-                await this.device.setSiren(command === 'on' ? true : false)
+                await this.device.setSiren(Boolean(command === 'on'))
                 break;
             default:
                 this.debug('Received unknown command for siren')
@@ -1156,7 +1166,7 @@ export default class Camera extends RingPolledDevice {
                 case 'off':
                     await this.device.setDeviceSettings({
                         "motion_settings": {
-                            "motion_detection_enabled": command === 'on' ? true : false
+                            "motion_detection_enabled": Boolean(command === 'on')
                         }
                     })
                     break;
@@ -1183,10 +1193,10 @@ export default class Camera extends RingPolledDevice {
                 case 'off':
                     await this.device.restClient.request({
                         method: 'PUT',
-                        url: this.device.doorbotUrl(`motion_announcement?motion_announcement=${command === 'on' ? 'true' : 'false'}`)
+                        url: this.device.doorbotUrl(`motion_announcement?motion_announcement=${Boolean(command === 'on')}`)
                     })
                     this.mqttPublish(this.entity.motion_warning.state_topic, command === 'on' ? 'ON' : 'OFF')
-                    this.data.motion.warning_enabled = command === 'on' ? true : false
+                    this.data.motion.warning_enabled = Boolean(command === 'on')
                     break;
                 default:
                     this.debug('Received unknown command for motion warning state')
@@ -1211,16 +1221,16 @@ export default class Camera extends RingPolledDevice {
         } else {
             this.data.snapshot.intervalDuration = Math.round(message)
             this.data.snapshot.autoInterval = false
-            if (this.data.snapshot.mode === 'auto') {
-                if (this.data.snapshot.motion && this.data.snapshot.interval) {
-                    this.data.snapshot.mode = 'all'
-                } else if (this.data.snapshot.interval) {
-                    this.data.snapshot.mode = 'interval'
-                } else if (this.data.snapshot.motion) {
-                    this.data.snapshot.mode = 'motion'
-                } else {
-                    this.data.snapshot.mode = 'disabled'
-                }
+            if (this.data.snapshot.mode === 'Auto') {
+                // Creates an array containing only currently active snapshot modes
+                const activeModes =
+                    (this.device.isDoorbot ? ['Interval', 'Motion', 'Ding'] : ['Interval', 'Motion'])
+                        .filter(e => this.data.snapshot[e.toLowerCase()])
+                this.data.snapshot.mode = activeModes.length === 0
+                    ? 'Disabled' // No snapshot modes are active
+                    : activeModes.length === (this.device.isDoorbot ? 3 : 2)
+                        ? 'All' // All snapshot modes this device supports are active
+                        : activeModes.join(' + ') // Some snapshot modes this device supports are active
                 this.updateSnapshotMode()
                 this.publishSnapshotMode()
             }
@@ -1232,31 +1242,44 @@ export default class Camera extends RingPolledDevice {
         }
     }
 
-    setSnapshotMode(message) {
-        this.debug(`Received set snapshot mode to ${message}`)
-        const mode = message[0].toUpperCase() + message.slice(1)
-        switch(mode) {
-            case 'Auto':
-                this.data.snapshot.autoInterval = true
-            case 'Disabled':
-            case 'Motion':
-            case 'Interval':
-            case 'All':
-                this.data.snapshot.mode = mode
-                this.updateSnapshotMode()
-                this.publishSnapshotMode()
-                if (message === 'Auto') {
-                    clearInterval(this.data.snapshot.intervalTimerId)
-                    this.scheduleSnapshotRefresh()
-                    this.publishSnapshotInterval()
-                }
-                this.debug(`Snapshot mode has been set to ${mode}`)
-                this.updateDeviceState()
-                break;
-            default:
-                this.debug(`Received invalid snapshot mode command`)
+    takeSnapshot(message) {
+        if (message.toLowerCase() === 'press') {
+            this.debug('Received command to take an on-demand snapshot')
+            if (this.data.snapshot.onDemandTimestamp + 10 > Math.round(Date.now()/1000 ) ) {
+                this.debug('On-demand snapshots are limited to one snapshot every 10 seconds')
+            } else {
+                this.data.snapshot.onDemandTimestamp = Math.round(Date.now()/1000)
+                this.refreshSnapshot('on-demand')
+            }
+        } else {
+            this.debug(`Received invalid command via on-demand snapshot topic: ${message}`)
         }
     }
+
+    setSnapshotMode(message) {
+        this.debug(`Received set snapshot mode to ${message}`)
+        const snapshotMode = message.toLowerCase().replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())
+
+        if (this.entity.snapshot_mode.options.map(o => o.includes(snapshotMode))) {
+            this.data.snapshot.mode = snapshotMode
+            this.data.snapshot.autoInterval = snapshotMode === 'Auto' ? true : this.data.snapshot.autoInterval
+            this.updateSnapshotMode()
+            this.publishSnapshotMode()
+
+            if (snapshotMode === 'Auto') {
+                this.debug(`Snapshot mode has been set to ${snapshotMode}, resetting to default values for camera type`)
+                clearInterval(this.data.snapshot.intervalTimerId)
+                this.scheduleSnapshotRefresh()
+                this.publishSnapshotInterval()
+            } else {
+                this.debug(`Snapshot mode has been set to ${snapshotMode}`)
+            }
+
+            this.updateDeviceState()
+        } else {
+            this.debug(`Received invalid command for snapshot mode`)
+        }
+}
 
     setLiveStreamState(message) {
         const command = message.toLowerCase()

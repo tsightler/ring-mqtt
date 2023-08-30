@@ -1,3 +1,21 @@
+## v5.6.0
+**New Features**
+- Cameras now include a button entity to request an on-demand snapshot.  This was a much requested feature and is intended primarily to allow snapshots to be triggered from automations (in Home Assistant this can be doen via the button press service).  Note that on-demand snapshots are limited to no more than one request every 10 seconds, more frequent requests will be logged, but otherwise ignored.  Also, low-power Ring cameras are unable to take snapshots while recording so there is no guarantee that a request for a snapshot on these cameras will be possible.
+- For doorbells it's now possible to get snapshots from ding events in addition to motion events and new snapshot modes have been introduced to select which combination of ding, motion, and interval snapshots are desired.  Ding snapshots are enabled by default for both Auto and All modes, but note that battery cameras will likely require a Ring subscription to get reliable snapshots from dings, just like motion.
+- Add support to enable/disable chirps on Ring keypads
+
+**Other Changes**
+- Adapt MQTT discovery messages to new entity naming guidelines introduced in Home Assistant 2023.8
+- Minor tweak for tamper sensor to increase compatibility with OpenHAB (thanks to @zolakk for the PR)
+- Merge and simplify WebRTC connection code and include recent minor updates for better reliability
+- Try to capture and log null responses during web token generation
+
+**Dependcy Updates**
+- ring-client-api v12.0.0
+- aedes v0.50.0
+- werift 0.18.5
+
+
 ## v5.5.1
 **New Features**
 - Improved support for HEVC mode cameras\

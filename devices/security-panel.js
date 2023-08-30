@@ -27,22 +27,22 @@ export default class SecurityPanel extends RingSocketDevice {
             alarm: {
                 component: 'alarm_control_panel',
                 attributes: true,
-                isLegacyEntity: true  // Legacy compatibility
+                isMainEntity: true
             },
             siren: {
                 component: 'switch',
                 icon: 'mdi:alarm-light',
-                name: `${this.device.location.name} Siren`
+                name: `Siren`
             },
             ...utils.config().enable_panic ? {
                 police: {
                     component: 'switch',
-                    name: `${this.device.location.name} Panic - Police`,
+                    name: `Panic - Police`,
                     icon: 'mdi:police-badge'
                 },
                 fire: {
                     component: 'switch',
-                    name: `${this.device.location.name} Panic - Fire`,
+                    name: `Panic - Fire`,
                     icon: 'mdi:fire'
                 }
             } : {}
@@ -185,7 +185,7 @@ export default class SecurityPanel extends RingSocketDevice {
     }
 
     publishState(data) {
-        const isPublish = data === undefined ? true : false
+        const isPublish = Boolean(data === undefined)
 
         // Publish alarm states for events not handled by processAlarmMode() as well as
         // any explicit publish requests

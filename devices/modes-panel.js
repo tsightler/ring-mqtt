@@ -9,7 +9,7 @@ export default class ModesPanel extends RingPolledDevice {
 
         this.entity.mode = {
             component: 'alarm_control_panel',
-            isLegacyEntity: true  // Legacy compatibility
+            isMainEntity: true
         }
 
         this.data = {
@@ -18,7 +18,7 @@ export default class ModesPanel extends RingPolledDevice {
     }
 
     publishState(data) {
-        const isPublish = data === undefined ? true : false
+        const isPublish = Boolean(data === undefined)
         const mode = (isPublish) ? this.device.location.getLocationMode() : data
         // Publish device state if it's changed from prior state
         if (this.data.currentMode !== mode || isPublish) {

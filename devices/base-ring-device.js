@@ -55,64 +55,54 @@ export default class RingDevice {
                     ? `${entityTopic}/image`
                     : `${entityTopic}/state`
 
-            // ***** Build a Home Assistant style MQTT discovery message *****
-            // Legacy versions of ring-mqtt created entity names and IDs for single function devices
-            // without using any type of suffix. To maintain compatibility with older versions, entities
-            // can set the "isLegacyEntity" flag in the entity definition. In this case the device will
-            // also get legacy device name generation (i.e. no name suffix either). However, automatic
-            // name generation can also be completely overridden by the entity 'name' parameter.
-            //
-            // I know the code below will offend the sensibilities of some people, especially with
-            // regards to formatting and nested ternaries, but, for whatever reason, my brain reads
-            // and parses the logic out easily, more so than other methods I've tried, so I've
-            // decided I can live with it.
+            // Build a Home Assistant style MQTT discovery message for the entity
             let discoveryMessage = {
-                ... entity.hasOwnProperty('name')
-                    ? { name: entity.name }
-                    : entity.hasOwnProperty('isLegacyEntity') || this.deviceData.name.toLowerCase().match(entityKey) // Use legacy name generation
-                        ? { name: `${this.deviceData.name}` }
-                        : { name: `${this.deviceData.name} ${entityKey.replace(/_/g," ").replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())}` },
-                ... entity.hasOwnProperty('unique_id') // If device provides own unique_id use that in all cases
-                    ? { unique_id: entity.unique_id }
-                    : entity.hasOwnProperty('isLegacyEntity') // Use legacy entity ID generation
-                        ? { unique_id: `${this.deviceId}` }
-                        : { unique_id: `${this.deviceId}_${entityKey}` },
-                ... entity.component === 'camera'
-                    ? { topic: entityStateTopic }
+                ...entity.hasOwnProperty('isMainEntity') || entity.hasOwnProperty('name')
+                    ? { name: entity.hasOwnProperty('name') ? entity.name : '' }
+                    : { name: `${entityKey.replace(/_/g," ").replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())}` },
+                ...entity.hasOwnProperty('isMainEntity') || entity.hasOwnProperty('unique_id')
+                    ? { unique_id: entity.hasOwnProperty('unique_id') ? entity.unique_id : `${this.deviceId}` }
+                    : { unique_id: `${this.deviceId}_${entityKey}`},
+                ...!entity.component.match(/^(camera|climate|button)$/)
+                    ? { state_topic: entityStateTopic }
                     : entity.component === 'climate'
                         ? { mode_state_topic: entityStateTopic }
-                        : { state_topic: entityStateTopic },
-                ... entity.component.match(/^(switch|number|light|fan|lock|alarm_control_panel|select)$/)
+                        : entity.component === 'camera'
+                            ? { topic: entityStateTopic }
+                            : {},
+                ...entity.component.match(/^(switch|number|light|fan|lock|alarm_control_panel|select|button)$/)
                     ? { command_topic: `${entityTopic}/command` } : {},
-                ... entity.hasOwnProperty('device_class')
+                ...entity.hasOwnProperty('device_class')
                     ? { device_class: entity.device_class } : {},
-                ... entity.hasOwnProperty('unit_of_measurement')
+                ...entity.hasOwnProperty('unit_of_measurement')
                     ? { unit_of_measurement: entity.unit_of_measurement } : {},
-                ... entity.hasOwnProperty('state_class')
+                ...entity.hasOwnProperty('state_class')
                     ? { state_class: entity.state_class } : {},
-                ... entity.hasOwnProperty('value_template')
+                ...entity.hasOwnProperty('value_template')
                     ? { value_template: entity.value_template } : {},
-                ... entity.hasOwnProperty('min')
+                ...entity.hasOwnProperty('min')
                     ? { min: entity.min } : {},
-                ... entity.hasOwnProperty('max')
+                ...entity.hasOwnProperty('max')
                     ? { max: entity.max } : {},
-                ... entity.hasOwnProperty('attributes')
+                ...entity.hasOwnProperty('mode')
+                    ? { mode: entity.mode } : {},
+                ...entity.hasOwnProperty('attributes')
                     ? { json_attributes_topic: `${entityTopic}/attributes` }
                     : entityKey === "info"
                         ? { json_attributes_topic: `${entityStateTopic}` } : {},
-                ... entity.hasOwnProperty('icon')
+                ...entity.hasOwnProperty('icon')
                     ? { icon: entity.icon }
                     : entityKey === "info"
                         ? { icon: 'mdi:information-outline' } : {},
-                ... entity.component === 'alarm_control_panel' && utils.config().disarm_code
+                ...entity.component === 'alarm_control_panel' && utils.config().disarm_code
                     ? { code: utils.config().disarm_code.toString(),
                         code_arm_required: false,
                         code_disarm_required: true } : {},
-                ... entity.hasOwnProperty('brightness_scale')
+                ...entity.hasOwnProperty('brightness_scale')
                     ? { brightness_state_topic: `${entityTopic}/brightness_state`,
                         brightness_command_topic: `${entityTopic}/brightness_command`,
                         brightness_scale: entity.brightness_scale } : {},
-                ... entity.component === 'fan'
+                ...entity.component === 'fan'
                     ? { percentage_state_topic: `${entityTopic}/percent_speed_state`,
                         percentage_command_topic: `${entityTopic}/percent_speed_command`,
                         preset_mode_state_topic: `${entityTopic}/speed_state`,
@@ -120,7 +110,7 @@ export default class RingDevice {
                         preset_modes: [ "low", "medium", "high" ],
                         speed_range_min: 11,
                         speed_range_max: 100 } : {},
-                ... entity.component === 'climate'
+                ...entity.component === 'climate'
                     ? { action_topic: `${entityTopic}/action_state`,
                         aux_state_topic: `${entityTopic}/aux_state`,
                         aux_command_topic: `${entityTopic}/aux_command`,
@@ -135,14 +125,14 @@ export default class RingDevice {
                         mode_command_topic: `${entityTopic}/mode_command`,
                         temperature_state_topic: `${entityTopic}/temperature_state`,
                         temperature_command_topic: `${entityTopic}/temperature_command`,
-                        ... entity.modes.includes('auto')
+                        ...entity.modes.includes('auto')
                             ? { temperature_high_state_topic: `${entityTopic}/temperature_high_state`,
                                 temperature_high_command_topic: `${entityTopic}/temperature_high_command`,
                                 temperature_low_state_topic: `${entityTopic}/temperature_low_state`,
                                 temperature_low_command_topic: `${entityTopic}/temperature_low_command`,
                             } : {},
                         temperature_unit: 'C' } : {},
-                ... entity.component === 'select'
+                ...entity.component === 'select'
                         ? { options: entity.options } : {},
                 availability_topic: this.availabilityTopic,
                 payload_available: 'online',

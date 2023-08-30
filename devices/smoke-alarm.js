@@ -14,7 +14,7 @@ export default class SmokeAlarm extends RingSocketDevice {
         this.entity.smoke = {
             component: 'binary_sensor',
             device_class: 'smoke',
-            isLegacyEntity: true  // Legacy compatibility
+            isMainEntity: true
         }
     }
 
