@@ -167,7 +167,7 @@ export default class BinarySensor extends RingSocketDevice {
 
     async setChirpTone(message) {
         this.debug(`Recevied command to set chirp tone ${message}`)
-        let chirpTone = this.entity.options.find(o => o.toLowerCase() === message.toLowerCase())
+        let chirpTone = this.entity.chirp_tone.options.find(o => o.toLowerCase() === message.toLowerCase())
         if (chirpTone) {
             chirpTone = chirpTone
                 .toLowerCase()
