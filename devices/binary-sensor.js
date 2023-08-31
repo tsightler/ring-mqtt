@@ -4,6 +4,7 @@ import { RingDeviceType } from 'ring-client-api'
 // Helper functions
 function chirpToMqttState(chirp) {
     return chirp.replace('cowbell', 'dinner-bell')
+                .replace('none', 'disabled')
                 .replace("-", " ")
                 .replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())
 }
@@ -87,7 +88,7 @@ export default class BinarySensor extends RingSocketDevice {
             this.entity.chirp_tone = {
                 component: 'select',
                 options: [
-                    'None', 'Ding Dong', 'Harp', 'Navi', 'Wind Chime',
+                    'Disabled', 'Ding Dong', 'Harp', 'Navi', 'Wind Chime',
                     'Dinner Bell', 'Echo', 'Ping Pong', 'Siren', 'Sonar', 'Xylophone'
                 ]
             }
@@ -168,7 +169,11 @@ export default class BinarySensor extends RingSocketDevice {
         this.debug(`Recevied command to set chirp tone ${message}`)
         let chirpTone = this.entity.options.find(o => o.toLowerCase() === message.toLowerCase())
         if (chirpTone) {
-            chirpTone = chirpTone.toLowerCase().replace(/\s+/g, "-").replace('dinner-bell', 'cowbell')
+            chirpTone = chirpTone
+                .toLowerCase()
+                .replace(/\s+/g, "-")
+                .replace('dinner-bell', 'cowbell')
+                .replace('disabled', 'none')
             this.securityPanel.setInfo({ device: { v1: { chirps: { [this.deviceId]: { type: chirpTone }}}}})
         } else {
             this.debug('Received command to set unknown chirp tone')
