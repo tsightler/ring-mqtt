@@ -1,7 +1,11 @@
 ## v5.6.1
 **New Features**
 - Add support for configuring chirp tones for Ring binary sensors
+- Return support for Ring Bridge
 - Snapshot camera attributes now include the snapshot type of the current snapshot in addition to the previous timestamp attribute.  Snapshot types can be any of "motion", "ding", "interval" or "on-demand".  This can assist with automation cases where a specific snapshot type is preffered.  However, note that no snapshot is ever guarateed and it can sometimes take multiple seconds to request and return a snapshot so, as an example, if the automation is triggered by motion, but then waits for a motion snapshot, a timeout should also be included to keep the automation from waiting forever if for some reason the snapshot could not be retrieved.
+
+**Dependcy Updates**
+- go2rtc v1.7.0
 
 ## v5.6.0
 **New Features**
