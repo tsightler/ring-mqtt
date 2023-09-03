@@ -1,3 +1,12 @@
+## v5.6.1
+**New Features**
+- Add support for configuring chirp tones for Ring binary sensors
+- Return support for Ring Bridge which was temporarily removed in v5.6.0 due to phantom devices for some users
+- Snapshot camera attributes now include the snapshot type of the current snapshot in addition to the previous timestamp attribute.  Snapshot types can be any of "motion", "ding", "interval" or "on-demand".  This can assist with automation cases where a specific snapshot type is preffered.  However, note that no snapshot is ever guarateed and it can sometimes take multiple seconds to request and return a snapshot so, as an example, if the automation is triggered by motion, but then waits for a motion snapshot, a timeout should also be included to keep the automation from waiting forever if for some reason the snapshot could not be retrieved.
+
+**Dependcy Updates**
+- go2rtc v1.7.0
+
 ## v5.6.0
 **New Features**
 - Cameras now include a button entity to request an on-demand snapshot.  This was a much requested feature and is intended primarily to allow snapshots to be triggered from automations (in Home Assistant this can be doen via the button press service).  Note that on-demand snapshots are limited to no more than one request every 10 seconds, more frequent requests will be logged, but otherwise ignored.  Also, low-power Ring cameras are unable to take snapshots while recording so there is no guarantee that a request for a snapshot on these cameras will be possible.

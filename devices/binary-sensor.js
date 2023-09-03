@@ -1,11 +1,22 @@
 import RingSocketDevice from './base-socket-device.js'
 import { RingDeviceType } from 'ring-client-api'
 
+// Helper functions
+function chirpToMqttState(chirp) {
+    return chirp.replace('cowbell', 'dinner-bell')
+                .replace('none', 'disabled')
+                .replace("-", " ")
+                .replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())
+}
+
+// Main device class
 export default class BinarySensor extends RingSocketDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'alarm')
+
         let device_class = false
         let bypass_modes = false
+        this.securityPanel = deviceInfo.securityPanel
 
         // Override icons and and topics
         switch (this.device.deviceType) {
@@ -40,6 +51,7 @@ export default class BinarySensor extends RingSocketDevice {
                 bypass_modes = [ 'Never', 'Always' ]
                 break;
             default:
+                delete this.securityPanel
                 if (this.device.name.toLowerCase().includes('motion')) {
                     this.entityName = 'motion'
                     this.deviceData.mdl = 'Motion Sensor',
@@ -59,18 +71,35 @@ export default class BinarySensor extends RingSocketDevice {
         // Only official Ring sensors can be bypassed
         if (bypass_modes) {
             const savedState = this.getSavedState()
-
             this.data = {
                 bypass_mode: savedState?.bypass_mode ? savedState.bypass_mode[0].toUpperCase() + savedState.bypass_mode.slice(1) : 'Never',
                 published_bypass_mode: false
             }
-
             this.entity.bypass_mode = {
                 component: 'select',
                 options: bypass_modes
             }
-
             this.updateDeviceState()
+        }
+
+        if (this?.securityPanel?.data?.chirps?.[this.device.id]?.type) {
+            this.data.chirp_tone = chirpToMqttState(this.securityPanel.data.chirps[this.device.id].type)
+            this.data.published_chirp_tone = false
+            this.entity.chirp_tone = {
+                component: 'select',
+                options: [
+                    'Disabled', 'Ding Dong', 'Harp', 'Navi', 'Wind Chime',
+                    'Dinner Bell', 'Echo', 'Ping Pong', 'Siren', 'Sonar', 'Xylophone'
+                ]
+            }
+            this.securityPanel.onData.subscribe(() => {
+                if (this?.securityPanel?.data?.chirps?.[this.device.id]?.type) {
+                    this.data.chirp_tone = chirpToMqttState(this.securityPanel.data.chirps[this.device.id].type)
+                }
+                if (this.isOnline()) {
+                    this.publishChirpToneState()
+                }
+            })
         }
     }
 
@@ -86,15 +115,21 @@ export default class BinarySensor extends RingSocketDevice {
         const contactState = this.device.data.faulted ? 'ON' : 'OFF'
         this.mqttPublish(this.entity[this.entityName].state_topic, contactState)
         this.publishBypassModeState(isPublish)
+        this.publishChirpToneState(isPublish)
         this.publishAttributes()
     }
 
     publishBypassModeState(isPublish) {
-        if (this.entity?.bypass_mode) {
-            if (this.data.bypass_mode !== this.data.published_bypass_mode || isPublish) {
-                this.data.published_bypass_mode = this.data.bypass_mode.state
-                this.mqttPublish(this.entity.bypass_mode.state_topic, this.data.bypass_mode)
-            }
+        if (this.entity?.bypass_mode && (this.data.bypass_mode !== this.data.published_bypass_mode || isPublish)) {
+            this.mqttPublish(this.entity.bypass_mode.state_topic, this.data.bypass_mode)
+            this.data.published_bypass_mode = this.data.bypass_mode
+        }
+    }
+
+    publishChirpToneState(isPublish) {
+        if (this.entity?.chirp_tone && (this.data.chirp_tone !== this.data.published_chirp_tone || isPublish)) {
+            this.mqttPublish(this.entity.chirp_tone.state_topic, this.data.chirp_tone)
+            this.data.published_chirp_tone = this.data.chirp_tone
         }
     }
 
@@ -104,6 +139,11 @@ export default class BinarySensor extends RingSocketDevice {
             case 'bypass_mode/command':
                 if (this.entity?.bypass_mode) {
                     this.setBypassMode(message)
+                }
+                break;
+            case 'chirp_tone/command':
+                if (this.entity?.chirp_tone) {
+                    this.setChirpTone(message)
                 }
                 break;
             default:
@@ -122,6 +162,21 @@ export default class BinarySensor extends RingSocketDevice {
             this.debug(`Bypass mode has been set to ${mode}`)
         } else {
             this.debug(`Received invalid bypass mode for this sensor: ${message}`)
+        }
+    }
+
+    async setChirpTone(message) {
+        this.debug(`Recevied command to set chirp tone ${message}`)
+        let chirpTone = this.entity.chirp_tone.options.find(o => o.toLowerCase() === message.toLowerCase())
+        if (chirpTone) {
+            chirpTone = chirpTone
+                .toLowerCase()
+                .replace(/\s+/g, "-")
+                .replace('dinner-bell', 'cowbell')
+                .replace('disabled', 'none')
+            this.securityPanel.setInfo({ device: { v1: { chirps: { [this.deviceId]: { type: chirpTone }}}}})
+        } else {
+            this.debug('Received command to set unknown chirp tone')
         }
     }
 }

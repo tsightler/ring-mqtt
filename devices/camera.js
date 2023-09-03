@@ -59,7 +59,8 @@ export default class Camera extends RingPolledDevice {
                     ? savedState.snapshot.intervalDuration
                     : (this.device.operatingOnBattery) ? 600 : 30,
                 intervalTimerId: null,
-                currentImage: null,
+                cache: null,
+                cacheType: null,
                 timestamp: null,
                 onDemandTimestamp: 0
             },
@@ -440,13 +441,8 @@ export default class Camera extends RingPolledDevice {
             this.publishDingStates()
             this.publishDingDurationState(isPublish)
             this.publishSnapshotMode()
-            if (this.data.snapshot.motion || this.data.snapshot.interval) {
-                if (this.data.snapshot.currentImage) {
-                    this.publishSnapshot()
-                } else {
-                    this.refreshSnapshot('interval')
-                }
-
+            if (this.data.snapshot.motion || this.data.snapshot.ding || this.data.snapshot.interval) {
+                this.data.snapshot.cache ? this.publishSnapshot() : this.refreshSnapshot('interval')
                 this.publishSnapshotInterval(isPublish)
             }
             this.publishAttributes()
@@ -711,8 +707,12 @@ export default class Camera extends RingPolledDevice {
 
     // Publish snapshot image/metadata
     publishSnapshot() {
-        this.mqttPublish(this.entity.snapshot.topic, this.data.snapshot.currentImage, 'mqtt', '<binary_image_data>')
-        this.mqttPublish(this.entity.snapshot.json_attributes_topic, JSON.stringify({ timestamp: this.data.snapshot.timestamp }), 'attr')
+        this.mqttPublish(this.entity.snapshot.topic, this.data.snapshot.cache, 'mqtt', '<binary_image_data>')
+        const attributes = {
+            timestamp: this.data.snapshot.timestamp,
+            type: this.data.snapshot.cacheType
+        }
+        this.mqttPublish(this.entity.snapshot.json_attributes_topic, JSON.stringify(attributes), 'attr')
     }
 
     // Refresh snapshot on scheduled interval
@@ -769,7 +769,8 @@ export default class Camera extends RingPolledDevice {
 
         if (newSnapshot) {
             this.debug(`Successfully retrieved updated ${type} snapshot`)
-            this.data.snapshot.currentImage = newSnapshot
+            this.data.snapshot.cache = newSnapshot
+            this.data.snapshot.cacheType = type
             this.data.snapshot.timestamp = Math.round(Date.now()/1000)
             this.publishSnapshot()
         }
