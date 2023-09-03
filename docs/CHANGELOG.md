@@ -1,3 +1,7 @@
+## v5.6.2
+**Bugs Fixed**
+- Fix crash when discovering Ring Bridge due to missing operator
+
 ## v5.6.1
 **New Features**
 - Add support for configuring chirp tones for Ring binary sensors
