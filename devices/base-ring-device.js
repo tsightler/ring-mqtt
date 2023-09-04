@@ -145,7 +145,7 @@ export default class RingDevice {
             this.debug(discoveryMessage, 'disc')
             this.mqttPublish(configTopic, JSON.stringify(discoveryMessage), false)
 
-            // On first publish store generated topics in entities object and subscribe to command topics
+            // On first publish store generated topics in entities object and subscribe to command/debug topics
             if (!this.entity[entityKey].hasOwnProperty('published')) {
                 this.entity[entityKey].published = true
                 Object.keys(discoveryMessage).filter(property => property.match('topic')).forEach(topic => {
@@ -160,10 +160,13 @@ export default class RingDevice {
                             }
                         })
 
-                        // For camera stream entities subscribe to IPC broker topics as well
-                        if (entityKey === 'stream' || entityKey === 'event_stream') {
+                        // Use internal MQTT broker for receiving commands from other processes
+                        if (this.entity[entityKey]?.ipc) {
                             utils.event.emit('mqtt_ipc_subscribe', discoveryMessage[topic])
-                            // Also subscribe to debug topic used to log debug messages from start-stream.sh script
+                        }
+
+                        // Use internal MQTT broker for receiving debug output from other processes
+                        if (this.entity[entityKey]?.debug) {
                             const streamDebugTopic = discoveryMessage[topic].split('/').slice(0,-1).join('/')+'/debug'
                             utils.event.emit('mqtt_ipc_subscribe', streamDebugTopic)
                             utils.event.on(streamDebugTopic, (command, message) => {
