@@ -1,3 +1,7 @@
+## v5.6.3
+**Other Changes**
+- Update HVAC support to remove deprecated Auxillary heat support.  Auxillary heat is now presented as a preset mode instead.
+
 ## v5.6.2
 **Bugs Fixed**
 - Fix crash when discovering Ring Bridge due to missing operator

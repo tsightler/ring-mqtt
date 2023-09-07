@@ -26,8 +26,8 @@ export default class Thermostat extends RingSocketDevice {
             fanMode: (() => {
                 return this.device.data.fanMode.replace(/^./, str => str.toUpperCase())
             }),
-            auxMode: (() => {
-                return this.device.data.mode === 'aux' ? 'ON' : 'OFF'
+            presetMode: (() => {
+                return this.device.data.mode === 'aux' ? 'Auxillary' : 'None'
             }),
             setPoint: (() => {
                 return this.device.data.setPoint
@@ -75,7 +75,7 @@ export default class Thermostat extends RingSocketDevice {
 
         this.publishModeAndSetpoints()
         this.mqttPublish(this.entity.thermostat.fan_mode_state_topic, this.data.fanMode())
-        this.mqttPublish(this.entity.thermostat.aux_state_topic, this.data.auxMode())
+        this.mqttPublish(this.entity.thermostat.preset_mode_state_topic, this.data.presetMode())
         this.publishOperatingMode()
 
         if (isPublish) { this.publishTemperature() }
@@ -150,8 +150,8 @@ export default class Thermostat extends RingSocketDevice {
             case 'thermostat/fan_mode_command':
                 this.setFanMode(message)
                 break;
-            case 'thermostat/aux_command':
-                this.setAuxMode(message)
+            case 'thermostat/preset_mode_command':
+                this.setPresetMode(message)
                 break;
             default:
                 this.debug(`Received message to unknown command topic: ${command}`)
@@ -257,18 +257,18 @@ export default class Thermostat extends RingSocketDevice {
         }
     }
 
-    async setAuxMode(value) {
-        this.debug(`Received set aux mode ${value}`)
-        const auxMode = value.toLowerCase()
-        switch(auxMode) {
-            case 'on':
-            case 'off':
-                const mode = auxMode === 'on' ? 'aux' : 'heat'
+    async setPresetMode(value) {
+        this.debug(`Received set preset mode ${value}`)
+        const presetMode = value.toLowerCase()
+        switch(presetMode) {
+            case 'auxillary':
+            case 'none':
+                const mode = presetMode === 'auxillary' ? 'aux' : 'heat'
                 this.device.setInfo({ device: { v1: { mode } } })
-                this.mqttPublish(this.entity.thermostat.aux_state_topic, auxMode.toUpperCase())
+                this.mqttPublish(this.entity.thermostat.preset_mode_state_topic, presetMode.toUpperCase())
                 break;
             default:
-                this.debug('Received invalid aux mode command')
+                this.debug('Received invalid preset mode command')
         }
     }
 }
