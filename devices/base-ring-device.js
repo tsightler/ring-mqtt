@@ -98,6 +98,7 @@ export default class RingDevice {
                     ? { code: utils.config().disarm_code.toString(),
                         code_arm_required: false,
                         code_disarm_required: true } : {},
+                    supported_features: ['arm_home', 'arm_away'],
                 ...entity.hasOwnProperty('brightness_scale')
                     ? { brightness_state_topic: `${entityTopic}/brightness_state`,
                         brightness_command_topic: `${entityTopic}/brightness_command`,

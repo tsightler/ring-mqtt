@@ -1,5 +1,6 @@
 ## v5.6.3
 **Other Changes**
+- Implement new "supported_features" capability for Home Assistant MQTT Alarm Control Panel.  This prevents unavailable modes from being presented in the HA UI.
 - Update HVAC support to remove deprecated Auxillary heat support.  Auxillary heat is now presented as a preset mode instead.
 
 ## v5.6.2
