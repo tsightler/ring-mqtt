@@ -265,7 +265,7 @@ export default class Thermostat extends RingSocketDevice {
             case 'none':
                 const mode = presetMode === 'auxillary' ? 'aux' : 'heat'
                 this.device.setInfo({ device: { v1: { mode } } })
-                this.mqttPublish(this.entity.thermostat.preset_mode_state_topic, presetMode.toUpperCase())
+                this.mqttPublish(this.entity.thermostat.preset_mode_state_topic, presetMode.replace(/^./, str => str.toUpperCase()))
                 break;
             default:
                 this.debug('Received invalid preset mode command')

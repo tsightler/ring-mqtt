@@ -71,38 +71,52 @@ export default class RingDevice {
                             ? { topic: entityStateTopic }
                             : {},
                 ...entity.component.match(/^(switch|number|light|fan|lock|alarm_control_panel|select|button)$/)
-                    ? { command_topic: `${entityTopic}/command` } : {},
+                    ? { command_topic: `${entityTopic}/command` }
+                    : {},
                 ...entity.hasOwnProperty('device_class')
-                    ? { device_class: entity.device_class } : {},
+                    ? { device_class: entity.device_class }
+                    : {},
                 ...entity.hasOwnProperty('unit_of_measurement')
-                    ? { unit_of_measurement: entity.unit_of_measurement } : {},
+                    ? { unit_of_measurement: entity.unit_of_measurement }
+                    : {},
                 ...entity.hasOwnProperty('state_class')
-                    ? { state_class: entity.state_class } : {},
+                    ? { state_class: entity.state_class }
+                    : {},
                 ...entity.hasOwnProperty('value_template')
-                    ? { value_template: entity.value_template } : {},
+                    ? { value_template: entity.value_template }
+                    : {},
                 ...entity.hasOwnProperty('min')
-                    ? { min: entity.min } : {},
+                    ? { min: entity.min }
+                    : {},
                 ...entity.hasOwnProperty('max')
-                    ? { max: entity.max } : {},
+                    ? { max: entity.max }
+                    : {},
                 ...entity.hasOwnProperty('mode')
-                    ? { mode: entity.mode } : {},
+                    ? { mode: entity.mode }
+                    : {},
                 ...entity.hasOwnProperty('attributes')
                     ? { json_attributes_topic: `${entityTopic}/attributes` }
                     : entityKey === "info"
-                        ? { json_attributes_topic: `${entityStateTopic}` } : {},
+                        ? { json_attributes_topic: `${entityStateTopic}` }
+                        : {},
                 ...entity.hasOwnProperty('icon')
                     ? { icon: entity.icon }
                     : entityKey === "info"
-                        ? { icon: 'mdi:information-outline' } : {},
-                ...entity.component === 'alarm_control_panel' && utils.config().disarm_code
-                    ? { code: utils.config().disarm_code.toString(),
-                        code_arm_required: false,
-                        code_disarm_required: true } : {},
-                    supported_features: ['arm_home', 'arm_away'],
+                        ? { icon: 'mdi:information-outline' }
+                        : {},
+                ...entity.component === 'alarm_control_panel'
+                    ? { supported_features: ['arm_home', 'arm_away'],
+                        ...utils.config().disarm_code
+                            ? { code: utils.config().disarm_code.toString(),
+                                code_arm_required: false,
+                                code_disarm_required: true
+                            } : {} }
+                    : {},
                 ...entity.hasOwnProperty('brightness_scale')
                     ? { brightness_state_topic: `${entityTopic}/brightness_state`,
                         brightness_command_topic: `${entityTopic}/brightness_command`,
-                        brightness_scale: entity.brightness_scale } : {},
+                        brightness_scale: entity.brightness_scale }
+                    : {},
                 ...entity.component === 'fan'
                     ? { percentage_state_topic: `${entityTopic}/percent_speed_state`,
                         percentage_command_topic: `${entityTopic}/percent_speed_command`,
@@ -110,7 +124,8 @@ export default class RingDevice {
                         preset_mode_command_topic: `${entityTopic}/speed_command`,
                         preset_modes: [ "low", "medium", "high" ],
                         speed_range_min: 11,
-                        speed_range_max: 100 } : {},
+                        speed_range_max: 100 }
+                    : {},
                 ...entity.component === 'climate'
                     ? { action_topic: `${entityTopic}/action_state`,
                         current_temperature_topic: `${entityTopic}/current_temperature_state`,
@@ -133,9 +148,11 @@ export default class RingDevice {
                                 temperature_low_command_topic: `${entityTopic}/temperature_low_command`,
                                 temperature_low_state_topic: `${entityTopic}/temperature_low_state`,
                             } : {},
-                        temperature_unit: 'C' } : {},
+                        temperature_unit: 'C' }
+                    : {},
                 ...entity.component === 'select'
-                        ? { options: entity.options } : {},
+                    ? { options: entity.options }
+                    : {},
                 availability_topic: this.availabilityTopic,
                 payload_available: 'online',
                 payload_not_available: 'offline',

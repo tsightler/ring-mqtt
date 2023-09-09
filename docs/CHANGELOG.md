@@ -1,7 +1,7 @@
 ## v5.6.3
 **Other Changes**
-- Implement new "supported_features" capability for Home Assistant MQTT Alarm Control Panel.  This prevents unavailable modes from being presented in the HA UI.
-- Update HVAC support to remove deprecated Auxillary heat support.  Auxillary heat is now presented as a preset mode instead.
+- Implement "supported_features" capability introduced in Home Assistant 2023.9, which allows ring-mqtt to infomration the MQTT Alarm Control Panel which arming modes are supported.  This prevents unavailable arming modes from being visible in the Home Assistant alarm user interface which can reduce confusion.
+- Remove auxillary heat implementaion which was deprecated in Home Assistant 2023.9.  Auxillary/emergency heat is still available but is now exposed as a preset mode instead (behavior is duplicated from the Z-wave thermostate implementation).
 
 ## v5.6.2
 **Bugs Fixed**
