@@ -1,7 +1,15 @@
 ## v5.6.3
+**Minor Enhancements**
+- lastArmBy/lastDisarmBy now reports correct names for guest users as well as shared users
+- HVAC enhanced to use new "supported_features" capability in Home Assistant >2023.9.  This allows ring-mqtt to inform Home Assistant which arming modes are supported thus suppressing unavailable arming modes from being visible in the Home Assistant user interface.
+
 **Other Changes**
-- Implement "supported_features" capability introduced in Home Assistant 2023.9, which allows ring-mqtt to infomration the MQTT Alarm Control Panel which arming modes are supported.  This prevents unavailable arming modes from being visible in the Home Assistant alarm user interface which can reduce confusion.
-- Remove auxillary heat implementaion which was deprecated in Home Assistant 2023.9.  Auxillary/emergency heat is still available but is now exposed as a preset mode instead (behavior is duplicated from the Z-wave thermostate implementation).
+- Remove auxillary heat implementaion which was deprecated in Home Assistant 2023.9.  Auxillary/emergency heat is still available but is now exposed as a preset mode instead (behavior is duplicated from the Z-wave thermostat implementation).
+- Suppress hass warnings from go2rtc (cosmetic only)
+
+**Dependcy Updates**
+- go2rtc v1.7.1
+- ring-client-api v12.0.1
 
 ## v5.6.2
 **Bugs Fixed**

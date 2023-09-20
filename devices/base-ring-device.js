@@ -179,14 +179,10 @@ export default class RingDevice {
                             }
                         })
 
-                        // Use internal MQTT broker for receiving commands from other processes
+                        // Entity uses internal MQTT broker for inter-process communications
                         if (this.entity[entityKey]?.ipc) {
-                            utils.event.emit('mqtt_ipc_subscribe', discoveryMessage[topic])
-                        }
-
-                        // Use internal MQTT broker for receiving debug output from other processes
-                        if (this.entity[entityKey]?.debug) {
                             const streamDebugTopic = discoveryMessage[topic].split('/').slice(0,-1).join('/')+'/debug'
+                            utils.event.emit('mqtt_ipc_subscribe', discoveryMessage[topic])
                             utils.event.emit('mqtt_ipc_subscribe', streamDebugTopic)
                             utils.event.on(streamDebugTopic, (command, message) => {
                                 if (message) {
