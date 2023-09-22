@@ -1,6 +1,7 @@
 ## v5.6.3
 **Minor Enhancements**
 - lastArmBy/lastDisarmBy now reports correct names for guest users as well as shared users
+- Locks now support "LOCKING" and "UNLOCKING" status which provides for a richer experience in the Home Assistant UI
 - HVAC enhanced to use new "supported_features" capability in Home Assistant >2023.9.  This allows ring-mqtt to inform Home Assistant which arming modes are supported thus suppressing unavailable arming modes from being visible in the Home Assistant user interface.
 
 **Other Changes**
