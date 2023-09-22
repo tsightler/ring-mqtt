@@ -128,7 +128,9 @@ export default class SecurityPanel extends RingSocketDevice {
     }
 
     async updateAlarmAttributes(message, mode) {
-        let initiatingUser = message.context.initiatingEntityType
+        let initiatingUser = message.context.initiatingEntityName
+            ? message.context.initiatingEntityName
+            : message.context.initiatingEntityType
 
         if (message.context.initiatingEntityType === 'user' && message.context.initiatingEntityId) {
             try {

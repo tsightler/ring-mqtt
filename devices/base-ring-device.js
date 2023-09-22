@@ -71,37 +71,52 @@ export default class RingDevice {
                             ? { topic: entityStateTopic }
                             : {},
                 ...entity.component.match(/^(switch|number|light|fan|lock|alarm_control_panel|select|button)$/)
-                    ? { command_topic: `${entityTopic}/command` } : {},
+                    ? { command_topic: `${entityTopic}/command` }
+                    : {},
                 ...entity.hasOwnProperty('device_class')
-                    ? { device_class: entity.device_class } : {},
+                    ? { device_class: entity.device_class }
+                    : {},
                 ...entity.hasOwnProperty('unit_of_measurement')
-                    ? { unit_of_measurement: entity.unit_of_measurement } : {},
+                    ? { unit_of_measurement: entity.unit_of_measurement }
+                    : {},
                 ...entity.hasOwnProperty('state_class')
-                    ? { state_class: entity.state_class } : {},
+                    ? { state_class: entity.state_class }
+                    : {},
                 ...entity.hasOwnProperty('value_template')
-                    ? { value_template: entity.value_template } : {},
+                    ? { value_template: entity.value_template }
+                    : {},
                 ...entity.hasOwnProperty('min')
-                    ? { min: entity.min } : {},
+                    ? { min: entity.min }
+                    : {},
                 ...entity.hasOwnProperty('max')
-                    ? { max: entity.max } : {},
+                    ? { max: entity.max }
+                    : {},
                 ...entity.hasOwnProperty('mode')
-                    ? { mode: entity.mode } : {},
+                    ? { mode: entity.mode }
+                    : {},
                 ...entity.hasOwnProperty('attributes')
                     ? { json_attributes_topic: `${entityTopic}/attributes` }
                     : entityKey === "info"
-                        ? { json_attributes_topic: `${entityStateTopic}` } : {},
+                        ? { json_attributes_topic: `${entityStateTopic}` }
+                        : {},
                 ...entity.hasOwnProperty('icon')
                     ? { icon: entity.icon }
                     : entityKey === "info"
-                        ? { icon: 'mdi:information-outline' } : {},
-                ...entity.component === 'alarm_control_panel' && utils.config().disarm_code
-                    ? { code: utils.config().disarm_code.toString(),
-                        code_arm_required: false,
-                        code_disarm_required: true } : {},
+                        ? { icon: 'mdi:information-outline' }
+                        : {},
+                ...entity.component === 'alarm_control_panel'
+                    ? { supported_features: ['arm_home', 'arm_away'],
+                        ...utils.config().disarm_code
+                            ? { code: utils.config().disarm_code.toString(),
+                                code_arm_required: false,
+                                code_disarm_required: true
+                            } : {} }
+                    : {},
                 ...entity.hasOwnProperty('brightness_scale')
                     ? { brightness_state_topic: `${entityTopic}/brightness_state`,
                         brightness_command_topic: `${entityTopic}/brightness_command`,
-                        brightness_scale: entity.brightness_scale } : {},
+                        brightness_scale: entity.brightness_scale }
+                    : {},
                 ...entity.component === 'fan'
                     ? { percentage_state_topic: `${entityTopic}/percent_speed_state`,
                         percentage_command_topic: `${entityTopic}/percent_speed_command`,
@@ -109,31 +124,35 @@ export default class RingDevice {
                         preset_mode_command_topic: `${entityTopic}/speed_command`,
                         preset_modes: [ "low", "medium", "high" ],
                         speed_range_min: 11,
-                        speed_range_max: 100 } : {},
+                        speed_range_max: 100 }
+                    : {},
                 ...entity.component === 'climate'
                     ? { action_topic: `${entityTopic}/action_state`,
-                        aux_state_topic: `${entityTopic}/aux_state`,
-                        aux_command_topic: `${entityTopic}/aux_command`,
                         current_temperature_topic: `${entityTopic}/current_temperature_state`,
-                        fan_modes: entity.fan_modes,
-                        fan_mode_state_topic: `${entityTopic}/fan_mode_state`,
                         fan_mode_command_topic: `${entityTopic}/fan_mode_command`,
+                        fan_mode_state_topic: `${entityTopic}/fan_mode_state`,
+                        fan_modes: entity.fan_modes,
                         max_temp: 37,
                         min_temp: 10,
                         modes: entity.modes,
                         mode_state_topic: `${entityTopic}/mode_state`,
                         mode_command_topic: `${entityTopic}/mode_command`,
-                        temperature_state_topic: `${entityTopic}/temperature_state`,
+                        preset_mode_command_topic: `${entityTopic}/preset_mode_command`,
+                        preset_mode_state_topic: `${entityTopic}/preset_mode_state`,
+                        preset_modes: ['Auxillary'],
                         temperature_command_topic: `${entityTopic}/temperature_command`,
+                        temperature_state_topic: `${entityTopic}/temperature_state`,
                         ...entity.modes.includes('auto')
-                            ? { temperature_high_state_topic: `${entityTopic}/temperature_high_state`,
-                                temperature_high_command_topic: `${entityTopic}/temperature_high_command`,
-                                temperature_low_state_topic: `${entityTopic}/temperature_low_state`,
+                            ? { temperature_high_command_topic: `${entityTopic}/temperature_high_command`,
+                                temperature_high_state_topic: `${entityTopic}/temperature_high_state`,
                                 temperature_low_command_topic: `${entityTopic}/temperature_low_command`,
+                                temperature_low_state_topic: `${entityTopic}/temperature_low_state`,
                             } : {},
-                        temperature_unit: 'C' } : {},
+                        temperature_unit: 'C' }
+                    : {},
                 ...entity.component === 'select'
-                        ? { options: entity.options } : {},
+                    ? { options: entity.options }
+                    : {},
                 availability_topic: this.availabilityTopic,
                 payload_available: 'online',
                 payload_not_available: 'offline',
@@ -145,7 +164,7 @@ export default class RingDevice {
             this.debug(discoveryMessage, 'disc')
             this.mqttPublish(configTopic, JSON.stringify(discoveryMessage), false)
 
-            // On first publish store generated topics in entities object and subscribe to command topics
+            // On first publish store generated topics in entities object and subscribe to command/debug topics
             if (!this.entity[entityKey].hasOwnProperty('published')) {
                 this.entity[entityKey].published = true
                 Object.keys(discoveryMessage).filter(property => property.match('topic')).forEach(topic => {
@@ -160,13 +179,12 @@ export default class RingDevice {
                             }
                         })
 
-                        // For camera stream entities subscribe to IPC broker topics as well
-                        if (entityKey === 'stream' || entityKey === 'event_stream') {
+                        // Entity uses internal MQTT broker for inter-process communications
+                        if (this.entity[entityKey]?.ipc) {
+                            const debugTopic = discoveryMessage[topic].split('/').slice(0,-1).join('/')+'/debug'
                             utils.event.emit('mqtt_ipc_subscribe', discoveryMessage[topic])
-                            // Also subscribe to debug topic used to log debug messages from start-stream.sh script
-                            const streamDebugTopic = discoveryMessage[topic].split('/').slice(0,-1).join('/')+'/debug'
-                            utils.event.emit('mqtt_ipc_subscribe', streamDebugTopic)
-                            utils.event.on(streamDebugTopic, (command, message) => {
+                            utils.event.emit('mqtt_ipc_subscribe', debugTopic)
+                            utils.event.on(debugTopic, (command, message) => {
                                 if (message) {
                                     this.debug(message, 'rtsp')
                                 } else {

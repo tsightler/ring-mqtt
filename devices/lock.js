@@ -45,6 +45,7 @@ export default class Lock extends RingSocketDevice {
         switch(command) {
             case 'lock':
             case 'unlock':
+                this.mqttPublish(this.entity.lock.state_topic, `${command.toUpperCase()}ING`)
                 this.device.sendCommand(`lock.${command}`)
                 break;
             default:
