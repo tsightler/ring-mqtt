@@ -1,4 +1,4 @@
-FROM alpine:3.17
+FROM alpine:3.18
 
 ENV LANG="C.UTF-8" \
     PS1="$(whoami)@$(hostname):$(pwd)$ " \
@@ -9,9 +9,9 @@ ENV LANG="C.UTF-8" \
     TERM="xterm-256color"
 
 COPY . /app/ring-mqtt
-RUN S6_VERSION="v3.1.5.0" && \
-    BASHIO_VERSION="v0.15.0" && \
-    GO2RTC_VERSION="v1.7.1" && \
+RUN S6_VERSION="v3.1.6.0" && \
+    BASHIO_VERSION="v0.16.0" && \
+    GO2RTC_VERSION="v1.8.3" && \
     APK_ARCH="$(apk --print-arch)" && \
     apk add --no-cache tar xz git libcrypto3 libssl3 musl-utils musl bash curl jq tzdata nodejs npm mosquitto-clients && \
     curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/${S6_VERSION}/s6-overlay-noarch.tar.xz" | tar -Jxpf - -C / && \
