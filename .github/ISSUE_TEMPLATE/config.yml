@@ -2,4 +2,4 @@ blank_issues_enabled: false
 contact_links:
   - name: Feature Requests
     url: https://github.com/tsightler/ring-mqtt/discussions/categories/feature-requests
-    about: Feature requests should be discussed in the approprirate discussions group.
+    about: Please check the Feature Requests discussion group and create a new topic there if one does not already exist.
