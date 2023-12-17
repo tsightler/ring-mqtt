@@ -26,6 +26,7 @@ export default class Chime extends RingPolledDevice {
             ...this.entity,
             volume: {
                 component: 'number',
+                category: 'config',
                 min: 0,
                 max: 11,
                 mode: 'slider',
@@ -33,11 +34,13 @@ export default class Chime extends RingPolledDevice {
             },
             snooze: {
                 component: 'switch',
+                category: 'config',
                 icon: 'hass:bell-sleep',
                 attributes: true
             },
             snooze_minutes: {
                 component: 'number',
+                category: 'config',
                 min: 1,
                 max: 1440,
                 mode: 'box',
@@ -45,21 +48,25 @@ export default class Chime extends RingPolledDevice {
             },
             play_ding_sound: {
                 component: 'switch',
+                category: 'config',
                 icon: 'hass:bell-ring'
             },
             play_motion_sound: {
                 component: 'switch',
+                category: 'config',
                 icon: 'hass:bell-ring'
             },
             ...this.device.data.settings.night_light_settings?.hasOwnProperty('light_sensor_enabled') ? {
                 nightlight_enabled: {
                     component: 'switch',
+                    category: 'config',
                     icon: "mdi:lightbulb-night",
                     attributes: true
                 }
             } : {},
             info: {
                 component: 'sensor',
+                category: 'diagnostic',
                 device_class: 'timestamp',
                 value_template: '{{ value_json["lastUpdate"] | default("") }}'
             }

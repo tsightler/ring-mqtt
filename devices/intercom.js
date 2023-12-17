@@ -30,6 +30,7 @@ export default class Lock extends RingPolledDevice {
             },
             info: {
                 component: 'sensor',
+                category: 'diagnostic',
                 device_class: 'timestamp',
                 value_template: '{{ value_json["lastUpdate"] | default("") }}'
             }
