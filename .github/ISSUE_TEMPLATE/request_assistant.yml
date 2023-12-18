@@ -1,0 +1,80 @@
+name: Request Assistance
+description: Request assistance with an installation or operational issues
+title: 'Support: <Please enter a short description here>'
+labels: [support]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before opening a support issue, please search for all open and closed Github issues as well as any relevant discussion topics that may match your situation.
+        
+        Opening a support issue assumes that you have attempted to solve the problem yourself and that you are prepared to actively work togther to resolve the issue.  This means that you will need to perform actions such as gathering logs, providing screenshots, describing your environment in detail, etc.  If you are unable or unwilling to do so, please do not open an issue.
+        
+        Please **DO NOT** open a support issue if you are not prepared to provide logs or answer questions in a
+        timely manner (at least every few days).  Issues that receive no followup responses will be
+        subject to closure after 72 hours.
+        
+        Please include the information requested in the fields below completely as possible or the issue will
+        likely be closed immediately.
+  - type: input
+    attributes:
+      label: Describe the Issue
+      placeholder: A clear and concise description of the issue.  Please be sure to enter a brief summary of the issue in the title as well.
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Steps take so far
+      placeholder: Please provide the troubleshooting steps you have taken so far
+    validations:
+      required: true
+  - type: textarea
+    id: Logs
+    attributes:
+      label: Log Output
+      placeholder: Please include the full ring-mqtt logs as they will be needed in almost all cases.  If you decide to open an issue without providing logs, or providing only a snippet of logs, be prepared that the first response will likely be to provide full logs.  If you do not want to post full logs here due to privacy concerns, you can send them to my email using the same username (tsightler) at gmail, and reference the issue number.  If you do not know how to gather full logs for the addon see https://github.com/tsightler/ring-mqtt-ha-addon/blob/main/GET-LOGS.md
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Screenshots
+      description: If applicable, add screenshots to help explain your problem.
+      placeholder: You can attach images by clicking this area to highlight it and then dragging files in.
+    validations:
+      required: false
+  - type: textarea
+    id: Config
+    attributes:
+      label: Config File
+      placeholder: Post the contents of YAML config from HA addon or config.json file _without sensitive information_
+      render: shell
+    validations:
+      required: true
+  - type: markdown
+    attributes:
+      value: |
+        Environment
+  - type: input
+    attributes:
+      label: Install Type
+      placeholder: Home Assistant Addon, Docker, Manual
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Version
+      placeholder: v5.5.1
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Operating System
+      placeholder: Home Assistant OS / Ubuntu / Debian / RaspianOS / etc.
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Architecture
+      placeholder: x86_64 / arm64 / arm7 / etc.
+    validations:
