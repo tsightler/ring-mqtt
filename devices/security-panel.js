@@ -60,7 +60,7 @@ export default class SecurityPanel extends RingSocketDevice {
             if (message.datatype === 'DeviceInfoDocType' &&
                 message.body?.[0]?.general?.v2?.zid === this.deviceId
             ) {
-                console.log(message)
+                console.log(JSON.stringify(message))
             }
 
 
