@@ -58,6 +58,13 @@ export default class SecurityPanel extends RingSocketDevice {
             if (!this.isOnline()) { return }
 
             if (message.datatype === 'DeviceInfoDocType' &&
+                message.body?.[0]?.general?.v2?.zid === this.deviceId
+            ) {
+                console.log(message)
+            }
+
+
+            if (message.datatype === 'DeviceInfoDocType' &&
                 message.body?.[0]?.general?.v2?.zid === this.deviceId &&
                 message.body[0].impulse?.v1?.[0] &&
                 message.body[0].impulse.v1.filter(i =>
