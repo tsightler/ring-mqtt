@@ -1,3 +1,8 @@
+## v5.6.4
+**Dependcy Updates**
+- go2rtc v1.8.5
+- ring-client-api v12.1.0
+
 ## v5.6.3
 **Minor Enhancements**
 - lastArmBy/lastDisarmBy now reports correct names for guest users as well as shared users
