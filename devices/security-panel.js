@@ -58,13 +58,6 @@ export default class SecurityPanel extends RingSocketDevice {
             if (!this.isOnline()) { return }
 
             if (message.datatype === 'DeviceInfoDocType' &&
-                message.body?.[0]?.general?.v2?.zid === this.deviceId
-            ) {
-                console.log(JSON.stringify(message))
-            }
-
-
-            if (message.datatype === 'DeviceInfoDocType' &&
                 message.body?.[0]?.general?.v2?.zid === this.deviceId &&
                 message.body[0].impulse?.v1?.[0] &&
                 message.body[0].impulse.v1.filter(i =>
@@ -162,7 +155,7 @@ export default class SecurityPanel extends RingSocketDevice {
 
     async processAlarmMode(message) {
         // Pending and triggered modes are handled by publishState()
-        const { impulseType } = message.body[0].impulse.v1.find(i => i.impulseType.match(/some|all|none|exit-delay/))
+        const { impulseType } = message.body[0].impulse.v1.find(i => i.impulseType.match(/some|all|none|exit-delay|alarm-cleared/))
         switch(impulseType.split('.').pop()) {
             case 'some':
             case 'all':
@@ -172,6 +165,7 @@ export default class SecurityPanel extends RingSocketDevice {
                     : this.ringModeToMqttState()
                 await this.updateAlarmAttributes(message, 'Armed')
                 break;
+            case 'alarm-cleared':
             case 'none':
                 this.data.attributes.targetState = this.ringModeToMqttState()
                 await this.updateAlarmAttributes(message, 'Disarmed')
