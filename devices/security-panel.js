@@ -69,7 +69,8 @@ export default class SecurityPanel extends RingSocketDevice {
                 message.body[0].impulse?.v1?.[0] &&
                 message.body[0].impulse.v1.filter(i =>
                     i.impulseType.match('security-panel.mode-switched.') ||
-                    i.impulseType.match('security-panel.exit-delay')
+                    i.impulseType.match('security-panel.exit-delay') ||
+                    i.impulseType.match('security-panel.alarm-cleared')
                 ).length > 0
             ) {
                 this.processAlarmMode(message)
