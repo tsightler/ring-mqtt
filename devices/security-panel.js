@@ -147,8 +147,9 @@ export default class SecurityPanel extends RingSocketDevice {
             }
         }
 
-        this.data.attributes[`last${mode}By`] = initiatingUser
-        this.data.attributes[`last${mode}Time`] = message?.context?.eventOccurredTsMs
+        const attrPrefix = mode === 'Cleared' ? `alarm${mode}` : `last${mode}`
+        this.data.attributes[`${attrPrefix}By`] = initiatingUser
+        this.data.attributes[`${attrPrefix}Time`] = message?.context?.eventOccurredTsMs
             ? new Date(message.context.eventOccurredTsMs).toISOString()
             : new Date(now).toISOString()
     }
@@ -164,6 +165,10 @@ export default class SecurityPanel extends RingSocketDevice {
                     ? this.ringModeToMqttState(this.device.data.mode)
                     : this.ringModeToMqttState()
                 await this.updateAlarmAttributes(message, 'Armed')
+                break;
+            case 'alarm-cleared':
+                this.data.attributes.targetState = this.ringModeToMqttState()
+                await this.updateAlarmAttributes(message, 'Cleared')
                 break;
             case 'none':
                 this.data.attributes.targetState = this.ringModeToMqttState()
