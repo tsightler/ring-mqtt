@@ -1,7 +1,18 @@
 ## v5.6.4
+**Minor Enhancements**
+- New attributes alarmClearedBy/alarmClearedTime are updated when alarm is in triggered state and is cleared via the keypad or app.
+
+**Bugs fixed**
+- Fixed an issue where the alarm state would lose syncronization if alarm was disarmed but a fire/co alarm was triggered and then cleared.  Thanks to @iptvcld for reporting this issue and providng the details required to reproduce.
+
 **Dependcy Updates**
 - go2rtc v1.8.5
 - ring-client-api v12.1.0
+- werift v0.19.0
+- aedes v0.51.0
+- mqtt v5.3.4
+- S6 Overlay v3.1.6.2
+- basio v0.16.2
 
 ## v5.6.3
 **Minor Enhancements**
