@@ -128,7 +128,7 @@ export default class SecurityPanel extends RingSocketDevice {
         }
     }
 
-    async updateAlarmAttributes(message, mode) {
+    async updateAlarmAttributes(message, attrPrefix) {
         let initiatingUser = message.context.initiatingEntityName
             ? message.context.initiatingEntityName
             : message.context.initiatingEntityType
@@ -147,7 +147,6 @@ export default class SecurityPanel extends RingSocketDevice {
             }
         }
 
-        const attrPrefix = mode === 'Cleared' ? `alarm${mode}` : `last${mode}`
         this.data.attributes[`${attrPrefix}By`] = initiatingUser
         this.data.attributes[`${attrPrefix}Time`] = message?.context?.eventOccurredTsMs
             ? new Date(message.context.eventOccurredTsMs).toISOString()
@@ -164,15 +163,15 @@ export default class SecurityPanel extends RingSocketDevice {
                 this.data.attributes.targetState = this.ringModeToMqttState() === 'arming'
                     ? this.ringModeToMqttState(this.device.data.mode)
                     : this.ringModeToMqttState()
-                await this.updateAlarmAttributes(message, 'Armed')
+                await this.updateAlarmAttributes(message, 'lastArmed')
                 break;
             case 'alarm-cleared':
                 this.data.attributes.targetState = this.ringModeToMqttState()
-                await this.updateAlarmAttributes(message, 'Cleared')
+                await this.updateAlarmAttributes(message, 'alarmCleared')
                 break;
             case 'none':
                 this.data.attributes.targetState = this.ringModeToMqttState()
-                await this.updateAlarmAttributes(message, 'Disarmed')
+                await this.updateAlarmAttributes(message, 'lastDisarmed')
         }
         this.publishAlarmState()
     }
