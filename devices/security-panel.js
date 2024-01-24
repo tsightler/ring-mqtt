@@ -14,6 +14,8 @@ export default class SecurityPanel extends RingSocketDevice {
         this.data = {
             publishedState: this.ringModeToMqttState(),
             attributes: {
+                alarmClearedBy: '',
+                alarmClearedTime: '',
                 entrySecondsLeft: 0,
                 exitSecondsLeft: 0,
                 lastArmedBy: 'Unknown',
@@ -108,8 +110,7 @@ export default class SecurityPanel extends RingSocketDevice {
         const armEvents = alarmEvents.filter(e =>
             Array.isArray(e.body?.[0]?.impulse?.v1) &&
             e.body[0].impulse.v1.filter(i =>
-                i.data?.commandType === 'security-panel.switch-mode' &&
-                i.data?.data?.mode.match(/some|all/)
+                i.impulseType.match(/security-panel\.mode-switched\.(?:some|all)/)
             ).length > 0
         )
         if (armEvents.length > 0) {
@@ -119,8 +120,7 @@ export default class SecurityPanel extends RingSocketDevice {
         const disarmEvents = alarmEvents.filter(e =>
             Array.isArray(e.body?.[0]?.impulse?.v1) &&
             e.body[0].impulse.v1.filter(i =>
-                i.data?.commandType === 'security-panel.switch-mode' &&
-                i.data?.data?.mode === 'none'
+                i.impulseType.match(/security-panel\.mode-switched\.none/)
             ).length > 0
         )
         if (disarmEvents.length > 0) {
@@ -165,7 +165,6 @@ export default class SecurityPanel extends RingSocketDevice {
                     : this.ringModeToMqttState()
                 await this.updateAlarmAttributes(message, 'Armed')
                 break;
-            case 'alarm-cleared':
             case 'none':
                 this.data.attributes.targetState = this.ringModeToMqttState()
                 await this.updateAlarmAttributes(message, 'Disarmed')
