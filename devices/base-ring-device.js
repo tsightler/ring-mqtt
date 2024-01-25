@@ -94,6 +94,9 @@ export default class RingDevice {
                 ...entity.hasOwnProperty('mode')
                     ? { mode: entity.mode }
                     : {},
+                ...entity.hasOwnProperty('category')
+                    ? { entity_category: entity.category }
+                    : {},
                 ...entity.hasOwnProperty('attributes')
                     ? { json_attributes_topic: `${entityTopic}/attributes` }
                     : entityKey === "info"

@@ -35,17 +35,20 @@ export default class SecurityPanel extends RingSocketDevice {
             },
             siren: {
                 component: 'switch',
+                category: 'diagnostic',
                 icon: 'mdi:alarm-light',
                 name: `Siren`
             },
             ...utils.config().enable_panic ? {
                 police: {
                     component: 'switch',
+                    category: 'diagnostic',
                     name: `Panic - Police`,
                     icon: 'mdi:police-badge'
                 },
                 fire: {
                     component: 'switch',
+                    category: 'diagnostic',
                     name: `Panic - Fire`,
                     icon: 'mdi:fire'
                 }
