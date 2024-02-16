@@ -8,11 +8,11 @@
 **Dependcy Updates**
 - go2rtc v1.8.5
 - ring-client-api v12.1.0
-- werift v0.19.0
+- werift v0.19.1
 - aedes v0.51.0
-- mqtt v5.3.4
+- mqtt v5.3.5
 - S6 Overlay v3.1.6.2
-- basio v0.16.2
+- bashio v0.16.2
 
 ## v5.6.3
 **Minor Enhancements**
