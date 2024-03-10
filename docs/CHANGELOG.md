@@ -10,7 +10,8 @@
 - ring-client-api v12.1.0
 - werift v0.19.1
 - aedes v0.51.0
-- mqtt v5.3.5
+- mqtt v5.3.6
+- express v4.18.3
 - S6 Overlay v3.1.6.2
 - bashio v0.16.2
 
