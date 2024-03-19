@@ -1,5 +1,8 @@
 blank_issues_enabled: false
 contact_links:
+  - name: Request Support
+    url: https://github.com/tsightler/ring-mqtt/wiki/Support-&-Troubleshooting
+    about: Please click the link and read the Support & Troubleshooting section of the Wiki
   - name: Feature Requests
     url: https://github.com/tsightler/ring-mqtt/discussions/categories/feature-requests
     about: Please do not open issues for feature requests, use the appropriate discussion group
