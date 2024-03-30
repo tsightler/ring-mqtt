@@ -15,7 +15,6 @@
     "delete_period": "31",
     "record_time": "300",
     "record_filename": "",
-    "record_id": "",
     "ftp_ip": "",
     "ftp_folder": "",
     "ftp_user": "",
