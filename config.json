@@ -9,5 +9,18 @@
     "enable_panic": false,
     "hass_topic": "homeassistant/status",
     "ring_topic": "ring",
-    "location_ids": []
+    "location_ids": [],
+    "enable_ftp": false,
+    "enable_ssh": false,
+    "delete_period": "31",
+    "record_time": "300",
+    "record_filename": "",
+    "ftp_ip": "",
+    "ftp_folder": "",
+    "ftp_user": "",
+    "ftp_password": "",
+    "ssh_ip": "",
+    "ssh_user": "",
+    "ssh_password": "",
+    "ssh_path": ""
 }

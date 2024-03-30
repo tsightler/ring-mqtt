@@ -1,6 +1,7 @@
 import { parentPort, workerData } from 'worker_threads'
 import { WebrtcConnection } from '../lib/streaming/webrtc-connection.js'
 import { StreamingSession } from '../lib/streaming/streaming-session.js'
+import { recordAndUpload, checkAndDeleteFiles } from '../lib/ftp.js'
 
 const deviceName = workerData.deviceName
 const doorbotId = workerData.doorbotId
@@ -74,10 +75,13 @@ async function startLiveStream(streamData) {
 
         parentPort.postMessage({type: 'log_info', data: 'Live stream transcoding process has started'})
 
+        recordAndUpload(streamData.rtspPublishUrl)
+
         liveStream.onCallEnded.subscribe(() => {
             parentPort.postMessage({type: 'log_info', data: 'Live stream WebRTC session has disconnected'})
             parentPort.postMessage({type: 'state', data: 'inactive'})
             liveStream = false
+            checkAndDeleteFiles()
         })
     } catch(error) {
         parentPort.postMessage({type: 'log_error', data: error})
