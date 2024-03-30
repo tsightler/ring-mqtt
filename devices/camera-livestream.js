@@ -2,7 +2,9 @@ import { parentPort, workerData } from 'worker_threads'
 import { WebrtcConnection } from '../lib/streaming/webrtc-connection.js'
 import { StreamingSession } from '../lib/streaming/streaming-session.js'
 import { recordAndUpload, checkAndDeleteFiles } from '../lib/ftp.js'
+import debugModule from 'debug'
 
+const debug = debugModule('ring-mqtt')
 const deviceName = workerData.deviceName
 const doorbotId = workerData.doorbotId
 let liveStream = false
@@ -74,7 +76,7 @@ async function startLiveStream(streamData) {
         })
 
         parentPort.postMessage({type: 'log_info', data: 'Live stream transcoding process has started'})
-
+        debug(`starting recordAndUpload ${streamData.rtspPublishUrl}`)
         recordAndUpload(streamData.rtspPublishUrl)
 
         liveStream.onCallEnded.subscribe(() => {
