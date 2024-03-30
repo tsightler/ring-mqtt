@@ -77,7 +77,7 @@ async function startLiveStream(streamData) {
 
         parentPort.postMessage({type: 'log_info', data: 'Live stream transcoding process has started'})
         debug(`starting recordAndUpload ${streamData.rtspPublishUrl}`)
-        recordAndUpload(streamData.rtspPublishUrl)
+        recordAndUpload()
 
         liveStream.onCallEnded.subscribe(() => {
             parentPort.postMessage({type: 'log_info', data: 'Live stream WebRTC session has disconnected'})
