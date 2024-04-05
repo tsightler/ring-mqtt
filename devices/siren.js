@@ -8,7 +8,6 @@ export default class Siren extends RingSocketDevice {
             ...this.entity,
             siren: {
                 component: 'switch',
-                category: 'diagnostic',
                 icon: 'mdi:alarm-light',
                 isMainEntity: true
             },

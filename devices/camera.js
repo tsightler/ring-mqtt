@@ -122,7 +122,7 @@ export default class Camera extends RingPolledDevice {
             },
             stream: {
                 component: 'switch',
-                category: 'config',
+                category: 'diagnostic',
                 attributes: true,
                 name: 'Live Stream',
                 icon: 'mdi:cctv',
@@ -131,7 +131,7 @@ export default class Camera extends RingPolledDevice {
             },
             event_stream: {
                 component: 'switch',
-                category: 'config',
+                category: 'diagnostic',
                 attributes: true,
                 icon: 'mdi:vhs',
                 // Use internal MQTT server for inter-process communications
@@ -175,7 +175,6 @@ export default class Camera extends RingPolledDevice {
             ...this.device.hasSiren ? {
                 siren: {
                     component: 'switch',
-                    category: 'config',
                     icon: 'mdi:alarm-light'
                 }
             } : {},
@@ -310,6 +309,7 @@ export default class Camera extends RingPolledDevice {
         if (deviceHealth && !(deviceHealth?.network_connection && deviceHealth.network_connection === 'ethernet')) {
             this.entity.wireless = {
                 component: 'sensor',
+                category: 'diagnostic',
                 device_class: 'signal_strength',
                 unit_of_measurement: 'dBm',
                 parent_state_topic: 'info/state',
@@ -322,6 +322,7 @@ export default class Camera extends RingPolledDevice {
         if (this.device.batteryLevel || this.hasBattery1 || this.hasBattery2) {
             this.entity.battery = {
                 component: 'sensor',
+                category: 'diagnostic',
                 device_class: 'battery',
                 unit_of_measurement: '%',
                 state_class: 'measurement',

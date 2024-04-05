@@ -48,12 +48,10 @@ export default class Chime extends RingPolledDevice {
             },
             play_ding_sound: {
                 component: 'switch',
-                category: 'config',
                 icon: 'hass:bell-ring'
             },
             play_motion_sound: {
                 component: 'switch',
-                category: 'config',
                 icon: 'hass:bell-ring'
             },
             ...this.device.data.settings.night_light_settings?.hasOwnProperty('light_sensor_enabled') ? {
@@ -85,6 +83,7 @@ export default class Chime extends RingPolledDevice {
     initAttributeEntities() {
         this.entity.wireless = {
             component: 'sensor',
+            category: 'diagnostic',
             device_class: 'signal_strength',
             unit_of_measurement: 'dBm',
             parent_state_topic: 'info/state',

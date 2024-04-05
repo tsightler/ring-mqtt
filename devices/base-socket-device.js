@@ -36,6 +36,7 @@ export default class RingSocketDevice extends RingDevice {
             ...this.entity,
             info: {
                 component: 'sensor',
+                category: 'diagnostic',
                 ...primaryAttribute
                     ? { value_template: `{{ value_json["${primaryAttribute}"] | default("") }}` }
                     : { value_template: '{{ value_json["commStatus"] | default("") }}' }
@@ -43,6 +44,7 @@ export default class RingSocketDevice extends RingDevice {
             ...this.device.data.hasOwnProperty('batteryLevel') ? {
                 battery: {
                     component: 'sensor',
+                    category: 'diagnostic',
                     device_class: 'battery',
                     unit_of_measurement: '%',
                     state_class: 'measurement',
@@ -63,6 +65,7 @@ export default class RingSocketDevice extends RingDevice {
                 && this.device.data.hasOwnProperty('networks') && this.device.data.networks.hasOwnProperty('wlan0') ? {
                     wireless: {
                         component: 'sensor',
+                        category: 'diagnostic',
                         device_class: 'signal_strength',
                         unit_of_measurement: 'dBm',
                         parent_state_topic: 'info/state',

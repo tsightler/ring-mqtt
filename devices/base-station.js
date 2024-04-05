@@ -20,6 +20,7 @@ export default class BaseStation extends RingSocketDevice {
             this.device.setVolume(origVolume)
             this.entity.volume = {
                 component: 'number',
+                category: 'config',
                 min: 0,
                 max: 100,
                 mode: 'slider',
