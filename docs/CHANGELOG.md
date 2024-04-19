@@ -7,6 +7,7 @@
 - Fixed an issue where the alarm state would lose syncronization if alarm was disarmed but a fire/co alarm was triggered and then cleared.  Thanks to @iptvcld for reporting this issue and providng the details required to reproduce.
 
 **Dependcy Updates**
+- Alpine Linux 3.18 (Docker image)
 - go2rtc v1.8.5
 - ring-client-api v12.1.0
 - werift v0.19.1
