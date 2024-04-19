@@ -122,6 +122,7 @@ export default class Camera extends RingPolledDevice {
             },
             stream: {
                 component: 'switch',
+                category: 'diagnostic',
                 attributes: true,
                 name: 'Live Stream',
                 icon: 'mdi:cctv',
@@ -130,6 +131,7 @@ export default class Camera extends RingPolledDevice {
             },
             event_stream: {
                 component: 'switch',
+                category: 'diagnostic',
                 attributes: true,
                 icon: 'mdi:vhs',
                 // Use internal MQTT server for inter-process communications
@@ -137,6 +139,7 @@ export default class Camera extends RingPolledDevice {
             },
             event_select: {
                 component: 'select',
+                category: 'config',
                 options: [
                     ...this.device.isDoorbot
                         ? [ 'Ding 1', 'Ding 2', 'Ding 3', 'Ding 4', 'Ding 5',
@@ -181,6 +184,7 @@ export default class Camera extends RingPolledDevice {
             },
             snapshot_mode: {
                 component: 'select',
+                category: 'config',
                 options: [
                     ...this.device.isDoorbot
                         ? [
@@ -192,6 +196,7 @@ export default class Camera extends RingPolledDevice {
             },
             snapshot_interval: {
                 component: 'number',
+                category: 'config',
                 min: 10,
                 max: 604800,
                 mode: 'box',
@@ -202,15 +207,18 @@ export default class Camera extends RingPolledDevice {
                 icon: 'mdi:camera'
             },
             motion_detection: {
-                component: 'switch'
+                component: 'switch',
+                category: 'config'
             },
             ...this.device.data.features?.motion_message_enabled ? {
                 motion_warning: {
-                    component: 'switch'
+                    component: 'switch',
+                    category: 'config'
                 }
             } : {},
             motion_duration: {
                 component: 'number',
+                category: 'config',
                 min: 10,
                 max: 180,
                 mode: 'box',
@@ -219,6 +227,7 @@ export default class Camera extends RingPolledDevice {
             ...this.device.isDoorbot ? {
                 ding_duration: {
                     component: 'number',
+                    category: 'config',
                     min: 10,
                     max: 180,
                     icon: 'hass:timer'
@@ -226,6 +235,7 @@ export default class Camera extends RingPolledDevice {
             } : {},
             info: {
                 component: 'sensor',
+                category: 'diagnostic',
                 device_class: 'timestamp',
                 value_template: '{{ value_json["lastUpdate"] | default("") }}'
             }
@@ -299,6 +309,7 @@ export default class Camera extends RingPolledDevice {
         if (deviceHealth && !(deviceHealth?.network_connection && deviceHealth.network_connection === 'ethernet')) {
             this.entity.wireless = {
                 component: 'sensor',
+                category: 'diagnostic',
                 device_class: 'signal_strength',
                 unit_of_measurement: 'dBm',
                 parent_state_topic: 'info/state',
@@ -311,6 +322,7 @@ export default class Camera extends RingPolledDevice {
         if (this.device.batteryLevel || this.hasBattery1 || this.hasBattery2) {
             this.entity.battery = {
                 component: 'sensor',
+                category: 'diagnostic',
                 device_class: 'battery',
                 unit_of_measurement: '%',
                 state_class: 'measurement',

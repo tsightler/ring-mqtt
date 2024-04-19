@@ -1,3 +1,22 @@
+## v5.6.4
+**Minor Enhancements**
+- New attributes alarmClearedBy/alarmClearedTime are updated when alarm is in triggered state and is cleared via the keypad or app.
+- Some entities have now have categories assigned so that they appear in Configuration and Diagnostic categories in the Home Assistant UI.  This also means that these entities will not be automatically included in automatically generated views, for example, when exporting devices from Home Assitant to another platform like HomeKit, although you can still manually choose to export those entities if desired. Thanks to @xannor for initial PR for this feature.
+
+**Bugs fixed**
+- Fixed an issue where the alarm state would lose syncronization if alarm was disarmed but a fire/co alarm was triggered and then cleared.  Thanks to @iptvcld for reporting this issue and providng the details required to reproduce.
+
+**Dependcy Updates**
+- Alpine Linux 3.18 (Docker image)
+- go2rtc v1.8.5
+- ring-client-api v12.1.0
+- werift v0.19.1
+- aedes v0.51.0
+- mqtt v5.5.2
+- express v4.19.2
+- S6 Overlay v3.1.6.2
+- bashio v0.16.2
+
 ## v5.6.3
 **Minor Enhancements**
 - lastArmBy/lastDisarmBy now reports correct names for guest users as well as shared users

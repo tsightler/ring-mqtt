@@ -14,6 +14,7 @@ export default class Siren extends RingSocketDevice {
             ...(this.device.data.deviceType === 'siren.outdoor-strobe') ? {
                 volume: {
                     component: 'number',
+                    category: 'diagnostic',
                     min: 0,
                     max: 4,
                     mode: 'slider',

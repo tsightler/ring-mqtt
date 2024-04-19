@@ -30,6 +30,7 @@ export default class Lock extends RingPolledDevice {
             },
             info: {
                 component: 'sensor',
+                category: 'diagnostic',
                 device_class: 'timestamp',
                 value_template: '{{ value_json["lastUpdate"] | default("") }}'
             }
@@ -49,6 +50,7 @@ export default class Lock extends RingPolledDevice {
         if (this.device.batteryLevel !== null) {
             this.entity.battery = {
                 component: 'sensor',
+                category: 'diagnostic',
                 device_class: 'battery',
                 unit_of_measurement: '%',
                 state_class: 'measurement',
@@ -61,6 +63,7 @@ export default class Lock extends RingPolledDevice {
         if (deviceHealth && !(deviceHealth?.network_connection && deviceHealth.network_connection === 'ethernet')) {
             this.entity.wireless = {
                 component: 'sensor',
+                category: 'diagnostic',
                 device_class: 'signal_strength',
                 unit_of_measurement: 'dBm',
                 parent_state_topic: 'info/state',

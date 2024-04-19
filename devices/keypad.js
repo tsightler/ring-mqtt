@@ -17,6 +17,7 @@ export default class Keypad extends RingSocketDevice {
             ...this.entity,
             volume: {
                 component: 'number',
+                category: 'config',
                 min: 0,
                 max: 100,
                 mode: 'slider',
@@ -29,6 +30,7 @@ export default class Keypad extends RingSocketDevice {
             },
             chirps: {
                 component: 'switch',
+                category: 'config',
                 icon: 'mdi:bird'
             }
         }
