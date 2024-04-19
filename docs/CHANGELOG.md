@@ -1,5 +1,3 @@
-
-
 ## v5.6.4
 **Minor Enhancements**
 - New attributes alarmClearedBy/alarmClearedTime are updated when alarm is in triggered state and is cleared via the keypad or app.
@@ -13,7 +11,7 @@
 - ring-client-api v12.1.0
 - werift v0.19.1
 - aedes v0.51.0
-- mqtt v5.5.0
+- mqtt v5.5.2
 - express v4.19.2
 - S6 Overlay v3.1.6.2
 - bashio v0.16.2
