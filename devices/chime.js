@@ -34,7 +34,6 @@ export default class Chime extends RingPolledDevice {
             },
             snooze: {
                 component: 'switch',
-                category: 'config',
                 icon: 'hass:bell-sleep',
                 attributes: true
             },

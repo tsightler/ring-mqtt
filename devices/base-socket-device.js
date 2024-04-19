@@ -56,6 +56,7 @@ export default class RingSocketDevice extends RingDevice {
             ...this.device.data.hasOwnProperty('tamperStatus') ? {
                 tamper: {
                     component: 'binary_sensor',
+                    category: 'diagnostic',
                     device_class: 'tamper',
                     parent_state_topic: 'info/state',
                     value_template: '{% if value_json["tamperStatus"] is equalto "tamper" %}ON{% else %}OFF{% endif %}'
