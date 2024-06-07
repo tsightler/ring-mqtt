@@ -109,11 +109,12 @@ export default class RingDevice {
                         : {},
                 ...entity.component === 'alarm_control_panel'
                     ? { supported_features: ['arm_home', 'arm_away'],
+                        code_arm_required: false,
+                        code_disarm_required: Boolean(utils.config().disarm_code),
                         ...utils.config().disarm_code
-                            ? { code: utils.config().disarm_code.toString(),
-                                code_arm_required: false,
-                                code_disarm_required: true
-                            } : {} }
+                            ? { code: utils.config().disarm_code.toString() }
+                            : {}
+                        }
                     : {},
                 ...entity.hasOwnProperty('brightness_scale')
                     ? { brightness_state_topic: `${entityTopic}/brightness_state`,
