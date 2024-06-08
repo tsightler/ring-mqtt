@@ -1,7 +1,7 @@
 ## v5.6.5
-This release is intended to address the current brokeness of HA 2024.6.x by forcing the alarm control panel entity discovery to set code_arm_required = false even when no code is configured.  While I believe this should be fixed in upstream HA, I have no influence over if/when that will happen and this workaround should have no negative impact on older versions.
+This release is intended to address the current brokenness of HA 2024.6.x by forcing the alarm control panel entity discovery to set code_arm_required = false even when no code is configured.  While I believe this should be fixed in upstream HA, I have no influence over if/when that will happen and this workaround should have no negative impact on older versions.
 
-**Dependcy Updates**
+**Dependency Updates**
 - go2rtc v1.9.3
 - mqtt v5.7.0
 - werift v0.19.3
