@@ -1,7 +1,15 @@
+## v5.6.5
+This release is intended to address the current brokeness of HA 2024.6.x by forcing the alarm control panel entity discovery to set code_arm_required = false even when no code is configured.  While I believe this should be fixed in upstream HA, I have no influence over if/when that will happen and this workaround should have no negative impact on older versions.
+
+**Dependcy Updates**
+- go2rtc v1.9.3
+- mqtt v5.7.0
+- werift v0.19.3
+
 ## v5.6.4
 **Minor Enhancements**
 - New attributes alarmClearedBy/alarmClearedTime are updated when alarm is in triggered state and is cleared via the keypad or app.
-- Some entities have now have categories assigned so that they appear in Configuration and Diagnostic categories in the Home Assistant UI.  This also means that these entities will not be automatically included in automatically generated views, for example, when exporting devices from Home Assitant to another platform like HomeKit, although you can still manually choose to export those entities if desired. Thanks to @xannor for initial PR for this feature.
+- Some entities now have categories assigned so that they appear in Configuration and Diagnostic categories in the Home Assistant UI.  This also means that these entities will not be automatically included in generated views, for example, when exporting devices from Home Assitant to another platform like HomeKit, although you can still manually choose to export those entities if desired. Thanks to @xannor for initial PR for this feature.
 
 **Bugs fixed**
 - Fixed an issue where the alarm state would lose syncronization if alarm was disarmed but a fire/co alarm was triggered and then cleared.  Thanks to @iptvcld for reporting this issue and providng the details required to reproduce.
@@ -14,7 +22,7 @@
 - aedes v0.51.0
 - mqtt v5.5.2
 - express v4.19.2
-- S6 Overlay v3.1.6.2
+- s6-overlay v3.1.6.2
 - bashio v0.16.2
 
 ## v5.6.3
