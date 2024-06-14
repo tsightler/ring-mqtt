@@ -1,7 +1,7 @@
 ## v5.6.6
 This release reverts go2rtc to v1.9.2 to address streaming stability issues caused by exec handling changes that were implemented in go2rtc v1.9.3.
 
-**Dependency Updates***
+**Dependency Updates**
 - aedes v0.51.2
 - debug v4.3.5
 
