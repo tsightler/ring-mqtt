@@ -1,7 +1,13 @@
+## v5.6.7
+This release is intended to address an ongoing instability with websocket connections by using a newer API endpoint for requesting tickets.
+
+**Dependency Updates**
+- ring-client-api v12.1.1
+
 ## v5.6.6
 This release reverts go2rtc to v1.9.2 to address streaming stability issues caused by exec handling changes that were implemented in go2rtc v1.9.3.
 
-**Dependency Updates***
+**Dependency Updates**
 - aedes v0.51.2
 - debug v4.3.5
 

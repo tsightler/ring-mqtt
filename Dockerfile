@@ -9,7 +9,7 @@ ENV LANG="C.UTF-8" \
     TERM="xterm-256color"
 
 COPY . /app/ring-mqtt
-RUN S6_VERSION="v3.1.6.2" && \
+RUN S6_VERSION="v3.2.0.0" && \
     BASHIO_VERSION="v0.16.2" && \
     GO2RTC_VERSION="v1.9.2" && \
     APK_ARCH="$(apk --print-arch)" && \
