@@ -34,6 +34,7 @@ cleanup() {
     fi
     # Kill the spawed mosquitto_sub process or it will stay listening forever
     kill $(pgrep -f "mosquitto_sub.*${client_id}_sub" | grep -v ^$$\$)
+    kill $(pgrep -f "ffmpeg.*${rtsp_pub_url}" | grep -v ^$$\$)
     exit 0
 }
 
