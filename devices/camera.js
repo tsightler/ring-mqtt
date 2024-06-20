@@ -485,19 +485,17 @@ export default class Camera extends RingPolledDevice {
     async processNotification(pushData) {
         let dingKind
         // Is it a motion or doorbell ding? (for others we do nothing)
-        switch (pushData.action) {
-            case 'com.ring.push.HANDLE_NEW_DING':
+        switch (pushData.android_config?.category) {
+            case 'com.ring.pn.live-event.ding':
                 dingKind = 'ding'
                 break
-            case 'com.ring.push.HANDLE_NEW_motion':
+            case 'com.ring.pn.live-event.motion':
                 dingKind = 'motion'
                 break
             default:
                 this.debug(`Received push notification of unknown type ${pushData.action}`)
                 return
         }
-        const ding = pushData.ding
-        ding.created_at = Math.floor(Date.now()/1000)
         this.debug(`Received ${dingKind} push notification, expires in ${this.data[dingKind].duration} seconds`)
 
         // Is this a new Ding or refresh of active ding?
@@ -505,19 +503,19 @@ export default class Camera extends RingPolledDevice {
         this.data[dingKind].active_ding = true
 
         // Update last_ding and expire time
-        this.data[dingKind].last_ding = ding.created_at
-        this.data[dingKind].last_ding_time = utils.getISOTime(ding.created_at*1000)
+        this.data[dingKind].last_ding = Math.floor(pushData.data?.event?.eventito?.timestamp/1000)
+        this.data[dingKind].last_ding_time = pushData.data?.event?.ding?.created_at
         this.data[dingKind].last_ding_expires = this.data[dingKind].last_ding+this.data[dingKind].duration
 
         // If motion ding and snapshots on motion are enabled, publish a new snapshot
         if (dingKind === 'motion') {
-            this.data[dingKind].is_person = Boolean(ding.detection_type === 'human')
+            this.data[dingKind].is_person = Boolean(pushData.data?.event?.ding?.detection_type === 'human')
             if (this.data.snapshot.motion) {
-                this.refreshSnapshot('motion', ding.image_uuid)
+                this.refreshSnapshot('motion', pushData?.img?.snapshot_uuid)
             }
         } else if (this.data.snapshot.ding) {
             // If doorbell press and snapshots on ding are enabled, publish a new snapshot
-            this.refreshSnapshot('ding', ding.image_uuid)
+            this.refreshSnapshot('ding', pushData?.img?.snapshot_uuid)
         }
 
         // Publish MQTT active sensor state
