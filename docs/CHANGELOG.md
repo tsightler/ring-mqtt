@@ -1,3 +1,16 @@
+## v5.7.0
+This release implements the new FCMv1 APIs for push notifications as the legacy FCM/GCM API has been deprecated and will begin to shutdown starting on July 22nd, 2024.  While the transition to this new API should be transparent for most users, there are a lot of changes under the hood, including in several upstream dependencies and a completely new format for the push notificaitons themselves  While the goal is to make this transition as seemless as possible, 100% success can't be guaranteed.  Cameras have been heavily tested with the new format but, due to no access to a Ring Intercom, those devices have not been tested with the new format and problems are likely.  If you have a Ring Intercom and have issues with this version please open an issue and provide logs.
+
+**Minor Enhancements**
+- A significant amount of work has gone into improving the reliability of streaming, especially the live stream.  In prior versions various failure scenarios could lead to states where future streaming requests would not succeed and the only recourse was to restart the entire addon/container.  Hours of testing have gone into this version and many such issues have been addressed.
+
+**Dependency Updates**
+- ring-client-api v13.0.0
+- go2rtc v1.9.4 (custom build to fix a hang on exit issue)
+- NodeJS v20.13.1
+- s6-overlay v3.2.0.0
+- Alpine Linux 3.20.1
+
 ## v5.6.7
 This release is intended to address an ongoing instability with websocket connections by using a newer API endpoint for requesting tickets.
 

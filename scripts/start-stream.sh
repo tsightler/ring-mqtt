@@ -55,6 +55,7 @@ stop() {
 
     # Send kill signal to monitor script and wait for it to exit
     local pids=$(jobs -pr)
+    # local pids=$(pgrep -f "monitor-stream.sh ${1} ${2} ${3} ${4}" | grep -v ^$$\$)
     [ -n "$pids" ] && kill $pids
     wait
     cleanup
@@ -63,6 +64,8 @@ stop() {
 # If control script is still runnning send kill signal and exit
 cleanup() {
     rm -f /tmp/ring-mqtt-${device_id}.lock
+    # For some reason sleeping for 100ms seems to keep go2rtc from hanging
+    sleep .1
     for fd in $(ls /proc/$$/fd); do
         eval "exec $fd>&-"
     done

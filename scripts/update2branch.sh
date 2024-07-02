@@ -39,9 +39,7 @@ else
             ;;
     esac
     rm -f /usr/local/bin/go2rtc
-    #curl -L -s -o /usr/local/bin/go2rtc "https://github.com/AlexxIT/go2rtc/releases/download/${GO2RTC_VERSION}/go2rtc_linux_${GO2RTC_ARCH}"
-    # Temporarily use customer go2rtc builds
-    cp "/app/ring-mqtt-${BRANCH}/bin/go2rtc_linux_${GO2RTC_ARCH}" /usr/local/bin/go2rtc
+    curl -L -s -o /usr/local/bin/go2rtc "https://github.com/AlexxIT/go2rtc/releases/download/${GO2RTC_VERSION}/go2rtc_linux_${GO2RTC_ARCH}"
     chmod +x /usr/local/bin/go2rtc
 
     case "${APK_ARCH}" in
