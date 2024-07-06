@@ -31,9 +31,6 @@ cleanup() {
     [ -n "$ffpids" ] && kill -9 $ffpids
     local pids=$(pgrep -f "mosquitto_sub.*${client_id}_sub" | grep -v ^$$\$)
     [ -n "$pids" ] && kill $pids
-    for fd in $(ls /proc/$$/fd); do
-        eval "exec $fd>&-"
-    done
     exit 0
 }
 
