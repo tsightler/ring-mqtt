@@ -15,11 +15,7 @@
     "js-yaml": "^4.1.0",
     "minimist": "^1.2.8",
     "mqtt": "^5.8.1",
-<<<<<<< Updated upstream
-    "ring-client-api": "13.0.0-beta.4",
-=======
     "ring-client-api": "13.0.0-beta.5",
->>>>>>> Stashed changes
     "rxjs": "^7.8.1",
     "werift": "^0.19.4",
     "write-file-atomic": "^5.0.1"
