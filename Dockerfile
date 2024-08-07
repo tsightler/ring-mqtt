@@ -44,6 +44,7 @@ RUN S6_VERSION="v3.2.0.0" && \
     curl -L -s -o /usr/local/bin/go2rtc "https://github.com/AlexxIT/go2rtc/releases/download/${GO2RTC_VERSION}/go2rtc_linux_${GO2RTC_ARCH}" && \
     cp "/app/ring-mqtt/bin/go2rtc_linux_${GO2RTC_ARCH}" /usr/local/bin/go2rtc && \
     chmod +x /usr/local/bin/go2rtc && \
+    rm -rf /app/ring-mqtt/bin && \
     curl -J -L -o /tmp/bashio.tar.gz "https://github.com/hassio-addons/bashio/archive/${BASHIO_VERSION}.tar.gz" && \
     mkdir /tmp/bashio && \
     tar zxvf /tmp/bashio.tar.gz --strip 1 -C /tmp/bashio && \
