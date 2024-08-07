@@ -33,7 +33,7 @@ async function getRefreshToken(systemId) {
         try {
             generatedToken = await restClient.getAuth(code)
             return generatedToken.refresh_token
-        } catch(err) {
+        } catch {
             throw('Failed to validate the entered 2FA code. (error: invalid_code)')
         }
     }
@@ -109,7 +109,7 @@ const main = async() => {
             console.log('New config file written to '+configFile)
         } catch (err) {
             console.log('Failed to create new config file at '+stateFile)
-            conslog.log(err)
+            console.log(err)
         }
     }
 }
