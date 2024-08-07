@@ -48,7 +48,7 @@ else
             apk del npm nodejs
             apk add libstdc++
             cd /opt
-            wget https://unofficial-builds.nodejs.org/download/release/v20.14.0/node-v20.16.0-linux-x64-musl.tar.gz
+            wget https://unofficial-builds.nodejs.org/download/release/v20.16.0/node-v20.16.0-linux-x64-musl.tar.gz
             mkdir nodejs
             tar -zxvf *.tar.gz --directory /opt/nodejs --strip-components=1
             ln -s /opt/nodejs/bin/node /usr/local/bin/node
