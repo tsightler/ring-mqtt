@@ -56,10 +56,6 @@ else
             ;;
     esac
 
-    cd "/app/ring-mqtt-${BRANCH}/node_modules"
-    rm -rf @eneris
-    ln -s @tsightler @eneris
-
     cp -f "/app/ring-mqtt-${BRANCH}/init/s6/services.d/ring-mqtt/run" /etc/services.d/ring-mqtt/run
     chmod +x /etc/services.d/ring-mqtt/run
 fi
