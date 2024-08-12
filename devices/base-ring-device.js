@@ -70,7 +70,7 @@ export default class RingDevice {
                         : entity.component === 'camera'
                             ? { topic: entityStateTopic }
                             : {},
-                ...entity.component.match(/^(switch|number|light|fan|lock|alarm_control_panel|select|button)$/)
+                ...entity.component.match(/^(switch|number|light|fan|lock|alarm_control_panel|select|button|valve)$/)
                     ? { command_topic: `${entityTopic}/command` }
                     : {},
                 ...entity.hasOwnProperty('device_class')

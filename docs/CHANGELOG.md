@@ -1,3 +1,7 @@
+## v5.7.1
+**New Features**
+- Add support for water valves (Zooz is specifically )
+
 ## v5.7.0
 This release migrates to the new FCM HTTP v1 API for push notifications as the legacy FCM/GCM APIs have been deprecated for some time and shutdown of those legacy APIs started in late July 2024.  While the transition to this new API should be transparent for most users, the under the hood changes are signfiicant including an entirely new push notification format.  While the goal is to make this transition as seemless as possible, it is impossible to guarantee 100% success.  If you experience issues with motion/ding notification from cameras, doorbells or intercoms after upgrading to this version, please follow the standard push notification troubleshooting steps as follows:
 
