@@ -5,13 +5,20 @@ import { StreamingSession } from '../lib/streaming/streaming-session.js'
 const deviceName = workerData.deviceName
 const doorbotId = workerData.doorbotId
 let liveStream = false
+let streamStopping = false
 
 parentPort.on("message", async(data) => {
     const streamData = data.streamData
     switch (data.command) {
         case 'start':
-            if (!liveStream) {
+            if (streamStopping) {
+                parentPort.postMessage({type: 'log_error', data: "Live stream could not be started because it is in stopping state"})
+                parentPort.postMessage({type: 'state', data: 'failed'})
+            } else if (!liveStream) {
                 startLiveStream(streamData)
+            } else {
+                parentPort.postMessage({type: 'log_error', data: "Live stream could not be started because there is already an active stream"})
+                parentPort.postMessage({type: 'state', data: 'active'})
             }
             break;
         case 'stop':
@@ -87,11 +94,19 @@ async function startLiveStream(streamData) {
 }
 
 async function stopLiveStream() {
-    liveStream.stop()
-    await new Promise(res => setTimeout(res, 2000))
-    if (liveStream) {
-        parentPort.postMessage({type: 'log_info', data: 'Live stream failed to stop on request, deleting anyway...'})
-        parentPort.postMessage({type: 'state', data: 'inactive'})
-        liveStream = false
+    if (!streamStopping) {
+        streamStopping = true
+        let stopTimeout = 10
+        liveStream.stop()
+        do {
+            await new Promise(res => setTimeout(res, 200))
+            if (liveStream) {
+                parentPort.postMessage({type: 'log_info', data: 'Live stream failed to stop on request, deleting anyway...'})
+                parentPort.postMessage({type: 'state', data: 'inactive'})
+                liveStream = false
+            }
+            stopTimeout--
+        } while (liveStream && stopTimeout)
+        streamStopping = false
     }
 }

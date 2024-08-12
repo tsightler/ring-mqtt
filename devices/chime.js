@@ -101,7 +101,7 @@ export default class Chime extends RingPolledDevice {
             this.data.volume = volumeState
         }
 
-        const snoozeState = Boolean(this.device.data.do_not_disturb.seconds_left) ? 'ON' : 'OFF'
+        const snoozeState = this.device.data.do_not_disturb.seconds_left ? 'ON' : 'OFF'
         if (snoozeState !== this.data.snooze || isPublish) {
             this.mqttPublish(this.entity.snooze.state_topic, snoozeState)
             this.data.snooze = snoozeState

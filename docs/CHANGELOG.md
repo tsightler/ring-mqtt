@@ -1,3 +1,22 @@
+## v5.7.0
+This release migrates to the new FCM HTTP v1 API for push notifications as the legacy FCM/GCM APIs have been deprecated for some time and shutdown of those legacy APIs started in late July 2024.  While the transition to this new API should be transparent for most users, the under the hood changes are signfiicant including an entirely new push notification format.  While the goal is to make this transition as seemless as possible, it is impossible to guarantee 100% success.  If you experience issues with motion/ding notification from cameras, doorbells or intercoms after upgrading to this version, please follow the standard push notification troubleshooting steps as follows:
+
+1) Open the ring-mqtt web UI and note the device name
+2) Stop the ring-mqtt addon/container
+3) Navigate to the Ring Control Center using the Ring App or Ring Web console
+4) Locate the device with the matching device name from step 1 in Authorized Client Devices and delete it
+5) Restart the addon and use the addon web UI to re-authenticate to the Ring API
+
+**Minor Enhancements**
+- A significant amount of work has gone into improving the reliability of streaming, especially the live stream.  In prior versions there were various failure scenarios that could lead to states where future streaming requests would not succeed and the only option was to restart the entire addon/container.  Hours of testing have gone into this version and many such issues have been addressed.
+
+**Dependency Updates**
+- ring-client-api v13.0.1
+- go2rtc v1.9.4 (custom build to fix a hang on exit issue)
+- Alpine Linux 3.20.2
+- NodeJS v20.15.1
+- s6-overlay v3.2.0.0
+
 ## v5.6.7
 This release is intended to address an ongoing instability with websocket connections by using a newer API endpoint for requesting tickets.
 

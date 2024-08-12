@@ -112,7 +112,7 @@ export default class Lock extends RingPolledDevice {
             }
             this.mqttPublish(this.entity.info.state_topic, JSON.stringify(attributes), 'attr')
             this.publishAttributeEntities(attributes)
-        } catch(error) {
+        } catch {
             this.debug('Could not publish attributes due to no health data')
         }
     }

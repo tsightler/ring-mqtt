@@ -12,11 +12,11 @@ async function getRefreshToken(systemId) {
     let generatedToken
     const email = await requestInput('Email: ')
     const password = await requestInput('Password: ')
-    const restClient = new RingRestClient({ 
-        email, 
-        password, 
+    const restClient = new RingRestClient({
+        email,
+        password,
         controlCenterDisplayName: `ring-mqtt-${systemId.slice(-5)}`,
-        systemId: systemId 
+        systemId: systemId
     })
     try {
         await restClient.getCurrentAuth()
@@ -28,12 +28,12 @@ async function getRefreshToken(systemId) {
         }
     }
 
-    while(!generatedToken) { 
+    while(!generatedToken) {
         const code = await requestInput('2FA Code: ')
         try {
             generatedToken = await restClient.getAuth(code)
             return generatedToken.refresh_token
-        } catch(err) {
+        } catch {
             throw('Failed to validate the entered 2FA code. (error: invalid_code)')
         }
     }
@@ -43,11 +43,11 @@ const main = async() => {
     let refresh_token
     let stateData = {}
     // If running in Docker set state file path as appropriate
-    const stateFile = (fs.existsSync('/etc/cont-init.d/ring-mqtt.sh')) 
+    const stateFile = (fs.existsSync('/etc/cont-init.d/ring-mqtt.sh'))
         ? '/data/ring-state.json'
         : dirname(fileURLToPath(new URL(import.meta.url)))+'/ring-state.json'
-    
-    const configFile = (fs.existsSync('/etc/cont-init.d/ring-mqtt.sh')) 
+
+    const configFile = (fs.existsSync('/etc/cont-init.d/ring-mqtt.sh'))
         ? '/data/config.json'
         : dirname(fileURLToPath(new URL(import.meta.url)))+'/config.json'
 
@@ -109,7 +109,7 @@ const main = async() => {
             console.log('New config file written to '+configFile)
         } catch (err) {
             console.log('Failed to create new config file at '+stateFile)
-            conslog.log(err)
+            console.log(err)
         }
     }
 }
