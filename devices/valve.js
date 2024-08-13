@@ -40,12 +40,14 @@ export default class Valve extends RingSocketDevice {
     setValveState(message) {
         this.debug(`Received set valve state ${message}`)
         const command = message.toLowerCase()
-        switch(command) {
+       switch(command) {
             case 'open':
-            case 'closed':
-                this.mqttPublish(this.entity.valve.state_topic, `${command}ing`)
+            case 'close': {
+                let valveState = command === 'open' ? 'opening' : 'closing'
+                this.mqttPublish(this.entity.valve.state_topic, valveState)
                 this.device.sendCommand(`valve.${command}`)
                 break;
+            }
             default:
                 this.debug('Received invalid command for valve')
         }
