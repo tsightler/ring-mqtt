@@ -6,14 +6,14 @@ body:
   - type: checkboxes
     attributes:
       label: Is there an existing issue for this?
-      description: Please search all open and closed issues for the bug you encountered.
+      description: Please search [all open/closed issues](https://github.com/tsightler/ring-mqtt/issues?q=is%3Aissue+) for the bug you have encountered.
       options:
-        - label: I have searched all open/closed existing issues
+        - label: I have searched all existing open/closed issues
           required: true
   - type: checkboxes
     attributes:
       label: Is this really a bug or just a usage/support question?
-      description: Simple usage/support question should be directed to the [discussion groups](https://github.com/tsightler/ring-mqtt/discussions) 
+      description: Simple usage/support questions should be directed to the appropriate [discussion groups](https://github.com/tsightler/ring-mqtt/discussions) 
         instead.
       options:
         - label: This is really a bug.
