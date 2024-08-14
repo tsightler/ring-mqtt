@@ -3,22 +3,36 @@ description: Report a bug in ring-mqtt
 title: 'Bug: <Please enter bug description here>'
 labels: [bug]
 body:
-  - type: markdown
+  - type: checkboxes
     attributes:
-      value: |
-        Before opening an issue, please search for all open and closed Github issues as well as any
-        relevant discussion topics that may match your situation.
-        
-        Please **DO NOT** open bugs for simple howto usage questions or basic operational issues such
-        as "I can't get the live stream to work". Such issues should be directed to the [discussion groups](https://github.com/tsightler/ring-mqtt/discussions) 
+      label: Is there an existing issue for this?
+      description: Please search all open and closed issues for the bug you encountered.
+      options:
+        - label: I have searched all open/closed existing issues
+          required: true
+  - type: checkboxes
+    attributes:
+      label: Is this really a bug or just a usage/support question?
+      description: Simple usage/support question should be directed to the [discussion groups](https://github.com/tsightler/ring-mqtt/discussions) 
         instead.
-        
-        Please **DO NOT** open bugs if you are not prepared to provide logs or answer questions in a
-        timely manner (at least every few days).  Issues that receive no followup responses will be
-        subject to closure after 72 hours.
-        
-        Please include the information requested in the fields below completely as possible or the issue will
-        likely be closed immediately.
+      options:
+        - label: This is really a bug.
+          required: true
+  - type: checkboxes
+    attributes:
+      label: Have you read and followed any recommendations in the Support and Troubleshooting section of the wiki?
+      description: If your issues is covered in [the wiki](https://github.com/tsightler/ring-mqtt/discussions) please follow all steps there prior to opening an issue.
+      options:
+        - label: I have read the support wiki and followed any applicable steps for my issue.
+          required: true
+  - type: checkboxes
+    attributes:
+      label: Are you prepared to respond and provide all relevant information (logs, screenshots, etc)
+      description: Please **DO NOT** open bugs if you are not prepared to provide logs or answer questions in a
+        timely manner (at least every few days)
+      options:
+        - label: I am prepared to provide logs, answer questions, and respond in a reasonable timeframe.
+          required: true
   - type: input
     attributes:
       label: Describe the Bug
