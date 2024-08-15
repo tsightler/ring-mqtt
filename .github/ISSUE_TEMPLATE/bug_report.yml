@@ -13,24 +13,24 @@ body:
   - type: checkboxes
     attributes:
       label: Is this really a bug or just a usage/support question?
-      description: Simple usage/support questions should be directed to the appropriate [discussion groups](https://github.com/tsightler/ring-mqtt/discussions) 
+      description: Simple usage/support questions should be posted in the appropriate [discussion groups](https://github.com/tsightler/ring-mqtt/discussions) 
         instead.
       options:
-        - label: This is really a bug.
+        - label: I'm confident this is a bug.
           required: true
   - type: checkboxes
     attributes:
       label: Have you read and followed any recommendations in the Support and Troubleshooting section of the wiki?
-      description: If your issues is covered in [the wiki](https://github.com/tsightler/ring-mqtt/discussions) please follow all steps there prior to opening an issue.
+      description: If your issue is covered in [the wiki](https://github.com/tsightler/ring-mqtt/discussions) please follow all steps there prior to opening an issue.
       options:
         - label: I have read the support wiki and followed any applicable steps.
           required: true
   - type: checkboxes
     attributes:
-      label: Is this issue after an upgrade? 
-      description: If this issues started after an upgrade, have you read the [release notes](https://github.com/tsightler/ring-mqtt/releases) for any mitigating information?
+      label: Did this issue start after an upgrade? 
+      description: If the issue appeared after an upgrade of ring-mqtt, please be sure to read the [release notes](https://github.com/tsightler/ring-mqtt/releases) for any mitigating information.
       options:
-        - label: This not an upgrade issues or I have read the release notes and performed any applicable steps.
+        - label: This not an upgrade issue or I have read the release notes and performed any applicable steps that match my issue.
           required: true
   - type: checkboxes
     attributes:
