@@ -12,7 +12,7 @@ export default class Lock extends RingSocketDevice {
     }
 
     publishState() {
-        var lockState
+        let lockState
         switch(this.device.data.locked) {
             case 'locked':
                 lockState = 'LOCKED'
