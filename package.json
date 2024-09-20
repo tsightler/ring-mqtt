@@ -6,11 +6,11 @@
   "main": "ring-mqtt.js",
   "dependencies": {
     "aedes": "0.51.2",
-    "body-parser": "^1.20.2",
+    "body-parser": "^1.20.3",
     "chalk": "^5.3.0",
     "date-fns": "^3.6.0",
     "debug": "^4.3.6",
-    "express": "^4.19.2",
+    "express": "^4.21.0",
     "is-online": "^10.0.0",
     "js-yaml": "^4.1.0",
     "minimist": "^1.2.8",
