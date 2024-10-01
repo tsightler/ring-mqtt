@@ -1,3 +1,4 @@
 # Auto detect text files and perform LF normalization
 * text=auto
-*.sh text
+*.sh text eol=lf
+*.js text eol=lf
