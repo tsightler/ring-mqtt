@@ -17,9 +17,9 @@ export default class ModesPanel extends RingPolledDevice {
         }
     }
 
-    publishState(data) {
+    async publishState(data) {
         const isPublish = Boolean(data === undefined)
-        const mode = (isPublish) ? this.device.location.getLocationMode() : data
+        const mode = (isPublish) ? (await this.device.location.getLocationMode()).mode : data
         // Publish device state if it's changed from prior state
         if (this.data.currentMode !== mode || isPublish) {
             this.data.currentMode = mode
