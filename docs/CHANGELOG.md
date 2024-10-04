@@ -1,3 +1,15 @@
+## v5.7.2
+**Bugs Fixed**
+- Fix a locking issue which prevented live and event streams to be active concurrently on the same camera.
+- Fix an issue with Modes where the incorrect mode was published for a few milliseoncds during startup.  Thanks to @wahflz for the PR to address this!
+
+**Dependency Updates**
+- push-receiver 4.2.0
+- werift 0.20.0
+- express 4.21.0
+- mqtt 5.10.1
+- debug 4.3.7
+
 ## v5.7.1
 **New Features**
 - Add experimental support for Zooz water valves.  This support is currently untested, but was developed using user data dumps kindly contributed from several users and also based on a similar PR submitted for ring-homebridge from another user.  Please feel free to open an issue on the Github project page if you have problems with this device and thanks to all involved for their support.
