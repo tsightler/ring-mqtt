@@ -14,7 +14,7 @@ export default class PanicButton extends RingSocketDevice {
             if (message.datatype === 'DeviceInfoDocType' &&
                 message.body?.[0]?.general?.v2?.zid === this.deviceId
             ) {
-                this.debug(JSON.stringify(message))
+                this.debug(JSON.stringify(message), 'data')
             }
         })
 
