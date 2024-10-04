@@ -15,7 +15,7 @@ export default class RingDevice {
         }
 
         this.debug = (message, debugType) => {
-            utils.debug(debugType === 'disc' ? message : chalk.green(`[${this.deviceData.name}] `)+message, debugType ? debugType : 'mqtt')
+            utils.debug(debugType === 'disc' ? message : chalk.green(`[${this.deviceData.name}] `)+message, debugType || 'mqtt')
         }
         // Build device base and availability topic
         this.deviceTopic = `${utils.config().ring_topic}/${this.locationId}/${category}/${this.deviceId}`
