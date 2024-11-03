@@ -1,6 +1,6 @@
 ## v5.7.2
 **Bugs Fixed**
-- Fix an isse that caused push notifications for camera/doorbell/intercom motion and ding events to stop working after short interruptions in network connectivity.
+- Fix an isse that caused push notifications for camera/doorbell/intercom motion and ding events to stop working after interruptions in network connectivity lasting more than a few minutes.
 - Fix an issue with Modes where the incorrect mode was sometimes published during initial startup.  Thanks to @wahflz for the PR to address this!
 - Fix a locking issue which prevented live and event streams from being active concurrently on the same camera.
 
