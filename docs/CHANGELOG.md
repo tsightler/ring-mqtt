@@ -1,14 +1,24 @@
 ## v5.7.2
 **Bugs Fixed**
-- Fix a locking issue which prevented live and event streams to be active concurrently on the same camera.
-- Fix an issue with Modes where the incorrect mode was published for a few milliseoncds during startup.  Thanks to @wahflz for the PR to address this!
+- Fix an isse that caused push notifications for camera/doorbell/intercom motion and ding events to stop working after short interruptions in network connectivity.
+- Fix an issue with Modes where the incorrect mode was sometimes published during initial startup.  Thanks to @wahflz for the PR to address this!
+- Fix a locking issue which prevented live and event streams from being active concurrently on the same camera.
 
 **Dependency Updates**
-- push-receiver 4.2.0
-- werift 0.20.0
-- express 4.21.0
-- mqtt 5.10.1
+- aedes 0.51.3
+- body-parser 1.20.3
+- date-fns 4.1.0
 - debug 4.3.7
+- express 4.21.1
+- ffmpeg 7.0.2
+- is-online 11.0.0
+- mqtt 5.10.1
+- node 22.11.0
+- push-receiver 4.3.0
+- ring-client-api 13.2.0-beta.1
+- s6-overlay v3.2.0.2
+- werift 0.20.1
+- write-file-atomic 6.0.0
 
 ## v5.7.1
 **New Features**
