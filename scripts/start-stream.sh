@@ -21,11 +21,11 @@ rtsp_pub_url=${4}  # URL for publishing RTSP stream
 client_id="${device_id}_${type}"  # Id used to connect to the MQTT broker, camera Id + event type
 
 # If previous run hasn't exited yet, just perform a short wait and exit with error
-if test -f /tmp/ring-mqtt-${device_id}.lock; then
+if test -f /tmp/ring-mqtt-${client_id}.lock; then
     sleep .1
     exit 1
 else
-    touch /tmp/ring-mqtt-${device_id}.lock
+    touch /tmp/ring-mqtt-${client_id}.lock
 fi
 
 script_dir=$(dirname "$0")
@@ -62,7 +62,7 @@ stop() {
 
 # If control script is still runnning send kill signal and exit
 cleanup() {
-    rm -f /tmp/ring-mqtt-${device_id}.lock
+    rm -f /tmp/ring-mqtt-${client_id}.lock
     # For some reason sleeping for 100ms seems to keep go2rtc from hanging
     exit 0
 }
