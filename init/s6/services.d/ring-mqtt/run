@@ -41,7 +41,7 @@ else
 
     # If debug is not explicitly defined, use default
     if [ ! -v DEBUG ]; then
-        export DEBUG="ring-*"
+        export DEBUG="ring*"
     fi
 fi
 
