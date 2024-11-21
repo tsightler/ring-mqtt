@@ -1,11 +1,11 @@
 {
   "name": "ring-mqtt",
-  "version": "5.7.2",
+  "version": "5.7.3",
   "type": "module",
   "description": "Ring Devices via MQTT",
   "main": "ring-mqtt.js",
   "dependencies": {
-    "@homebridge/camera-utils": "^2.2.7-beta",
+    "@homebridge/camera-utils": "^2.2.7",
     "aedes": "^0.51.3",
     "body-parser": "^1.20.3",
     "chalk": "^5.3.0",
@@ -15,16 +15,16 @@
     "is-online": "^11.0.0",
     "js-yaml": "^4.1.0",
     "minimist": "^1.2.8",
-    "mqtt": "^5.10.1",
-    "ring-client-api": "13.2.0-beta.1",
+    "mqtt": "^5.10.2",
+    "ring-client-api": "13.2.1-beta.0",
     "rxjs": "^7.8.1",
     "werift": "^0.20.1",
     "write-file-atomic": "^6.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.13.0",
-    "eslint": "^9.14.0",
-    "globals": "^15.11.0"
+    "eslint": "^9.15.0",
+    "globals": "^15.12.0"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",

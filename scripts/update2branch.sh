@@ -43,18 +43,18 @@ else
     cp "/app/ring-mqtt-${BRANCH}/bin/go2rtc_linux_${GO2RTC_ARCH}" /usr/local/bin/go2rtc
     chmod +x /usr/local/bin/go2rtc
 
-    case "${APK_ARCH}" in
-        x86_64)
-            apk del npm nodejs
-            apk add libstdc++
-            cd /opt
-            wget https://unofficial-builds.nodejs.org/download/release/v22.11.0/node-v22.11.0-linux-x64-musl.tar.gz
-            mkdir nodejs
-            tar -zxvf *.tar.gz --directory /opt/nodejs --strip-components=1
-            ln -s /opt/nodejs/bin/node /usr/local/bin/node
-            ln -s /opt/nodejs/bin/npm /usr/local/bin/npm
-            ;;
-    esac
+#    case "${APK_ARCH}" in
+#        x86_64)
+#            apk del npm nodejs
+#            apk add libstdc++
+#            cd /opt
+#            wget https://unofficial-builds.nodejs.org/download/release/v22.11.0/node-v22.11.0-linux-x64-musl.tar.gz
+#            mkdir nodejs
+#            tar -zxvf *.tar.gz --directory /opt/nodejs --strip-components=1
+#           ln -s /opt/nodejs/bin/node /usr/local/bin/node
+#            ln -s /opt/nodejs/bin/npm /usr/local/bin/npm
+#            ;;
+#    esac
 
     cp -f "/app/ring-mqtt-${BRANCH}/init/s6/services.d/ring-mqtt/run" /etc/services.d/ring-mqtt/run
     chmod +x /etc/services.d/ring-mqtt/run
