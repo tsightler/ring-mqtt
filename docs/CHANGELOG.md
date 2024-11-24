@@ -1,3 +1,16 @@
+## v5.7.3
+**Minor Enhancements**
+- Instead of silently blocking device discovery, offline hubs will now be listed in the log which should make it easier for users to identify the device causing the issue.
+- Updated ring-client-api now uses long-lived HTTPS connections, improving performance and dramtically reducing the number of DNS queries and firewall connections logged, which could previously make dozens, or even hundreds of queries per minute.
+- Suppress spurious 'Message dropped as it could not be decrypted' messages from push-receiver which didn't cause any problems but just seemed to confuse people.
+
+**Bugs Fixed**
+- Upated ring-client-api uses long-lived HTTPS connections which should work around the hangs experienced in some environments during startup.  Much thanks to @RoryJMc for amazing help testing and providing logs which finally led to a solution to this issue.
+
+**Dependency Updates**
+- mqtt 5.10.2
+- ring-client-api 13.2.1-beta.0
+
 ## v5.7.2
 **Bugs Fixed**
 - Fix an isse that caused push notifications for camera/doorbell/intercom motion and ding events to stop working after interruptions in network connectivity lasting more than a few minutes.
