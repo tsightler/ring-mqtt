@@ -1,2 +1,2 @@
 #!/usr/bin/env node
-export * from './lib/main.js'
+import './lib/main.js'
