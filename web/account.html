@@ -1,92 +1,200 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
-body {font-family: Arial, Helvetica, sans-serif; max-width: 500px; color: white; background-color: gray;}
-* {box-sizing: border-box;}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ring-MQTT Web Authenticator</title>
+    <style>
+        :root {
+            --primary-color: #47a9e6;
+            --primary-hover: #315b82;
+            --bg-color: #f2f2f2;
+            --error-color: #dc3545;
+            --success-color: #39ff14;
+            --text-color: #333;
+            --spacing: 1rem;
+        }
 
-input[type=text], select, textarea {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  box-sizing: border-box;
-  margin-top: 6px;
-  margin-bottom: 16px;
-  resize: vertical;
-}
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, sans-serif;
+            max-width: 500px;
+            margin: 0 auto;
+            padding: var(--spacing);
+            color: white;
+            background-color: #666;
+            line-height: 1.6;
+        }
 
-input[type=password], select, textarea {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  box-sizing: border-box;
-  margin-top: 6px;
-  margin-bottom: 16px;
-  resize: vertical;
-}
+        .container {
+            background-color: var(--bg-color);
+            padding: calc(var(--spacing) * 1.5);
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            color: var(--text-color);
+            margin-top: var(--spacing);
+        }
 
-input[type=submit] {
-  background-color: #47a9e6;
-  color: white;
-  padding: 12px 20px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
+        h2 {
+            margin: 0 0 var(--spacing) 0;
+        }
 
-input[type=submit]:hover {
-  background-color: #315b82;
-}
+        h3 {
+            margin: 0 0 var(--spacing) 0;
+        }
 
-.container {
-  max-width: 500px;
-  border-radius: 5px;
-  background-color: #f2f2f2;
-  padding: 20px;
-  color: black;
-}
-</style>
+        .container h3 {
+            margin-top: 0;
+        }
+
+        .display-name {
+            margin: calc(var(--spacing) / 2) 0;
+            padding: 0;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .display-name span {
+            color: var(--success-color);
+            font-weight: 500;
+        }
+
+        .error-message {
+            background-color: var(--error-color);
+            color: white;
+            padding: calc(var(--spacing) / 2);
+            border-radius: 4px;
+            margin: var(--spacing) 0;
+        }
+
+        .form-group {
+            margin-bottom: var(--spacing);
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: calc(var(--spacing) / 2);
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: calc(var(--spacing) / 2);
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(71, 169, 230, 0.2);
+        }
+
+        .password-toggle {
+            display: flex;
+            align-items: center;
+            gap: calc(var(--spacing) / 2);
+            margin: calc(var(--spacing) / 2) 0;
+            user-select: none;
+        }
+
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            padding: calc(var(--spacing) / 2) var(--spacing);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.2s;
+            width: 100%;
+        }
+
+        .btn:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(71, 169, 230, 0.4);
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: calc(var(--spacing) / 2);
+            }
+
+            .container {
+                padding: var(--spacing);
+            }
+        }
+    </style>
 </head>
 <body>
+    <h2>Ring-MQTT Authentication</h2>
+    <div id="displayName" class="display-name">Device Name: <span></span></div>
+    <p id="errormsg" class="error-message" style="display: none;"></p>
 
-<h2>Acquire Refresh Token</h2>
-<h3 id="systemId"></h3>
-Please enter your Ring account information below and the 2FA code on the following page to generate the refresh token required for this application to access the Ring API.<br>
-<p style="background-color:red" id="errormsg"></p>
-<h3>Login</h3>
-<div class="container">
-  <form action="./submit-account" method="post">
-    <label for="email">Email</label>
-    <input type="text" id="email" name="email">
-    <label for="password">Password</label>
-    <input type="password" id="password" name="password">
-    <input type="checkbox" onclick="showPassword()">Show Password
-    <br><br>
-    <input type="submit" value="Submit">
-  </form>
-</div>
-<script>
-  function showPassword() {
-    var x = document.getElementById("password");
-    if (x.type === "password") {
-        x.type = "text";
-    } else {
-        x.type = "password";
-    }
-  }
-  function getCookie(key) {
-    var keyValue = document.cookie.match('(^|;) ?' + key + '=([^;]*)(;|$)');
-    return keyValue ? keyValue[2] : null;
-  }
-  if (getCookie('error')) {
-    document.getElementById("errormsg").innerHTML = getCookie('error')
-  }
-  if (getCookie('systemId')) {
-    document.getElementById("systemId").innerHTML = `Device Name: <span style='color:chartreuse'> ${getCookie('systemId')}</span>`
-  }
-</script>
+    <div class="container">
+        <h3>Ring Account Info</h3>
+        <form action="./submit-account" method="post">
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email"
+                       id="email"
+                       name="email"
+                       class="form-control"
+                       autocomplete="email"
+                       required
+                       aria-required="true">
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password"
+                       id="password"
+                       name="password"
+                       class="form-control"
+                       autocomplete="current-password"
+                       required
+                       aria-required="true">
+                <div class="password-toggle">
+                    <input type="checkbox" id="showPassword">
+                    <label for="showPassword">Show Password</label>
+                </div>
+            </div>
+            <button type="submit" class="btn">Submit</button>
+        </form>
+    </div>
+
+    <script>
+        // Password visibility toggle
+        document.getElementById('showPassword').addEventListener('change', function() {
+            const password = document.getElementById('password');
+            password.type = this.checked ? 'text' : 'password';
+        });
+
+        // Cookie handling
+        function getCookie(key) {
+            const value = document.cookie.match('(^|;) ?' + key + '=([^;]*)(;|$)');
+            return value ? decodeURIComponent(value[2]) : null;
+        }
+
+        // Error message handling
+        const errorMessage = getCookie('error');
+        const errorElement = document.getElementById('errormsg');
+        if (errorMessage) {
+            errorElement.style.display = 'block';
+            errorElement.textContent = errorMessage;
+        }
+
+        // System ID display
+        const displayName = getCookie('displayName');
+        if (displayName) {
+            document.querySelector('#displayName span').textContent = displayName;
+        }
+    </script>
 </body>
 </html>
