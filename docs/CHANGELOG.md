@@ -1,3 +1,13 @@
+## v5.8.0
+The primary focus of this release is to refactor various ugly portions of the code to improve overall project maintenance going forward.
+
+**Minor Enhancements**
+- The web based authenticator has been completely re-written in this release.  it now serves a single, dynamic html document from memory, properly displays error messages, and has an updated theme that integrates more cleanly into the Home Assistant UI, including automatic support for light/dark mode.
+
+**Dependency Updates**
+ - ring-client-api 13.2.1
+
+
 ## v5.7.3
 **Minor Enhancements**
 - Instead of silently blocking device discovery, offline hubs will now be listed in the log which should make it easier for users to identify the device causing the issue.
