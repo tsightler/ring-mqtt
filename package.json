@@ -1,6 +1,6 @@
 {
   "name": "ring-mqtt",
-  "version": "5.7.3",
+  "version": "5.8.0",
   "type": "module",
   "description": "Ring Devices via MQTT",
   "main": "ring-mqtt.js",
@@ -10,21 +10,21 @@
     "body-parser": "^1.20.3",
     "chalk": "^5.3.0",
     "date-fns": "^4.1.0",
-    "debug": "^4.3.7",
-    "express": "^4.21.1",
+    "debug": "^4.4.0",
+    "express": "^4.21.2",
     "is-online": "^11.0.0",
     "js-yaml": "^4.1.0",
     "minimist": "^1.2.8",
-    "mqtt": "^5.10.2",
-    "ring-client-api": "13.2.1-beta.0",
+    "mqtt": "^5.10.3",
+    "ring-client-api": "^13.2.1",
     "rxjs": "^7.8.1",
     "werift": "^0.20.1",
     "write-file-atomic": "^6.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.13.0",
-    "eslint": "^9.15.0",
-    "globals": "^15.12.0"
+    "eslint": "^9.16.0",
+    "globals": "^15.13.0"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",

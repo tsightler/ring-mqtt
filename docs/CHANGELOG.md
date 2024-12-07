@@ -1,3 +1,17 @@
+## v5.8.0
+The 5.8.x branch is focused primarily on cleaning up various portions of the code to improve long-term maintainability, there are no major features planned for this branch.
+
+**Minor Enhancements**
+- The web based authenticator has been completely re-written in this release. It now serves an singlem dynamic html document, from memory, properly displays error messages, more safely handles sensitive data such as passwords/2fa codes (information is deleted from session state immediately after it is submitted) and uses an updated theme that integrates more cleanly into the Home Assistant UI, including automatic support for light/dark mode.
+
+**Dependency Updates**
+ - @homebridge/camera-utils 2.2.7
+ - debug 4.4.0
+ - expess 4.21.2
+ - mqtt 5.10.3
+ - ring-client-api 13.2.1
+ - NodeJS 22.12.0
+
 ## v5.7.3
 **Minor Enhancements**
 - Instead of silently blocking device discovery, offline hubs will now be listed in the log which should make it easier for users to identify the device causing the issue.
