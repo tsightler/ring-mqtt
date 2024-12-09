@@ -12,11 +12,11 @@ body:
           required: true
   - type: checkboxes
     attributes:
-      label: Is this really a bug or just a usage/support question?
-      description: Simple usage/support questions should be posted in the appropriate [discussion groups](https://github.com/tsightler/ring-mqtt/discussions) 
+      label: Is this really a bug or just a usage/support question?  If you don't have something that proves it's a bug, it's not a bug.
+      description: Simple usage and/or support questions should be posted in the appropriate [discussion groups](https://github.com/tsightler/ring-mqtt/discussions) 
         instead.
       options:
-        - label: I'm confident this is a bug.
+        - label: I'm confident this is a bug and I have logs or other data to prove it.
           required: true
   - type: checkboxes
     attributes:
@@ -49,7 +49,7 @@ body:
   - type: input
     attributes:
       label: Steps to Reproduce
-      placeholder: Please provide the exact steps required to reproduce the behavior
+      placeholder: Please provide the exact steps required to reproduce the behavior.  A reproducer is something that I can do to reproduce the issue, not something that doesn't work in your environment.
     validations:
       required: true
   - type: input
@@ -62,7 +62,7 @@ body:
     id: Logs
     attributes:
       label: Log Output
-      placeholder: Please include the full ring-mqtt logs as they will be needed in almost all cases.  If you decide to open an issue without providing logs, or providing only a snippet of logs, be prepared that the first response will likely be to provide full logs.  If you do not want to post full logs here due to privacy concerns, you can send them to my email using the same username (tsightler) at gmail, and reference the issue number.  If you do not know how to gather full logs for the addon see https://github.com/tsightler/ring-mqtt-ha-addon/blob/main/GET-LOGS.md
+      placeholder: Please include the full ring-mqtt logs as they will be needed in almost all cases.  If you don't know how to post logs, please reconsider opening a bug as you probably don't have a bug, you have a support question.  If you decide to open an issue without providing logs, or providing only a snippet of logs, be prepared that the first response will likely be to provide full logs.  If you do not want to post full logs here due to privacy concerns, you can send them to my email using the same username (tsightler) at gmail, and reference the issue number.  If you do not know how to gather full logs for the addon see https://github.com/tsightler/ring-mqtt-ha-addon/blob/main/GET-LOGS.md
       render: shell
     validations:
       required: true
