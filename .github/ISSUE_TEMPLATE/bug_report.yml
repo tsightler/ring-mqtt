@@ -12,11 +12,11 @@ body:
           required: true
   - type: checkboxes
     attributes:
-      label: Is this really a bug or just a usage/support question?  If you don't have something that proves it's a bug, it's not a bug.
-      description: Simple usage and/or support questions should be posted in the appropriate [discussion groups](https://github.com/tsightler/ring-mqtt/discussions) 
-        instead.
+      label: Is this really a bug?  If you don't have some way to confirm it is a bug, errors in the log, code that is clearly wrong, or at least a clear method to reproduce something that doesn't work, then it's not (yet) a bug.
+      description: Support questions or functional issues without proof should be posted in the appropriate [discussion groups](https://github.com/tsightler/ring-mqtt/discussions) 
+        instead.  Note that issues posted in the dicussion group may be converted to bugs once confirmed.
       options:
-        - label: I'm confident this is a bug and I have logs or other data to prove it.
+        - label: I'm confident this is a bug and I have logs or other data to confirm it.
           required: true
   - type: checkboxes
     attributes:
