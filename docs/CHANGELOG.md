@@ -1,3 +1,17 @@
+## v5.8.1
+**Bugs Fixed**
+Update ring-client-api to address a recent Ring API change which caused socket connections to fail and crash the ring-mqtt process.
+
+**Dependency Updates**
+ - chalk 5.4.1
+ - mqtt 5.13.0
+ - ring-client-api 14.0.0-beta.2
+ - rxjs 7.8.2
+ - werift 0.22.1
+ - NodeJS 22.12.0
+ - S6 Overlay 3.2.1.0
+ - Bashio 0.17.0
+
 ## v5.8.0
 The 5.8.x branch is focused primarily on cleaning up various portions of the code to improve long-term maintainability, there are no major features planned for this branch.
 

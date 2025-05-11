@@ -9,8 +9,8 @@ ENV LANG="C.UTF-8" \
     TERM="xterm-256color"
 
 COPY . /app/ring-mqtt
-RUN S6_VERSION="v3.2.0.2" && \
-    BASHIO_VERSION="v0.16.2" && \
+RUN S6_VERSION="v3.2.1.0" && \
+    BASHIO_VERSION="v0.17.0" && \
     GO2RTC_VERSION="v1.9.4" && \
     APK_ARCH="$(apk --print-arch)" && \
     apk add --no-cache tar xz git bash curl jq tzdata mosquitto-clients && \
