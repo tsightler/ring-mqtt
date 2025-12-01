@@ -11,7 +11,7 @@
     "chalk": "^5.4.1",
     "date-fns": "^4.1.0",
     "debug": "^4.4.0",
-    "express": "^4.21.2",
+    "express": "^4.22.1",
     "is-online": "^11.0.0",
     "js-yaml": "^4.1.0",
     "minimist": "^1.2.8",
