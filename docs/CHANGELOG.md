@@ -1,3 +1,25 @@
+## v5.9.0
+This is mostly a depedency update after a long while without any updates, but I bumped the minor version as this should also enable experimental support for the following new devices:
+
+ - The Ring Video Intercom should now be detected, however, functionality is limited to the same features supported with prior non-Video version (i.e. no video features)
+ - The Kiddie Smoke/CO devices should be detected, however, this is the first supported non-Zwave alarm device and I have no idea if state updates will actually work as I do not have this hardware to test.  Success or failure reports are highly appreciated.
+
+**Dependency Updates**
+ - @homebridge/camera-utils 3.0.0
+ - body-parser 2.2.1"
+ - chalk 5.6.2
+ - debug 4.4.3
+ - express 5.2.1
+ - is-online 12.0.2
+ - js-yaml 4.1.1
+ - mqtt 5.14.1
+ - ring-client-api 14.2.0
+ - werift 0.22.2
+ - write-file-atomic 7.0.0
+ - NodeJs 22.21.1
+ - Bashio 0.17.5
+ - go2rtc 1.9.12
+
 ## v5.8.1
 **Bugs Fixed**
 Update ring-client-api to address a recent Ring API change which caused socket connections to fail and crash the ring-mqtt process.
