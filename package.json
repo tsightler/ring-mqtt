@@ -1,30 +1,30 @@
 {
   "name": "ring-mqtt",
-  "version": "5.8.1",
+  "version": "5.9.0",
   "type": "module",
   "description": "Ring Devices via MQTT",
   "main": "ring-mqtt.js",
   "dependencies": {
-    "@homebridge/camera-utils": "^2.2.7",
+    "@homebridge/camera-utils": "^3.0.0",
     "aedes": "^0.51.3",
-    "body-parser": "^1.20.3",
-    "chalk": "^5.4.1",
+    "body-parser": "^2.2.1",
+    "chalk": "^5.6.2",
     "date-fns": "^4.1.0",
-    "debug": "^4.4.0",
-    "express": "^4.21.2",
-    "is-online": "^11.0.0",
-    "js-yaml": "^4.1.0",
+    "debug": "^4.4.3",
+    "express": "^5.2.1",
+    "is-online": "^12.0.2",
+    "js-yaml": "^4.1.1",
     "minimist": "^1.2.8",
-    "mqtt": "^5.13.0",
-    "ring-client-api": "^14.0.0-beta.2",
+    "mqtt": "^5.14.1",
+    "ring-client-api": "^14.2.0",
     "rxjs": "^7.8.2",
-    "werift": "^0.22.1",
-    "write-file-atomic": "^6.0.0"
+    "werift": "^0.22.2",
+    "write-file-atomic": "^7.0.0"
   },
   "devDependencies": {
-    "@eslint/js": "^9.13.0",
-    "eslint": "^9.16.0",
-    "globals": "^15.13.0"
+    "@eslint/js": "^9.39.1",
+    "eslint": "^9.39.1",
+    "globals": "^16.5.0"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
