@@ -1,4 +1,4 @@
-FROM node:lts-alpine
+FROM node:jod-alpine
 
 ENV LANG="C.UTF-8" \
     PS1="$(whoami)@$(hostname):$(pwd)$ " \
