@@ -1,3 +1,7 @@
+## v5.9.1
+**Bugs Fixed**
+Fix an issue introduced with new Express server that kept web authenticator UI from starting.
+
 ## v5.9.0
 This is mostly a depedency update after a long while without any updates, but I bumped the minor version as this should also enable experimental support for the following new devices:
 
