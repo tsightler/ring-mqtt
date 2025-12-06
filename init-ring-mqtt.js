@@ -7,7 +7,7 @@ import writeFileAtomic from 'write-file-atomic'
 import { createHash, randomBytes } from 'crypto'
 import { RingRestClient } from 'ring-client-api/rest-client'
 import { requestInput } from './node_modules/ring-client-api/lib/util.js'
-import utils from './lib/utils.js'
+import { RINGMQTT_CONFIG } from './lib/environment.js'
 
 async function getRefreshToken(systemId) {
     let generatedToken
@@ -49,7 +49,7 @@ const main = async() => {
         : dirname(fileURLToPath(new URL(import.meta.url)))+'/ring-state.json'
 
     const configFile = (fs.existsSync('/etc/cont-init.d/ring-mqtt.sh'))
-        ? utils.configFile()
+        ? RINGMQTT_CONFIG
         : dirname(fileURLToPath(new URL(import.meta.url)))+'/config.json'
 
     if (fs.existsSync(stateFile)) {
