@@ -205,7 +205,7 @@ export default class RingDevice {
     // Refresh device info attributes on a sechedule
     async schedulePublishAttributes() {
         while (true) {
-            await utils.sleep(this.availabilityState === 'offline' ? 60 : 300)
+            await utils.sleep(this.availabilityState === 'offline' ? AVAILABILITY_CHECK_OFFLINE_DELAY_SEC : AVAILABILITY_CHECK_ONLINE_DELAY_SEC)
             if (this.availabilityState === 'online') {
                 this.publishAttributes()
             }
@@ -262,7 +262,7 @@ export default class RingDevice {
         const debugType = (this.availabilityState === 'online') ? false : 'mqtt'
         this.availabilityState = 'online'
         this.mqttPublish(this.availabilityTopic, this.availabilityState, debugType)
-        await utils.sleep(2)
+        await utils.sleep(DEVICE_STATE_PUBLISH_DELAY_SEC)
     }
 
     // Set state topic offline

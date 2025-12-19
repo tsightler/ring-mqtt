@@ -1,11 +1,15 @@
 import RingDevice from './base-ring-device.js'
 import utils from '../lib/utils.js'
+import {
+    INITIAL_HEARTBEAT_VALUE,
+    HEARTBEAT_CHECK_INTERVAL_SEC
+} from '../lib/constants.js'
 
 // Base class for devices/features that communicate via HTTP polling interface (cameras/chime/modes)
 export default class RingPolledDevice extends RingDevice {
     constructor(deviceInfo, category, primaryAttribute) {
         super(deviceInfo, category, primaryAttribute, 'polled')
-        this.heartbeat = 3
+        this.heartbeat = INITIAL_HEARTBEAT_VALUE
 
         // Sevice data for Home Assistant device registry
         this.deviceData = {
@@ -17,7 +21,7 @@ export default class RingPolledDevice extends RingDevice {
 
         this.device.onData.subscribe((data) => {
             // Reset heartbeat counter on every polled state
-            this.heartbeat = 3
+            this.heartbeat = INITIAL_HEARTBEAT_VALUE
             if (this.isOnline()) { this.publishState(data) }
         })
 
@@ -57,7 +61,7 @@ export default class RingPolledDevice extends RingDevice {
                 this.offline()
             }
         }
-        await utils.sleep(20)
+        await utils.sleep(HEARTBEAT_CHECK_INTERVAL_SEC)
         this.monitorHeartbeat()
     }
 
