@@ -937,7 +937,12 @@ export default class Camera extends RingPolledDevice {
         while (this.data.stream.keepalive.active && Math.floor(Date.now()/1000) < this.data.stream.keepalive.expires) {
             await utils.sleep(60)
         }
-        this.data.stream.keepalive.session.kill()
+        // Guard against race condition: the 'close' event handler may have already
+        // set session to false if the stream terminated unexpectedly (e.g., camera
+        // went offline, RTSP connection failed). Only call kill() if session exists.
+        if (this.data.stream.keepalive.session) {
+            this.data.stream.keepalive.session.kill()
+        }
         this.data.stream.keepalive.active = false
         this.data.stream.keepalive.session = false
     }
