@@ -121,7 +121,5 @@ echo NPM version $(npm -v)
 echo $(git --version)
 echo "-------------------------------------------------------"
 
-export NODE_DEBUG=fetch
-
 echo "Running ring-mqtt..."
 exec ./ring-mqtt.js
