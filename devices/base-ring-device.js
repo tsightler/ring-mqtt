@@ -30,8 +30,15 @@ export default class RingDevice {
         }
 
         if (primaryAttribute !== 'disable') {
-            this.initAttributeEntities(primaryAttribute)
+            this.attributeEntitiesReady = Promise.resolve()
+                .then(() => this.initAttributeEntities(primaryAttribute))
+                .catch(err => {
+                    this.debug(err)
+                    this.debug('Could not initialize optional attribute entities')
+                })
             this.schedulePublishAttributes()
+        } else {
+            this.attributeEntitiesReady = Promise.resolve()
         }
     }
 
@@ -42,6 +49,8 @@ export default class RingDevice {
     async publishDiscovery() {
         const debugMsg = (this.availabilityState === 'unpublished') ? 'Publishing new ' : 'Republishing existing '
         this.debug(debugMsg+'device id: '+this.deviceId, 'disc')
+
+        await this.attributeEntitiesReady
 
         Object.keys(this.entity).forEach(entityKey => {
             const entity = this.entity[entityKey]
@@ -231,10 +240,16 @@ export default class RingDevice {
 
     // Publish state messages with debug
     mqttPublish(topic, message, debugType, maskedMessage) {
+        if (typeof topic !== 'string' || topic.length === 0) {
+            this.debug(chalk.yellow(`Skipping MQTT publish with invalid topic for message ${maskedMessage ? maskedMessage : message}`))
+            return false
+        }
+
         if (debugType !== false) {
             this.debug(chalk.blue(`${topic} `)+chalk.cyan(`${maskedMessage ? maskedMessage : message}`), debugType)
         }
         utils.event.emit('mqtt_publish', topic, message)
+        return true
     }
 
     // Gets all saved state data for device
