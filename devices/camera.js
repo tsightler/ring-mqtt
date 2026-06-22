@@ -5,6 +5,8 @@ import { Worker } from 'worker_threads'
 import { spawn } from 'child_process'
 import { parseISO, addSeconds } from 'date-fns';
 import chalk from 'chalk'
+import fs from 'fs'
+import path from 'path'
 
 export default class Camera extends RingPolledDevice {
     constructor(deviceInfo, events) {
@@ -238,6 +240,36 @@ export default class Camera extends RingPolledDevice {
                 category: 'diagnostic',
                 device_class: 'timestamp',
                 value_template: '{{ value_json["lastUpdate"] | default("") }}'
+            }
+        }
+
+        this.audioPlayback = {
+            enabled: Boolean(utils.config().enable_audio_playback),
+            dir: utils.config().media_directory ? utils.config().media_directory : '/data/media',
+            extensions: ['.mp3', '.wav', '.ogg', '.oga', '.opus', '.flac', '.m4a', '.aac', '.wma', '.aiff', '.aif', '.mka'],
+            entityPrefix: 'play_audio__',
+            watcher: false,
+            watchStarted: false,
+            scanning: false,
+            debounce: null
+        }
+
+        if (this.audioPlayback.enabled) {
+            try {
+                fs.mkdirSync(this.audioPlayback.dir, { recursive: true })
+            } catch(err) {
+                this.debug(chalk.yellow(`Could not create media directory ${this.audioPlayback.dir}: ${err.message}`))
+            }
+            this.entity.stop_audio = {
+                component: 'button',
+                icon: 'mdi:stop',
+                name: 'Stop Audio',
+                no_availability: true
+            }
+            try {
+                this.refreshAudioEntities(fs.readdirSync(this.audioPlayback.dir), { publish: false })
+            } catch(err) {
+                this.debug(chalk.yellow(`Could not read media directory ${this.audioPlayback.dir}: ${err.message}`))
             }
         }
 
@@ -790,6 +822,148 @@ export default class Camera extends RingPolledDevice {
         }
     }
 
+    async publish() {
+        await super.publish()
+        this.startAudioWatcher()
+    }
+
+    startAudioWatcher() {
+        if (!this.audioPlayback.enabled || this.audioPlayback.watchStarted) { return }
+        this.audioPlayback.watchStarted = true
+
+        try {
+            this.audioPlayback.watcher = fs.watch(this.audioPlayback.dir, () => {
+                clearTimeout(this.audioPlayback.debounce)
+                this.audioPlayback.debounce = setTimeout(() => this.scanAudioDir(), 1000)
+            })
+        } catch(err) {
+            this.debug(chalk.yellow(`Could not watch media directory ${this.audioPlayback.dir}: ${err.message}`))
+        }
+
+        this.pollAudioDir()
+    }
+
+    async pollAudioDir() {
+        while (this.audioPlayback.enabled) {
+            await utils.sleep(60)
+            await this.scanAudioDir()
+        }
+    }
+
+    async scanAudioDir() {
+        if (!this.audioPlayback.enabled || this.audioPlayback.scanning) { return }
+        this.audioPlayback.scanning = true
+        try {
+            const dirFiles = await fs.promises.readdir(this.audioPlayback.dir)
+            await this.refreshAudioEntities(dirFiles, { publish: true })
+        } catch(err) {
+            this.debug(chalk.yellow(`Could not read media directory ${this.audioPlayback.dir}: ${err.message}`))
+        } finally {
+            this.audioPlayback.scanning = false
+        }
+    }
+
+    async refreshAudioEntities(dirFiles, { publish }) {
+        const desired = {}
+        const usedSlugs = new Set()
+        for (const filename of [...dirFiles].sort()) {
+            const ext = path.extname(filename).toLowerCase()
+            if (!this.audioPlayback.extensions.includes(ext)) { continue }
+            const slug = filename.toLowerCase()
+                .replace(/\.[^.]+$/, '')
+                .replace(/[^a-z0-9]+/g, '_')
+                .replace(/^_+|_+$/g, '')
+            if (!slug) { continue }
+            if (usedSlugs.has(slug)) {
+                this.debug(chalk.yellow(`Skipping audio file with a conflicting sanitized name: ${filename}`))
+                continue
+            }
+            usedSlugs.add(slug)
+            desired[`${this.audioPlayback.entityPrefix}${slug}`] = filename
+        }
+
+        const currentKeys = Object.keys(this.entity).filter(key => key.startsWith(this.audioPlayback.entityPrefix))
+        const addedKeys = Object.keys(desired).filter(key => !this.entity.hasOwnProperty(key))
+        const removedKeys = currentKeys.filter(key => !desired.hasOwnProperty(key))
+
+        addedKeys.forEach(entityKey => {
+            const filename = desired[entityKey]
+            this.entity[entityKey] = {
+                component: 'button',
+                icon: 'mdi:bullhorn',
+                name: path.basename(filename, path.extname(filename)),
+                no_availability: true,
+                audioFile: path.join(this.audioPlayback.dir, filename),
+                audioFilename: filename
+            }
+        })
+
+        removedKeys.forEach(entityKey => {
+            if (publish) {
+                this.removeAudioEntity(entityKey)
+            } else {
+                delete this.entity[entityKey]
+            }
+        })
+
+        if (addedKeys.length) {
+            this.debug(`Discovered ${addedKeys.length} new audio playback file(s) in ${this.audioPlayback.dir}`)
+            if (publish) {
+                await this.publishDiscovery()
+            }
+        }
+        if (removedKeys.length) {
+            this.debug(`Removed ${removedKeys.length} audio playback file(s) no longer present in ${this.audioPlayback.dir}`)
+        }
+    }
+
+    removeAudioEntity(entityKey) {
+        const entity = this.entity[entityKey]
+        if (!entity) { return }
+        const configTopic = `homeassistant/${entity.component}/${this.locationId}/${this.deviceId}_${entityKey}/config`
+        this.mqttPublish(configTopic, '', false)
+        if (entity.command_topic && entity.commandHandler) {
+            utils.event.off(entity.command_topic, entity.commandHandler)
+        }
+        delete this.entity[entityKey]
+    }
+
+    async playAudio(audioFile) {
+        if (!audioFile) {
+            this.debug('Received play audio command but no audio file is associated with the entity')
+            return
+        }
+        this.debug(`Received play audio command for file: ${audioFile}`)
+        const streamData = { audioFile, ticket: null }
+
+        try {
+            this.debug('Acquiring a WebRTC signaling session ticket for audio playback')
+            const response = await this.device.restClient.request({
+                method: 'POST',
+                url: 'https://app.ring.com/api/v1/clap/ticket/request/signalsocket'
+            })
+            streamData.ticket = response.ticket
+        } catch(error) {
+            if (error?.response?.statusCode === 403) {
+                this.debug('Camera returned 403 when starting audio playback.  This usually indicates that streaming is blocked by Modes settings.  Check your Ring app and verify that you are able to stream from this camera with the current Modes settings.')
+            } else {
+                this.debug(error)
+            }
+        }
+
+        if (streamData.ticket) {
+            this.debug('Audio playback WebRTC signaling session ticket acquired, sending command to worker')
+            this.data.stream.live.worker.postMessage({ command: 'play_audio', streamData })
+        } else {
+            this.debug('Audio playback failed to initialize WebRTC signaling session')
+        }
+    }
+
+    stopAudio() {
+        this.debug('Received stop audio command')
+        this.data.stream.live.worker.postMessage({ command: 'stop_audio' })
+    }
+
     async startLiveStream(rtspPublishUrl) {
         this.data.stream.live.session = true
 
@@ -1095,6 +1269,16 @@ export default class Camera extends RingPolledDevice {
         const entityKey = command.split('/')[0]
         if (!this.entity.hasOwnProperty(entityKey)) {
             this.debug(`Received message to unknown command topic: ${command}`)
+            return
+        }
+
+        if (entityKey === 'stop_audio') {
+            this.stopAudio()
+            return
+        }
+
+        if (entityKey.startsWith(this.audioPlayback.entityPrefix)) {
+            this.playAudio(this.entity[entityKey].audioFile)
             return
         }
 

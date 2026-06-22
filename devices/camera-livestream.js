@@ -5,6 +5,7 @@ import { StreamingSession } from '../lib/streaming/streaming-session.js'
 const deviceName = workerData.deviceName
 const doorbotId = workerData.doorbotId
 let liveStream = false
+let audioStream = false
 let streamStopping = false
 
 parentPort.on("message", async(data) => {
@@ -25,6 +26,12 @@ parentPort.on("message", async(data) => {
             if (liveStream) {
                 stopLiveStream()
             }
+            break;
+        case 'play_audio':
+            playAudio(streamData)
+            break;
+        case 'stop_audio':
+            stopAudio()
             break;
     }
 })
@@ -90,6 +97,89 @@ async function startLiveStream(streamData) {
         parentPort.postMessage({type: 'log_error', data: error})
         parentPort.postMessage({type: 'state', data: 'failed'})
         liveStream = false
+    }
+}
+
+async function playAudio(streamData) {
+    if (!streamData || !streamData.audioFile) {
+        parentPort.postMessage({type: 'log_error', data: 'Play audio command received without an audio file'})
+        return
+    }
+
+    if (liveStream) {
+        try {
+            parentPort.postMessage({type: 'log_info', data: `Playing audio clip on active live stream: ${streamData.audioFile}`})
+            liveStream.activateCameraSpeaker()
+            await liveStream.transcodeReturnAudio({ input: [streamData.audioFile] }, { endCallOnFinish: false })
+        } catch(error) {
+            parentPort.postMessage({type: 'log_error', data: error})
+        }
+        return
+    }
+
+    if (audioStream && audioStream.cameraSpeakerActivated) {
+        try {
+            parentPort.postMessage({type: 'log_info', data: `Switching audio playback to: ${streamData.audioFile}`})
+            await audioStream.transcodeReturnAudio({ input: [streamData.audioFile] })
+        } catch(error) {
+            parentPort.postMessage({type: 'log_error', data: error})
+        }
+        return
+    }
+
+    if (audioStream) {
+        audioStream.stop()
+        audioStream = false
+    }
+
+    parentPort.postMessage({type: 'log_info', data: `Starting standalone audio playback session: ${streamData.audioFile}`})
+    try {
+        const cameraData = {
+            name: deviceName,
+            id: doorbotId
+        }
+
+        const streamConnection = new WebrtcConnection(streamData.ticket, cameraData)
+        audioStream = new StreamingSession(cameraData, streamConnection)
+
+        audioStream.onCallEnded.subscribe(() => {
+            parentPort.postMessage({type: 'log_info', data: 'Audio playback session has ended'})
+            audioStream = false
+        })
+
+        let playbackStarted = false
+        audioStream.connection.pc.onConnectionState.subscribe(async (state) => {
+            switch(state) {
+                case 'connected':
+                    if (playbackStarted) { break }
+                    playbackStarted = true
+                    parentPort.postMessage({type: 'log_info', data: 'Audio playback WebRTC session is connected'})
+                    audioStream.activateCameraSpeaker()
+                    await audioStream.transcodeReturnAudio({ input: [streamData.audioFile] })
+                    break;
+                case 'failed':
+                    parentPort.postMessage({type: 'log_error', data: 'Audio playback WebRTC connection has failed'})
+                    if (audioStream) {
+                        audioStream.stop()
+                        audioStream = false
+                    }
+                    break;
+            }
+        })
+    } catch(error) {
+        parentPort.postMessage({type: 'log_error', data: error})
+        audioStream = false
+    }
+}
+
+function stopAudio() {
+    if (audioStream) {
+        parentPort.postMessage({type: 'log_info', data: 'Stopping audio playback'})
+        audioStream.stop()
+        audioStream = false
+    } else if (liveStream) {
+        parentPort.postMessage({type: 'log_info', data: 'Stopping audio playback on live stream'})
+        liveStream.stopReturnAudio()
     }
 }
 

@@ -7,6 +7,8 @@
     "enable_cameras": true,
     "enable_modes": false,
     "enable_panic": false,
+    "enable_audio_playback": false,
+    "media_directory": "/data/media",
     "hass_topic": "homeassistant/status",
     "ring_topic": "ring",
     "location_ids": []

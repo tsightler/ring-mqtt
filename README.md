@@ -12,3 +12,23 @@ If this advice is ignored, please note that there are significant functional sid
 
 ## Installation and Configuration
 Please refer to the [ring-mqtt project wiki](https://github.com/tsightler/ring-mqtt/wiki) for complete documentation on the various installation methods and configuration options.
+
+## Audio Playback (play prerecorded clips out of the speaker)
+ring-mqtt can play prerecorded audio clips out of a camera/doorbell speaker using the same two-way talk path that the Ring app uses when you answer a doorbell.  This is handy for automations (e.g. play a "please leave the package by the door" message, an alarm tone, or a barking dog).
+
+**Configuration**
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `enable_audio_playback` | `false` | Set to `true` to enable the feature. |
+| `media_directory` | `/data/media` | Directory that ring-mqtt scans for audio files.  Created automatically if missing. |
+
+**Usage**
+1. Enable `enable_audio_playback` and (optionally) set `media_directory`.
+2. Copy short audio files into the media directory.  `mp3`, `wav`, `ogg`, `opus`, `flac`, `m4a`, `aac` and other formats ffmpeg can decode are supported.  For the Home Assistant addon this directory lives on the addon's persistent storage, which you can reach via the Samba/file-editor addons; for bare installs just copy files to the path on the host.
+3. ring-mqtt automatically creates one Home Assistant **button** per file (e.g. a file named `alarm.mp3` becomes an `Alarm` button under the camera device).  Files are detected automatically (filesystem watch plus a periodic poll for network shares), so adding or removing a file adds or removes its button without a restart.
+4. Press the button (or publish any payload to the button's MQTT command topic) and the clip plays out of that device's speaker.  Playback opens a brief, self-terminating WebRTC call, so it works at any time from an automation without first starting the live stream.
+
+**Notes**
+- All Ring cameras/doorbells have a speaker, so the buttons appear for every enabled camera.  If the same media directory is shared by multiple cameras, each camera gets its own set of buttons so you can target a specific device.
+- Battery-powered devices may be slower to connect and, like live streaming, can be blocked by Ring Modes settings (you'll see a 403 in the logs if so).

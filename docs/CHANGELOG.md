@@ -1,3 +1,7 @@
+## Unreleased
+**New Features**
+ - Audio playback: play prerecorded audio clips (e.g. MP3) out of a camera/doorbell speaker via the same two-way talk path used by the Ring app.  Enable with the new `enable_audio_playback` option and drop audio files (mp3, wav, ogg, flac, m4a and other ffmpeg-decodable formats) into the configured `media_directory` (default `/data/media`).  ring-mqtt automatically creates one Home Assistant button per file (auto-detected via filesystem watch + periodic poll, so adding/removing files needs no restart).  Pressing a button opens a brief standalone WebRTC call, plays the clip, and ends the call automatically - ideal for automations.
+
 ## v5.9.3
 **Bugs Fixed**
  - Updated ring-client-api with patched push-receiver package to address push messages failing decryption with ERR_CRYPTO_ECDH_INVALID_PUBLIC_KEY message, potentially leading to missed motion/ding events for cameras/doorbells/intercoms.

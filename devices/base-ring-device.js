@@ -157,9 +157,11 @@ export default class RingDevice {
                 ...entity.component === 'select'
                     ? { options: entity.options }
                     : {},
-                availability_topic: this.availabilityTopic,
-                payload_available: 'online',
-                payload_not_available: 'offline',
+                ...!entity.no_availability
+                    ? { availability_topic: this.availabilityTopic,
+                        payload_available: 'online',
+                        payload_not_available: 'offline' }
+                    : {},
                 device: this.deviceData
             }
 
@@ -175,13 +177,15 @@ export default class RingDevice {
                     this.entity[entityKey][topic] = discoveryMessage[topic]
                     if (topic.match('command_topic')) {
                         utils.event.emit('mqtt_subscribe', discoveryMessage[topic])
-                        utils.event.on(discoveryMessage[topic], (command, message) => {
+                        const commandHandler = (command, message) => {
                             if (message) {
                                 this.processCommand(command, message)
                             } else {
                                 this.debug(`Received invalid or null value to command topic ${command}`)
                             }
-                        })
+                        }
+                        this.entity[entityKey].commandHandler = commandHandler
+                        utils.event.on(discoveryMessage[topic], commandHandler)
 
                         // Entity uses internal MQTT broker for inter-process communications
                         if (this.entity[entityKey]?.ipc) {
