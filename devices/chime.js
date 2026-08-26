@@ -139,7 +139,7 @@ export default class Chime extends RingPolledDevice {
 
     // Publish device data to info topic
     async publishAttributes() {
-        const deviceHealth = await this.device.getHealth()
+        const deviceHealth = await this.getHealth()
         if (deviceHealth) {
             const attributes = {
                 firmwareStatus: deviceHealth.firmware,

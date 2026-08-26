@@ -61,6 +61,17 @@ export default class RingPolledDevice extends RingDevice {
         this.monitorHeartbeat()
     }
 
+    // Device health is only used for optional attributes/entities so a failed
+    // query should never keep the device itself from being published
+    async getHealth() {
+        try {
+            return await this.device.getHealth()
+        } catch (err) {
+            this.debug(err)
+            this.debug('Failed to retrieve device health data from Ring API')
+        }
+    }
+
     async getDeviceHistory(options) {
         try {
             const response = await this.device.restClient.request({

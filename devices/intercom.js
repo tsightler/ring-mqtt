@@ -145,25 +145,6 @@ export default class Lock extends RingPolledDevice {
         }, 5000)
     }
 
-    async getHealth() {
-        try {
-            const response = await this.device.restClient.request({
-                url: this.device.doorbotUrl('health')
-            })
-
-            if (response.hasOwnProperty('device_health')) {
-                return response.device_health
-            } else {
-                this.debug('Failed to parse response from device health query')
-                this.debug(JSON.stringify(response))
-            }
-        } catch(error) {
-            this.debug('Failed to retrieve health data for Intercom')
-            this.debug(error)
-        }
-        return false
-    }
-
     // Process messages from MQTT command topic
     processCommand(command, message) {
         switch (command) {

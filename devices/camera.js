@@ -110,7 +110,11 @@ export default class Camera extends RingPolledDevice {
                 siren: {
                     state: null
                 }
-            } : {}
+            } : {},
+            subscriptions: {
+                ding: { failures: 0, skipCycles: 0, reportedNotPermitted: false },
+                motion: { failures: 0, skipCycles: 0, reportedNotPermitted: false }
+            }
         }
 
         this.entity = {
@@ -305,7 +309,7 @@ export default class Camera extends RingPolledDevice {
     // Build standard and optional entities for device
     async initAttributeEntities() {
          // If device is wireless publish signal strength entity
-        const deviceHealth = await this.device.getHealth()
+        const deviceHealth = await this.getHealth()
         if (deviceHealth && !(deviceHealth?.network_connection && deviceHealth.network_connection === 'ethernet')) {
             this.entity.wireless = {
                 component: 'sensor',
@@ -466,18 +470,51 @@ export default class Camera extends RingPolledDevice {
 
         // Check for subscription to ding and motion events and attempt to resubscribe
         if (this.device.isDoorbot && !this.device.data.subscribed === true) {
-            this.debug('Camera lost subscription to ding events, attempting to resubscribe...')
-            this.device.subscribeToDingEvents().catch(e => {
-                this.debug('Failed to resubscribe camera to ding events. Will retry in 60 seconds.')
-                this.debug(e)
-            })
+            this.resubscribe('ding')
         }
         if (!this.device.data.subscribed_motions === true) {
-            this.debug('Camera lost subscription to motion events, attempting to resubscribe...')
-            this.device.subscribeToMotionEvents().catch(e => {
-                this.debug('Failed to resubscribe camera to motion events.  Will retry in 60 seconds.')
-                this.debug(e)
-            })
+            this.resubscribe('motion')
+        }
+    }
+
+    // Resubscribe to ding/motion events, backing off on repeated failures.  Some
+    // cameras shared with this account are not permitted to subscribe at all and
+    // return an error on every attempt, so retrying every cycle is just noise.
+    async resubscribe(eventType) {
+        const subscription = this.data.subscriptions[eventType]
+
+        // Cameras shared without the device_alerts_manage operation are not
+        // permitted to subscribe at all, so don't bother asking
+        if (this.device.canSubscribeToNotifications === false) {
+            if (!subscription.reportedNotPermitted) {
+                subscription.reportedNotPermitted = true
+                this.debug(`This camera is shared with your account without permission to manage device alerts, so ${eventType} notifications cannot be subscribed to and these events will not be received`)
+                this.debug(`Permitted operations for this camera: ${this.device.data.operations?.join(', ')}`)
+            }
+            return
+        }
+
+        if (subscription.skipCycles > 0) {
+            subscription.skipCycles--
+            return
+        }
+
+        this.debug(`Camera lost subscription to ${eventType} events, attempting to resubscribe...`)
+
+        try {
+            await (eventType === 'ding'
+                ? this.device.subscribeToDingEvents()
+                : this.device.subscribeToMotionEvents())
+            subscription.failures = 0
+        } catch (err) {
+            subscription.failures++
+            // Skip 1, 2, 4, 8... polling cycles, up to ~1 hour between attempts
+            subscription.skipCycles = Math.min(2 ** (subscription.failures - 1), 180)
+            const retrySeconds = subscription.skipCycles * 20
+            this.debug(err)
+            this.debug(`Failed to resubscribe camera to ${eventType} events, will retry in ~${
+                retrySeconds < 120 ? `${retrySeconds} seconds` : `${Math.round(retrySeconds/60)} minutes`
+            }.`)
         }
     }
 
@@ -493,7 +530,7 @@ export default class Camera extends RingPolledDevice {
                 dingKind = 'motion'
                 break
             default:
-                this.debug(`Received push notification of unknown type ${pushData.action}`)
+                this.debug(`Received push notification of unknown category ${pushData.android_config?.category}`)
                 return
         }
         this.debug(`Received ${dingKind} push notification, expires in ${this.data[dingKind].duration} seconds`)
@@ -503,7 +540,13 @@ export default class Camera extends RingPolledDevice {
         this.data[dingKind].active_ding = true
 
         // Update last_ding and expire time
-        this.data[dingKind].last_ding = Math.floor(pushData.data?.event?.eventito?.timestamp/1000)
+        // The eventito timestamp is the most accurate source, but fall back to the
+        // ding created time, and finally to the current time, so that a push format
+        // change can never leave the ding with an invalid expire time, which would
+        // cause it to expire immediately
+        const eventTimestamp = pushData.data?.event?.eventito?.timestamp
+            || Date.parse(pushData.data?.event?.ding?.created_at ?? '')
+        this.data[dingKind].last_ding = Math.floor((eventTimestamp || Date.now())/1000)
         this.data[dingKind].last_ding_time = pushData.data?.event?.ding?.created_at
         this.data[dingKind].last_ding_expires = this.data[dingKind].last_ding+this.data[dingKind].duration
 
@@ -615,7 +658,7 @@ export default class Camera extends RingPolledDevice {
             stream_Source: this.data.stream.live.streamSource,
             still_Image_URL: this.data.stream.live.stillImageURL
         }
-        const deviceHealth = await this.device.getHealth()
+        const deviceHealth = await this.getHealth()
 
         if (this.device.batteryLevel || this.hasBattery1 || this.hasBattery2) {
             if (deviceHealth && deviceHealth.hasOwnProperty('active_battery')) {
