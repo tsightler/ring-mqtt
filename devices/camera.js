@@ -15,10 +15,6 @@ export default class Camera extends RingPolledDevice {
         this.hasBattery1 = Boolean(this.device.data.hasOwnProperty('battery_voltage'))
         this.hasBattery2 = Boolean(this.device.data.hasOwnProperty('battery_voltage_2'))
 
-        this.hevcEnabled = this.device.data?.settings?.video_settings?.hevc_enabled
-            ? this.device.data.settings.video_settings.hevc_enabled
-            : false
-
         this.data = {
             motion: {
                 active_ding: false,
@@ -70,12 +66,13 @@ export default class Camera extends RingPolledDevice {
                     status: 'inactive',
                     session: false,
                     publishedStatus: '',
-                    worker: new Worker('./devices/camera-livestream.js', {
-                        workerData: {
-                            doorbotId: this.device.id,
-                            deviceName: this.deviceData.name
-                        }
-                    })
+                    // Codec actually found to work, remembered so that a camera which needed
+                    // a fallback does not pay for the failed attempt on every later stream
+                    resolvedVideoCodec: savedState?.stream?.live?.resolvedVideoCodec
+                        ? savedState.stream.live.resolvedVideoCodec
+                        : null,
+                    rtspPublishUrl: null,
+                    worker: this.createLiveStreamWorker()
                 },
                 event: {
                     state: 'OFF',
@@ -88,6 +85,15 @@ export default class Camera extends RingPolledDevice {
                     session: false,
                     expires: 0
                 }
+            },
+            video_codec: {
+                // Cameras which already have saved state are existing installs, so they keep
+                // the H.264 only behaviour they have always had.  Cameras seen for the first
+                // time default to Auto and let Ring's negotiation pick.
+                state: savedState?.video_codec?.state
+                    ? savedState.video_codec.state
+                    : (savedState ? 'H.264' : 'Auto'),
+                publishedState: null
             },
             event_select: {
                 state: savedState?.event_select?.state
@@ -140,6 +146,13 @@ export default class Camera extends RingPolledDevice {
                 icon: 'mdi:vhs',
                 // Use internal MQTT server for inter-process communications
                 ipc: true
+            },
+            video_codec: {
+                component: 'select',
+                category: 'config',
+                name: 'Video Codec',
+                icon: 'mdi:video-box',
+                options: ['Auto', 'H.264', 'H.265']
             },
             event_select: {
                 component: 'select',
@@ -245,7 +258,28 @@ export default class Camera extends RingPolledDevice {
             }
         }
 
-        this.data.stream.live.worker.on('message', (message) => {
+
+        this.device.onNewNotification.subscribe(notification => {
+            this.processNotification(notification)
+        })
+
+        this.updateSnapshotMode()
+        this.scheduleSnapshotRefresh()
+
+        this.updateDeviceState()
+    }
+
+    // Creates the live stream worker and attaches its handlers.  Kept together so a
+    // worker which dies can be replaced by an identically wired one.
+    createLiveStreamWorker() {
+        const worker = new Worker('./devices/camera-livestream.js', {
+            workerData: {
+                doorbotId: this.device.id,
+                deviceName: this.deviceData.name
+            }
+        })
+
+        worker.on('message', (message) => {
             if (message.type === 'state') {
                 switch (message.data) {
                     case 'active':
@@ -270,18 +304,41 @@ export default class Camera extends RingPolledDevice {
                     case 'log_error':
                         this.debug(chalk.redBright(message.data), 'wrtc')
                         break;
+                    case 'retry_video_codec':
+                        // The camera would not stream what it was offered, so remember the
+                        // codec to use instead and immediately retry with a fresh signaling
+                        // ticket.  The stream state stays 'activating' throughout and nothing
+                        // has been published yet, so the waiting RTSP client sees no failure.
+                        this.data.stream.live.resolvedVideoCodec = message.data
+                        this.updateDeviceState()
+                        this.startLiveStream(this.data.stream.live.rtspPublishUrl, true)
+                        break;
+                    case 'clear_video_codec':
+                        this.debug(`Camera no longer streams video using the remembered ${this.data.stream.live.resolvedVideoCodec?.toUpperCase()} codec, the next attempt will negotiate again`, 'wrtc')
+                        this.data.stream.live.resolvedVideoCodec = null
+                        this.updateDeviceState()
+                        break;
                 }
             }
         })
 
-        this.device.onNewNotification.subscribe(notification => {
-            this.processNotification(notification)
+        // An uncaught error terminates the worker thread, and since it is only created
+        // once this camera would silently never stream again, so the failure is reported
+        // and a replacement worker is started to take its place
+        worker.on('error', (error) => {
+            this.debug(chalk.redBright(`Live stream worker failed: ${error.message}`), 'wrtc')
+            this.data.stream.live.status = 'failed'
+            this.data.stream.live.session = false
+            this.publishStreamState()
+            this.restartLiveStreamWorker()
         })
 
-        this.updateSnapshotMode()
-        this.scheduleSnapshotRefresh()
+        return worker
+    }
 
-        this.updateDeviceState()
+    restartLiveStreamWorker() {
+        this.debug('Starting a replacement live stream worker', 'wrtc')
+        this.data.stream.live.worker = this.createLiveStreamWorker()
     }
 
     updateDeviceState() {
@@ -293,6 +350,14 @@ export default class Camera extends RingPolledDevice {
             },
             event_select: {
                 state: this.data.event_select.state
+            },
+            video_codec: {
+                state: this.data.video_codec.state
+            },
+            stream: {
+                live: {
+                    resolvedVideoCodec: this.data.stream.live.resolvedVideoCodec
+                }
             },
             motion: {
                 duration: this.data.motion.duration
@@ -454,6 +519,7 @@ export default class Camera extends RingPolledDevice {
         if (isPublish) {
             // Publish stream state
             this.publishStreamState(isPublish)
+            this.publishVideoCodecState(isPublish)
             if (this.entity.event_select) {
                 this.publishEventSelectState(isPublish)
             }
@@ -740,6 +806,28 @@ export default class Camera extends RingPolledDevice {
         })
     }
 
+    publishVideoCodecState(isPublish) {
+        if (this.data.video_codec.state !== this.data.video_codec.publishedState || isPublish) {
+            this.data.video_codec.publishedState = this.data.video_codec.state
+            this.mqttPublish(this.entity.video_codec.state_topic, this.data.video_codec.state)
+        }
+    }
+
+    setVideoCodec(message) {
+        this.debug(`Received set video codec to ${message}`)
+        if (this.entity.video_codec.options.includes(message)) {
+            if (this.data.video_codec.state !== message) {
+                this.data.video_codec.state = message
+                // Any codec discovered by falling back belongs to the previous setting
+                this.data.stream.live.resolvedVideoCodec = null
+                this.updateDeviceState()
+            }
+            this.publishVideoCodecState()
+        } else {
+            this.debug('Received invalid value for video codec')
+        }
+    }
+
     publishEventSelectState(isPublish) {
         if (this.data.event_select.state !== this.data.event_select.publishedState || isPublish) {
             this.data.event_select.publishedState = this.data.event_select.state
@@ -833,13 +921,52 @@ export default class Camera extends RingPolledDevice {
         }
     }
 
-    async startLiveStream(rtspPublishUrl) {
-        this.data.stream.live.session = true
+    // Read from the current device data rather than cached at startup, since the setting
+    // can be changed in the Ring app while ring-mqtt is running
+    get hevcEnabled() {
+        return Boolean(this.device.data?.settings?.video_settings?.hevc_enabled)
+    }
 
+    // Maps the user facing codec selection onto the value the streaming code expects
+    get selectedVideoCodec() {
+        switch (this.data.video_codec.state) {
+            case 'H.264': return 'h264'
+            case 'H.265': return 'h265'
+            default: return 'auto'
+        }
+    }
+
+    // What to offer when the codec has been left on Auto.  A camera which reports HEVC
+    // support streams H.265 whenever it is offered at all, so offering both would only
+    // invite it to answer H.264 and then send H.265 anyway, which ffmpeg cannot follow.
+    // Offering H.265 alone keeps the answer honest, and a camera which turns out not to
+    // stream it still falls back to H.264.
+    get autoVideoCodec() {
+        if (this.data.stream.live.resolvedVideoCodec) {
+            return this.data.stream.live.resolvedVideoCodec
+        }
+        return this.hevcEnabled ? 'h265' : 'auto'
+    }
+
+    async startLiveStream(rtspPublishUrl, codecRetry = false) {
+        this.data.stream.live.session = true
+        this.data.stream.live.rtspPublishUrl = rtspPublishUrl
+
+        // A codec the user picked explicitly is always honoured.  On Auto a codec which had
+        // to be found by falling back is reused so the failed attempt is not repeated, and
+        // falling back is only ever allowed when the user has not chosen for themselves.
+        const selectedCodec = this.selectedVideoCodec
+        const allowFallback = selectedCodec === 'auto'
         const streamData = {
             rtspPublishUrl,
+            videoCodec: allowFallback ? this.autoVideoCodec : selectedCodec,
+            allowFallback,
+            codecRetry,
             ticket: null
         }
+        this.debug(`Requesting a live stream offering ${streamData.videoCodec === 'auto'
+            ? 'both codecs'
+            : `${streamData.videoCodec.toUpperCase()} only`}`, 'wrtc')
 
         try {
             this.debug('Acquiring a live stream WebRTC signaling session ticket')
@@ -1165,6 +1292,9 @@ export default class Camera extends RingPolledDevice {
                 break;
             case 'event_select/command':
                 this.setEventSelect(message)
+                break;
+            case 'video_codec/command':
+                this.setVideoCodec(message)
                 break;
             case 'ding_duration/command':
                 this.setDingDuration(message, 'ding')
