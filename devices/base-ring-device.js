@@ -9,6 +9,9 @@ export default class RingDevice {
         this.deviceId = apiType === 'socket' ? deviceInfo.device.id : deviceInfo.device.data.device_id
         this.locationId = apiType === 'socket' ? deviceInfo.device.location.locationId : deviceInfo.device.data.location_id
         this.availabilityState = 'unpublished'
+        // Entity topics are generated during discovery, so anything that publishes device
+        // state must wait for this to flip true or it can emit an undefined topic
+        this.discoveryPublished = false
         this.entity = {}
         this.isOnline = () => {
             return this.availabilityState === 'online' ? true : false
@@ -200,6 +203,8 @@ export default class RingDevice {
                 })
             }
         })
+
+        this.discoveryPublished = true
     }
 
     // Refresh device info attributes on a sechedule
@@ -231,6 +236,14 @@ export default class RingDevice {
 
     // Publish state messages with debug
     mqttPublish(topic, message, debugType, maskedMessage) {
+        // Entity topics don't exist until discovery has been published for this device, so a
+        // state publish arriving before that carries an undefined topic.  Drop it here since
+        // the MQTT client throws on any topic which isn't a valid string.
+        if (typeof topic !== 'string' || !topic) {
+            this.debug(chalk.yellow(`Ignoring message published to invalid topic${this.discoveryPublished ? '' : ' (device has not completed discovery)'}`))
+            return
+        }
+
         if (debugType !== false) {
             this.debug(chalk.blue(`${topic} `)+chalk.cyan(`${maskedMessage ? maskedMessage : message}`), debugType)
         }

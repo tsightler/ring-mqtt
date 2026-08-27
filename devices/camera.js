@@ -656,6 +656,11 @@ export default class Camera extends RingPolledDevice {
 
     // Publish ding state and attributes
     publishDingState(dingKind) {
+        // Push notifications are subscribed at construction, well before discovery runs, so a
+        // ding can arrive with no entity topics available.  The ding data itself is still
+        // updated and publishState() sends the current state once the device is published.
+        if (!this.discoveryPublished) { return }
+
         const dingState = this.data[dingKind].active_ding ? 'ON' : 'OFF'
         this.mqttPublish(this.entity[dingKind].state_topic, dingState)
 
@@ -852,6 +857,10 @@ export default class Camera extends RingPolledDevice {
 
     // Publish snapshot image/metadata
     publishSnapshot() {
+        // A snapshot refresh triggered by an early push notification can complete before
+        // discovery, the image stays cached and is published when the device is published
+        if (!this.discoveryPublished) { return }
+
         this.mqttPublish(this.entity.snapshot.topic, this.data.snapshot.cache, 'mqtt', '<binary_image_data>')
         const attributes = {
             timestamp: this.data.snapshot.timestamp,

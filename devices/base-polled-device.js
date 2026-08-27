@@ -18,7 +18,7 @@ export default class RingPolledDevice extends RingDevice {
         this.device.onData.subscribe((data) => {
             // Reset heartbeat counter on every polled state
             this.heartbeat = 3
-            if (this.isOnline()) { this.publishState(data) }
+            if (this.discoveryPublished && this.isOnline()) { this.publishState(data) }
         })
 
         this.monitorHeartbeat()
@@ -41,19 +41,21 @@ export default class RingPolledDevice extends RingDevice {
     // this function sets the device status offline.  When polling resumes the heartbeat
     // is set > 0 and this function will set the device back online after a short delay.
     async monitorHeartbeat() {
-        if (this.heartbeat > 0) {
-            if (this.availabilityState !== 'online') {
-                // If device was offline wait 10 seconds and check again, if still offline
-                // put device online.  Useful for initial startup or republish scenarios
-                // as publish will forcelly put the device online.
-                await utils.sleep(10)
-                if (this.heartbeat > 0 && this.availabilityState !== 'online') {
-                    await this.online()
+        // A device which has never been published has no entity topics yet so it must not be
+        // brought online here, only publish() can make that initial transition.  Devices still
+        // in the 'unpublished' state simply idle until that happens.
+        if (this.availabilityState !== 'unpublished') {
+            if (this.heartbeat > 0) {
+                if (this.availabilityState === 'offline') {
+                    // If device was offline wait 10 seconds and check again, if still
+                    // offline put the device back online.
+                    await utils.sleep(10)
+                    if (this.heartbeat > 0 && this.availabilityState === 'offline') {
+                        await this.online()
+                    }
                 }
-            }
-            this.heartbeat--
-        } else {
-            if (this.availabilityState !== 'offline') {
+                this.heartbeat--
+            } else if (this.availabilityState !== 'offline') {
                 this.offline()
             }
         }
