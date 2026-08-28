@@ -137,8 +137,11 @@ async function startLiveStream(streamData) {
             video: [
                 '-c:v', 'copy'
             ],
+            // +global_header would move the parameter sets out of the stream and into the
+            // SDP alone, leaving a decoder which has to reconfigure part way through with
+            // nothing to recover from.  ffmpeg sets the flag itself for muxers which need
+            // it, so saying so here only removes the chance of them being sent in band.
             output: [
-                '-flags', '+global_header',
                 '-f', 'rtsp',
                 '-rtsp_transport', 'tcp',
                 streamData.rtspPublishUrl
