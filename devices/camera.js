@@ -1,10 +1,7 @@
 import RingPolledDevice from './base-polled-device.js'
 import utils from '../lib/utils.js'
-import pathToFfmpeg from 'ffmpeg-for-homebridge'
-import { Worker } from 'worker_threads'
-import { spawn } from 'child_process'
+import streamer from '../lib/streamer.js'
 import { parseISO, addSeconds } from 'date-fns';
-import chalk from 'chalk'
 
 export default class Camera extends RingPolledDevice {
     constructor(deviceInfo, events) {
@@ -69,25 +66,27 @@ export default class Camera extends RingPolledDevice {
                     state: 'OFF',
                     status: 'inactive',
                     session: false,
-                    publishedStatus: '',
-                    worker: new Worker('./devices/camera-livestream.js', {
-                        workerData: {
-                            doorbotId: this.device.id,
-                            deviceName: this.deviceData.name
-                        }
-                    })
+                    publishedStatus: ''
                 },
                 event: {
                     state: 'OFF',
                     status: 'inactive',
                     session: false,
                     publishedStatus: ''
-                },
-                keepalive:{
-                    active: false,
-                    session: false,
-                    expires: 0
                 }
+            },
+            video_mode: {
+                // A camera that has been seen before keeps the historical
+                // behaviour of always requesting H.264, while one appearing for
+                // the first time follows the camera's own HEVC setting.
+                mode: savedState?.video_mode?.mode
+                    ? savedState.video_mode.mode
+                    : savedState?.video_codec?.mode
+                        // Migrated from the short lived video_codec setting, whose
+                        // explicit H.265 choice is closest to Optimal.
+                        ? (savedState.video_codec.mode === 'Compatible' ? 'Compatible' : 'Optimal')
+                        : (savedState ? 'Compatible' : 'Optimal'),
+                publishedMode: null
             },
             event_select: {
                 state: savedState?.event_select?.state
@@ -186,6 +185,12 @@ export default class Camera extends RingPolledDevice {
                 component: 'camera',
                 attributes: true
             },
+            video_mode: {
+                component: 'select',
+                category: 'config',
+                icon: 'mdi:video',
+                options: [ 'Compatible', 'Optimal' ]
+            },
             snapshot_mode: {
                 component: 'select',
                 category: 'config',
@@ -245,35 +250,6 @@ export default class Camera extends RingPolledDevice {
             }
         }
 
-        this.data.stream.live.worker.on('message', (message) => {
-            if (message.type === 'state') {
-                switch (message.data) {
-                    case 'active':
-                        this.data.stream.live.status = 'active'
-                        this.data.stream.live.session = true
-                        break;
-                    case 'inactive':
-                        this.data.stream.live.status = 'inactive'
-                        this.data.stream.live.session = false
-                        break;
-                    case 'failed':
-                        this.data.stream.live.status = 'failed'
-                        this.data.stream.live.session = false
-                        break;
-                }
-                this.publishStreamState()
-            } else {
-                switch (message.type) {
-                    case 'log_info':
-                        this.debug(message.data, 'wrtc')
-                        break;
-                    case 'log_error':
-                        this.debug(chalk.redBright(message.data), 'wrtc')
-                        break;
-                }
-            }
-        })
-
         this.device.onNewNotification.subscribe(notification => {
             this.processNotification(notification)
         })
@@ -293,6 +269,9 @@ export default class Camera extends RingPolledDevice {
             },
             event_select: {
                 state: this.data.event_select.state
+            },
+            video_mode: {
+                mode: this.data.video_mode.mode
             },
             motion: {
                 duration: this.data.motion.duration
@@ -435,9 +414,24 @@ export default class Camera extends RingPolledDevice {
         }
     }
 
+    // The video_codec select was replaced by video_mode.  Publishing an empty
+    // payload to a discovery topic is how Home Assistant is told an entity no
+    // longer exists.  This is sent on every full publish rather than only when
+    // the old setting is detected: updateDeviceState rebuilds the saved state
+    // from scratch and so has usually already dropped the old key by the time
+    // anything could check for it, and repeating it also covers a Home
+    // Assistant restart, which triggers a republish.
+    cleanupLegacyVideoCodec() {
+        this.mqttPublish(`homeassistant/select/${this.locationId}/${this.deviceId}_video_codec/config`, '', false)
+    }
+
     // Publish camera capabilities and state and subscribe to events
     async publishState(data) {
         const isPublish = Boolean(data === undefined)
+
+        if (isPublish) {
+            this.cleanupLegacyVideoCodec()
+        }
         this.publishPolledState(isPublish)
 
         // Checks for new events or expired recording URL every 3 polling cycles (~1 minute)
@@ -460,6 +454,7 @@ export default class Camera extends RingPolledDevice {
 
             this.publishDingStates()
             this.publishDingDurationState(isPublish)
+            this.publishVideoMode()
             this.publishSnapshotMode()
             if (this.data.snapshot.motion || this.data.snapshot.ding || this.data.snapshot.interval) {
                 this.data.snapshot.cache ? this.publishSnapshot() : this.refreshSnapshot('interval')
@@ -722,6 +717,33 @@ export default class Camera extends RingPolledDevice {
         this.mqttPublish(this.entity.snapshot_mode.state_topic, this.data.snapshot.mode)
     }
 
+    publishVideoMode() {
+        this.mqttPublish(this.entity.video_mode.state_topic, this.data.video_mode.mode)
+        this.data.video_mode.publishedMode = this.data.video_mode.mode
+    }
+
+    // Resolves the selected mode to the codec actually offered to Ring.  Only
+    // H.264 has ever been offered historically, so "Compatible" reproduces that
+    // exactly, while "Optimal" follows whatever the camera itself is set to.
+    getStreamVideoCodec() {
+        return this.data.video_mode.mode === 'Optimal' && this.hevcEnabled ? 'h265' : 'h264'
+    }
+
+    setVideoMode(message) {
+        this.debug(`Received set video mode to ${message}`)
+        const mode = this.entity.video_mode.options.find(o => o.toLowerCase() === message.toLowerCase())
+
+        if (mode) {
+            this.data.video_mode.mode = mode
+            this.debug(`Video mode has been set to ${mode}, streams will request ${this.getStreamVideoCodec().toUpperCase()}`)
+            this.debug('Any active stream must be restarted for the change to take effect')
+            this.publishVideoMode()
+            this.updateDeviceState()
+        } else {
+            this.debug('Received invalid command for video mode')
+        }
+    }
+
     publishStreamState(isPublish) {
         ['live', 'event'].forEach(type => {
             const entityProp = (type === 'live') ? 'stream' : `${type}_stream`
@@ -730,16 +752,12 @@ export default class Camera extends RingPolledDevice {
                 if (streamState !== this.data.stream[type].state || isPublish) {
                     this.data.stream[type].state = streamState
                     this.mqttPublish(this.entity[entityProp].state_topic, this.data.stream[type].state)
-                    // Publish state to IPC broker as well
-                    utils.event.emit('mqtt_ipc_publish', this.entity[entityProp].state_topic, this.data.stream[type].state)
                 }
 
                 if (this.data.stream[type].publishedStatus !== this.data.stream[type].status || isPublish) {
                     this.data.stream[type].publishedStatus = this.data.stream[type].status
                     const attributes = { status: this.data.stream[type].status }
                     this.mqttPublish(this.entity[entityProp].json_attributes_topic, JSON.stringify(attributes), 'attr')
-                    // Publish attribute state to IPC broker as well
-                    utils.event.emit('mqtt_ipc_publish', this.entity[entityProp].json_attributes_topic, JSON.stringify(attributes))
                 }
             }
         })
@@ -840,158 +858,6 @@ export default class Camera extends RingPolledDevice {
             this.data.snapshot.timestamp = Math.round(Date.now()/1000)
             this.publishSnapshot()
         }
-    }
-
-    async startLiveStream(rtspPublishUrl) {
-        this.data.stream.live.session = true
-
-        const streamData = {
-            rtspPublishUrl,
-            ticket: null
-        }
-
-        try {
-            this.debug('Acquiring a live stream WebRTC signaling session ticket')
-            const response = await this.device.restClient.request({
-                method: 'POST',
-                url: 'https://app.ring.com/api/v1/clap/ticket/request/signalsocket'
-            })
-            streamData.ticket = response.ticket
-        } catch(error) {
-            if (error?.response?.statusCode === 403) {
-                this.debug(`Camera returned 403 when starting a live stream.  This usually indicates that live streaming is blocked by Modes settings.  Check your Ring app and verify that you are able to stream from this camera with the current Modes settings.`)
-            } else {
-                this.debug(error)
-            }
-        }
-
-        if (streamData.ticket) {
-            this.debug('Live stream WebRTC signaling session ticket acquired, starting live stream worker')
-            this.data.stream.live.worker.postMessage({ command: 'start', streamData })
-        } else {
-            this.debug('Live stream failed to initialize WebRTC signaling session')
-            this.data.stream.live.status = 'failed'
-            this.data.stream.live.session = false
-            this.publishStreamState()
-        }
-    }
-
-    async startEventStream(rtspPublishUrl) {
-        const eventSelect = this.data.event_select.state.split(' ')
-        const eventType = eventSelect[0].toLowerCase().replace('-', '_')
-        const eventNumber = eventSelect[1]
-
-        if (this.data.event_select.recordingUrl.match(/Recording Not Found|Transcoding in Progress/)) {
-            this.debug(`No recording available for the ${(eventNumber==1?"":eventNumber==2?"2nd ":eventNumber==3?"3rd ":eventNumber+"th ")}most recent ${eventType} event!`)
-            this.data.stream.event.status = 'failed'
-            this.data.stream.event.session = false
-            this.publishStreamState()
-            return
-        }
-
-        this.debug(`Streaming the ${(eventNumber==1?"":eventNumber==2?"2nd ":eventNumber==3?"3rd ":eventNumber+"th ")}most recently recorded ${eventType} event`)
-
-        try {
-            if (this.data.event_select.transcoded || this.hevcEnabled) {
-                // If camera is in HEVC mode, recordings are also in HEVC so transcode the video back to H.264/AVC on the fly
-                // Ring videos transcoded for download are not optimized for RTSP streaming (limited keyframes) so they must
-                // also be re-transcoded on-the-fly to allow streamers to join early
-                this.data.stream.event.session = spawn(pathToFfmpeg, [
-                    '-re',
-                    '-i', this.data.event_select.recordingUrl,
-                    '-map', '0:v',
-                    '-map', '0:a',
-                    '-map', '0:a',
-                    '-c:v', 'libx264',
-                    '-g', '20',
-                    '-keyint_min', '10',
-                    '-crf', '23',
-                    '-preset', 'ultrafast',
-                    '-c:a:0', 'copy',
-                    '-c:a:1', 'libopus',
-                    '-flags', '+global_header',
-                    '-rtsp_transport', 'tcp',
-                    '-f', 'rtsp',
-                    rtspPublishUrl
-                ])
-            } else {
-                this.data.stream.event.session = spawn(pathToFfmpeg, [
-                    '-re',
-                    '-i', this.data.event_select.recordingUrl,
-                    '-map', '0:v',
-                    '-map', '0:a',
-                    '-map', '0:a',
-                    '-c:v', 'copy',
-                    '-c:a:0', 'copy',
-                    '-c:a:1', 'libopus',
-                    '-flags', '+global_header',
-                    '-rtsp_transport', 'tcp',
-                    '-f', 'rtsp',
-                    rtspPublishUrl
-                ])
-            }
-
-            this.data.stream.event.session.on('spawn', async () => {
-                this.debug(`The recorded ${eventType} event stream has started`)
-                this.data.stream.event.status = 'active'
-                this.publishStreamState()
-            })
-
-            this.data.stream.event.session.on('close', async () => {
-                this.debug(`The recorded ${eventType} event stream has ended`)
-                this.data.stream.event.status = 'inactive'
-                this.data.stream.event.session = false
-                this.publishStreamState()
-            })
-        } catch(e) {
-            this.debug(e)
-            this.data.stream.event.status = 'failed'
-            this.data.stream.event.session = false
-            this.publishStreamState()
-        }
-    }
-
-    async startKeepaliveStream() {
-        const duration = 86400
-        if (this.data.stream.keepalive.active) { return }
-        this.data.stream.keepalive.active = true
-
-        const rtspPublishUrl = (utils.config().livestream_user && utils.config().livestream_pass)
-            ? `rtsp://${utils.config().livestream_user}:${utils.config().livestream_pass}@localhost:8554/${this.deviceId}_live`
-            : `rtsp://localhost:8554/${this.deviceId}_live`
-
-        this.debug(`Starting a keepalive stream for camera`)
-
-        // Keepalive stream is used only when the live stream is started
-        // manually. It copies only the audio stream to null output just to
-        // trigger rtsp server to start the on-demand stream and keep it running
-        // when there are no other RTSP readers.
-        this.data.stream.keepalive.session = spawn(pathToFfmpeg, [
-            '-i', rtspPublishUrl,
-            '-map', '0:a:0',
-            '-c:a', 'copy',
-            '-f', 'null',
-            '/dev/null'
-        ])
-
-        this.data.stream.keepalive.session.on('spawn', async () => {
-            this.debug(`The keepalive stream has started`)
-        })
-
-        this.data.stream.keepalive.session.on('close', async () => {
-            this.data.stream.keepalive.active = false
-            this.data.stream.keepalive.session = false
-            this.debug(`The keepalive stream has stopped`)
-        })
-
-        // The keepalive stream will time out after 24 hours
-        this.data.stream.keepalive.expires = Math.floor(Date.now()/1000) + duration
-        while (this.data.stream.keepalive.active && Math.floor(Date.now()/1000) < this.data.stream.keepalive.expires) {
-            await utils.sleep(60)
-        }
-        this.data.stream.keepalive.session.kill()
-        this.data.stream.keepalive.active = false
-        this.data.stream.keepalive.session = false
     }
 
     async updateEventStreamUrl() {
@@ -1156,6 +1022,9 @@ export default class Camera extends RingPolledDevice {
                 break;
             case 'siren/command':
                 this.setSirenState(message)
+                break;
+            case 'video_mode/command':
+                this.setVideoMode(message)
                 break;
             case 'snapshot_mode/command':
                 this.setSnapshotMode(message)
@@ -1351,65 +1220,112 @@ export default class Camera extends RingPolledDevice {
     setLiveStreamState(message) {
         const command = message.toLowerCase()
         this.debug(`Received set live stream state ${message}`)
-        if (command.startsWith('on-demand')) {
-            if (this.data.stream.live.status === 'active' || this.data.stream.live.status === 'activating') {
-                this.publishStreamState()
-            } else {
-                this.data.stream.live.status = 'activating'
-                this.publishStreamState()
-                this.startLiveStream(message.split(' ')[1]) // Portion after space is the RTSP publish URL
-            }
-        } else {
-            switch (command) {
-                case 'on':
-                    // Stream was manually started, create a dummy, audio only
-                    // RTSP source stream to trigger stream startup and keep it active
-                    this.startKeepaliveStream()
-                    break;
-                case 'off':
-                    if (this.data.stream.keepalive.session) {
-                        this.debug('Stopping the keepalive stream')
-                        this.data.stream.keepalive.session.kill()
-                    } else if (this.data.stream.live.session) {
-                        this.data.stream.live.worker.postMessage({ command: 'stop' })
-                    } else {
-                        this.data.stream.live.status = 'inactive'
-                        this.publishStreamState()
-                    }
-                    break;
-                default:
-                    this.debug(`Received unknown command for live stream`)
-            }
+        switch (command) {
+            case 'on':
+                // An RTSP reader starts a camera on its own, so this only has to
+                // cover the case of the switch being turned on with nothing
+                // watching. The helper holds the stream open until it is told to
+                // let go, which is what the keepalive ffmpeg process used to do
+                // by connecting to our own RTSP URL.
+                this.debug('Holding the live stream open on request')
+                if (!streamer.startStream(this.deviceId)) {
+                    this.debug('The stream helper is not connected, cannot start the live stream')
+                    this.data.stream.live.status = 'failed'
+                    this.publishStreamState()
+                }
+                break;
+            case 'off':
+                streamer.stopStream(this.deviceId)
+                break;
+            default:
+                this.debug(`Received unknown command for live stream`)
         }
+    }
+
+    // The helper cannot mint a signaling ticket itself: it needs the
+    // authenticated Ring session, which lives here.
+    async getSignalingTicket() {
+        try {
+            this.debug('Acquiring a live stream WebRTC signaling session ticket')
+            const response = await this.device.restClient.request({
+                method: 'POST',
+                url: 'https://app.ring.com/api/v1/clap/ticket/request/signalsocket'
+            })
+            if (!response.ticket) {
+                return { error: 'Ring returned no signaling ticket' }
+            }
+            return { ticket: response.ticket }
+        } catch(error) {
+            if (error?.response?.statusCode === 403) {
+                const blocked = 'Camera returned 403 when starting a live stream.  This usually indicates that live streaming is blocked by Modes settings.  Check your Ring app and verify that you are able to stream from this camera with the current Modes settings.'
+                this.debug(blocked)
+                return { error: blocked }
+            }
+            this.debug(error)
+            return { error: error.message ? error.message : 'Failed to acquire a signaling ticket' }
+        }
+    }
+
+    // Stream lifecycle reported by the helper over the control socket.
+    onStreamState(type, status) {
+        this.data.stream[type].status = status
+        this.data.stream[type].session = (status === 'active' || status === 'activating')
+        this.publishStreamState()
     }
 
     setEventStreamState(message) {
         const command = message.toLowerCase()
         this.debug(`Received set event stream state ${message}`)
-        if (command.startsWith('on-demand')) {
-            if (this.data.stream.event.status === 'active' || this.data.stream.event.status === 'activating') {
-                this.publishStreamState()
-            } else {
-                this.data.stream.event.status = 'activating'
-                this.publishStreamState()
-                this.startEventStream(message.split(' ')[1]) // Portion after backslash is RTSP publish URL
-            }
-        } else {
-            switch (command) {
-                case 'on':
-                    this.debug(`Event stream can only be started on-demand!`)
-                    break;
-                case 'off':
-                    if (this.data.stream.event.session) {
-                        this.data.stream.event.session.kill()
-                    } else {
-                        this.data.stream.event.status = 'inactive'
-                        this.publishStreamState()
-                    }
-                    break;
-                default:
-                    this.debug(`Received unknown command for event stream`)
-            }
+        switch (command) {
+            case 'on':
+                // An RTSP reader starts playback on its own, so this only covers
+                // the switch being turned on with nothing watching.
+                this.debug('Holding the event stream open on request')
+                if (!streamer.startStream(this.deviceId, 'event')) {
+                    this.debug('The stream helper is not connected, cannot start the event stream')
+                    this.data.stream.event.status = 'failed'
+                    this.publishStreamState()
+                }
+                break;
+            case 'off':
+                streamer.stopStream(this.deviceId, 'event')
+                break;
+            default:
+                this.debug(`Received unknown command for event stream`)
+        }
+    }
+
+    // Resolve the recording behind the current event selection. The helper plays
+    // it back, but only this process can turn a selection into a signed URL.
+    async getEventRecording() {
+        const eventSelect = this.data.event_select.state.split(' ')
+        const eventType = eventSelect[0].toLowerCase().replace('-', '_')
+        const eventNumber = eventSelect[1]
+        const ordinal = (eventNumber==1?"":eventNumber==2?"2nd ":eventNumber==3?"3rd ":eventNumber+"th ")
+
+        try {
+            await this.updateEventStreamUrl()
+        } catch(error) {
+            this.debug(error)
+        }
+
+        if (!this.data.event_select.recordingUrl ||
+            this.data.event_select.recordingUrl.match(/Recording Not Found|Transcoding in Progress/)) {
+            const message = `No recording available for the ${ordinal}most recent ${eventType} event!`
+            this.debug(message)
+            return { error: message }
+        }
+
+        const description = `the ${ordinal}most recent ${eventType} event`
+        this.debug(`Streaming ${description}`)
+
+        return {
+            recordingUrl: this.data.event_select.recordingUrl,
+            // Ring's downloadable transcodes carry very few keyframes, and an
+            // HEVC recording has to come back to H.264 anyway, so both cases are
+            // re-encoded on the fly.
+            transcode: Boolean(this.data.event_select.transcoded || this.hevcEnabled),
+            description
         }
     }
 
@@ -1417,9 +1333,11 @@ export default class Camera extends RingPolledDevice {
     async setEventSelect(message) {
         this.debug(`Received set event stream to ${message}`)
         if (this.entity.event_select.options.includes(message)) {
-            // Kill any active event streams
+            // The playback lives in the helper now, so changing the
+            // selection has to tell it to stop rather than killing a local
+            // process. data.stream.event.session is a flag, not a handle.
             if (this.data.stream.event.session) {
-                this.data.stream.event.session.kill()
+                streamer.stopStream(this.deviceId, 'event')
             }
             // Set the new value and save the state
             this.data.event_select.state = message

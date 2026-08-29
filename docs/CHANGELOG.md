@@ -1,3 +1,51 @@
+## Unreleased
+Live and recorded streaming no longer runs through go2rtc.  The Go stream helper
+introduced for live video now runs as a long lived process which serves every
+camera over RTSP itself and starts them on demand, so go2rtc, both stream shell
+scripts, the mosquitto command line clients, jq and the embedded MQTT broker
+used for inter-process communication have all been removed.  The RTSP URL that
+Home Assistant and other clients use is unchanged, as is the port and the
+livestream username and password.
+
+For Home Assistant users this removes a relay hop: HA now reads the camera
+stream directly rather than through a second go2rtc instance.
+
+**Changes**
+ - The stream helper serves RTSP on port 8554 directly and starts a camera when
+   a client asks for it, which is what go2rtc's exec source and the shell
+   scripts previously arranged over MQTT
+ - Recorded event playback moved into the same helper and reports its state the
+   same way live streams do
+ - Turning the live or event stream switch on now holds the stream open through
+   the helper rather than starting a hidden ffmpeg process that connected to the
+   addon's own RTSP URL to imitate a viewer
+ - Camera details are pushed to the helper as they are discovered rather than
+   written to a configuration file, so a newly discovered camera no longer needs
+   a restart to become streamable
+ - Stream logs now identify the camera they belong to, and ffmpeg output during
+   event playback is captured instead of discarded
+
+**Bugs Fixed**
+ - Preserve gaps caused by packet loss when republishing video.  Renumbering
+   over them hid the loss from the player, which then decoded a damaged frame
+   instead of discarding it; on hardware H.265 decoders this could freeze the
+   video permanently with no recovery at the next keyframe
+ - Discard retransmitted and duplicated video packets that arrive after the
+   stream has moved past them, which a player with no reordering window cannot
+   use and which cost it the frame it was assembling
+ - Resume a stream from a keyframe already present in the opening burst rather
+   than discarding it and waiting up to a further two seconds for the next one
+ - Keep the audio and video backlogs aligned at startup.  Audio accumulated
+   while waiting for a keyframe and was then delivered as a burst, leaving it
+   lastingly out of step with the video
+ - Raise the RTSP server's per-reader queue, which was small enough that high
+   resolution streams overflowed it and dropped packets
+
+**Dependency Updates**
+ - Removed aedes, no longer needed now that the internal MQTT broker is gone
+ - Removed the go2rtc binary, the mosquitto clients and jq from the image
+ - Added ws for the helper control socket
+
 ## v5.9.3
 **Bugs Fixed**
  - Updated ring-client-api with patched push-receiver package to address push messages failing decryption with ERR_CRYPTO_ECDH_INVALID_PUBLIC_KEY message, potentially leading to missed motion/ding events for cameras/doorbells/intercoms.

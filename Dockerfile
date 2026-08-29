@@ -1,3 +1,20 @@
+# Build the Go stream helper, which terminates the Ring WebRTC session and feeds
+# RTP to ffmpeg. Cross compiled from the build host rather than emulated, since
+# building under QEMU for arm is extremely slow.
+FROM --platform=$BUILDPLATFORM golang:1.25-alpine AS gobuilder
+ARG TARGETARCH
+ARG TARGETVARIANT
+WORKDIR /src
+COPY ringstream/go.mod ringstream/go.sum ./
+RUN go mod download
+COPY ringstream/ ./
+RUN case "${TARGETVARIANT}" in \
+        v6) export GOARM=6 ;; \
+        v7) export GOARM=7 ;; \
+    esac && \
+    CGO_ENABLED=0 GOOS=linux GOARCH="${TARGETARCH}" \
+    go build -trimpath -ldflags "-s -w" -o /out/ringstream .
+
 FROM node:jod-alpine
 
 ENV LANG="C.UTF-8" \
@@ -9,11 +26,11 @@ ENV LANG="C.UTF-8" \
     TERM="xterm-256color"
 
 COPY . /app/ring-mqtt
+COPY --from=gobuilder /out/ringstream /app/ring-mqtt/ringstream/ringstream
 RUN S6_VERSION="v3.2.2.0" && \
     BASHIO_VERSION="v0.17.5" && \
-    GO2RTC_VERSION="v1.9.14" && \
     APK_ARCH="$(apk --print-arch)" && \
-    apk add --no-cache tar xz git bash curl jq tzdata mosquitto-clients && \
+    apk add --no-cache tar xz git bash curl tzdata && \
     curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/${S6_VERSION}/s6-overlay-noarch.tar.xz" | tar -Jxpf - -C / && \
     case "${APK_ARCH}" in \
         aarch64|armhf|x86_64) \
@@ -30,19 +47,6 @@ RUN S6_VERSION="v3.2.2.0" && \
     chmod +x /etc/cont-init.d/*.sh && \
     chmod +x /etc/services.d/ring-mqtt/* && \
     rm -Rf /app/ring-mqtt/init && \
-    case "${APK_ARCH}" in \
-        x86_64) \
-            GO2RTC_ARCH="amd64";; \
-        aarch64) \
-            GO2RTC_ARCH="arm64";; \
-        armv7|armhf) \
-            GO2RTC_ARCH="arm";; \
-        *) \
-            echo >&2 "ERROR: Unsupported architecture '$APK_ARCH'" \
-            exit 1;; \
-    esac && \
-    curl -L -s -o /usr/local/bin/go2rtc "https://github.com/AlexxIT/go2rtc/releases/download/${GO2RTC_VERSION}/go2rtc_linux_${GO2RTC_ARCH}" && \
-    chmod +x /usr/local/bin/go2rtc && \
     rm -rf /app/ring-mqtt/bin && \
     curl -J -L -o /tmp/bashio.tar.gz "https://github.com/hassio-addons/bashio/archive/${BASHIO_VERSION}.tar.gz" && \
     mkdir /tmp/bashio && \
@@ -50,6 +54,7 @@ RUN S6_VERSION="v3.2.2.0" && \
     mv /tmp/bashio/lib /usr/lib/bashio && \
     ln -s /usr/lib/bashio/bashio /usr/bin/bashio && \
     chmod +x /app/ring-mqtt/scripts/*.sh && \
+    chmod +x /app/ring-mqtt/ringstream/ringstream && \
     mkdir /data && \
     chmod 777 /data /app /run && \
     cd /app/ring-mqtt && \

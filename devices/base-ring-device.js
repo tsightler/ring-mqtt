@@ -189,8 +189,6 @@ export default class RingDevice {
                         // Entity uses internal MQTT broker for inter-process communications
                         if (this.entity[entityKey]?.ipc) {
                             const debugTopic = discoveryMessage[topic].split('/').slice(0,-1).join('/')+'/debug'
-                            utils.event.emit('mqtt_ipc_subscribe', discoveryMessage[topic])
-                            utils.event.emit('mqtt_ipc_subscribe', debugTopic)
                             utils.event.on(debugTopic, (command, message) => {
                                 if (message) {
                                     this.debug(message, 'rtsp')

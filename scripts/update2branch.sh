@@ -22,25 +22,39 @@ else
     echo "The ring-mqtt-${BRANCH} branch has been updated."
 
     APK_ARCH="$(apk --print-arch)"
-    GO2RTC_VERSION="v1.9.14"
     case "${APK_ARCH}" in
         x86_64)
-            GO2RTC_ARCH="amd64"
+            HELPER_ARCH="amd64"
             ;;
         aarch64)
-            GO2RTC_ARCH="arm64"
+            HELPER_ARCH="arm64"
             ;;
         armv7|armhf)
-            GO2RTC_ARCH="arm"
+            HELPER_ARCH="arm"
             ;;
         *)
             echo >&2 "ERROR: Unsupported architecture '$APK_ARCH'"
             exit 1
             ;;
     esac
-    rm -f /usr/local/bin/go2rtc
-    curl -L -s -o /usr/local/bin/go2rtc "https://github.com/AlexxIT/go2rtc/releases/download/${GO2RTC_VERSION}/go2rtc_linux_${GO2RTC_ARCH}"
-    chmod +x /usr/local/bin/go2rtc
+    # The Go stream helper is compiled during the image build and the resulting
+    # binary is not committed, so a freshly cloned branch has only the source.
+    # Pre-built binaries for each supported architecture are committed under
+    # ringstream/bin and one is installed here, which avoids needing a Go
+    # toolchain in the container. They are refreshed with scripts/build-helper.sh.
+    HELPER_DIR="/app/ring-mqtt-${BRANCH}/ringstream"
+    HELPER_PREBUILT="${HELPER_DIR}/bin/ringstream_linux_${HELPER_ARCH}"
+    if [ -f "${HELPER_PREBUILT}" ]; then
+        cp -f "${HELPER_PREBUILT}" "${HELPER_DIR}/ringstream"
+        chmod +x "${HELPER_DIR}/ringstream"
+    elif [ -x "/app/ring-mqtt/ringstream/ringstream" ]; then
+        echo "No pre-built stream helper for ${HELPER_ARCH} in the ${BRANCH} branch,"
+        echo "falling back to the one that shipped in the image."
+        cp -f "/app/ring-mqtt/ringstream/ringstream" "${HELPER_DIR}/ringstream"
+        chmod +x "${HELPER_DIR}/ringstream"
+    else
+        echo >&2 "ERROR: no stream helper binary available, live streaming will not work"
+    fi
 
     cp -f "/app/ring-mqtt-${BRANCH}/init/s6/services.d/ring-mqtt/run" /etc/services.d/ring-mqtt/run
     chmod +x /etc/services.d/ring-mqtt/run

@@ -1,0 +1,33 @@
+log:
+  level: debug
+  hass: info
+api:
+  listen: :1984
+srtp:
+  listen: ''
+rtsp:
+  listen: :8554
+  default_query: video&audio=aac&audio=opus
+webrtc:
+  listen: :8555
+  candidates:
+    - 172.19.173.63:8555
+streams:
+  90486ceca1f6_live: exec:/mnt/c/Users/tsigh/Documents/GitHub/ring-mqtt/scripts/start-stream.sh 90486ceca1f6 live ring/2e9eac53-f8bf-426a-a292-d8016bc3cc83/camera/90486ceca1f6 {output}#killsignal=15
+  90486ceca1f6_event: exec:/mnt/c/Users/tsigh/Documents/GitHub/ring-mqtt/scripts/start-stream.sh 90486ceca1f6 event ring/2e9eac53-f8bf-426a-a292-d8016bc3cc83/camera/90486ceca1f6 {output}#killsignal=15
+  3ce1a11f710d_live: exec:/mnt/c/Users/tsigh/Documents/GitHub/ring-mqtt/scripts/start-stream.sh 3ce1a11f710d live ring/a9ce28cb-fafb-421c-4508-29d54f48cbd3/camera/3ce1a11f710d {output}#killsignal=15
+  3ce1a11f710d_event: exec:/mnt/c/Users/tsigh/Documents/GitHub/ring-mqtt/scripts/start-stream.sh 3ce1a11f710d event ring/a9ce28cb-fafb-421c-4508-29d54f48cbd3/camera/3ce1a11f710d {output}#killsignal=15
+  3414b5220b1a_live: exec:/mnt/c/Users/tsigh/Documents/GitHub/ring-mqtt/scripts/start-stream.sh 3414b5220b1a live ring/a9ce28cb-fafb-421c-4508-29d54f48cbd3/camera/3414b5220b1a {output}#killsignal=15
+  3414b5220b1a_event: exec:/mnt/c/Users/tsigh/Documents/GitHub/ring-mqtt/scripts/start-stream.sh 3414b5220b1a event ring/a9ce28cb-fafb-421c-4508-29d54f48cbd3/camera/3414b5220b1a {output}#killsignal=15
+  f83331d131bd_live: exec:/mnt/c/Users/tsigh/Documents/GitHub/ring-mqtt/scripts/start-stream.sh f83331d131bd live ring/a9ce28cb-fafb-421c-4508-29d54f48cbd3/camera/f83331d131bd {output}#killsignal=15
+  f83331d131bd_event: exec:/mnt/c/Users/tsigh/Documents/GitHub/ring-mqtt/scripts/start-stream.sh f83331d131bd event ring/a9ce28cb-fafb-421c-4508-29d54f48cbd3/camera/f83331d131bd {output}#killsignal=15
+  5c475e8366c8_live: exec:/mnt/c/Users/tsigh/Documents/GitHub/ring-mqtt/scripts/start-stream.sh 5c475e8366c8 live ring/a9ce28cb-fafb-421c-4508-29d54f48cbd3/camera/5c475e8366c8 {output}#killsignal=15
+  5c475e8366c8_event: exec:/mnt/c/Users/tsigh/Documents/GitHub/ring-mqtt/scripts/start-stream.sh 5c475e8366c8 event ring/a9ce28cb-fafb-421c-4508-29d54f48cbd3/camera/5c475e8366c8 {output}#killsignal=15
+  3ce1a1b144ac_live: exec:/mnt/c/Users/tsigh/Documents/GitHub/ring-mqtt/scripts/start-stream.sh 3ce1a1b144ac live ring/a9ce28cb-fafb-421c-4508-29d54f48cbd3/camera/3ce1a1b144ac {output}#killsignal=15
+  3ce1a1b144ac_event: exec:/mnt/c/Users/tsigh/Documents/GitHub/ring-mqtt/scripts/start-stream.sh 3ce1a1b144ac event ring/a9ce28cb-fafb-421c-4508-29d54f48cbd3/camera/3ce1a1b144ac {output}#killsignal=15
+  047bcb213837_live: exec:/mnt/c/Users/tsigh/Documents/GitHub/ring-mqtt/scripts/start-stream.sh 047bcb213837 live ring/a9ce28cb-fafb-421c-4508-29d54f48cbd3/camera/047bcb213837 {output}#killsignal=15
+  047bcb213837_event: exec:/mnt/c/Users/tsigh/Documents/GitHub/ring-mqtt/scripts/start-stream.sh 047bcb213837 event ring/a9ce28cb-fafb-421c-4508-29d54f48cbd3/camera/047bcb213837 {output}#killsignal=15
+  3ce1a15e2437_live: exec:/mnt/c/Users/tsigh/Documents/GitHub/ring-mqtt/scripts/start-stream.sh 3ce1a15e2437 live ring/a9ce28cb-fafb-421c-4508-29d54f48cbd3/camera/3ce1a15e2437 {output}#killsignal=15
+  3ce1a15e2437_event: exec:/mnt/c/Users/tsigh/Documents/GitHub/ring-mqtt/scripts/start-stream.sh 3ce1a15e2437 event ring/a9ce28cb-fafb-421c-4508-29d54f48cbd3/camera/3ce1a15e2437 {output}#killsignal=15
+  7c010a706646_live: exec:/mnt/c/Users/tsigh/Documents/GitHub/ring-mqtt/scripts/start-stream.sh 7c010a706646 live ring/a9ce28cb-fafb-421c-4508-29d54f48cbd3/camera/7c010a706646 {output}#killsignal=15
+  7c010a706646_event: exec:/mnt/c/Users/tsigh/Documents/GitHub/ring-mqtt/scripts/start-stream.sh 7c010a706646 event ring/a9ce28cb-fafb-421c-4508-29d54f48cbd3/camera/7c010a706646 {output}#killsignal=15

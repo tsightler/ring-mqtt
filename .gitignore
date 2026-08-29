@@ -5,4 +5,6 @@ node_modules
 config.*.json
 ring-state*.json
 ring-test.js
-config/go2rtc.yaml
+
+# Compiled Go stream helper (built during image build)
+ringstream/ringstream
