@@ -1196,7 +1196,7 @@ export default class Camera extends RingPolledDevice {
         this.debug(`Received set snapshot mode to ${message}`)
         const snapshotMode = message.toLowerCase().replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())
 
-        if (this.entity.snapshot_mode.options.map(o => o.includes(snapshotMode))) {
+        if (this.entity.snapshot_mode.options.includes(snapshotMode)) {
             this.data.snapshot.mode = snapshotMode
             this.data.snapshot.autoInterval = snapshotMode === 'Auto' ? true : this.data.snapshot.autoInterval
             this.updateSnapshotMode()
