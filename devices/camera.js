@@ -49,12 +49,13 @@ export default class Camera extends RingPolledDevice {
                 ding: false,
                 motion: false,
                 interval: false,
-                autoInterval: savedState?.snapshot?.autoInterval
-                    ? savedState.snapshot.autoInterval
-                    : true,
-                intervalDuration: savedState?.snapshot?.intervalDuration
-                    ? savedState.snapshot.intervalDuration
-                    : (this.device.operatingOnBattery) ? 600 : 30,
+                autoInterval: savedState?.snapshot?.autoInterval ?? true,
+                // updateDeviceState() saves the duration as 'interval'
+                intervalDuration: savedState?.snapshot?.interval
+                    ? savedState.snapshot.interval
+                    : savedState?.snapshot?.intervalDuration
+                        ? savedState.snapshot.intervalDuration
+                        : (this.device.operatingOnBattery) ? 600 : 30,
                 intervalTimerId: null,
                 cache: null,
                 cacheType: null,
