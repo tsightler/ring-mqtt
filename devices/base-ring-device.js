@@ -168,7 +168,8 @@ export default class RingDevice {
 
             const configTopic = `homeassistant/${entity.component}/${this.locationId}/${this.deviceId}_${entityKey}/config`
             this.debug(`HASS config topic: ${configTopic}`, 'disc')
-            this.debug(discoveryMessage, 'disc')
+            // Don't write the alarm disarm code to the debug log
+            this.debug(discoveryMessage.hasOwnProperty('code') ? { ...discoveryMessage, code: '********' } : discoveryMessage, 'disc')
             this.mqttPublish(configTopic, JSON.stringify(discoveryMessage), false)
 
             // On first publish store generated topics in entities object and subscribe to command/debug topics

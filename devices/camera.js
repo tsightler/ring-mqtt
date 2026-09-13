@@ -694,7 +694,12 @@ export default class Camera extends RingPolledDevice {
         }
 
         if (Object.keys(attributes).length > 0) {
-            this.mqttPublish(this.entity.info.state_topic, JSON.stringify(attributes), 'attr')
+            // Don't write the livestream credentials embedded in the stream URL to the debug log
+            const { livestream_user, livestream_pass } = utils.config()
+            const maskedAttributes = (livestream_user && livestream_pass && attributes.stream_Source)
+                ? JSON.stringify({ ...attributes, stream_Source: attributes.stream_Source.replace(`${livestream_user}:${livestream_pass}@`, '********:********@') })
+                : undefined
+            this.mqttPublish(this.entity.info.state_topic, JSON.stringify(attributes), 'attr', maskedAttributes)
             this.publishAttributeEntities(attributes)
         }
     }
