@@ -33,8 +33,15 @@ export default class RingDevice {
         }
 
         if (primaryAttribute !== 'disable') {
-            this.initAttributeEntities(primaryAttribute)
+            this.attributeEntitiesReady = Promise.resolve()
+                .then(() => this.initAttributeEntities(primaryAttribute))
+                .catch(err => {
+                    this.debug(err)
+                    this.debug('Could not initialize optional attribute entities')
+                })
             this.schedulePublishAttributes()
+        } else {
+            this.attributeEntitiesReady = Promise.resolve()
         }
     }
 
@@ -45,6 +52,8 @@ export default class RingDevice {
     async publishDiscovery() {
         const debugMsg = (this.availabilityState === 'unpublished') ? 'Publishing new ' : 'Republishing existing '
         this.debug(debugMsg+'device id: '+this.deviceId, 'disc')
+
+        await this.attributeEntitiesReady
 
         Object.keys(this.entity).forEach(entityKey => {
             const entity = this.entity[entityKey]
