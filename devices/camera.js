@@ -58,12 +58,13 @@ export default class Camera extends RingPolledDevice {
                 ding: false,
                 motion: false,
                 interval: false,
-                autoInterval: savedState?.snapshot?.autoInterval
-                    ? savedState.snapshot.autoInterval
-                    : true,
-                intervalDuration: savedState?.snapshot?.intervalDuration
-                    ? savedState.snapshot.intervalDuration
-                    : (this.device.operatingOnBattery) ? 600 : 30,
+                autoInterval: savedState?.snapshot?.autoInterval ?? true,
+                // updateDeviceState() saves the duration as 'interval'
+                intervalDuration: savedState?.snapshot?.interval
+                    ? savedState.snapshot.interval
+                    : savedState?.snapshot?.intervalDuration
+                        ? savedState.snapshot.intervalDuration
+                        : (this.device.operatingOnBattery) ? 600 : 30,
                 intervalTimerId: null,
                 cache: null,
                 cacheType: null,
@@ -945,7 +946,7 @@ export default class Camera extends RingPolledDevice {
                 paginationKey = history.pagination_key ? history.pagination_key.replace(/={1,2}$/, '') : false
 
                 // If we have enough events, break the loop, otherwise decrease the loop counter
-                loop = (events.length >= eventNumber || !history.paginationKey) ? 0 : loop-1
+                loop = (events.length >= eventNumber || !paginationKey) ? 0 : loop-1
             }
         } catch(error) {
             this.debug(error)
@@ -1205,7 +1206,7 @@ export default class Camera extends RingPolledDevice {
         this.debug(`Received set snapshot mode to ${message}`)
         const snapshotMode = message.toLowerCase().replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())
 
-        if (this.entity.snapshot_mode.options.map(o => o.includes(snapshotMode))) {
+        if (this.entity.snapshot_mode.options.includes(snapshotMode)) {
             this.data.snapshot.mode = snapshotMode
             this.data.snapshot.autoInterval = snapshotMode === 'Auto' ? true : this.data.snapshot.autoInterval
             this.updateSnapshotMode()
