@@ -114,7 +114,7 @@ export default class SecurityPanel extends RingSocketDevice {
             ).length > 0
         )
         if (armEvents.length > 0) {
-            this.updateAlarmAttributes(armEvents[0], 'Armed')
+            this.updateAlarmAttributes(armEvents[0], 'lastArmed')
         }
 
         const disarmEvents = alarmEvents.filter(e =>
