@@ -3,6 +3,15 @@ import utils from '../lib/utils.js'
 import streamer from '../lib/streamer.js'
 import { parseISO, addSeconds } from 'date-fns';
 
+// Approximates the slugify() Home Assistant uses to build entity ids from names:
+// strip accents, lowercase, and collapse every run of other characters into "_"
+const slugify = (text) => text
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+
 export default class Camera extends RingPolledDevice {
     constructor(deviceInfo, events) {
         super(deviceInfo, 'camera')
@@ -385,7 +394,7 @@ export default class Camera extends RingPolledDevice {
         }
 
         // Set some helper attributes for streaming
-        this.data.stream.live.stillImageURL = `https://${stillImageUrlBase}:8123{{ states.camera.${this.device.name.toLowerCase().replace(" ","_")}_snapshot.attributes.entity_picture }}`,
+        this.data.stream.live.stillImageURL = `https://${stillImageUrlBase}:8123{{ states.camera.${slugify(this.device.name)}_snapshot.attributes.entity_picture }}`,
         this.data.stream.live.streamSource = (utils.config().livestream_user && utils.config().livestream_pass)
             ? `rtsp://${utils.config().livestream_user}:${utils.config().livestream_pass}@${streamSourceUrlBase}:8554/${this.deviceId}_live`
             : `rtsp://${streamSourceUrlBase}:8554/${this.deviceId}_live`
