@@ -748,6 +748,7 @@ export default class Camera extends RingPolledDevice {
             this.data.video_mode.mode = mode
             this.debug(`Video mode has been set to ${mode}, streams will request ${this.getStreamVideoCodec().toUpperCase()}`)
             this.debug('Any active stream must be restarted for the change to take effect')
+            streamer.sendCameras()
             this.publishVideoMode()
             this.updateDeviceState()
         } else {
