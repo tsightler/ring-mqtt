@@ -2,4 +2,3 @@
 * text=auto
 *.sh text eol=lf
 *.js text eol=lf
-go-helper/bin/ringstream_linux_* binary
