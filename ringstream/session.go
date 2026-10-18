@@ -105,6 +105,15 @@ func (c *sessionConfig) validate() error {
 	return nil
 }
 
+// envOverride returns the named environment variable when it is set and not
+// empty, otherwise the value that came from the command line.
+func envOverride(name, flagValue string) string {
+	if v := os.Getenv(name); v != "" {
+		return v
+	}
+	return flagValue
+}
+
 func main() {
 	log.SetFlags(log.Ltime | log.Lmicroseconds)
 
@@ -112,8 +121,8 @@ func main() {
 	daemon := flag.Bool("daemon", false, "serve every camera from one process, taking commands from ring-mqtt over the control socket")
 	controlURL := flag.String("control-url", "ws://127.0.0.1:51883/ringstream", "ring-mqtt control socket")
 	rtspListen := flag.String("rtsp-listen", ":8554", "address the RTSP server listens on; this is the URL advertised to Home Assistant and to RTSP clients")
-	rtspUser := flag.String("rtsp-user", "", "username readers must present, empty disables authentication")
-	rtspPass := flag.String("rtsp-pass", "", "password readers must present, empty disables authentication")
+	rtspUser := flag.String("rtsp-user", "", "username readers must present, empty disables authentication (env RING_RTSP_USER)")
+	rtspPass := flag.String("rtsp-pass", "", "password readers must present, empty disables authentication (env RING_RTSP_PASS)")
 	flag.StringVar(&cfg.name, "name", "", "camera name used as a log prefix")
 	flag.StringVar(&cfg.ticket, "ticket", "", "Ring signaling session ticket")
 	flag.IntVar(&cfg.cameraID, "camera-id", 0, "Ring doorbot id")
@@ -136,6 +145,9 @@ func main() {
 	if cfg.ffmpegPath == "" {
 		cfg.ffmpegPath = os.Getenv("RING_FFMPEG")
 	}
+	// Prefer the environment so the RTSP credentials stay out of ps output.
+	*rtspUser = envOverride("RING_RTSP_USER", *rtspUser)
+	*rtspPass = envOverride("RING_RTSP_PASS", *rtspPass)
 
 	if *daemon {
 		if err := runDaemon(defaultLogger, *controlURL, *rtspListen, *rtspUser, *rtspPass, cfg.ffmpegPath); err != nil {
