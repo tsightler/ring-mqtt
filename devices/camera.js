@@ -138,17 +138,13 @@ export default class Camera extends RingPolledDevice {
                 category: 'diagnostic',
                 attributes: true,
                 name: 'Live Stream',
-                icon: 'mdi:cctv',
-                // Use internal MQTT server for inter-process communications
-                ipc: true
+                icon: 'mdi:cctv'
             },
             event_stream: {
                 component: 'switch',
                 category: 'diagnostic',
                 attributes: true,
-                icon: 'mdi:vhs',
-                // Use internal MQTT server for inter-process communications
-                ipc: true
+                icon: 'mdi:vhs'
             },
             event_select: {
                 component: 'select',

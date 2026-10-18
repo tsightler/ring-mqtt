@@ -181,7 +181,7 @@ export default class RingDevice {
             this.debug(discoveryMessage.hasOwnProperty('code') ? { ...discoveryMessage, code: '********' } : discoveryMessage, 'disc')
             this.mqttPublish(configTopic, JSON.stringify(discoveryMessage), false)
 
-            // On first publish store generated topics in entities object and subscribe to command/debug topics
+            // On first publish store generated topics in entities object and subscribe to command topics
             if (!this.entity[entityKey].hasOwnProperty('published')) {
                 this.entity[entityKey].published = true
                 Object.keys(discoveryMessage).filter(property => property.match('topic')).forEach(topic => {
@@ -195,18 +195,6 @@ export default class RingDevice {
                                 this.debug(`Received invalid or null value to command topic ${command}`)
                             }
                         })
-
-                        // Entity uses internal MQTT broker for inter-process communications
-                        if (this.entity[entityKey]?.ipc) {
-                            const debugTopic = discoveryMessage[topic].split('/').slice(0,-1).join('/')+'/debug'
-                            utils.event.on(debugTopic, (command, message) => {
-                                if (message) {
-                                    this.debug(message, 'rtsp')
-                                } else {
-                                    this.debug(`Received invalid or null value to debug log topic ${command}`)
-                                }
-                            })
-                        }
                     }
                 })
             }
