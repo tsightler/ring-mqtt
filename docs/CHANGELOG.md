@@ -24,6 +24,15 @@ stream directly rather than through a second go2rtc instance.
    a restart to become streamable
  - Stream logs now identify the camera they belong to, and ffmpeg output during
    event playback is captured instead of discarded
+ - Added a Video Mode select entity for cameras (`Compatible` vs `Optimal`) to
+   control whether H.265/HEVC is negotiated when supported by the camera
+ - Use the Ring v3 API for device health queries and handle failed health
+   queries gracefully so they cannot prevent a device from being published
+ - Back off on repeated camera ding/motion subscription failures and skip
+   subscription attempts on shared cameras that lack alert management permission
+ - Support all wired and battery Kidde Smoke and Smoke/CO alarm variants,
+   creating the CO entity only when the device includes a CO sensor.  Thanks
+   to @ithinkdancan for the PR
 
 **Bugs Fixed**
  - Preserve gaps caused by packet loss when republishing video.  Renumbering
@@ -40,11 +49,49 @@ stream directly rather than through a second go2rtc instance.
    lastingly out of step with the video
  - Raise the RTSP server's per-reader queue, which was small enough that high
    resolution streams overflowed it and dropped packets
+ - Fix a race condition during initial discovery where device state, ding, or
+   snapshot messages could be published before entity topics were created
+ - Fix incorrect attribute names (`ArmedBy`/`ArmedTime` -> `lastArmedBy`/
+   `lastArmedTime`) when updating security panel armed event attributes
+ - Build the snapshot entity id in the still_Image_URL attribute the same way
+   Home Assistant does.  Only the first space in the camera name was replaced,
+   so names with multiple spaces, accents or punctuation produced an entity id
+   that didn't exist.  Thanks to @matiasmacera for the PR
+ - Fix searching for person events only checking the first page of event
+   history, so older person events could not be selected
+ - Reject snapshot mode commands that don't match one of the available
+   options.  Previously any value was accepted and published as the mode
+ - Restore a manually set snapshot interval after a restart.  The interval
+   was saved but never read back, and a manual interval setting was also
+   reset to automatic on every restart.  Thanks to @matiasmacera for the PR
+ - Mask livestream credentials in camera attribute debug logs and the alarm
+   disarm code in discovery debug logs, and pass livestream credentials to the
+   stream helper via environment variables rather than command-line arguments.
+   Thanks to @matiasmacera for the PRs
+ - Sync restClient.authConfig when updating restClient.refreshToken so that
+   service outage recovery and web UI re-authentication actually use the new
+   or restored refresh token.  Thanks to @loganrosen for the PR
+ - Fall back to a direct file write when saving the state file fails with
+   EPERM on filesystems with restrictive ACLs such as ZFS on TrueNAS or
+   Synology NAS.  Thanks to @don4of4 for the PR
+ - Wait for async attribute entity setup to complete before publishing device
+   discovery so slow device health or event history lookups cannot cause
+   missing entities or attributes at startup.  Thanks to @davimount for the PR
 
 **Dependency Updates**
  - Removed aedes, no longer needed now that the internal MQTT broker is gone
+ - Removed @homebridge/camera-utils and werift, no longer needed now that
+   WebRTC sessions are handled by the Go stream helper
  - Removed the go2rtc binary, the mosquitto clients and jq from the image
- - Added ws for the helper control socket
+ - Added ws 8.21.3 for the helper control socket
+ - Added ffmpeg-for-homebridge 2.2.2
+ - @tsightler/ring-client-api 15.0.0-beta.2
+ - body-parser 2.3.0
+ - chalk 6.0.0
+ - date-fns 4.4.0
+ - js-yaml 5.4.0
+ - mqtt 5.15.2
+ - write-file-atomic 8.0.0
 
 ## v5.9.3
 **Bugs Fixed**
