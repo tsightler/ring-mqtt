@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // One-off diagnostic: print the codec related parts of each camera's device
 // data, so the HEVC property can be identified. Read only; prints no tokens.
-import { RingRestClient } from '@tsightler/ring-client-api/lib/rest-client.js'
+import { RingRestClient } from '../lib/ring-client/rest-client.js'
 import { readFileSync } from 'fs'
 
 const state = JSON.parse(readFileSync(new URL('../ring-state.json', import.meta.url)))

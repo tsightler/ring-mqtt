@@ -1,5 +1,5 @@
 import RingSocketDevice from './base-socket-device.js'
-import { allAlarmStates } from '@tsightler/ring-client-api'
+import { allAlarmStates } from '../lib/ring-client/index.js'
 import utils from '../lib/utils.js'
 import state from '../lib/state.js'
 

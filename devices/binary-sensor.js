@@ -1,5 +1,5 @@
 import RingSocketDevice from './base-socket-device.js'
-import { RingDeviceType } from '@tsightler/ring-client-api'
+import { RingDeviceType } from '../lib/ring-client/index.js'
 
 // Helper functions
 function chirpToMqttState(chirp) {
