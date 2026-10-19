@@ -3,19 +3,14 @@
 # building under QEMU for arm is extremely slow.
 FROM --platform=$BUILDPLATFORM golang:1.25-alpine AS gobuilder
 ARG TARGETARCH
-ARG TARGETVARIANT
 WORKDIR /src
 COPY ringstream/go.mod ringstream/go.sum ./
 RUN go mod download
 COPY ringstream/ ./
-RUN case "${TARGETVARIANT}" in \
-        v6) export GOARM=6 ;; \
-        v7) export GOARM=7 ;; \
-    esac && \
-    CGO_ENABLED=0 GOOS=linux GOARCH="${TARGETARCH}" \
+RUN CGO_ENABLED=0 GOOS=linux GOARCH="${TARGETARCH}" \
     go build -trimpath -ldflags "-s -w" -o /out/ringstream .
 
-FROM node:jod-alpine
+FROM node:krypton-alpine
 
 ENV LANG="C.UTF-8" \
     PS1="$(whoami)@$(hostname):$(pwd)$ " \
@@ -27,16 +22,14 @@ ENV LANG="C.UTF-8" \
 
 COPY . /app/ring-mqtt
 COPY --from=gobuilder /out/ringstream /app/ring-mqtt/ringstream/ringstream
-RUN S6_VERSION="v3.2.2.0" && \
-    BASHIO_VERSION="v0.17.5" && \
+RUN S6_VERSION="v3.2.3.2" && \
+    BASHIO_VERSION="v0.19.0" && \
     APK_ARCH="$(apk --print-arch)" && \
     apk add --no-cache tar xz git bash curl tzdata && \
     curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/${S6_VERSION}/s6-overlay-noarch.tar.xz" | tar -Jxpf - -C / && \
     case "${APK_ARCH}" in \
-        aarch64|armhf|x86_64) \
+        aarch64|x86_64) \
             curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/${S6_VERSION}/s6-overlay-${APK_ARCH}.tar.xz" | tar Jxpf - -C / ;; \
-        armv7) \
-            curl -L -s "https://github.com/just-containers/s6-overlay/releases/download/${S6_VERSION}/s6-overlay-arm.tar.xz" | tar Jxpf - -C / ;; \
         *) \
             echo >&2 "ERROR: Unsupported architecture '$APK_ARCH'" \
             exit 1;; \

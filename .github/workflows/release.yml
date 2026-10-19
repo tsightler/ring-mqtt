@@ -1,0 +1,190 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get version and build metadata
+        id: meta
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          IMAGE_LC=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "build_date=${BUILD_DATE}" >> "$GITHUB_OUTPUT"
+          echo "image=ghcr.io/${IMAGE_LC}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push container image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.version }}
+            ${{ steps.meta.outputs.image }}:latest
+          build-args: |
+            BUILD_VERSION=${{ steps.meta.outputs.version }}
+            BUILD_DATE=${{ steps.meta.outputs.build_date }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          TAG="v${VERSION}"
+          if gh release view "${TAG}" >/dev/null 2>&1; then
+            echo "Release ${TAG} already exists, skipping release creation."
+            exit 0
+          fi
+
+          node -e '
+            const fs = require("fs");
+            const version = process.env.VERSION;
+            const changelog = fs.readFileSync("docs/CHANGELOG.md", "utf8");
+            const lines = changelog.split(/\r?\n/);
+            const targetHeaders = [`## v${version}`, `## ${version}`, "## Unreleased"];
+            let startIdx = -1;
+            for (const header of targetHeaders) {
+              startIdx = lines.findIndex((l) => l.trim() === header);
+              if (startIdx !== -1) break;
+            }
+            if (startIdx !== -1) {
+              const bodyLines = [];
+              for (let i = startIdx + 1; i < lines.length; i++) {
+                if (lines[i].startsWith("## ")) break;
+                bodyLines.push(lines[i]);
+              }
+              const notes = bodyLines.join("\n").trim();
+              if (notes) {
+                fs.writeFileSync("release_notes.md", notes + "\n");
+              }
+            }
+          '
+
+          if [ -f release_notes.md ]; then
+            gh release create "${TAG}" \
+              --target "${GITHUB_SHA}" \
+              --title "Release ${TAG}" \
+              --notes-file release_notes.md
+          else
+            gh release create "${TAG}" \
+              --target "${GITHUB_SHA}" \
+              --title "Release ${TAG}" \
+              --generate-notes
+          fi
+
+      - name: Verify container image is publicly accessible
+        env:
+          IMAGE_REPO: ${{ github.repository }}
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          REPO_LC=$(echo "${IMAGE_REPO}" | tr '[:upper:]' '[:lower:]')
+          TOKEN=$(curl -fsSL "https://ghcr.io/token?scope=repository:${REPO_LC}:pull" | node -e '
+            const fs = require("fs");
+            try {
+              const data = JSON.parse(fs.readFileSync(0, "utf8"));
+              process.stdout.write(data.token || "");
+            } catch {}
+          ' || true)
+
+          if [ -z "${TOKEN}" ]; then
+            echo "::error::Failed to obtain anonymous pull token for ghcr.io/${REPO_LC}. Ensure package visibility is set to Public on GitHub Container Registry before updating ring-mqtt-ha-addon."
+            exit 1
+          fi
+
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer ${TOKEN}" \
+            -H "Accept: application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.docker.distribution.manifest.v2+json" \
+            "https://ghcr.io/v2/${REPO_LC}/manifests/${VERSION}")
+
+          if [ "${STATUS}" != "200" ]; then
+            echo "::error::Anonymous manifest check for ghcr.io/${REPO_LC}:${VERSION} returned HTTP ${STATUS}. Ensure package visibility is set to Public on GitHub Container Registry."
+            exit 1
+          fi
+          echo "Verified ghcr.io/${REPO_LC}:${VERSION} is publicly accessible."
+
+      - name: Checkout Home Assistant addon repository
+        uses: actions/checkout@v4
+        with:
+          repository: tsightler/ring-mqtt-ha-addon
+          ref: main
+          path: addon-repo
+          ssh-key: ${{ secrets.ADDON_DEPLOY_KEY }}
+
+      - name: Update Home Assistant addon repository
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+          IMAGE: ${{ steps.meta.outputs.image }}
+        run: |
+          node -e '
+            const fs = require("fs");
+            const version = process.env.VERSION;
+            const image = process.env.IMAGE;
+
+            // 1. Update addon config.yaml
+            let config = fs.readFileSync("addon-repo/config.yaml", "utf8");
+            const eol = config.includes("\r\n") ? "\r\n" : "\n";
+            config = config.replace(/^version:\s*.*$/m, `version: ${version}`);
+            config = config.replace(/^image:\s*.*$/m, `image: '\''${image}'\''`);
+            config = config.replace(
+              /^arch:\r?\n(?:  - .*\r?\n)+/m,
+              `arch:${eol}  - aarch64${eol}  - amd64${eol}`
+            );
+            fs.writeFileSync("addon-repo/config.yaml", config);
+
+            // 2. Sync CHANGELOG.md from docs/CHANGELOG.md
+            const changelog = fs.readFileSync("docs/CHANGELOG.md", "utf8");
+            const cEol = changelog.includes("\r\n") ? "\r\n" : "\n";
+            const lines = changelog.split(/\r?\n/);
+            const firstHeaderIdx = lines.findIndex((l) => l.startsWith("## "));
+            if (
+              firstHeaderIdx !== -1 &&
+              (lines[firstHeaderIdx].trim() === "## Unreleased" ||
+                lines[firstHeaderIdx].trim() === `## ${version}`)
+            ) {
+              lines[firstHeaderIdx] = `## v${version}`;
+            }
+            fs.writeFileSync("addon-repo/CHANGELOG.md", lines.join(cEol));
+          '
+
+          cd addon-repo
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "Addon repository is already up to date for v${VERSION}."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add config.yaml CHANGELOG.md
+          git commit -m "Release v${VERSION}"
+          git push origin main
+

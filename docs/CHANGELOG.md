@@ -1,76 +1,61 @@
-## Unreleased
-Live and recorded streaming no longer runs through go2rtc.  The Go stream helper
-introduced for live video now runs as a long lived process which serves every
-camera over RTSP itself and starts them on demand, so go2rtc, both stream shell
-scripts, the mosquitto command line clients, jq and the embedded MQTT broker
-used for inter-process communication have all been removed.  The RTSP URL that
-Home Assistant and other clients use is unchanged, as is the port and the
-livestream username and password.
+## v6.0.0
+This new major version of ring-mqtt includes an entirely re-written video
+streaming pipline using a custom Ring WebRTC-to-RTSP gateway service written
+in go that provides support for native H.265 2K/4K streams and overall higher
+bitrates while using significantly less CPU and memory resources on the host.
 
-For Home Assistant users this removes a relay hop: HA now reads the camera
-stream directly rather than through a second go2rtc instance.
+Camera devices will expose a new Video Mode selector in the device configuration
+section. When upgrading this setting will default to `Compatible`, which
+will continue to use H.264 streams for all cameras as with previous version,
+however, users can choose to switch to `Optimal` which will attempt to negotiate
+H.265 on cameras that support it.
+
+While native H.265 provides the absolute best video quality, it's important
+to note that playback support depends entirely on the combination of browser and
+OS capability.  Many combinations, such as Chrome on Windows, depend on hardware
+H.265 decoders which are much more sensitive to packet loss.  The video
+pipeline in ringstream attemps to detect any malformed RTP packets and forward
+only complete frames, but the translation from WebRTC to RTSP creates unique
+challenges which make it impossible to be as reliable as the native WebRTC
+stream playing directly from Ring to the browser.  If you have issues using
+H.265, reverting to the "Compatible" video mode is the best solution.
+
+In addition to the new stream protocols, the new code no longer depends on the
+upstream ring-client-api, The new local API implementation is simpler and has
+been modified to use newer Ring v3 API for location and device discovery which
+is required for some newer devices as well as the new shared permissions model
+for devices using shared locations/accounts.
+
+**New Features**
+ - Support all known wired and battery Kidde Smoke and Smoke/CO alarm variants.
+   Thanks to @ithinkdancan for the PR.
 
 **Changes**
- - The stream helper serves RTSP on port 8554 directly and starts a camera when
-   a client asks for it, which is what go2rtc's exec source and the shell
-   scripts previously arranged over MQTT
- - Recorded event playback moved into the same helper and reports its state the
-   same way live streams do
- - Turning the live or event stream switch on now holds the stream open through
-   the helper rather than starting a hidden ffmpeg process that connected to the
-   addon's own RTSP URL to imitate a viewer
- - Camera details are pushed to the helper as they are discovered rather than
-   written to a configuration file, so a newly discovered camera no longer needs
-   a restart to become streamable
- - Stream logs now identify the camera they belong to, and ffmpeg output during
-   event playback is captured instead of discarded
- - Added a Video Mode select entity for cameras (`Compatible` vs `Optimal`) to
-   control whether H.265/HEVC is negotiated when supported by the camera
  - Use the Ring v3 API for device health queries and handle failed health
    queries gracefully so they cannot prevent a device from being published
  - Back off on repeated camera ding/motion subscription failures and skip
    subscription attempts on shared cameras that lack alert management permission
- - Support all wired and battery Kidde Smoke and Smoke/CO alarm variants,
-   creating the CO entity only when the device includes a CO sensor.  Thanks
-   to @ithinkdancan for the PR
 
 **Bugs Fixed**
- - Preserve gaps caused by packet loss when republishing video.  Renumbering
-   over them hid the loss from the player, which then decoded a damaged frame
-   instead of discarding it; on hardware H.265 decoders this could freeze the
-   video permanently with no recovery at the next keyframe
- - Discard retransmitted and duplicated video packets that arrive after the
-   stream has moved past them, which a player with no reordering window cannot
-   use and which cost it the frame it was assembling
- - Resume a stream from a keyframe already present in the opening burst rather
-   than discarding it and waiting up to a further two seconds for the next one
- - Keep the audio and video backlogs aligned at startup.  Audio accumulated
-   while waiting for a keyframe and was then delivered as a burst, leaving it
-   lastingly out of step with the video
- - Raise the RTSP server's per-reader queue, which was small enough that high
-   resolution streams overflowed it and dropped packets
  - Fix a race condition during initial discovery where device state, ding, or
    snapshot messages could be published before entity topics were created
  - Fix incorrect attribute names (`ArmedBy`/`ArmedTime` -> `lastArmedBy`/
    `lastArmedTime`) when updating security panel armed event attributes
  - Build the snapshot entity id in the still_Image_URL attribute the same way
-   Home Assistant does.  Only the first space in the camera name was replaced,
-   so names with multiple spaces, accents or punctuation produced an entity id
-   that didn't exist.  Thanks to @matiasmacera for the PR
+   Home Assistant does.  Thanks to @matiasmacera for the PR.
  - Fix searching for person events only checking the first page of event
-   history, so older person events could not be selected
+   history.
  - Reject snapshot mode commands that don't match one of the available
-   options.  Previously any value was accepted and published as the mode
+   options.
  - Restore a manually set snapshot interval after a restart.  The interval
    was saved but never read back, and a manual interval setting was also
    reset to automatic on every restart.  Thanks to @matiasmacera for the PR
  - Mask livestream credentials in camera attribute debug logs and the alarm
-   disarm code in discovery debug logs, and pass livestream credentials to the
-   stream helper via environment variables rather than command-line arguments.
-   Thanks to @matiasmacera for the PRs
- - Sync restClient.authConfig when updating restClient.refreshToken so that
-   service outage recovery and web UI re-authentication actually use the new
-   or restored refresh token.  Thanks to @loganrosen for the PR
+   disarm code in discovery debug logs.  Thanks to @matiasmacera for the PRs.
+ - Pass livestream credentials to the stream helper via environment variables
+   rather than command-line arguments. Thanks to @matiasmacera for the PR.
+ - Sync restClient.authConfig when updating restClient.refreshToken. Thanks
+   to @loganrosen for the PR
  - Fall back to a direct file write when saving the state file fails with
    EPERM on filesystems with restrictive ACLs such as ZFS on TrueNAS or
    Synology NAS.  Thanks to @don4of4 for the PR
@@ -81,16 +66,15 @@ stream directly rather than through a second go2rtc instance.
 **Dependency Updates**
  - Removed aedes, no longer needed now that the internal MQTT broker is gone
  - Removed @homebridge/camera-utils and werift, no longer needed now that
-   WebRTC sessions are handled by the Go stream helper
+   WebRTC sessions are handled by ringstream helper
  - Removed the go2rtc binary, the mosquitto clients and jq from the image
  - Added ws 8.21.3 for the helper control socket
  - Added ffmpeg-for-homebridge 2.2.2
- - @tsightler/ring-client-api 15.0.0-beta.2
  - body-parser 2.3.0
  - chalk 6.0.0
  - date-fns 4.4.0
  - js-yaml 5.4.0
- - mqtt 5.15.2
+ - mqtt 5.16.1
  - write-file-atomic 8.0.0
 
 ## v5.9.3
