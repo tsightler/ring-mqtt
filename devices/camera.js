@@ -28,6 +28,10 @@ export default class Camera extends RingPolledDevice {
                 last_ding_expires: 0,
                 last_ding_time: 'none',
                 is_person: false,
+                detection_type: null,
+                detection_types: [],
+                familiar_faces: [],
+                description: null,
                 detection_enabled: null,
                 warning_enabled: null,
                 events: events.filter(event => event.event_type === 'motion'),
@@ -98,7 +102,10 @@ export default class Camera extends RingPolledDevice {
                 recordingUrl: null,
                 recordingUrlExpire: null,
                 transcoded: false,
-                eventId: '0'
+                eventId: '0',
+                detectionType: null,
+                familiarFaces: [],
+                description: null
             },
             ...this.device.hasLight ? {
                 light: {
@@ -345,7 +352,7 @@ export default class Camera extends RingPolledDevice {
             const lastMotionDate = lastMotionEvent?.start_time ? new Date(lastMotionEvent.start_time) : false
             this.data.motion.last_ding = lastMotionDate ? Math.floor(lastMotionDate/1000) : 0
             this.data.motion.last_ding_time = lastMotionDate ? utils.getISOTime(lastMotionDate) : ''
-            this.data.motion.is_person = Boolean(lastMotionEvent?.cv?.person_detected)
+            this.updateMotionCvData(lastMotionEvent)
             this.data.motion.latestEventId = lastMotionEvent.event_id
 
             // Try to get URL for most recent motion event, if it fails, assume there's no subscription
@@ -509,7 +516,13 @@ export default class Camera extends RingPolledDevice {
 
         // If motion ding and snapshots on motion are enabled, publish a new snapshot
         if (dingKind === 'motion') {
-            this.data[dingKind].is_person = Boolean(pushData.data?.event?.ding?.detection_type === 'human')
+            const pushDetectionType = pushData.data?.event?.ding?.detection_type || null
+            this.data.motion.is_person = Boolean(pushDetectionType === 'human')
+            this.data.motion.detection_type = pushDetectionType
+            this.data.motion.detection_types = pushDetectionType ? [pushDetectionType] : []
+            this.data.motion.familiar_faces = []
+            this.data.motion.description = null
+            this.pollMotionEventDescription(this.data.motion.last_ding)
             if (this.data.snapshot.motion) {
                 this.refreshSnapshot('motion', pushData?.img?.snapshot_uuid)
             }
@@ -557,11 +570,59 @@ export default class Camera extends RingPolledDevice {
         }
     }
 
+    updateMotionCvData(event) {
+        const cv = event?.cv || {}
+        const detType = cv.detection_type || null
+        const detTypes = Array.isArray(cv.detection_types)
+            ? cv.detection_types.map(d => d?.detection_type).filter(Boolean)
+            : (detType ? [detType] : [])
+        const profiles = Array.isArray(cv.profiles)
+            ? cv.profiles.map(p => p?.profile_name).filter(Boolean)
+            : []
+        this.data.motion.is_person = Boolean(cv.person_detected || detType === 'human')
+        this.data.motion.detection_type = detType
+        this.data.motion.detection_types = detTypes
+        this.data.motion.familiar_faces = profiles
+        this.data.motion.description = cv.full_description || cv.short_description || null
+    }
+
+    async pollMotionEventDescription(dingTimestamp) {
+        // Ring's cloud CV pipeline typically populates full_description and profiles
+        // 5-10 seconds after the initial motion push notification arrives.
+        await utils.sleep(6)
+        for (let attempt = 0; attempt < 3; attempt++) {
+            if (!this.data.motion.active_ding || this.data.motion.last_ding !== dingTimestamp) {
+                return
+            }
+            const response = await this.getDeviceHistory({ limit: 5, event_types: 'motion' })
+            if (Array.isArray(response?.items) && response.items.length > 0) {
+                this.data.motion.events = response.items
+                const latestEvent = response.items[0]
+                const eventTime = latestEvent?.start_time ? Math.floor(new Date(latestEvent.start_time) / 1000) : 0
+                if (Math.abs(eventTime - dingTimestamp) <= 60) {
+                    this.updateMotionCvData(latestEvent)
+                    this.data.motion.latestEventId = latestEvent.event_id
+                    this.publishMotionAttributes()
+                    if (this.data.motion.description) {
+                        return
+                    }
+                }
+            }
+            if (attempt < 2) {
+                await utils.sleep(4)
+            }
+        }
+    }
+
     publishMotionAttributes() {
         const attributes = {
             lastMotion: this.data.motion.last_ding,
             lastMotionTime: this.data.motion.last_ding_time,
-            personDetected: this.data.motion.is_person
+            personDetected: this.data.motion.is_person,
+            ...this.data.motion.detection_type ? { detectionType: this.data.motion.detection_type } : {},
+            ...this.data.motion.detection_types?.length ? { detectionTypes: this.data.motion.detection_types } : {},
+            ...this.data.motion.familiar_faces?.length ? { familiarFaces: this.data.motion.familiar_faces } : {},
+            ...this.data.motion.description ? { description: this.data.motion.description } : {}
         }
         if (this.device.data.settings && typeof this.device.data.settings.motion_detection_enabled !== 'undefined') {
             this.data.motion.detection_enabled = this.device.data.settings.motion_detection_enabled
@@ -704,7 +765,10 @@ export default class Camera extends RingPolledDevice {
         }
         const attributes = {
             recordingUrl: this.data.event_select.recordingUrl,
-            eventId: this.data.event_select.eventId
+            eventId: this.data.event_select.eventId,
+            ...this.data.event_select.detectionType ? { detectionType: this.data.event_select.detectionType } : {},
+            ...this.data.event_select.familiarFaces?.length ? { familiarFaces: this.data.event_select.familiarFaces } : {},
+            ...this.data.event_select.description ? { description: this.data.event_select.description } : {}
         }
         this.mqttPublish(this.entity.event_select.json_attributes_topic, JSON.stringify(attributes), 'attr', '<recording_url_masked>')
     }
@@ -976,6 +1040,11 @@ export default class Camera extends RingPolledDevice {
             this.data.event_select.recordingUrl = recordingUrl
             this.data.event_select.transcoded = transcoded
             this.data.event_select.eventId = selectedEvent.event_id
+            this.data.event_select.detectionType = selectedEvent?.cv?.detection_type || null
+            this.data.event_select.familiarFaces = Array.isArray(selectedEvent?.cv?.profiles)
+                ? selectedEvent.cv.profiles.map(p => p?.profile_name).filter(Boolean)
+                : []
+            this.data.event_select.description = selectedEvent?.cv?.full_description || selectedEvent?.cv?.short_description || null
 
             try {
                 const urlSearch = new URLSearchParams(recordingUrl)
