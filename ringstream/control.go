@@ -309,6 +309,7 @@ func (c *control) activate(ffmpegPath string) activateFunc {
 		if codec == "" {
 			codec = "h264"
 		}
+		wait, maxWait, depth := reorderFromEnv(c.lg)
 
 		return sessionConfig{
 			name:       cam.Name,
@@ -319,6 +320,10 @@ func (c *control) activate(ffmpegPath string) activateFunc {
 			ffmpegPath: ffmpegPath,
 			trackWait:  5 * time.Second,
 			state:      func(s string) { c.reportState(path, s) },
+
+			reorderWait:  wait,
+			reorderMax:   maxWait,
+			reorderDepth: depth,
 		}, nil
 	}
 }
