@@ -57,10 +57,11 @@ item exists to solve a specific, observed failure; none of it is speculative.
    **not** a fixed value: it is estimated from measured repair latency the way TCP
    estimates a retransmission timeout (RFC 6298, mean + 4×variance), bounded
    between a floor and a ceiling (`-reorder-wait` / `-reorder-max`, default
-   50 ms–400 ms). A camera on the LAN sits at the floor and adds no latency; a
-   camera on another continent, where a NACK round trip runs to a few hundred
-   milliseconds, climbs toward the ceiling only as far as its repairs actually
-   need. In-order packets are released immediately, so there is no steady-state
+   150 ms–400 ms; in daemon mode `RING_REORDER_WAIT` / `RING_REORDER_MAX` /
+   `RING_REORDER_DEPTH`). Repairs always come from Ring's media servers, so the
+   floor sits just above a typical NACK round trip to them; a camera on another
+   continent, where that round trip runs to a few hundred milliseconds, climbs
+   toward the ceiling only as far as its repairs actually need. In-order packets are released immediately, so there is no steady-state
    latency cost — the wait applies only while a gap is open.
 
 8. **Loss resync to a keyframe** (`resync.go`). When a gap cannot be repaired in

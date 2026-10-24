@@ -52,11 +52,12 @@ type sessionConfig struct {
 // else. That is how the reorder buffer came to be disabled in the only mode
 // that runs in production.
 const (
-	// The floor is what a camera on the same network needs; the ceiling is what
-	// one on another continent needs, where a NACK round trip runs to a few
-	// hundred milliseconds. The wait sits wherever measured repairs put it, so
-	// a nearby camera never pays for a distant one.
-	defaultReorderWait  = 50 * time.Millisecond
+	// Every repair comes from Ring's media servers, never from the camera on
+	// the LAN, and those NACK round trips measure 80-120ms. The floor sits just
+	// above that so the first gaps of a session, before any repair has been
+	// measured, are not given up early. The ceiling is what a camera on another
+	// continent needs. The wait sits wherever measured repairs put it.
+	defaultReorderWait  = 150 * time.Millisecond
 	defaultReorderMax   = 400 * time.Millisecond
 	defaultReorderDepth = 512
 )
