@@ -57,20 +57,21 @@ item exists to solve a specific, observed failure; none of it is speculative.
    **not** a fixed value: it is estimated from measured repair latency the way TCP
    estimates a retransmission timeout (RFC 6298, mean + 4×variance), bounded
    between a floor and a ceiling (`-reorder-wait` / `-reorder-max`, default
-   50 ms–400 ms). A camera on the LAN sits at the floor and adds no latency; a
-   camera on another continent, where a NACK round trip runs to a few hundred
-   milliseconds, climbs toward the ceiling only as far as its repairs actually
-   need. In-order packets are released immediately, so there is no steady-state
-   latency cost — the wait applies only while a gap is open.
+   150 ms–400 ms). Repairs always come from Ring's media servers over the WAN, so
+   the floor sits just above a typical NACK round trip; a more distant path climbs
+   toward the ceiling only as far as its repairs actually need. In-order packets
+   are released immediately, so there is no steady-state latency cost — the wait
+   applies only while a gap is open.
 
-8. **Loss resync to a keyframe** (`resync.go`). When a gap cannot be repaired in
-   time, resuming at the next access-unit boundary is not enough: every frame
-   after the gap references pictures that went missing with it, and a hardware
-   decoder handed those dies rather than degrading. ringstream instead drops
-   everything until the next keyframe — the same thing a browser does with the
-   same loss. The cost is a freeze of up to one GOP; the alternative is a decoder
-   that never recovers. Sequence numbers are never rewritten, so consumers that
-   handle loss themselves still see the gap and discard the damaged frame.
+8. **Frame assembly and PLI resync** (`resync.go`). Packets of the current access
+   unit are held until its slice completes, so a gap midway through a fragmented
+   slice or parameter-set run discards the damaged frame whole rather than leaving
+   its leading fragments in the RTSP stream (which locks up hardware H.265
+   decoders). When a gap cannot be repaired in time, `ringstream` immediately
+   requests a fresh keyframe via RTCP PLI (rate-limited) and holds output until a
+   complete keyframe arrives — the same recovery a browser performs. Sequence
+   numbers are never rewritten, so consumers that track loss themselves still see
+   the gap across dropped frames.
 
 9. **A/V timestamp synchronisation** (`rtcpclock.go`). Video (90 kHz) and Opus
    (48 kHz) count from independent random offsets; nothing in the RTP header

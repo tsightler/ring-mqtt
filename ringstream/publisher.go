@@ -26,7 +26,6 @@ type publisher struct {
 
 	mu      sync.Mutex
 	stopped bool
-	rs      videoResync
 }
 
 type videoSpec struct {
@@ -45,10 +44,6 @@ type audioSpec struct {
 
 func newPublisher(lg *log.Logger, url string, v *videoSpec, a *audioSpec) (*publisher, error) {
 	p := &publisher{lg: orDefault(lg)}
-	p.rs.lg = p.lg
-	if v != nil {
-		p.rs.h265 = v.h265
-	}
 	video, audio, err := buildMedias(v, a)
 	if err != nil {
 		return nil, err
@@ -100,12 +95,6 @@ func (p *publisher) write(m *description.Media, pkt *rtp.Packet, ntp time.Time) 
 	defer p.mu.Unlock()
 	if p.stopped {
 		return nil
-	}
-
-	if m == p.video {
-		if pkt = p.rs.filter(pkt); pkt == nil {
-			return nil
-		}
 	}
 
 	if err := p.client.WritePacketRTPWithNTP(m, sanitize(pkt), ntp); err != nil {

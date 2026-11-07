@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"log"
 	"testing"
+	"time"
 
 	"github.com/pion/rtp"
 )
@@ -26,6 +27,21 @@ func rpkt(seq uint16, nalType byte) *rtp.Packet {
 	}
 }
 
+// fupkt builds an HEVC fragmentation unit packet carrying a slice of innerType.
+func fupkt(seq uint16, innerType byte, start, end, marker bool) *rtp.Packet {
+	fuHdr := innerType & 0x3F
+	if start {
+		fuHdr |= 0x80
+	}
+	if end {
+		fuHdr |= 0x40
+	}
+	return &rtp.Packet{
+		Header:  rtp.Header{SequenceNumber: seq, Marker: marker, Timestamp: 9000},
+		Payload: []byte{h265FU << 1, 1, fuHdr, 0xAA},
+	}
+}
+
 const (
 	nalP  = 1       // predicted slice, not a random access point
 	nalKF = h265VPS // starts a parameter set run, which is
@@ -35,7 +51,7 @@ const (
 func feed(r *videoResync, in []*rtp.Packet) []uint16 {
 	var out []uint16
 	for _, p := range in {
-		if got := r.filter(p); got != nil {
+		for _, got := range r.push(p) {
 			out = append(out, got.SequenceNumber)
 		}
 	}
@@ -84,7 +100,7 @@ func TestResyncWaitsForAKeyframeAfterAGap(t *testing.T) {
 func TestResyncResumesOnAnIRAPSlice(t *testing.T) {
 	r := quietResync()
 	got := feed(r, []*rtp.Packet{
-		rpkt(1, nalKF) /* 2 lost */, rpkt(3, nalP), rpkt(4, nalI), rpkt(5, nalP),
+		rpkt(1, nalI) /* 2 lost */, rpkt(3, nalP), rpkt(4, nalI), rpkt(5, nalP),
 	})
 	eqSeq(t, got, 1, 4, 5)
 }
@@ -138,11 +154,103 @@ func TestResyncHandlesSequenceWraparound(t *testing.T) {
 func TestResyncStaysShutWithoutAKeyframe(t *testing.T) {
 	r := quietResync()
 	got := feed(r, []*rtp.Packet{
-		rpkt(1, nalKF), /* 2 lost */
+		rpkt(1, nalI), /* 2 lost */
 		rpkt(3, nalP), rpkt(4, nalP), rpkt(5, nalP), rpkt(6, nalP),
 	})
 	eqSeq(t, got, 1)
 	if _, _, disc := r.counts(); disc != 4 {
 		t.Fatalf("discarded=%d, want 4", disc)
+	}
+}
+
+// Hardware H.265 decoders lock up if handed the leading fragments of a frame
+// whose tail went missing. Holding the frame until its final fragment arrives
+// ensures the damaged frame is discarded whole.
+func TestResyncDiscardsIncompleteFragmentedFrameOnGap(t *testing.T) {
+	r := quietResync()
+	got := feed(r, []*rtp.Packet{
+		rpkt(1, nalI),
+		// A 3-packet fragmented P-frame (2, 3, 4) where packet 3 is lost:
+		fupkt(2, nalP, true, false, false),
+		/* 3 lost */
+		fupkt(4, nalP, false, true, true),
+		// Next complete keyframe:
+		rpkt(5, h265VPS), rpkt(6, h265SPS), rpkt(7, h265PPS),
+		fupkt(8, nalI, true, false, false),
+		fupkt(9, nalI, false, true, true),
+	})
+	// Packet 2 (the start of the broken P-frame) must never have been emitted.
+	eqSeq(t, got, 1, 5, 6, 7, 8, 9)
+}
+
+// Losing a packet midway through a recovery keyframe (e.g. PPS lost between
+// SPS and IDR, or a fragment of the IDR lost) must discard the partial keyframe
+// rather than emit half of it to the decoder.
+func TestResyncDiscardsIncompleteKeyframeRunOnGap(t *testing.T) {
+	r := quietResync()
+	got := feed(r, []*rtp.Packet{
+		rpkt(1, nalI),
+		/* 2 lost */
+		rpkt(3, nalP),
+		// First recovery attempt loses PPS (seq 6) right before the IDR slice:
+		rpkt(4, h265VPS), rpkt(5, h265SPS), /* 6 (PPS) lost */
+		rpkt(7, nalI),
+		rpkt(8, nalP),
+		// Second recovery attempt is complete:
+		rpkt(9, h265VPS), rpkt(10, h265SPS), rpkt(11, h265PPS), rpkt(12, nalI),
+	})
+	eqSeq(t, got, 1, 9, 10, 11, 12)
+}
+
+// If VPS was the packet lost in the gap, arriving SPS and PPS packets belong to
+// an incomplete parameter-set run and must not open the gate early.
+func TestResyncIgnoresOrphanedSPSAndPPSWhenVPSLost(t *testing.T) {
+	r := quietResync()
+	got := feed(r, []*rtp.Packet{
+		rpkt(1, nalI),
+		/* 2 (VPS) lost */
+		rpkt(3, h265SPS), rpkt(4, h265PPS), rpkt(5, nalP),
+		rpkt(6, h265VPS), rpkt(7, h265SPS), rpkt(8, h265PPS), rpkt(9, nalI),
+	})
+	eqSeq(t, got, 1, 6, 7, 8, 9)
+}
+
+// When a gap cannot be repaired, resync must request a keyframe immediately via
+// PLI and retry at the configured interval until a complete keyframe arrives.
+func TestResyncRequestsPLIOnLossAndRetriesWithRateLimit(t *testing.T) {
+	plis := 0
+	r := quietResync()
+	r.onLoss = func() { plis++ }
+
+	now := time.Now()
+	r.pushAt(rpkt(1, nalI), now)
+	if plis != 0 {
+		t.Fatalf("plis=%d on clean stream, want 0", plis)
+	}
+
+	// Gap at seq 3 triggers an immediate PLI.
+	r.pushAt(rpkt(3, nalP), now)
+	if plis != 1 {
+		t.Fatalf("plis=%d on initial gap, want 1", plis)
+	}
+
+	// Packets arriving inside the cooldown window must not flood PLIs.
+	r.pushAt(rpkt(4, nalP), now.Add(50*time.Millisecond))
+	r.pushAt(rpkt(5, nalP), now.Add(200*time.Millisecond))
+	if plis != 1 {
+		t.Fatalf("plis=%d during cooldown, want 1", plis)
+	}
+
+	// Still waiting after the retry interval: send another PLI.
+	r.pushAt(rpkt(6, nalP), now.Add(pliRetryInterval+10*time.Millisecond))
+	if plis != 2 {
+		t.Fatalf("plis=%d after retry interval, want 2", plis)
+	}
+
+	// Complete keyframe recovers; subsequent P-frames do not trigger PLIs.
+	r.pushAt(rpkt(7, nalI), now.Add(400*time.Millisecond))
+	r.pushAt(rpkt(8, nalP), now.Add(800*time.Millisecond))
+	if plis != 2 {
+		t.Fatalf("plis=%d after recovery, want 2", plis)
 	}
 }

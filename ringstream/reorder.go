@@ -151,6 +151,14 @@ func (b *reorderBuffer) rememberAbandoned(start, end uint16, openedAt time.Time)
 	}
 }
 
+// seed sets the next expected sequence number from the startup burst, so a
+// packet arriving out of order immediately after the opening keyframe replay
+// is held for its predecessor rather than taken as a brand new stream start.
+func (b *reorderBuffer) seed(next uint16) {
+	b.started = true
+	b.next = next
+}
+
 // push takes an arriving packet and returns whatever is now ready to forward, in
 // sequence order.
 func (b *reorderBuffer) push(pkt *rtp.Packet, now time.Time) []*rtp.Packet {

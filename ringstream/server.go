@@ -83,7 +83,6 @@ type servedStream struct {
 	// pinned keeps a camera running with nothing watching it, which is what the
 	// MQTT stream switch asks for when it is turned on directly.
 	pinned bool
-	rs     videoResync
 	lg     *log.Logger
 }
 
@@ -232,10 +231,6 @@ func (s *streamServer) run(ss *servedStream) {
 		}
 		ss.mu.Lock()
 		ss.stream, ss.video, ss.audio = stream, video, audio
-		ss.rs.lg = ss.lg
-		if v != nil {
-			ss.rs.h265 = v.h265
-		}
 		ss.mu.Unlock()
 
 		ss.finish(nil)
@@ -275,9 +270,6 @@ func (ss *servedStream) writeVideo(pkt *rtp.Packet, ntp time.Time) error {
 	ss.mu.Lock()
 	defer ss.mu.Unlock()
 	if ss.stream == nil || ss.video == nil {
-		return nil
-	}
-	if pkt = ss.rs.filter(pkt); pkt == nil {
 		return nil
 	}
 	return ss.stream.WritePacketRTPWithNTP(ss.video, sanitize(pkt), ntp)

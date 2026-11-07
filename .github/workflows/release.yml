@@ -5,33 +5,87 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      force:
+        description: 'Force build even if version release already exists'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
   packages: write
 
 jobs:
-  build-and-release:
+  check-version:
     runs-on: ubuntu-latest
+    outputs:
+      should_build: ${{ steps.check.outputs.should_build }}
+      version: ${{ steps.check.outputs.version }}
+      build_date: ${{ steps.check.outputs.build_date }}
+      image_ghcr: ${{ steps.check.outputs.image_ghcr }}
+      image_hub: ${{ steps.check.outputs.image_hub }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Get version and build metadata
-        id: meta
+      - name: Check if version changed
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION=$(node -p "require('./package.json').version")
           BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
           IMAGE_LC=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          TAG="v${VERSION}"
+
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
           echo "build_date=${BUILD_DATE}" >> "$GITHUB_OUTPUT"
-          echo "image=ghcr.io/${IMAGE_LC}" >> "$GITHUB_OUTPUT"
+          echo "image_ghcr=ghcr.io/${IMAGE_LC}" >> "$GITHUB_OUTPUT"
+          echo "image_hub=${IMAGE_LC}" >> "$GITHUB_OUTPUT"
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            if [ "${{ inputs.force }}" = "true" ]; then
+              echo "Manual trigger with force=true. Proceeding with build."
+              echo "should_build=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
+
+          if gh release view "${TAG}" >/dev/null 2>&1; then
+            echo "Release ${TAG} already exists. Version ${VERSION} has already been released."
+            if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+              echo "Use the 'force' input if you want to rebuild an existing release."
+            fi
+            echo "should_build=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "New version detected: ${TAG} does not exist yet. Proceeding with build and release."
+            echo "should_build=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  build-and-release:
+    needs: check-version
+    if: needs.check-version.outputs.should_build == 'true'
+    runs-on: ubuntu-latest
+    env:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        if: env.DOCKERHUB_USERNAME != '' && env.DOCKERHUB_TOKEN != ''
+        uses: docker/login-action@v3
+        with:
+          username: ${{ env.DOCKERHUB_USERNAME }}
+          password: ${{ env.DOCKERHUB_TOKEN }}
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -40,25 +94,32 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Determine Docker tags
+        id: tags
+        run: |
+          TAGS="${{ needs.check-version.outputs.image_ghcr }}:${{ needs.check-version.outputs.version }},${{ needs.check-version.outputs.image_ghcr }}:latest"
+          if [ -n "${DOCKERHUB_USERNAME}" ] && [ -n "${DOCKERHUB_TOKEN}" ]; then
+            TAGS="${TAGS},${{ needs.check-version.outputs.image_hub }}:${{ needs.check-version.outputs.version }},${{ needs.check-version.outputs.image_hub }}:latest"
+          fi
+          echo "tags=${TAGS}" >> "$GITHUB_OUTPUT"
+
       - name: Build and push container image
         uses: docker/build-push-action@v6
         with:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: |
-            ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.version }}
-            ${{ steps.meta.outputs.image }}:latest
+          tags: ${{ steps.tags.outputs.tags }}
           build-args: |
-            BUILD_VERSION=${{ steps.meta.outputs.version }}
-            BUILD_DATE=${{ steps.meta.outputs.build_date }}
+            BUILD_VERSION=${{ needs.check-version.outputs.version }}
+            BUILD_DATE=${{ needs.check-version.outputs.build_date }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VERSION: ${{ steps.meta.outputs.version }}
+          VERSION: ${{ needs.check-version.outputs.version }}
         run: |
           TAG="v${VERSION}"
           if gh release view "${TAG}" >/dev/null 2>&1; then
@@ -105,7 +166,7 @@ jobs:
       - name: Verify container image is publicly accessible
         env:
           IMAGE_REPO: ${{ github.repository }}
-          VERSION: ${{ steps.meta.outputs.version }}
+          VERSION: ${{ needs.check-version.outputs.version }}
         run: |
           REPO_LC=$(echo "${IMAGE_REPO}" | tr '[:upper:]' '[:lower:]')
           TOKEN=$(curl -fsSL "https://ghcr.io/token?scope=repository:${REPO_LC}:pull" | node -e '
@@ -142,8 +203,8 @@ jobs:
 
       - name: Update Home Assistant addon repository
         env:
-          VERSION: ${{ steps.meta.outputs.version }}
-          IMAGE: ${{ steps.meta.outputs.image }}
+          VERSION: ${{ needs.check-version.outputs.version }}
+          IMAGE: ${{ needs.check-version.outputs.image_ghcr }}
         run: |
           node -e '
             const fs = require("fs");
@@ -187,4 +248,3 @@ jobs:
           git add config.yaml CHANGELOG.md
           git commit -m "Release v${VERSION}"
           git push origin main
-

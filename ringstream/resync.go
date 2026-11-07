@@ -2,106 +2,204 @@ package main
 
 import (
 	"log"
+	"time"
 
 	"github.com/pion/rtp"
 )
 
-// videoResync drops the remainder of an access unit once packets belonging to it
-// have gone missing, so that nothing downstream is handed a frame it cannot
-// assemble in full.
+const (
+	// pliRetryInterval bounds how often we ask Ring for a keyframe while waiting
+	// to recover from an unrepairable gap, matching Chrome's PLI pacing so a
+	// burst of lost packets does not flood the sender with keyframe requests.
+	pliRetryInterval = 300 * time.Millisecond
+
+	// maxFramePackets caps how many packets a single access unit may accumulate
+	// before being flushed as a safety bound.
+	maxFramePackets = 512
+)
+
+// videoResync assembles complete access units and, when a sequence gap cannot
+// be repaired by the reorder buffer, discards any partial frame, requests an
+// immediate keyframe via RTCP PLI, and holds output until a complete keyframe
+// arrives.
 //
-// A visible gap on its own is survivable: a consumer that sees one discards what
-// it was assembling and picks up at the next frame. The danger is a consumer
-// that cannot see it. ffmpeg re-packetizes with its own contiguous sequence
-// numbers, so a frame that reached it incomplete leaves it as a structurally
-// perfect RTP stream carrying a corrupt access unit. Everything after that
-// believes the frame is whole, hands it to a hardware decoder, and the decoder
-// does not survive it -- while no counter anywhere reports loss, because by that
-// point there is none. A single dropped packet has been enough to end a session.
+// Emitting packets one by one before a frame is complete means a gap midway
+// through a fragmented slice (or midway through a VPS/SPS/PPS/IDR keyframe run)
+// leaves the first half of the broken frame already written to the RTSP stream.
+// Hardware H.265 decoders handed a truncated slice or a predicted frame that
+// references a missing picture can lock up rather than conceal the error.
+// Holding each access unit until its slice finishes guarantees downstream
+// decoders only ever see complete frames, while firing a PLI on loss recovers
+// within one round trip (~100ms) instead of waiting out Ring's 2-second GOP.
 //
-// Dropping forward to the next access unit boundary costs the damaged frame,
-// which was unusable anyway, and nothing else.
-//
-// Sequence numbers are deliberately not rewritten. Closing the gap would hide
-// the loss from consumers that do handle it correctly, which is worse than
-// leaving it visible.
+// Sequence numbers are deliberately not rewritten so downstream RTP consumers
+// still see the gap across dropped frames.
 //
 // Not internally synchronised: callers already serialise their writes.
 type videoResync struct {
-	lg   *log.Logger
-	h265 bool
+	lg     *log.Logger
+	h265   bool
+	onLoss func()
 
 	have    bool
 	lastSeq uint16
 
-	// dropping runs from the moment a gap is seen to the end of the access unit
-	// it damaged.
+	// dropping runs from the moment an unrecovered gap is seen until a complete
+	// keyframe access unit has been reassembled.
 	dropping     bool
 	gapSeq       uint16
 	runDiscarded uint64
+	lastPLI      time.Time
+
+	// frame holds the contiguous packets of the current access unit until its
+	// slice completes, so a gap midway through a frame discards the whole frame
+	// rather than leaving its leading fragments in the stream.
+	frame []*rtp.Packet
+	inFU  bool
 
 	gaps      uint64
 	late      uint64
 	discarded uint64
 }
 
-// filter returns the packet to forward, or nil to drop it.
-func (r *videoResync) filter(pkt *rtp.Packet) *rtp.Packet {
+func (r *videoResync) discardFrame() uint64 {
+	n := uint64(len(r.frame))
+	if n > 0 {
+		r.discarded += n
+		r.runDiscarded += n
+		r.frame = r.frame[:0]
+	}
+	r.inFU = false
+	return n
+}
+
+func (r *videoResync) requestPLI(now time.Time) {
+	if r.onLoss == nil {
+		return
+	}
+	if !r.lastPLI.IsZero() && now.Sub(r.lastPLI) < pliRetryInterval {
+		return
+	}
+	r.lastPLI = now
+	r.onLoss()
+}
+
+// push feeds the next packet from the stream and returns the packets of a
+// completed frame ready to forward, or nil while still assembling or dropping.
+func (r *videoResync) push(pkt *rtp.Packet) []*rtp.Packet {
+	return r.pushAt(pkt, time.Now())
+}
+
+func (r *videoResync) pushAt(pkt *rtp.Packet, now time.Time) []*rtp.Packet {
+	info := inspectPayload(pkt.Payload, r.h265)
+
 	if !r.have {
 		r.have, r.lastSeq = true, pkt.SequenceNumber
-		return pkt
+	} else {
+		delta := pkt.SequenceNumber - r.lastSeq
+
+		// Behind the stream position: a retransmission that arrived after the
+		// reorder buffer gave up on it, or a plain duplicate.
+		if delta == 0 || delta >= 0x8000 {
+			r.late++
+			if r.late == 1 && r.lg != nil {
+				r.lg.Printf("video: dropping packets that arrive behind the stream position, seq %d is behind %d",
+					pkt.SequenceNumber, r.lastSeq)
+			}
+			return nil
+		}
+
+		r.lastSeq = pkt.SequenceNumber
+
+		if delta > 1 {
+			hadPartial := len(r.frame) > 0
+			flushed := r.discardFrame()
+			if !r.dropping {
+				r.gaps++
+				r.dropping = true
+				r.gapSeq = pkt.SequenceNumber
+				r.runDiscarded = flushed
+			}
+			r.requestPLI(now)
+
+			// If we were midway through assembling a frame (for instance VPS+SPS
+			// had arrived and PPS was lost right before the IDR slice), a packet
+			// immediately after the gap that does not begin a fresh parameter-set
+			// run belongs to the damaged access unit and must be discarded too.
+			if hadPartial && !info.startsParamRun {
+				r.discarded++
+				r.runDiscarded++
+				return nil
+			}
+		}
 	}
 
-	delta := pkt.SequenceNumber - r.lastSeq
-
-	// Behind the stream position: a retransmission answering a NACK, or a plain
-	// duplicate. Whatever it repairs, the consumer has already moved past the
-	// frame it belonged to, so feeding it in now only destroys the frame being
-	// assembled now. It must also not be mistaken for a gap.
-	if delta == 0 || delta >= 0x8000 {
-		r.late++
-		if r.late == 1 {
-			r.lg.Printf("video: dropping packets that arrive behind the stream position, seq %d is behind %d",
-				pkt.SequenceNumber, r.lastSeq)
+	// Verify fragmentation unit continuity even when sequence numbers are
+	// contiguous, so a malformed stream cannot leave an FU half-open.
+	if r.inFU {
+		if !info.isFU || info.fuStart {
+			flushed := r.discardFrame()
+			if !r.dropping {
+				r.gaps++
+				r.dropping = true
+				r.gapSeq = pkt.SequenceNumber
+				r.runDiscarded = flushed
+			}
+			r.requestPLI(now)
 		}
+	} else if info.isFU && !info.fuStart {
+		// Middle or end fragment of an FU whose start was never seen.
+		flushed := r.discardFrame()
+		if !r.dropping {
+			r.gaps++
+			r.dropping = true
+			r.gapSeq = pkt.SequenceNumber
+			r.runDiscarded = flushed
+		}
+		r.discarded++
+		r.runDiscarded++
+		r.requestPLI(now)
 		return nil
 	}
 
-	if delta > 1 && !r.dropping {
-		r.gaps++
-		r.dropping = true
-		r.gapSeq = pkt.SequenceNumber
-		r.runDiscarded = 0
+	if r.dropping {
+		if len(r.frame) == 0 {
+			if !info.startsRAP {
+				r.discarded++
+				r.runDiscarded++
+				r.requestPLI(now)
+				return nil
+			}
+		} else if info.startsParamRun {
+			// A new parameter-set run supersedes an earlier incomplete one.
+			r.discardFrame()
+		}
 	}
 
-	r.lastSeq = pkt.SequenceNumber
+	r.frame = append(r.frame, pkt)
+	r.inFU = info.isFU && !info.fuEnd
 
-	if !r.dropping {
-		return pkt
+	complete := !r.inFU && ((info.isVCL && (!info.isFU || pkt.Header.Marker || pkt.Timestamp == 0)) || len(r.frame) >= maxFramePackets)
+	if !complete {
+		return nil
 	}
 
-	// Resuming at the next access unit boundary is not enough: every frame after
-	// a gap references pictures that went missing with it, and a hardware decoder
-	// handed those dies rather than degrading. A browser given the same gap waits
-	// for a keyframe instead, which is why it survives loss that ends a session
-	// here. Wait for one too. The cost is a freeze of up to one GOP, which is what
-	// a browser shows in the same situation.
-	if isRandomAccessPoint(pkt.Payload, r.h265) {
+	if r.dropping {
 		r.dropping = false
-		if r.gaps <= 10 || r.gaps%100 == 0 {
+		r.lastPLI = time.Time{}
+		if r.lg != nil && (r.gaps <= 10 || r.gaps%100 == 0) {
 			r.lg.Printf("video: gap at seq %d, discarded %d packets waiting for a keyframe (%d gaps, %d late so far)",
 				r.gapSeq, r.runDiscarded, r.gaps, r.late)
 		}
-		return pkt
 	}
 
-	r.discarded++
-	r.runDiscarded++
-	return nil
+	out := append([]*rtp.Packet(nil), r.frame...)
+	r.frame = r.frame[:0]
+	return out
 }
 
 // counts reports gaps seen, packets dropped for arriving late, and packets
-// discarded to reach an access unit boundary.
+// discarded while waiting for a complete keyframe.
 func (r *videoResync) counts() (gaps, late, discarded uint64) {
 	return r.gaps, r.late, r.discarded
 }

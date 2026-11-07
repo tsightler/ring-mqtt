@@ -292,3 +292,17 @@ func TestReorderBudgetRespectsTheFloor(t *testing.T) {
 		t.Fatalf("budget %v, want it held at the 80ms floor", got)
 	}
 }
+
+// Seeding from the startup burst ensures a packet arriving out of order right
+// after the opening keyframe replay is held for its predecessor rather than
+// mistaken for the first packet of the session.
+func TestReorderSeedHoldsOutOfOrderAfterStartupBurst(t *testing.T) {
+	b := quietReorder(100*time.Millisecond, 64)
+	now := time.Now()
+	b.seed(501)
+
+	if out := b.push(pkt(502, false), now); out != nil {
+		t.Fatalf("forwarded %v while 501 was still missing", seqs(out))
+	}
+	eq(t, seqs(b.push(pkt(501, false), now.Add(20*time.Millisecond))), 501, 502)
+}

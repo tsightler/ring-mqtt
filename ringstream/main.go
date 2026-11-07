@@ -353,6 +353,32 @@ collect:
 		}, nil)
 	}
 
+	// Ring sends parameter sets only with a keyframe and its GOP is two seconds,
+	// so asking for a keyframe via PLI is what gets one promptly both at startup
+	// and whenever an unrepairable packet gap forces a resync.
+	requestKeyFrame := func() bool {
+		if err := pc.WriteRTCP([]rtcp.Packet{&rtcp.PictureLossIndication{
+			MediaSSRC: uint32(video.SSRC()),
+		}}); err != nil {
+			cfg.lg.Printf("keyframe request: %v", err)
+			return false
+		}
+		return true
+	}
+
+	resync := &videoResync{
+		lg:     cfg.lg,
+		h265:   h265,
+		onLoss: func() { _ = requestKeyFrame() },
+	}
+
+	var videoReorder *reorderBuffer
+	if cfg.reorderWait > 0 {
+		videoReorder = newReorderBuffer(cfg.lg, "video", cfg.reorderWait, cfg.reorderMax, cfg.reorderDepth)
+		cfg.lg.Printf("holding video gaps open for %s to %s, adapting to how long repairs take",
+			cfg.reorderWait, cfg.reorderMax)
+	}
+
 	var (
 		pub                    sink
 		writeVideo, writeAudio func(*rtp.Packet, time.Time) error
@@ -367,11 +393,7 @@ collect:
 
 		// Ask for a keyframe: Ring sends parameter sets only alongside one, and
 		// its GOP is two seconds, so waiting for the next costs that long.
-		if err := pc.WriteRTCP([]rtcp.Packet{&rtcp.PictureLossIndication{
-			MediaSSRC: uint32(video.SSRC()),
-		}}); err != nil {
-			cfg.lg.Printf("keyframe request: %v", err)
-		}
+		_ = requestKeyFrame()
 
 		// Ring hands over a pre-roll backlog when a session opens, several seconds
 		// of it on a doorbell. Anchoring on the first parameter set run in that
@@ -443,7 +465,16 @@ collect:
 		// sending meanwhile and pion buffers it, so the wait costs nothing.
 		pub.waitReady(5 * time.Second)
 
-		writeVideo, writeAudio = pub.writeVideo, pub.writeAudio
+		rawWriteVideo := pub.writeVideo
+		writeVideo = func(pkt *rtp.Packet, _ time.Time) error {
+			for _, p := range resync.push(pkt) {
+				if err := rawWriteVideo(p, videoClock.at(p.Timestamp)); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+		writeAudio = pub.writeAudio
 
 		// held begins at a parameter set run and carries the keyframe that follows
 		// it, so the consumer already has a complete starting point and the pump
@@ -458,8 +489,20 @@ collect:
 				break
 			}
 		}
+		if len(held) > 0 && videoReorder != nil {
+			videoReorder.seed(held[len(held)-1].SequenceNumber + 1)
+		}
 	} else {
-		writeVideo, writeAudio = relay.writeVideo, relay.writeAudio
+		rawWriteVideo := relay.writeVideo
+		writeVideo = func(pkt *rtp.Packet, _ time.Time) error {
+			for _, p := range resync.push(pkt) {
+				if err := rawWriteVideo(p, videoClock.at(p.Timestamp)); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+		writeAudio = relay.writeAudio
 	}
 
 	if writeVideo == nil {
@@ -572,27 +615,6 @@ collect:
 		}
 	}
 
-	// Ring sends parameter sets only with a keyframe and its GOP is two seconds,
-	// while the consumer needs a moment to bind its sockets, so the keyframe that
-	// happens to be in flight at startup is usually lost. Ask for fresh ones,
-	// which is what ring-mqtt did with "request a key frame now that ffmpeg is
-	// ready to receive". Without this the decoder is blind until the next IDR.
-	requestKeyFrame := func() bool {
-		if err := pc.WriteRTCP([]rtcp.Packet{&rtcp.PictureLossIndication{
-			MediaSSRC: uint32(video.SSRC()),
-		}}); err != nil {
-			cfg.lg.Printf("keyframe request: %v", err)
-			return false
-		}
-		return true
-	}
-
-	var videoReorder *reorderBuffer
-	if cfg.reorderWait > 0 {
-		videoReorder = newReorderBuffer(cfg.lg, "video", cfg.reorderWait, cfg.reorderMax, cfg.reorderDepth)
-		cfg.lg.Printf("holding video gaps open for %s to %s, adapting to how long repairs take",
-			cfg.reorderWait, cfg.reorderMax)
-	}
 	goSafe(cfg.lg, "video pump", func() { pump(video, writeVideo, videoStats, videoClock, videoReorder, true) }, shutdown)
 	if audio != nil {
 		goSafe(cfg.lg, "audio pump", func() { pump(audio, writeAudio, audioStats, audioClock, nil, false) }, shutdown)

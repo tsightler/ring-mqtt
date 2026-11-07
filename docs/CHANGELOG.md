@@ -1,30 +1,15 @@
 ## v6.0.0
-This new major version of ring-mqtt includes an entirely re-written video
-streaming pipline using a custom Ring WebRTC-to-RTSP gateway service written
-in go that provides support for native H.265 2K/4K streams and overall higher
-bitrates while using significantly less CPU and memory resources on the host.
+This new major version of ring-mqtt includes an entirely re-written video streaming pipline using a custom Ring WebRTC-to-RTSP gateway service written in go that provides support for native H.265 2K/4K streams and overall higher bitrates while using significantly less CPU and memory resources on the host.
 
-Camera devices will expose a new Video Mode selector in the device configuration
-section. When upgrading this setting will default to `Compatible`, which
-will continue to use H.264 streams for all cameras as with previous version,
-however, users can choose to switch to `Optimal` which will attempt to negotiate
-H.265 on cameras that support it.
+Camera devices will expose a new Video Mode selector in the device configuration section. When upgrading this setting will default to `Compatible`, which will continue to use H.264 streams for all cameras as with previous version, however, users can choose to switch to `Optimal` which will attempt to negotiate H.265 on cameras that support it.
 
-While native H.265 provides the absolute best video quality, it's important
-to note that playback support depends entirely on the combination of browser and
-OS capability.  Many combinations, such as Chrome on Windows, depend on hardware
-H.265 decoders which are much more sensitive to packet loss.  The video
-pipeline in ringstream attemps to detect any malformed RTP packets and forward
-only complete frames, but the translation from WebRTC to RTSP creates unique
-challenges which make it impossible to be as reliable as the native WebRTC
-stream playing directly from Ring to the browser.  If you have issues using
-H.265, reverting to the "Compatible" video mode is the best solution.
+While native H.265 provides the absolute best video quality, it's important to note that playback support depends entirely on the combination of browser and OS capability.  Not all browsers support H.265 (Edge/Firefox), while some other combinations (Chrome on Windows/Linux) depend on hardware decoders which are much more sensitive to packet loss.  
 
-In addition to the new stream protocols, the new code no longer depends on the
-upstream ring-client-api, The new local API implementation is simpler and has
-been modified to use newer Ring v3 API for location and device discovery which
-is required for some newer devices as well as the new shared permissions model
-for devices using shared locations/accounts.
+The new video pipeline attempts to detect any issues with the RTP stream that would cause decoding errors and not forward incomplete frames, but the translation from WebRTC to RTSP creates unique challenges which make it impossible to be as reliable as the native H.265 WebRTC stream playing directly from Ring to the browser.  If you have issues using H.265, reverting to the "Compatible" video mode is the best solution.
+
+Also, due to a bug in the H.265 handler in current versions of go2rtc, including the binary embedded into Home Assistant, the ring-mqtt addon repository now includes a patched version of go2rtc that must be used to support reliable streaming of H.265 videos.  It can be used as a drop in replacement for the native go2rtc, simple install the go2rtc-hevc-fix addon and modify the configure.yaml file to use the app version of go2rtc instead of the embedded one.  No other changes are required.  If go2rtc ever merges the h.265 PRs that have been submitted and HA ships that version, then this won't be needed anymore.
+
+In addition to the new stream protocols, the new code no longer depends on the upstream ring-client-api, The new local API implementation is simpler and has been modified to use newer Ring v3 API for location and device discovery which is required for some newer devices as well as the new shared permissions model for devices using shared locations/accounts.
 
 **New Features**
  - Support all known wired and battery Kidde Smoke and Smoke/CO alarm variants.
