@@ -210,8 +210,8 @@ export default class Chime extends RingPolledDevice {
         this.debug(`Received set snooze minutes to ${minutes} minutes`)
         if (isNaN(minutes)) {
             this.debug('Snooze minutes command received but value is not a number')
-        } else if (!(minutes >= 0 && minutes <= 32767)) {
-            this.debug('Snooze minutes command received but out of range (0-1440 minutes)')
+        } else if (!(minutes >= 1 && minutes <= 1440)) {
+            this.debug('Snooze minutes command received but out of range (1-1440 minutes)')
         } else {
             this.data.snooze_minutes = parseInt(minutes)
             this.mqttPublish(this.entity.snooze_minutes.state_topic, this.data.snooze_minutes.toString())

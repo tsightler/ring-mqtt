@@ -19,34 +19,10 @@ export default class Thermostat extends RingSocketDevice {
         }
 
         this.data = {
-            currentMode: (() => {
-                return this.device.data.mode === 'aux' ? 'heat' : this.device.data.mode
-            }),
             publishedMode: false,
-            fanMode: (() => {
-                return this.device.data.fanMode.replace(/^./, str => str.toUpperCase())
-            }),
-            presetMode: (() => {
-                return this.device.data.mode === 'aux' ? 'Auxillary' : 'None'
-            }),
-            setPoint: (() => {
-                return this.device.data.setPoint
-                    ? this.device.data.setPoint
-                    : this.temperatureSensor.data.celsius
-            }),
-            operatingMode: (() => {
-                return this.operatingStatus.data.operatingMode !== 'off'
-                    ? `${this.operatingStatus.data.operatingMode}ing`
-                    : this.device.data.mode === 'off'
-                        ? 'off'
-                        : this.device.data.fanMode === 'on' ? 'fan' : 'idle'
-            }),
-            temperature: (() => {
-                return this.temperatureSensor.data.celsius
-            }),
             ...this.entity.thermostat.modes.includes('auto')
                 ? {
-                    autoSetPointInProgress: false,
+                    setPointInProgress: false,
                     autoSetPoint: {
                         low: this.device.data.modeSetpoints.auto.setPoint-this.device.data.modeSetpoints.auto.deadBand,
                         high: this.device.data.modeSetpoints.auto.setPoint+this.device.data.modeSetpoints.auto.deadBand
@@ -70,12 +46,42 @@ export default class Thermostat extends RingSocketDevice {
         })
     }
 
+    get currentMode() {
+        return this.device.data.mode === 'aux' ? 'heat' : this.device.data.mode
+    }
+
+    get fanMode() {
+        return this.device.data.fanMode.replace(/^./, str => str.toUpperCase())
+    }
+
+    get presetMode() {
+        return this.device.data.mode === 'aux' ? 'Auxillary' : 'None'
+    }
+
+    get setPoint() {
+        return this.device.data.setPoint
+            ? this.device.data.setPoint
+            : this.temperatureSensor.data.celsius
+    }
+
+    get operatingMode() {
+        return this.operatingStatus.data.operatingMode !== 'off'
+            ? `${this.operatingStatus.data.operatingMode}ing`
+            : this.device.data.mode === 'off'
+                ? 'off'
+                : this.device.data.fanMode === 'on' ? 'fan' : 'idle'
+    }
+
+    get temperature() {
+        return this.temperatureSensor.data.celsius
+    }
+
     async publishState(data) {
         const isPublish = Boolean(data === undefined)
 
         this.publishModeAndSetpoints()
-        this.mqttPublish(this.entity.thermostat.fan_mode_state_topic, this.data.fanMode())
-        this.mqttPublish(this.entity.thermostat.preset_mode_state_topic, this.data.presetMode())
+        this.mqttPublish(this.entity.thermostat.fan_mode_state_topic, this.fanMode)
+        this.mqttPublish(this.entity.thermostat.preset_mode_state_topic, this.presetMode)
         this.publishOperatingMode()
 
         if (isPublish) { this.publishTemperature() }
@@ -83,7 +89,7 @@ export default class Thermostat extends RingSocketDevice {
     }
 
     publishModeAndSetpoints() {
-        const mode = this.data.currentMode()
+        const mode = this.currentMode
 
         // Publish new mode
         this.mqttPublish(this.entity.thermostat.mode_state_topic, mode)
@@ -103,7 +109,7 @@ export default class Thermostat extends RingSocketDevice {
                 this.mqttPublish(this.entity.thermostat.temperature_high_state_topic, this.data.autoSetPoint.high)
             }
         } else if (mode !== 'off') {
-            this.mqttPublish(this.entity.thermostat.temperature_state_topic, this.data.setPoint())
+            this.mqttPublish(this.entity.thermostat.temperature_state_topic, this.setPoint)
         }
 
         // Clear any unused setpoints from previous mode
@@ -125,11 +131,11 @@ export default class Thermostat extends RingSocketDevice {
     }
 
     publishOperatingMode() {
-        this.mqttPublish(this.entity.thermostat.action_topic, this.data.operatingMode())
+        this.mqttPublish(this.entity.thermostat.action_topic, this.operatingMode)
     }
 
     publishTemperature() {
-        this.mqttPublish(this.entity.thermostat.current_temperature_topic, this.data.temperature())
+        this.mqttPublish(this.entity.thermostat.current_temperature_topic, this.temperature)
     }
 
     // Process messages from MQTT command topic
@@ -180,7 +186,7 @@ export default class Thermostat extends RingSocketDevice {
     }
 
     async setSetPoint(value) {
-        const mode = this.data.currentMode()
+        const mode = this.currentMode
         switch(mode) {
             case 'off':
                 this.debug('Recevied set target temperature but current thermostat mode is off')
@@ -202,7 +208,7 @@ export default class Thermostat extends RingSocketDevice {
     }
 
     async setAutoSetPoint(value, type) {
-        const mode = this.data.currentMode()
+        const mode = this.currentMode
         switch(mode) {
             case 'auto':
                 if (isNaN(value)) {

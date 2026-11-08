@@ -91,15 +91,9 @@ export default class RingPolledDevice extends RingDevice {
     }
 
     getSearchQueryString(options) {
-        const queryString = Object.entries(options)
-            .map(([key, value]) => {
-            if (value === undefined) {
-                return '';
-            }
-            return `${key}=${value}`;
-        })
-            .filter((x) => x)
-            .join('&');
-        return queryString.length ? `?${queryString}` : '';
+        const params = new URLSearchParams(
+            Object.entries(options).filter(([, value]) => value !== undefined)
+        ).toString()
+        return params ? `?${params}` : ''
     }
 }

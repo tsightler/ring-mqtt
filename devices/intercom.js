@@ -1,6 +1,6 @@
 import RingPolledDevice from './base-polled-device.js'
 
-export default class Lock extends RingPolledDevice {
+export default class Intercom extends RingPolledDevice {
     constructor(deviceInfo) {
         super(deviceInfo, 'intercom')
         this.deviceData.mdl = 'Intercom'
@@ -162,7 +162,7 @@ export default class Lock extends RingPolledDevice {
             case 'lock':
                 if (this.data.lock.state === 'UNLOCKED') {
                     this.debug('Received lock door command, setting locked state')
-                    this.data.lock.state === 'LOCKED'
+                    this.data.lock.state = 'LOCKED'
                     this.publishLockState()
                 } else {
                     this.debug('Received lock door command, but door is already locked')

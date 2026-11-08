@@ -1,6 +1,7 @@
 import RingPolledDevice from './base-polled-device.js'
 import utils from '../lib/utils.js'
 import streamer from '../lib/streamer.js'
+import chalk from 'chalk'
 import { parseISO, addSeconds } from 'date-fns';
 
 // Approximates the slugify() Home Assistant uses to build entity ids from names:
@@ -40,19 +41,17 @@ export default class Camera extends RingPolledDevice {
                 person_name: null,
                 detection_enabled: null,
                 warning_enabled: null,
-                events: events.filter(event => event.event_type === 'motion'),
-                latestEventId: null
+                events: events.filter(event => event.event_type === 'motion')
             },
             ...this.device.isDoorbot ? {
                 ding: {
                     active_ding: false,
                     duration: savedState?.ding?.duration ? savedState.ding.duration : 180,
-                    publishedDurations: false,
+                    publishedDuration: false,
                     last_ding: null,
                     last_ding_expires: 0,
                     last_ding_time: null,
-                    events: events.filter(event => event.event_type === 'ding'),
-                    latestEventId: null
+                    events: events.filter(event => event.event_type === 'ding')
                 }
             } : {},
             snapshot: {
@@ -344,7 +343,6 @@ export default class Camera extends RingPolledDevice {
             this.data.motion.title = lastMotionEvent?.cv?.short_description || null
             this.data.motion.description = lastMotionEvent?.cv?.full_description || null
             this.data.motion.person_name = null
-            this.data.motion.latestEventId = lastMotionEvent.event_id
 
             // Try to get URL for most recent motion event, if it fails, assume there's no subscription
             let recordingUrl = false
@@ -361,6 +359,7 @@ export default class Camera extends RingPolledDevice {
         } else {
             this.debug('Unable to retrieve most recent motion event for this camera')
         }
+        delete this.data.motion.events
 
         // Get most recent ding event data
         if (this.device.isDoorbot) {
@@ -377,10 +376,10 @@ export default class Camera extends RingPolledDevice {
                 const lastDingDate = lastDingEvent?.start_time ? new Date(lastDingEvent.start_time) : false
                 this.data.ding.last_ding = lastDingDate ? Math.floor(lastDingDate/1000) : null
                 this.data.ding.last_ding_time = lastDingDate ? utils.getISOTime(lastDingDate) : null
-                this.data.ding.latestEventId = lastDingEvent.event_id
             } else {
                 this.debug('Unable to retrieve most recent ding event for this doorbell')
             }
+            delete this.data.ding.events
         }
 
         let stillImageUrlBase = 'localhost'
@@ -479,10 +478,10 @@ export default class Camera extends RingPolledDevice {
         }
 
         // Check for subscription to ding and motion events and attempt to resubscribe
-        if (this.device.isDoorbot && !this.device.data.subscribed === true) {
+        if (this.device.isDoorbot && this.device.data.subscribed !== true) {
             this.resubscribe('ding')
         }
-        if (!this.device.data.subscribed_motions === true) {
+        if (this.device.data.subscribed_motions !== true) {
             this.resubscribe('motion')
         }
     }
@@ -733,7 +732,7 @@ export default class Camera extends RingPolledDevice {
             this.mqttPublish(this.entity.snapshot_interval.state_topic, this.data.snapshot.intervalDuration.toString())
         } else {
             // Update snapshot frequency in case it's changed
-            if (this.data.snapshot.autoInterval && this.data.snapshot.intervalDuration !== this.device.data.settings.lite_24x7.frequency_secs) {
+            if (this.data.snapshot.autoInterval && this.device.operatingOnBattery && this.device.data.settings.lite_24x7?.enabled && this.data.snapshot.intervalDuration !== this.device.data.settings.lite_24x7.frequency_secs) {
                 this.data.snapshot.intervalDuration = this.device.data.settings.lite_24x7.frequency_secs
                 clearInterval(this.data.snapshot.intervalTimerId)
                 this.scheduleSnapshotRefresh()
@@ -926,7 +925,7 @@ export default class Camera extends RingPolledDevice {
             this.data.event_select.eventId = selectedEvent.event_id
 
             try {
-                const urlSearch = new URLSearchParams(recordingUrl)
+                const urlSearch = new URL(recordingUrl).searchParams
                 const amzExpires = Number(urlSearch.get('X-Amz-Expires'))
                 const amzDate = parseISO(urlSearch.get('X-Amz-Date'))
                 this.data.event_select.recordingUrlExpire = Date.parse(addSeconds(amzDate, amzExpires/3*2))
