@@ -179,7 +179,7 @@ func (r *videoResync) pushAt(pkt *rtp.Packet, now time.Time) []*rtp.Packet {
 	r.frame = append(r.frame, pkt)
 	r.inFU = info.isFU && !info.fuEnd
 
-	complete := !r.inFU && ((info.isVCL && (!info.isFU || pkt.Header.Marker || pkt.Timestamp == 0)) || len(r.frame) >= maxFramePackets)
+	complete := !r.inFU && ((info.isVCL && (pkt.Header.Marker || pkt.Timestamp == 0)) || len(r.frame) >= maxFramePackets)
 	if !complete {
 		return nil
 	}

@@ -85,6 +85,7 @@ func (s *trackStats) observe(pkt *rtp.Packet) {
 	if !s.haveFirst {
 		s.haveFirst = true
 		s.firstWall = time.Now()
+		s.lastReport = s.firstWall
 		s.firstTS = pkt.Timestamp
 	}
 	if pkt.Header.Padding {
@@ -160,10 +161,14 @@ func (s *trackStats) observe(pkt *rtp.Packet) {
 			s.nalAP++
 		case nal == 49:
 			s.nalFU++
-			// Only the first fragment names the type it is carrying.
-			if len(pkt.Payload) > 2 && pkt.Payload[2]&0x80 != 0 {
+			if len(pkt.Payload) > 2 {
 				inner := pkt.Payload[2] & 0x3F
-				s.nalTypes[inner]++
+				// Count one NAL unit per fragmentation run (on its start bit),
+				// and record the marker bit on whichever fragment closes the
+				// access unit.
+				if pkt.Payload[2]&0x80 != 0 {
+					s.nalTypes[inner]++
+				}
 				if pkt.Header.Marker {
 					s.nalMarked[inner]++
 				}

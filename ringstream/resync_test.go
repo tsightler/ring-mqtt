@@ -254,3 +254,31 @@ func TestResyncRequestsPLIOnLossAndRetriesWithRateLimit(t *testing.T) {
 		t.Fatalf("plis=%d after recovery, want 2", plis)
 	}
 }
+
+// Ring's HEVC encoder splits each frame into 3 slices and only sets the RTP
+// Marker bit on the final slice. If Slice 1 fits in a single NAL unit
+// (Marker=false) and Slice 2 or 3 is lost, Slice 1 must be discarded with the
+// rest of the incomplete frame rather than emitted prematurely.
+func TestResyncHoldsMultiSliceFrameUntilMarker(t *testing.T) {
+	slicePkt := func(seq uint16, nalType byte, marker bool) *rtp.Packet {
+		return &rtp.Packet{
+			Header:  rtp.Header{SequenceNumber: seq, Marker: marker, Timestamp: 9000},
+			Payload: []byte{nalType << 1, 1},
+		}
+	}
+
+	r := quietResync()
+	got := feed(r, []*rtp.Packet{
+		slicePkt(1, nalI, true),
+		// 3-slice P-frame where Slice 1 (seq 2) is a single NAL with Marker=false,
+		// Slice 2 (seq 3) is lost, and Slice 3 (seq 4) has Marker=true:
+		slicePkt(2, nalP, false),
+		/* 3 lost */
+		slicePkt(4, nalP, true),
+		// Recovery keyframe (3 slices, Marker on the 3rd):
+		slicePkt(5, nalI, false),
+		slicePkt(6, nalI, false),
+		slicePkt(7, nalI, true),
+	})
+	eqSeq(t, got, 1, 5, 6, 7)
+}
