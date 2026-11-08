@@ -55,6 +55,7 @@ export default class RingDevice {
 
         await this.attributeEntitiesReady
 
+        const currentTopics = []
         Object.keys(this.entity).forEach(entityKey => {
             const entity = this.entity[entityKey]
             const entityTopic = `${this.deviceTopic}/${entityKey}`
@@ -176,6 +177,7 @@ export default class RingDevice {
             }
 
             const configTopic = `homeassistant/${entity.component}/${this.locationId}/${this.deviceId}_${entityKey}/config`
+            currentTopics.push(configTopic)
             if (!this.entity[entityKey].hasOwnProperty('published')) {
                 this.debug(`HASS config topic: ${configTopic}`, 'disc')
                 // Don't write the alarm disarm code to the debug log
@@ -201,6 +203,16 @@ export default class RingDevice {
                 })
             }
         })
+
+        // Remove any previously published discovery topics for entities that no longer exist on this device
+        const previousTopics = state.getDeviceDiscoveryTopics(this.deviceId)
+        for (const oldTopic of previousTopics) {
+            if (!currentTopics.includes(oldTopic)) {
+                this.debug(`Removing stale HASS config topic: ${oldTopic}`, 'disc')
+                this.mqttPublish(oldTopic, '', false)
+            }
+        }
+        state.setDeviceDiscoveryTopics(this.deviceId, currentTopics)
 
         this.discoveryPublished = true
     }
