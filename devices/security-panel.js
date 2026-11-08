@@ -14,14 +14,14 @@ export default class SecurityPanel extends RingSocketDevice {
         this.data = {
             publishedState: this.ringModeToMqttState(),
             attributes: {
-                alarmClearedBy: '',
-                alarmClearedTime: '',
+                alarmClearedBy: null,
+                alarmClearedTime: null,
                 entrySecondsLeft: 0,
                 exitSecondsLeft: 0,
-                lastArmedBy: 'Unknown',
-                lastArmedTime: '',
-                lastDisarmedBy: 'Unknown',
-                lastDisarmedTime: '',
+                lastArmedBy: null,
+                lastArmedTime: null,
+                lastDisarmedBy: null,
+                lastDisarmedTime: null,
                 targetState: this.ringModeToMqttState(this.device.data.mode),
             }
         }
@@ -124,7 +124,7 @@ export default class SecurityPanel extends RingSocketDevice {
             ).length > 0
         )
         if (disarmEvents.length > 0) {
-            this.updateAlarmAttributes(disarmEvents[0], 'Disarmed')
+            this.updateAlarmAttributes(disarmEvents[0], 'lastDisarmed')
         }
     }
 
@@ -147,10 +147,10 @@ export default class SecurityPanel extends RingSocketDevice {
             }
         }
 
-        this.data.attributes[`${attrPrefix}By`] = initiatingUser
+        this.data.attributes[`${attrPrefix}By`] = initiatingUser || null
         this.data.attributes[`${attrPrefix}Time`] = message?.context?.eventOccurredTsMs
             ? new Date(message.context.eventOccurredTsMs).toISOString()
-            : new Date(now).toISOString()
+            : new Date().toISOString()
     }
 
     async processAlarmMode(message) {

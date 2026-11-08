@@ -25,8 +25,7 @@ export default class Keypad extends RingSocketDevice {
             },
             motion: {
                 component: 'binary_sensor',
-                device_class: 'motion',
-                attributes: true
+                device_class: 'motion'
             },
             chirps: {
                 component: 'switch',

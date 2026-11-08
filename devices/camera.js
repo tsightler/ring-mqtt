@@ -41,7 +41,7 @@ export default class Camera extends RingPolledDevice {
                 detection_enabled: null,
                 warning_enabled: null,
                 events: events.filter(event => event.event_type === 'motion'),
-                latestEventId: ''
+                latestEventId: null
             },
             ...this.device.isDoorbot ? {
                 ding: {
@@ -52,7 +52,7 @@ export default class Camera extends RingPolledDevice {
                     last_ding_expires: 0,
                     last_ding_time: null,
                     events: events.filter(event => event.event_type === 'ding'),
-                    latestEventId: ''
+                    latestEventId: null
                 }
             } : {},
             snapshot: {
@@ -80,13 +80,13 @@ export default class Camera extends RingPolledDevice {
                     state: 'OFF',
                     status: 'inactive',
                     session: false,
-                    publishedStatus: ''
+                    publishedStatus: null
                 },
                 event: {
                     state: 'OFF',
                     status: 'inactive',
                     session: false,
-                    publishedStatus: ''
+                    publishedStatus: null
                 }
             },
             video_mode: {
@@ -111,7 +111,7 @@ export default class Camera extends RingPolledDevice {
                 recordingUrl: null,
                 recordingUrlExpire: null,
                 transcoded: false,
-                eventId: '0'
+                eventId: null
             },
             ...this.device.hasLight ? {
                 light: {
@@ -934,9 +934,9 @@ export default class Camera extends RingPolledDevice {
                 this.data.event_select.recordingUrlExpire = Date.now() + 600000
             }
         } else if (urlExpired || !selectedEvent) {
-            this.data.event_select.recordingUrl = '<Recording Not Found>'
+            this.data.event_select.recordingUrl = null
             this.data.event_select.transcoded = transcoded
-            this.data.event_select.eventId = '0'
+            this.data.event_select.eventId = null
         }
 
         return recordingUrl

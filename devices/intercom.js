@@ -25,7 +25,6 @@ export default class Lock extends RingPolledDevice {
             },
             ding: {
                 component: 'binary_sensor',
-                attributes: true,
                 icon: 'mdi:doorbell'
             },
             info: {
