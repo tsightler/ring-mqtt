@@ -30,10 +30,14 @@ export default class Camera extends RingPolledDevice {
                 active_ding: false,
                 duration: savedState?.motion?.duration ? savedState.motion.duration : 180,
                 publishedDuration: false,
-                last_ding: 0,
+                last_ding: null,
                 last_ding_expires: 0,
-                last_ding_time: 'none',
+                last_ding_time: null,
                 is_person: false,
+                detection_type: null,
+                title: null,
+                description: null,
+                person_name: null,
                 detection_enabled: null,
                 warning_enabled: null,
                 events: events.filter(event => event.event_type === 'motion'),
@@ -44,9 +48,9 @@ export default class Camera extends RingPolledDevice {
                     active_ding: false,
                     duration: savedState?.ding?.duration ? savedState.ding.duration : 180,
                     publishedDurations: false,
-                    last_ding: 0,
+                    last_ding: null,
                     last_ding_expires: 0,
-                    last_ding_time: 'none',
+                    last_ding_time: null,
                     events: events.filter(event => event.event_type === 'ding'),
                     latestEventId: ''
                 }
@@ -332,9 +336,14 @@ export default class Camera extends RingPolledDevice {
         if (this.data.motion.events.length > 0) {
             const lastMotionEvent = this.data.motion.events[0]
             const lastMotionDate = lastMotionEvent?.start_time ? new Date(lastMotionEvent.start_time) : false
-            this.data.motion.last_ding = lastMotionDate ? Math.floor(lastMotionDate/1000) : 0
-            this.data.motion.last_ding_time = lastMotionDate ? utils.getISOTime(lastMotionDate) : ''
+            const detectionType = lastMotionEvent?.cv?.detection_type
+            this.data.motion.last_ding = lastMotionDate ? Math.floor(lastMotionDate/1000) : null
+            this.data.motion.last_ding_time = lastMotionDate ? utils.getISOTime(lastMotionDate) : null
             this.data.motion.is_person = Boolean(lastMotionEvent?.cv?.person_detected)
+            this.data.motion.detection_type = (detectionType && detectionType !== 'null') ? detectionType : null
+            this.data.motion.title = lastMotionEvent?.cv?.short_description || null
+            this.data.motion.description = lastMotionEvent?.cv?.full_description || null
+            this.data.motion.person_name = null
             this.data.motion.latestEventId = lastMotionEvent.event_id
 
             // Try to get URL for most recent motion event, if it fails, assume there's no subscription
@@ -366,8 +375,8 @@ export default class Camera extends RingPolledDevice {
             if (this.data.ding.events.length > 0) {
                 const lastDingEvent = this.data.ding.events[0]
                 const lastDingDate = lastDingEvent?.start_time ? new Date(lastDingEvent.start_time) : false
-                this.data.ding.last_ding = lastDingDate ? Math.floor(lastDingDate/1000) : 0
-                this.data.ding.last_ding_time = lastDingDate ? utils.getISOTime(lastDingDate) : ''
+                this.data.ding.last_ding = lastDingDate ? Math.floor(lastDingDate/1000) : null
+                this.data.ding.last_ding_time = lastDingDate ? utils.getISOTime(lastDingDate) : null
                 this.data.ding.latestEventId = lastDingEvent.event_id
             } else {
                 this.debug('Unable to retrieve most recent ding event for this doorbell')
@@ -548,12 +557,17 @@ export default class Camera extends RingPolledDevice {
         const eventTimestamp = pushData.data?.event?.eventito?.timestamp
             || Date.parse(pushData.data?.event?.ding?.created_at ?? '')
         this.data[dingKind].last_ding = Math.floor((eventTimestamp || Date.now())/1000)
-        this.data[dingKind].last_ding_time = pushData.data?.event?.ding?.created_at
+        this.data[dingKind].last_ding_time = pushData.data?.event?.ding?.created_at || null
         this.data[dingKind].last_ding_expires = this.data[dingKind].last_ding+this.data[dingKind].duration
 
         // If motion ding and snapshots on motion are enabled, publish a new snapshot
         if (dingKind === 'motion') {
-            this.data[dingKind].is_person = Boolean(pushData.data?.event?.ding?.detection_type === 'human')
+            const detectionType = pushData.data?.event?.ding?.detection_type
+            this.data[dingKind].is_person = Boolean(detectionType === 'human')
+            this.data[dingKind].detection_type = (detectionType && detectionType !== 'null') ? detectionType : null
+            this.data[dingKind].title = pushData.android_config?.title || null
+            this.data[dingKind].description = pushData.android_config?.body || null
+            this.data[dingKind].person_name = pushData.data?.event?.eventito?.name || null
             if (this.data.snapshot.motion) {
                 this.refreshSnapshot('motion', pushData?.img?.snapshot_uuid)
             }
@@ -610,7 +624,11 @@ export default class Camera extends RingPolledDevice {
         const attributes = {
             lastMotion: this.data.motion.last_ding,
             lastMotionTime: this.data.motion.last_ding_time,
-            personDetected: this.data.motion.is_person
+            personDetected: this.data.motion.is_person,
+            detectionType: this.data.motion.detection_type,
+            motionTitle: this.data.motion.title,
+            motionDescription: this.data.motion.description,
+            personName: this.data.motion.person_name
         }
         if (this.device.data.settings && typeof this.device.data.settings.motion_detection_enabled !== 'undefined') {
             this.data.motion.detection_enabled = this.device.data.settings.motion_detection_enabled
