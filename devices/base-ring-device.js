@@ -55,7 +55,7 @@ export default class RingDevice {
 
         await this.attributeEntitiesReady
 
-        const currentTopics = []
+        const currentTopics = new Set()
         Object.keys(this.entity).forEach(entityKey => {
             const entity = this.entity[entityKey]
             const entityTopic = `${this.deviceTopic}/${entityKey}`
@@ -177,7 +177,7 @@ export default class RingDevice {
             }
 
             const configTopic = `homeassistant/${entity.component}/${this.locationId}/${this.deviceId}_${entityKey}/config`
-            currentTopics.push(configTopic)
+            currentTopics.add(configTopic)
             if (!this.entity[entityKey].hasOwnProperty('published')) {
                 this.debug(`HASS config topic: ${configTopic}`, 'disc')
                 // Don't write the alarm disarm code to the debug log
@@ -185,10 +185,14 @@ export default class RingDevice {
             }
             this.mqttPublish(configTopic, JSON.stringify(discoveryMessage), false)
 
-            // On first publish store generated topics in entities object and subscribe to command topics
-            if (!this.entity[entityKey].hasOwnProperty('published')) {
-                this.entity[entityKey].published = true
-                Object.keys(discoveryMessage).filter(property => property.match('topic')).forEach(topic => {
+            // Record all published topics and, on first publish, store generated topics in entities object and subscribe to command topics
+            const isFirstPublish = !this.entity[entityKey].hasOwnProperty('published')
+            this.entity[entityKey].published = true
+            Object.keys(discoveryMessage).filter(property => property.match('topic')).forEach(topic => {
+                if (!topic.match('command_topic')) {
+                    currentTopics.add(discoveryMessage[topic])
+                }
+                if (isFirstPublish) {
                     this.entity[entityKey][topic] = discoveryMessage[topic]
                     if (topic.match('command_topic')) {
                         utils.event.emit('mqtt_subscribe', discoveryMessage[topic])
@@ -200,19 +204,19 @@ export default class RingDevice {
                             }
                         })
                     }
-                })
-            }
+                }
+            })
         })
 
-        // Remove any previously published discovery topics for entities that no longer exist on this device
+        // Remove any previously published discovery and state topics for entities that no longer exist on this device
         const previousTopics = state.getDeviceDiscoveryTopics(this.deviceId)
         for (const oldTopic of previousTopics) {
-            if (!currentTopics.includes(oldTopic)) {
-                this.debug(`Removing stale HASS config topic: ${oldTopic}`, 'disc')
+            if (!currentTopics.has(oldTopic)) {
+                this.debug(`Removing stale MQTT topic: ${oldTopic}`, 'disc')
                 this.mqttPublish(oldTopic, '', false)
             }
         }
-        state.setDeviceDiscoveryTopics(this.deviceId, currentTopics)
+        state.setDeviceDiscoveryTopics(this.deviceId, [...currentTopics])
 
         this.discoveryPublished = true
     }
