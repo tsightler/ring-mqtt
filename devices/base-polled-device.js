@@ -78,7 +78,8 @@ export default class RingPolledDevice extends RingDevice {
         try {
             const response = await this.device.restClient.request({
                 method: 'GET',
-                url: `https://api.ring.com/evm/v2/history/devices/${this.device.id}${this.getSearchQueryString({
+                url: `https://api.ring.com/evm/v3/history/devices${this.getSearchQueryString({
+                    source_ids: this.device.id,
                     capabilities: 'offline_event',
                     ...options,
                 })}`
