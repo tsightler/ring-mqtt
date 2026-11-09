@@ -65,13 +65,16 @@ type videoResync struct {
 	framePOC         uint
 	frameHasPOC      bool
 	lastSliceAddr    uint
+	frameSliceAddrs  []uint
 
 	// HEVC stream state learned from parameter sets and keyframes, used to
 	// detect missing slices or dropped reference frames inside recorded MP4s
 	// where ffmpeg re-packetizes with contiguous RTP sequence numbers.
 	sps            hevcSPSInfo
 	pps            hevcPPSInfo
-	expectedSlices int
+	kfSlices       int
+	kfSliceAddrs   []uint
+	fixedSliceGrid bool
 	havePOC        bool
 	lastPOC        uint
 	pocStep        uint
@@ -92,6 +95,7 @@ func (r *videoResync) resetFrameState() {
 	r.framePOC = 0
 	r.frameHasPOC = false
 	r.lastSliceAddr = 0
+	r.frameSliceAddrs = r.frameSliceAddrs[:0]
 }
 
 func (r *videoResync) discardFrame() uint64 {
@@ -277,6 +281,7 @@ func (r *videoResync) pushAt(pkt *rtp.Packet, now time.Time) []*rtp.Packet {
 				}
 				r.lastSliceAddr = si.sliceAddr
 			}
+			r.frameSliceAddrs = append(r.frameSliceAddrs, si.sliceAddr)
 		}
 	}
 
@@ -307,10 +312,33 @@ func (r *videoResync) pushAt(pkt *rtp.Packet, now time.Time) []*rtp.Packet {
 
 	if r.h265 && r.frameHasSliceHdr {
 		if r.frameIsIRAP || r.frameIsRAP {
-			r.expectedSlices = r.frameSlices
-		} else if r.expectedSlices > 0 && r.frameSlices != r.expectedSlices {
-			r.triggerLoss(pkt.SequenceNumber, now)
-			return nil
+			if r.kfSlices != r.frameSlices || !uintSlicesEqual(r.kfSliceAddrs, r.frameSliceAddrs) {
+				r.kfSlices = r.frameSlices
+				r.kfSliceAddrs = append(r.kfSliceAddrs[:0], r.frameSliceAddrs...)
+				r.fixedSliceGrid = false
+			}
+		} else if r.kfSlices > 0 {
+			if len(r.kfSliceAddrs) > 0 && len(r.frameSliceAddrs) == r.frameSlices {
+				// When slice_segment_address is parsed from SPS/PPS, check if
+				// any non-first slice lands on one of the keyframe's fixed CTB
+				// row boundaries. That distinguishes a fixed-grid encoder from
+				// one that slices dynamically by byte size.
+				if uintSlicesEqual(r.frameSliceAddrs, r.kfSliceAddrs) || sharesGridBoundary(r.frameSliceAddrs, r.kfSliceAddrs) {
+					r.fixedSliceGrid = true
+				}
+				if r.fixedSliceGrid && !uintSlicesEqual(r.frameSliceAddrs, r.kfSliceAddrs) {
+					r.triggerLoss(pkt.SequenceNumber, now)
+					return nil
+				}
+			} else {
+				if r.frameSlices == r.kfSlices || r.frameSlices > 1 {
+					r.fixedSliceGrid = true
+				}
+				if r.fixedSliceGrid && r.frameSlices != r.kfSlices {
+					r.triggerLoss(pkt.SequenceNumber, now)
+					return nil
+				}
+			}
 		}
 	}
 
@@ -349,3 +377,33 @@ func (r *videoResync) pushAt(pkt *rtp.Packet, now time.Time) []*rtp.Packet {
 func (r *videoResync) counts() (gaps, late, discarded uint64) {
 	return r.gaps, r.late, r.discarded
 }
+
+func uintSlicesEqual(a, b []uint) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+// sharesGridBoundary reports whether any non-first slice in frameAddrs starts
+// on one of the keyframe's non-first CTB slice boundaries, indicating the
+// encoder partitions frames along a fixed CTB grid rather than by byte size.
+func sharesGridBoundary(frameAddrs, kfAddrs []uint) bool {
+	for _, fa := range frameAddrs[1:] {
+		if fa == 0 {
+			continue
+		}
+		for _, ka := range kfAddrs[1:] {
+			if fa == ka {
+				return true
+			}
+		}
+	}
+	return false
+}
+

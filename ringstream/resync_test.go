@@ -352,3 +352,31 @@ func TestResyncDiscardsRecordedFrameMissingFirstSlice(t *testing.T) {
 	})
 	eqSeq(t, got, 1, 4)
 }
+
+// If a camera encoder uses byte-based slicing (e.g. a 3-slice keyframe followed
+// by single-slice P-frames), single-slice P-frames must not be falsely dropped.
+func TestResyncAllowsDynamicSliceCountWhenNotFixedGrid(t *testing.T) {
+	hdrSlice := func(seq uint16, ts uint32, nalType byte, firstSlice, marker bool) *rtp.Packet {
+		var hdr byte = 0x20
+		if firstSlice {
+			hdr |= 0x80
+		}
+		return &rtp.Packet{
+			Header:  rtp.Header{SequenceNumber: seq, Marker: marker, Timestamp: ts},
+			Payload: []byte{nalType << 1, 1, hdr},
+		}
+	}
+
+	r := quietResync()
+	got := feed(r, []*rtp.Packet{
+		// 3-slice keyframe:
+		hdrSlice(1, 3000, nalI, true, false),
+		hdrSlice(2, 3000, nalI, false, false),
+		hdrSlice(3, 3000, nalI, false, true),
+		// Single-slice P-frames (valid when encoder slices by byte budget):
+		hdrSlice(4, 6000, nalP, true, true),
+		hdrSlice(5, 9000, nalP, true, true),
+	})
+	eqSeq(t, got, 1, 2, 3, 4, 5)
+}
+
