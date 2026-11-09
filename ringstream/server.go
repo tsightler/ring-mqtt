@@ -288,6 +288,9 @@ func (ss *servedStream) writeAudio(pkt *rtp.Packet, ntp time.Time) error {
 // published to someone rather than into an empty stream. A stream held open
 // with nothing watching it simply waits out the timeout.
 func (ss *servedStream) waitReady(timeout time.Duration) {
+	if ss.playing == nil {
+		return
+	}
 	started := time.Now()
 	select {
 	case <-ss.playing:

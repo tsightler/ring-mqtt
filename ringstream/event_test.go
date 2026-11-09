@@ -9,6 +9,7 @@ import (
 	"github.com/bluenviron/gortsplib/v5"
 	"github.com/bluenviron/gortsplib/v5/pkg/description"
 	"github.com/bluenviron/gortsplib/v5/pkg/format"
+	"github.com/pion/rtp"
 )
 
 func testMedias() []*description.Media {
@@ -97,5 +98,71 @@ func TestServerRefusesPublisherOnLivePath(t *testing.T) {
 	if err == nil {
 		pub.Close()
 		t.Fatal("server accepted a publisher on a live camera path")
+	}
+}
+
+// When ffmpeg copies an HEVC MP4 to RTSP with global headers, VPS/SPS/PPS live
+// in the SDP description rather than in-band. eventVideoNormalizer must inject
+// them once before the first slice of a multi-slice keyframe and split any
+// RFC 7798 Type 48 aggregation packets into individual single-NAL packets.
+func TestEventVideoNormalizerInjectsParameterSetsAndSplitsAP(t *testing.T) {
+	vps := []byte{h265VPS << 1, 1, 0xAA}
+	sps := []byte{h265SPS << 1, 1, 0xBB}
+	pps := []byte{h265PPS << 1, 1, 0xCC}
+
+	norm := newEventVideoNormalizer(&format.H265{
+		PayloadTyp: 96,
+		VPS:        vps,
+		SPS:        sps,
+		PPS:        pps,
+	})
+
+	// 2-slice IDR keyframe without in-band parameter sets:
+	s1 := &rtp.Packet{
+		Header:  rtp.Header{SequenceNumber: 10, Timestamp: 3000, Marker: false},
+		Payload: []byte{nalI << 1, 1, 0x80},
+	}
+	s2 := &rtp.Packet{
+		Header:  rtp.Header{SequenceNumber: 11, Timestamp: 3000, Marker: true},
+		Payload: []byte{nalI << 1, 1, 0x20},
+	}
+
+	out1 := norm.push(s1)
+	if len(out1) != 4 {
+		t.Fatalf("got %d packets for first keyframe slice, want 4 (VPS, SPS, PPS, IDR1)", len(out1))
+	}
+	out2 := norm.push(s2)
+	if len(out2) != 1 || !out2[0].Marker {
+		t.Fatalf("got %d packets for second keyframe slice (marker=%v), want 1 marked packet", len(out2), out2[0].Marker)
+	}
+
+	// Sequence numbers must be strictly consecutive across injected packets.
+	all := append(out1, out2...)
+	for i, p := range all {
+		wantSeq := uint16(10 + i)
+		if p.SequenceNumber != wantSeq {
+			t.Fatalf("pkt[%d] seq=%d, want %d", i, p.SequenceNumber, wantSeq)
+		}
+	}
+
+	// Type 48 Aggregation Packet carrying two NAL units must be split into two
+	// single-NAL RTP packets.
+	ap := []byte{
+		h265AP << 1, 1,
+		0, 3, h265PrefixSEI << 1, 1, 0x11,
+		0, 3, nalP << 1, 1, 0x80,
+	}
+	outAP := norm.push(&rtp.Packet{
+		Header:  rtp.Header{SequenceNumber: 12, Timestamp: 6000, Marker: true},
+		Payload: ap,
+	})
+	if len(outAP) != 2 {
+		t.Fatalf("got %d packets from AP, want 2", len(outAP))
+	}
+	if outAP[0].Marker || !outAP[1].Marker {
+		t.Fatalf("markers = (%v, %v), want (false, true)", outAP[0].Marker, outAP[1].Marker)
+	}
+	if outAP[0].SequenceNumber != 15 || outAP[1].SequenceNumber != 16 {
+		t.Fatalf("seqs = (%d, %d), want (15, 16)", outAP[0].SequenceNumber, outAP[1].SequenceNumber)
 	}
 }

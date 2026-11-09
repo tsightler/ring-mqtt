@@ -1343,10 +1343,10 @@ export default class Camera extends RingPolledDevice {
 
         return {
             recordingUrl: this.data.event_select.recordingUrl,
-            // Ring's downloadable transcodes carry very few keyframes, and an
-            // HEVC recording has to come back to H.264 anyway, so both cases are
-            // re-encoded on the fly.
-            transcode: Boolean(this.data.event_select.transcoded || this.hevcEnabled),
+            // Ring's downloadable transcodes carry very few keyframes, and in
+            // Compatible mode an HEVC recording has to come back to H.264, so
+            // both cases are re-encoded on the fly.
+            transcode: Boolean(this.data.event_select.transcoded || (this.hevcEnabled && this.data.video_mode.mode !== 'Optimal')),
             description
         }
     }

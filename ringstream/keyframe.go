@@ -56,13 +56,17 @@ func isRandomAccessPoint(payload []byte, h265 bool) bool {
 // frames and avoid handing half-fragmented slices or orphaned parameter sets
 // to a hardware decoder.
 type nalInfo struct {
-	startsRAP      bool // begins a keyframe or its leading parameter-set run
-	startsParamRun bool // begins a parameter-set run (VPS for HEVC, SPS for AVC)
-	isParam        bool // parameter set or non-VCL prefix (VPS, SPS, PPS, AUD, SEI)
-	isVCL          bool // carries coded slice data (IDR/IRAP or predicted slice)
-	isFU           bool // fragmentation unit (FU-A for AVC, FU for HEVC)
-	fuStart        bool // first fragment of an FU (S bit)
-	fuEnd          bool // final fragment of an FU (E bit)
+	startsRAP       bool // begins a keyframe or its leading parameter-set run
+	startsParamRun  bool // begins a parameter-set run (VPS for HEVC, SPS for AVC)
+	isParam         bool // parameter set or non-VCL prefix (VPS, SPS, PPS, AUD, SEI)
+	isVCL           bool // carries coded slice data (IDR/IRAP or predicted slice)
+	isIRAP          bool // carries an IDR or IRAP keyframe slice
+	isFU            bool // fragmentation unit (FU-A for AVC, FU for HEVC)
+	fuStart         bool // first fragment of an FU (S bit)
+	fuEnd           bool // final fragment of an FU (E bit)
+	vclStarts       int  // number of VCL slices that begin in this packet
+	hasSliceHdr     bool // true when the VCL slice header byte is present
+	firstSliceInPic bool // HEVC first_slice_segment_in_pic_flag on the first VCL slice in this packet
 }
 
 func classifyH264NAL(nalType byte, info *nalInfo) {
@@ -70,6 +74,7 @@ func classifyH264NAL(nalType byte, info *nalInfo) {
 	case nalType == h264IDR:
 		info.startsRAP = true
 		info.isVCL = true
+		info.isIRAP = true
 	case nalType >= h264SliceMin && nalType < h264IDR:
 		info.isVCL = true
 	case nalType == h264SPS:
@@ -86,6 +91,7 @@ func classifyH265NAL(nalType byte, info *nalInfo) {
 	case nalType >= h265IRAPFirst && nalType <= h265IRAPLast:
 		info.startsRAP = true
 		info.isVCL = true
+		info.isIRAP = true
 	case nalType <= h265SliceMax:
 		info.isVCL = true
 	case nalType == h265VPS:
@@ -114,7 +120,11 @@ func inspectPayload(payload []byte, h265 bool) nalInfo {
 				if size == 0 || size > len(buf) {
 					break
 				}
-				classifyH264NAL(buf[0]&0x1F, &info)
+				nt := buf[0] & 0x1F
+				classifyH264NAL(nt, &info)
+				if nt >= h264SliceMin && nt <= h264IDR {
+					info.vclStarts++
+				}
 				buf = buf[size:]
 			}
 		case h264FUA:
@@ -123,11 +133,18 @@ func inspectPayload(payload []byte, h265 bool) nalInfo {
 				info.fuStart = payload[1]&0x80 != 0
 				info.fuEnd = payload[1]&0x40 != 0
 				inner := payload[1] & 0x1F
+				info.isIRAP = inner == h264IDR
 				info.isVCL = inner >= h264SliceMin && inner <= h264IDR
 				info.startsRAP = info.fuStart && h264IsRAP(inner)
+				if info.isVCL && info.fuStart {
+					info.vclStarts = 1
+				}
 			}
 		default:
 			classifyH264NAL(nalType, &info)
+			if info.isVCL {
+				info.vclStarts = 1
+			}
 		}
 		return info
 	}
@@ -144,7 +161,17 @@ func inspectPayload(payload []byte, h265 bool) nalInfo {
 			if size < 2 || size > len(buf) {
 				break
 			}
-			classifyH265NAL((buf[0]>>1)&0x3F, &info)
+			nal := buf[:size]
+			nt := (nal[0] >> 1) & 0x3F
+			wasVCL := info.isVCL
+			classifyH265NAL(nt, &info)
+			if nt <= h265SliceMax || (nt >= h265IRAPFirst && nt <= h265IRAPLast) {
+				info.vclStarts++
+				if !wasVCL && len(nal) >= 3 {
+					info.hasSliceHdr = true
+					info.firstSliceInPic = nal[2]&0x80 != 0
+				}
+			}
 			buf = buf[size:]
 		}
 	case h265FU:
@@ -153,11 +180,26 @@ func inspectPayload(payload []byte, h265 bool) nalInfo {
 			info.fuStart = payload[2]&0x80 != 0
 			info.fuEnd = payload[2]&0x40 != 0
 			inner := payload[2] & 0x3F
-			info.isVCL = inner <= h265SliceMax || (inner >= h265IRAPFirst && inner <= h265IRAPLast)
+			info.isIRAP = inner >= h265IRAPFirst && inner <= h265IRAPLast
+			info.isVCL = inner <= h265SliceMax || info.isIRAP
 			info.startsRAP = info.fuStart && h265IsRAP(inner)
+			if info.isVCL && info.fuStart {
+				info.vclStarts = 1
+				if len(payload) >= 4 {
+					info.hasSliceHdr = true
+					info.firstSliceInPic = payload[3]&0x80 != 0
+				}
+			}
 		}
 	default:
 		classifyH265NAL(nalType, &info)
+		if info.isVCL {
+			info.vclStarts = 1
+			if len(payload) >= 3 {
+				info.hasSliceHdr = true
+				info.firstSliceInPic = payload[2]&0x80 != 0
+			}
+		}
 	}
 	return info
 }

@@ -54,12 +54,44 @@ type videoResync struct {
 	// frame holds the contiguous packets of the current access unit until its
 	// slice completes, so a gap midway through a frame discards the whole frame
 	// rather than leaving its leading fragments in the stream.
-	frame []*rtp.Packet
-	inFU  bool
+	frame            []*rtp.Packet
+	inFU             bool
+	frameSlices      int
+	frameHasSliceHdr bool
+	frameIsRAP       bool
+	frameIsIRAP      bool
+	frameTS          uint32
+	frameHasTS       bool
+	framePOC         uint
+	frameHasPOC      bool
+	lastSliceAddr    uint
+
+	// HEVC stream state learned from parameter sets and keyframes, used to
+	// detect missing slices or dropped reference frames inside recorded MP4s
+	// where ffmpeg re-packetizes with contiguous RTP sequence numbers.
+	sps            hevcSPSInfo
+	pps            hevcPPSInfo
+	expectedSlices int
+	havePOC        bool
+	lastPOC        uint
+	pocStep        uint
 
 	gaps      uint64
 	late      uint64
 	discarded uint64
+}
+
+func (r *videoResync) resetFrameState() {
+	r.inFU = false
+	r.frameSlices = 0
+	r.frameHasSliceHdr = false
+	r.frameIsRAP = false
+	r.frameIsIRAP = false
+	r.frameTS = 0
+	r.frameHasTS = false
+	r.framePOC = 0
+	r.frameHasPOC = false
+	r.lastSliceAddr = 0
 }
 
 func (r *videoResync) discardFrame() uint64 {
@@ -69,8 +101,19 @@ func (r *videoResync) discardFrame() uint64 {
 		r.runDiscarded += n
 		r.frame = r.frame[:0]
 	}
-	r.inFU = false
+	r.resetFrameState()
 	return n
+}
+
+func (r *videoResync) triggerLoss(seq uint16, now time.Time) {
+	flushed := r.discardFrame()
+	if !r.dropping {
+		r.gaps++
+		r.dropping = true
+		r.gapSeq = seq
+		r.runDiscarded = flushed
+	}
+	r.requestPLI(now)
 }
 
 func (r *videoResync) requestPLI(now time.Time) {
@@ -84,6 +127,17 @@ func (r *videoResync) requestPLI(now time.Time) {
 	r.onLoss()
 }
 
+// seedH265Params pre-populates the SPS and PPS parsed from an RTSP SDP so
+// slice headers can be validated even before in-band parameter sets arrive.
+func (r *videoResync) seedH265Params(sps, pps []byte) {
+	if parsed := hevcParseSPS(sps); parsed.valid {
+		r.sps = parsed
+	}
+	if parsed := hevcParsePPS(pps); parsed.valid {
+		r.pps = parsed
+	}
+}
+
 // push feeds the next packet from the stream and returns the packets of a
 // completed frame ready to forward, or nil while still assembling or dropping.
 func (r *videoResync) push(pkt *rtp.Packet) []*rtp.Packet {
@@ -91,6 +145,20 @@ func (r *videoResync) push(pkt *rtp.Packet) []*rtp.Packet {
 }
 
 func (r *videoResync) pushAt(pkt *rtp.Packet, now time.Time) []*rtp.Packet {
+	if r.h265 {
+		_, sps, pps := hevcParameterSets(pkt.Payload)
+		if sps != nil {
+			if parsed := hevcParseSPS(sps); parsed.valid {
+				r.sps = parsed
+			}
+		}
+		if pps != nil {
+			if parsed := hevcParsePPS(pps); parsed.valid {
+				r.pps = parsed
+			}
+		}
+	}
+
 	info := inspectPayload(pkt.Payload, r.h265)
 
 	if !r.have {
@@ -113,14 +181,7 @@ func (r *videoResync) pushAt(pkt *rtp.Packet, now time.Time) []*rtp.Packet {
 
 		if delta > 1 {
 			hadPartial := len(r.frame) > 0
-			flushed := r.discardFrame()
-			if !r.dropping {
-				r.gaps++
-				r.dropping = true
-				r.gapSeq = pkt.SequenceNumber
-				r.runDiscarded = flushed
-			}
-			r.requestPLI(now)
+			r.triggerLoss(pkt.SequenceNumber, now)
 
 			// If we were midway through assembling a frame (for instance VPS+SPS
 			// had arrived and PPS was lost right before the IDR slice), a packet
@@ -138,28 +199,24 @@ func (r *videoResync) pushAt(pkt *rtp.Packet, now time.Time) []*rtp.Packet {
 	// contiguous, so a malformed stream cannot leave an FU half-open.
 	if r.inFU {
 		if !info.isFU || info.fuStart {
-			flushed := r.discardFrame()
-			if !r.dropping {
-				r.gaps++
-				r.dropping = true
-				r.gapSeq = pkt.SequenceNumber
-				r.runDiscarded = flushed
-			}
-			r.requestPLI(now)
+			r.triggerLoss(pkt.SequenceNumber, now)
 		}
 	} else if info.isFU && !info.fuStart {
 		// Middle or end fragment of an FU whose start was never seen.
-		flushed := r.discardFrame()
-		if !r.dropping {
-			r.gaps++
-			r.dropping = true
-			r.gapSeq = pkt.SequenceNumber
-			r.runDiscarded = flushed
-		}
+		r.triggerLoss(pkt.SequenceNumber, now)
 		r.discarded++
 		r.runDiscarded++
-		r.requestPLI(now)
 		return nil
+	}
+
+	// If a new frame begins while the previous access unit is still waiting for
+	// its final marked slice, the previous frame was truncated.
+	if r.frameSlices > 0 {
+		tsChanged := r.frameHasTS && pkt.Timestamp != 0 && pkt.Timestamp != r.frameTS
+		newPicSlice := r.h265 && info.vclStarts > 0 && info.hasSliceHdr && info.firstSliceInPic
+		if tsChanged || info.startsParamRun || newPicSlice {
+			r.triggerLoss(pkt.SequenceNumber, now)
+		}
 	}
 
 	if r.dropping {
@@ -176,12 +233,100 @@ func (r *videoResync) pushAt(pkt *rtp.Packet, now time.Time) []*rtp.Packet {
 		}
 	}
 
+	// Validate HEVC slice headers when present so incomplete multi-slice frames
+	// or dropped reference frames in recorded MP4s are caught even when ffmpeg
+	// emits contiguous RTP sequence numbers.
+	if r.h265 && info.vclStarts > 0 && info.hasSliceHdr {
+		if r.frameSlices == 0 && !info.firstSliceInPic {
+			// First slice of the picture is missing.
+			r.triggerLoss(pkt.SequenceNumber, now)
+			r.discarded++
+			r.runDiscarded++
+			return nil
+		}
+		if r.sps.valid && r.pps.valid {
+			si := hevcInspectSlice(pkt.Payload, r.sps, r.pps)
+			if !si.ok {
+				r.triggerLoss(pkt.SequenceNumber, now)
+				r.discarded++
+				r.runDiscarded++
+				return nil
+			}
+			if r.frameSlices == 0 {
+				if !si.dependent {
+					if !info.isIRAP && !r.frameIsRAP && r.havePOC && r.sps.maxNumReorderPics == 0 {
+						mask := (uint(1) << r.sps.log2MaxPicOrderCnt) - 1
+						deltaPOC := (si.poc - r.lastPOC) & mask
+						if deltaPOC == 0 || (r.pocStep > 0 && deltaPOC != r.pocStep) || (r.pocStep == 0 && deltaPOC > 4) {
+							r.triggerLoss(pkt.SequenceNumber, now)
+							r.discarded++
+							r.runDiscarded++
+							return nil
+						}
+					}
+					r.framePOC = si.poc
+					r.frameHasPOC = true
+				}
+				r.lastSliceAddr = 0
+			} else {
+				if si.sliceAddr <= r.lastSliceAddr || (!si.dependent && r.frameHasPOC && si.poc != r.framePOC) {
+					r.triggerLoss(pkt.SequenceNumber, now)
+					r.discarded++
+					r.runDiscarded++
+					return nil
+				}
+				r.lastSliceAddr = si.sliceAddr
+			}
+		}
+	}
+
+	if info.startsRAP {
+		r.frameIsRAP = true
+	}
+	if info.isIRAP {
+		r.frameIsIRAP = true
+	}
+	if info.vclStarts > 0 {
+		if r.frameSlices == 0 && pkt.Timestamp != 0 {
+			r.frameTS = pkt.Timestamp
+			r.frameHasTS = true
+		}
+		r.frameSlices += info.vclStarts
+		if info.hasSliceHdr {
+			r.frameHasSliceHdr = true
+		}
+	}
+
 	r.frame = append(r.frame, pkt)
 	r.inFU = info.isFU && !info.fuEnd
 
 	complete := !r.inFU && ((info.isVCL && (pkt.Header.Marker || pkt.Timestamp == 0)) || len(r.frame) >= maxFramePackets)
 	if !complete {
 		return nil
+	}
+
+	if r.h265 && r.frameHasSliceHdr {
+		if r.frameIsIRAP || r.frameIsRAP {
+			r.expectedSlices = r.frameSlices
+		} else if r.expectedSlices > 0 && r.frameSlices != r.expectedSlices {
+			r.triggerLoss(pkt.SequenceNumber, now)
+			return nil
+		}
+	}
+
+	if r.h265 && r.frameHasPOC {
+		if r.frameIsIRAP || r.frameIsRAP || !r.havePOC {
+			r.havePOC = true
+			r.lastPOC = r.framePOC
+			r.pocStep = 0
+		} else if r.sps.maxNumReorderPics == 0 {
+			mask := (uint(1) << r.sps.log2MaxPicOrderCnt) - 1
+			step := (r.framePOC - r.lastPOC) & mask
+			if r.pocStep == 0 {
+				r.pocStep = step
+			}
+			r.lastPOC = r.framePOC
+		}
 	}
 
 	if r.dropping {
@@ -195,6 +340,7 @@ func (r *videoResync) pushAt(pkt *rtp.Packet, now time.Time) []*rtp.Packet {
 
 	out := append([]*rtp.Packet(nil), r.frame...)
 	r.frame = r.frame[:0]
+	r.resetFrameState()
 	return out
 }
 

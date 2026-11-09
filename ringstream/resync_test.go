@@ -282,3 +282,73 @@ func TestResyncHoldsMultiSliceFrameUntilMarker(t *testing.T) {
 	})
 	eqSeq(t, got, 1, 5, 6, 7)
 }
+
+// In a recorded MP4 played back via ffmpeg, RTP sequence numbers are contiguous
+// even when the recording itself is missing a slice of a multi-slice HEVC frame.
+// Slice header and slice-count checks must still discard the incomplete frame
+// and hold output until the next complete keyframe.
+func TestResyncDiscardsRecordedFrameWithMissingSliceAndContiguousSeq(t *testing.T) {
+	hdrSlice := func(seq uint16, ts uint32, nalType byte, firstSlice, marker bool) *rtp.Packet {
+		var hdr byte = 0x20
+		if firstSlice {
+			hdr |= 0x80
+		}
+		return &rtp.Packet{
+			Header:  rtp.Header{SequenceNumber: seq, Marker: marker, Timestamp: ts},
+			Payload: []byte{nalType << 1, 1, hdr},
+		}
+	}
+
+	r := quietResync()
+	got := feed(r, []*rtp.Packet{
+		// Complete 3-slice keyframe (establishes expectedSlices = 3):
+		hdrSlice(1, 3000, nalI, true, false),
+		hdrSlice(2, 3000, nalI, false, false),
+		hdrSlice(3, 3000, nalI, false, true),
+		// Clean 3-slice P-frame:
+		hdrSlice(4, 6000, nalP, true, false),
+		hdrSlice(5, 6000, nalP, false, false),
+		hdrSlice(6, 6000, nalP, false, true),
+		// Corrupt P-frame in MP4: only 2 slices survived in the sample, but
+		// ffmpeg still marks the last surviving slice and uses contiguous seqs:
+		hdrSlice(7, 9000, nalP, true, false),
+		hdrSlice(8, 9000, nalP, false, true),
+		// Subsequent P-frame in the damaged GOP (must also be dropped):
+		hdrSlice(9, 12000, nalP, true, false),
+		hdrSlice(10, 12000, nalP, false, false),
+		hdrSlice(11, 12000, nalP, false, true),
+		// Next complete 3-slice keyframe recovers:
+		hdrSlice(12, 15000, nalI, true, false),
+		hdrSlice(13, 15000, nalI, false, false),
+		hdrSlice(14, 15000, nalI, false, true),
+	})
+	eqSeq(t, got, 1, 2, 3, 4, 5, 6, 12, 13, 14)
+}
+
+// If Slice 1 of a recorded HEVC frame was lost (so the sample begins with
+// first_slice_segment_in_pic_flag == 0), the frame and the rest of its GOP
+// must be dropped even with contiguous sequence numbers.
+func TestResyncDiscardsRecordedFrameMissingFirstSlice(t *testing.T) {
+	hdrSlice := func(seq uint16, ts uint32, nalType byte, firstSlice, marker bool) *rtp.Packet {
+		var hdr byte = 0x20
+		if firstSlice {
+			hdr |= 0x80
+		}
+		return &rtp.Packet{
+			Header:  rtp.Header{SequenceNumber: seq, Marker: marker, Timestamp: ts},
+			Payload: []byte{nalType << 1, 1, hdr},
+		}
+	}
+
+	r := quietResync()
+	got := feed(r, []*rtp.Packet{
+		hdrSlice(1, 3000, nalI, true, true),
+		// Frame at ts=6000 starts with firstSlice=false:
+		hdrSlice(2, 6000, nalP, false, true),
+		// Dependent P-frame at ts=9000 must also be dropped:
+		hdrSlice(3, 9000, nalP, true, true),
+		// Recovery keyframe at ts=12000:
+		hdrSlice(4, 12000, nalI, true, true),
+	})
+	eqSeq(t, got, 1, 4)
+}

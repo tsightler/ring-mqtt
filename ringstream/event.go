@@ -6,6 +6,7 @@ import (
 	"net"
 	"os/exec"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/bluenviron/gortsplib/v5"
@@ -227,7 +228,10 @@ func (s *streamServer) OnAnnounce(ctx *gortsplib.ServerHandlerOnAnnounceCtx) (*b
 	return &base.Response{StatusCode: base.StatusOK}, nil
 }
 
-// OnRecord forwards everything the publisher sends to the readers.
+// OnRecord forwards everything the publisher sends to the readers, running
+// video packets through the same frame assembly and resync gate used for live
+// streams so corrupt or incomplete frames in a recording are never handed to
+// downstream hardware decoders.
 func (s *streamServer) OnRecord(ctx *gortsplib.ServerHandlerOnRecordCtx) (*base.Response, error) {
 	path := streamPath(ctx.Path)
 	s.mu.Lock()
@@ -237,13 +241,220 @@ func (s *streamServer) OnRecord(ctx *gortsplib.ServerHandlerOnRecordCtx) (*base.
 		return &base.Response{StatusCode: base.StatusNotFound}, fmt.Errorf("nothing to record into for %s", path)
 	}
 
-	ctx.Session.OnPacketRTPAny(func(medi *description.Media, _ format.Format, pkt *rtp.Packet) {
+	var (
+		readyOnce sync.Once
+		videoMu   sync.Mutex
+		norm      *eventVideoNormalizer
+		resync    *videoResync
+	)
+
+	ctx.Session.OnPacketRTPAny(func(medi *description.Media, forma format.Format, pkt *rtp.Packet) {
+		readyOnce.Do(func() {
+			ss.waitReady(5 * time.Second)
+		})
 		stream := ss.serverStream()
 		if stream == nil {
 			return
 		}
-		_ = stream.WritePacketRTP(medi, pkt)
+		if medi.Type != description.MediaTypeVideo {
+			_ = stream.WritePacketRTP(medi, sanitize(pkt))
+			return
+		}
+
+		videoMu.Lock()
+		defer videoMu.Unlock()
+		if resync == nil {
+			norm = newEventVideoNormalizer(forma)
+			resync = &videoResync{
+				lg:       ss.logger(),
+				h265:     norm.h265,
+				dropping: true,
+			}
+			if norm.h265 {
+				resync.seedH265Params(norm.sps, norm.pps)
+			}
+		}
+		for _, p := range norm.push(pkt) {
+			for _, out := range resync.push(p) {
+				_ = stream.WritePacketRTP(medi, sanitize(out))
+			}
+		}
 	})
 
 	return &base.Response{StatusCode: base.StatusOK}, nil
+}
+
+// eventVideoNormalizer prepares RTP video packets emitted by ffmpeg from an
+// MP4 recording so they match the structure of a live camera stream:
+//   - Aggregation packets (RFC 7798 AP for HEVC, RFC 6184 STAP-A for AVC) are
+//     split into individual single-NAL RTP packets.
+//   - Parameter sets (VPS/SPS/PPS for HEVC, SPS/PPS for AVC) taken from the
+//     RTSP track description are injected in-band before every keyframe when
+//     ffmpeg moved them out of the bitstream into global headers.
+type eventVideoNormalizer struct {
+	h265 bool
+	vps  []byte
+	sps  []byte
+	pps  []byte
+
+	have          bool
+	lastInSeq     uint16
+	nextSeq       uint16
+	lastTS        uint32
+	haveTS        bool
+	sawParamsInAU bool
+}
+
+func newEventVideoNormalizer(forma format.Format) *eventVideoNormalizer {
+	switch f := forma.(type) {
+	case *format.H265:
+		return &eventVideoNormalizer{
+			h265: true,
+			vps:  f.VPS,
+			sps:  f.SPS,
+			pps:  f.PPS,
+		}
+	case *format.H264:
+		return &eventVideoNormalizer{
+			sps: f.SPS,
+			pps: f.PPS,
+		}
+	default:
+		return &eventVideoNormalizer{}
+	}
+}
+
+func (n *eventVideoNormalizer) push(pkt *rtp.Packet) []*rtp.Packet {
+	if !n.have {
+		n.have = true
+		n.lastInSeq = pkt.SequenceNumber
+		n.nextSeq = pkt.SequenceNumber
+	} else {
+		delta := pkt.SequenceNumber - n.lastInSeq
+		if delta == 0 || delta >= 0x8000 {
+			cp := *pkt
+			cp.SequenceNumber = n.nextSeq - (n.lastInSeq - pkt.SequenceNumber)
+			return []*rtp.Packet{&cp}
+		}
+		n.lastInSeq = pkt.SequenceNumber
+		n.nextSeq += delta
+	}
+
+	if !n.haveTS || pkt.Timestamp != n.lastTS {
+		n.haveTS = true
+		n.lastTS = pkt.Timestamp
+		n.sawParamsInAU = false
+	}
+
+	nals := n.splitAggregate(pkt.Payload)
+	var out []*rtp.Packet
+	emit := func(payload []byte, marker bool) {
+		if len(out) > 0 {
+			n.nextSeq++
+		}
+		cp := *pkt
+		cp.Header.SequenceNumber = n.nextSeq
+		cp.Header.Marker = marker
+		cp.Payload = payload
+		out = append(out, &cp)
+	}
+
+	for i, nal := range nals {
+		isLast := i == len(nals)-1
+		if n.h265 {
+			vps, sps, pps := hevcParameterSets(nal)
+			if vps != nil {
+				n.vps = vps
+				n.sawParamsInAU = true
+			}
+			if sps != nil {
+				n.sps = sps
+				n.sawParamsInAU = true
+			}
+			if pps != nil {
+				n.pps = pps
+				n.sawParamsInAU = true
+			}
+		} else {
+			sps, pps := h264ParameterSets(nal)
+			if sps != nil {
+				n.sps = sps
+				n.sawParamsInAU = true
+			}
+			if pps != nil {
+				n.pps = pps
+				n.sawParamsInAU = true
+			}
+		}
+
+		info := inspectPayload(nal, n.h265)
+		if info.isIRAP && (!info.isFU || info.fuStart) && !n.sawParamsInAU {
+			if n.h265 {
+				if len(n.vps) > 0 {
+					emit(n.vps, false)
+				}
+				if len(n.sps) > 0 {
+					emit(n.sps, false)
+				}
+				if len(n.pps) > 0 {
+					emit(n.pps, false)
+				}
+			} else {
+				if len(n.sps) > 0 {
+					emit(n.sps, false)
+				}
+				if len(n.pps) > 0 {
+					emit(n.pps, false)
+				}
+			}
+			n.sawParamsInAU = true
+		}
+
+		emit(nal, pkt.Header.Marker && isLast)
+	}
+
+	if pkt.Header.Marker {
+		n.sawParamsInAU = false
+	}
+	return out
+}
+
+func (n *eventVideoNormalizer) splitAggregate(payload []byte) [][]byte {
+	if n.h265 {
+		if len(payload) >= 2 && (payload[0]>>1)&0x3F == h265AP {
+			var nals [][]byte
+			buf := payload[2:]
+			for len(buf) >= 2 {
+				size := int(buf[0])<<8 | int(buf[1])
+				buf = buf[2:]
+				if size < 2 || size > len(buf) {
+					return [][]byte{payload}
+				}
+				nals = append(nals, buf[:size])
+				buf = buf[size:]
+			}
+			if len(nals) > 0 && len(buf) == 0 {
+				return nals
+			}
+		}
+		return [][]byte{payload}
+	}
+
+	if len(payload) >= 1 && payload[0]&0x1F == h264STAPA {
+		var nals [][]byte
+		buf := payload[1:]
+		for len(buf) >= 2 {
+			size := int(buf[0])<<8 | int(buf[1])
+			buf = buf[2:]
+			if size == 0 || size > len(buf) {
+				return [][]byte{payload}
+			}
+			nals = append(nals, buf[:size])
+			buf = buf[size:]
+		}
+		if len(nals) > 0 && len(buf) == 0 {
+			return nals
+		}
+	}
+	return [][]byte{payload}
 }

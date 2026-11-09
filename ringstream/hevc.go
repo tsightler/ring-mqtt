@@ -1,9 +1,37 @@
 package main
 
+import "math/bits"
+
 // HEVC parameter set extraction and SPS parsing, mirroring what h264.go and
 // sps.go do for AVC. Without this the keyframe and resolution change counters
 // are blind on HEVC streams, and a resolution change mid-stream is exactly the
 // thing hardware decoders tend to fall over on.
+
+type hevcSPSInfo struct {
+	separateColourPlane bool
+	log2MaxPicOrderCnt  uint
+	maxNumReorderPics   uint
+	picSizeInCtbsY      uint
+	sliceAddrBits       int
+	valid               bool
+}
+
+type hevcPPSInfo struct {
+	ppsID                         uint
+	dependentSliceSegmentsEnabled bool
+	outputFlagPresent             bool
+	numExtraSliceHeaderBits       uint
+	valid                         bool
+}
+
+type hevcSliceInfo struct {
+	firstSlice bool
+	dependent  bool
+	sliceAddr  uint
+	poc        uint
+	isIRAP     bool
+	ok         bool
+}
 
 // hevcExtractSPS returns the SPS NAL unit carried by an RTP payload, if any.
 // Parameter sets arrive either as single NAL units or inside an aggregation
@@ -37,8 +65,20 @@ func hevcExtractSPS(payload []byte) []byte {
 
 // hevcResolution returns the display dimensions coded in an HEVC SPS.
 func hevcResolution(sps []byte) (width, height int, ok bool) {
+	width, height, _, ok = hevcDecodeSPS(sps)
+	return width, height, ok
+}
+
+// hevcParseSPS extracts the SPS fields needed to validate slice headers and
+// Picture Order Count continuity.
+func hevcParseSPS(sps []byte) hevcSPSInfo {
+	_, _, info, _ := hevcDecodeSPS(sps)
+	return info
+}
+
+func hevcDecodeSPS(sps []byte) (width, height int, info hevcSPSInfo, ok bool) {
 	if len(sps) < 4 {
-		return 0, 0, false
+		return 0, 0, hevcSPSInfo{}, false
 	}
 
 	r := &bitReader{data: unescape(sps[2:])} // skip the two byte NAL header
@@ -50,7 +90,7 @@ func hevcResolution(sps []byte) (width, height int, ok bool) {
 	// profile_tier_level. Sub layer information is only present when there is
 	// more than one layer, which Ring does not use; bail rather than misparse.
 	if maxSubLayersMinus1 != 0 {
-		return 0, 0, false
+		return 0, 0, hevcSPSInfo{}, false
 	}
 	r.bits(2)  // general_profile_space
 	r.bit()    // general_tier_flag
@@ -64,12 +104,14 @@ func hevcResolution(sps []byte) (width, height int, ok bool) {
 	r.ue() // sps_seq_parameter_set_id
 
 	chromaFormat := r.ue()
+	var separateColourPlane bool
 	if chromaFormat == 3 {
-		r.bit() // separate_colour_plane_flag
+		separateColourPlane = r.bit() == 1 // separate_colour_plane_flag
 	}
 
-	width = int(r.ue())  // pic_width_in_luma_samples
-	height = int(r.ue()) // pic_height_in_luma_samples
+	rawWidth := int(r.ue())  // pic_width_in_luma_samples
+	rawHeight := int(r.ue()) // pic_height_in_luma_samples
+	width, height = rawWidth, rawHeight
 
 	if r.bit() == 1 { // conformance_window_flag
 		subW, subH := 1, 1
@@ -86,9 +128,150 @@ func hevcResolution(sps []byte) (width, height int, ok bool) {
 	}
 
 	if width <= 0 || height <= 0 {
-		return 0, 0, false
+		return 0, 0, hevcSPSInfo{}, false
 	}
-	return width, height, true
+
+	r.ue() // bit_depth_luma_minus8
+	r.ue() // bit_depth_chroma_minus8
+	log2MaxPOCMinus4 := r.ue()
+	if log2MaxPOCMinus4 > 12 {
+		return width, height, hevcSPSInfo{}, true
+	}
+
+	r.bit() // sps_sub_layer_ordering_info_present_flag
+	r.ue()  // sps_max_dec_pic_buffering_minus1[0]
+	maxNumReorderPics := r.ue()
+	r.ue() // sps_max_latency_increase_plus1[0]
+
+	log2MinCbSizeY := r.ue() + 3 // log2_min_luma_coding_block_size_minus3 + 3
+	log2DiffMaxMinCbSizeY := r.ue()
+	ctbLog2SizeY := log2MinCbSizeY + log2DiffMaxMinCbSizeY
+	if r.pos <= len(r.data)*8 && ctbLog2SizeY >= 4 && ctbLog2SizeY <= 6 {
+		ctbSizeY := 1 << ctbLog2SizeY
+		picWidthInCtbsY := uint((rawWidth + ctbSizeY - 1) / ctbSizeY)
+		picHeightInCtbsY := uint((rawHeight + ctbSizeY - 1) / ctbSizeY)
+		picSizeInCtbsY := picWidthInCtbsY * picHeightInCtbsY
+		if picSizeInCtbsY > 0 {
+			info = hevcSPSInfo{
+				separateColourPlane: separateColourPlane,
+				log2MaxPicOrderCnt:  log2MaxPOCMinus4 + 4,
+				maxNumReorderPics:   maxNumReorderPics,
+				picSizeInCtbsY:      picSizeInCtbsY,
+				sliceAddrBits:       bits.Len(picSizeInCtbsY - 1),
+				valid:               true,
+			}
+		}
+	}
+
+	return width, height, info, true
+}
+
+// hevcParsePPS extracts the leading PPS flags needed to parse slice headers.
+func hevcParsePPS(pps []byte) hevcPPSInfo {
+	if len(pps) < 3 {
+		return hevcPPSInfo{}
+	}
+	r := &bitReader{data: unescape(pps[2:])}
+	ppsID := r.ue()
+	_ = r.ue() // pps_seq_parameter_set_id
+	dep := r.bit() == 1
+	outFlag := r.bit() == 1
+	extraBits := r.bits(3)
+	if r.pos > len(r.data)*8 {
+		return hevcPPSInfo{}
+	}
+	return hevcPPSInfo{
+		ppsID:                         ppsID,
+		dependentSliceSegmentsEnabled: dep,
+		outputFlagPresent:             outFlag,
+		numExtraSliceHeaderBits:       extraBits,
+		valid:                         true,
+	}
+}
+
+// hevcInspectSlice parses the slice segment header of an HEVC VCL RTP packet
+// (either a single NAL unit or the start fragment of an FU).
+func hevcInspectSlice(payload []byte, sps hevcSPSInfo, pps hevcPPSInfo) hevcSliceInfo {
+	if !sps.valid || !pps.valid || len(payload) < 3 {
+		return hevcSliceInfo{}
+	}
+
+	nalType := (payload[0] >> 1) & 0x3F
+	sliceHdr := payload[2:]
+	if nalType == h265FU {
+		if len(payload) < 4 || payload[2]&0x80 == 0 {
+			return hevcSliceInfo{}
+		}
+		nalType = payload[2] & 0x3F
+		sliceHdr = payload[3:]
+	}
+
+	isIRAP := nalType >= h265IRAPFirst && nalType <= h265IRAPLast
+	if nalType > h265SliceMax && !isIRAP {
+		return hevcSliceInfo{}
+	}
+
+	limit := len(sliceHdr)
+	if limit > 32 {
+		limit = 32
+	}
+	r := &bitReader{data: unescape(sliceHdr[:limit])}
+
+	firstSlice := r.bit() == 1
+	if nalType >= h265IRAPFirst && nalType <= 23 {
+		r.bit() // no_output_of_prior_pics_flag
+	}
+	if r.ue() != pps.ppsID {
+		return hevcSliceInfo{}
+	}
+
+	var (
+		dependent bool
+		sliceAddr uint
+	)
+	if !firstSlice {
+		if pps.dependentSliceSegmentsEnabled {
+			dependent = r.bit() == 1
+		}
+		if sps.sliceAddrBits > 0 {
+			sliceAddr = r.bits(sps.sliceAddrBits)
+		}
+		if sliceAddr == 0 || sliceAddr >= sps.picSizeInCtbsY {
+			return hevcSliceInfo{}
+		}
+	}
+
+	var poc uint
+	if !dependent {
+		if pps.numExtraSliceHeaderBits > 0 {
+			r.bits(int(pps.numExtraSliceHeaderBits))
+		}
+		sliceType := r.ue() // 0=B, 1=P, 2=I
+		if sliceType > 2 {
+			return hevcSliceInfo{}
+		}
+		if pps.outputFlagPresent {
+			r.bit() // pic_output_flag
+		}
+		if sps.separateColourPlane {
+			r.bits(2) // colour_plane_id
+		}
+		if nalType != 19 && nalType != 20 {
+			poc = r.bits(int(sps.log2MaxPicOrderCnt))
+		}
+	}
+
+	if r.pos > len(r.data)*8 {
+		return hevcSliceInfo{}
+	}
+	return hevcSliceInfo{
+		firstSlice: firstSlice,
+		dependent:  dependent,
+		sliceAddr:  sliceAddr,
+		poc:        poc,
+		isIRAP:     isIRAP,
+		ok:         true,
+	}
 }
 
 // hevcParameterSets returns any VPS, SPS or PPS carried by an RTP payload. The
