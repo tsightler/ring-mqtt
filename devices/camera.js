@@ -89,16 +89,9 @@ export default class Camera extends RingPolledDevice {
                 }
             },
             video_mode: {
-                // A camera that has been seen before keeps the historical
-                // behaviour of always requesting H.264, while one appearing for
-                // the first time follows the camera's own HEVC setting.
                 mode: savedState?.video_mode?.mode
                     ? savedState.video_mode.mode
-                    : savedState?.video_codec?.mode
-                        // Migrated from the short lived video_codec setting, whose
-                        // explicit H.265 choice is closest to Optimal.
-                        ? (savedState.video_codec.mode === 'Compatible' ? 'Compatible' : 'Optimal')
-                        : (savedState ? 'Compatible' : 'Optimal'),
+                    : 'Compatible',
                 publishedMode: null
             },
             event_select: {
