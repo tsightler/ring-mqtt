@@ -320,8 +320,8 @@ export default class Camera extends RingPolledDevice {
         // If no motion events in device event cache, request recent motion events
         if (this.data.motion.events.length === 0) {
             const response = await this.getDeviceHistory({limit: 5, event_types: 'motion'})
-            if (Array.isArray(response?.events) && response.events.length > 0) {
-                this.data.motion.events = response.events
+            if (Array.isArray(response?.items) && response.items.length > 0) {
+                this.data.motion.events = response.items
             }
         }
 
@@ -335,7 +335,7 @@ export default class Camera extends RingPolledDevice {
             this.data.motion.detection_type = (detectionType && detectionType !== 'null') ? detectionType : null
             this.data.motion.title = lastMotionEvent?.cv?.short_description || null
             this.data.motion.description = lastMotionEvent?.cv?.full_description || null
-            this.data.motion.person_name = lastMotionEvent?.cv?.profiles?.[0]?.profile_name || null
+            this.data.motion.person_name = null
 
             // Try to get URL for most recent motion event, if it fails, assume there's no subscription
             let recordingUrl = false
@@ -359,8 +359,8 @@ export default class Camera extends RingPolledDevice {
             // If no ding events in device event cache, request recent ding events
             if (this.data.ding.events.length === 0) {
                 const response = await this.getDeviceHistory({limit: 5, event_types: 'ding'})
-                if (Array.isArray(response?.events) && response.events.length > 0) {
-                    this.data.ding.events = response.events
+                if (Array.isArray(response?.items) && response.items.length > 0) {
+                    this.data.ding.events = response.items
                 }
             }
 
@@ -947,15 +947,15 @@ export default class Camera extends RingPolledDevice {
                     limit: eventType === 'person' ? 50 : eventNumber
                 })
 
-                if (Array.isArray(history?.events) && history.events.length > 0) {
+                if (Array.isArray(history.items) && history.items.length > 0) {
                     const newEvents = eventType === 'person'
-                        ? history.events.filter(i => i.recording_status === 'ready' && i.cv.person_detected)
-                        : history.events.filter(i => i.recording_status === 'ready')
+                        ? history.items.filter(i => i.recording_status === 'ready' && i.cv.person_detected)
+                        : history.items.filter(i => i.recording_status === 'ready')
                     events = [...events, ...newEvents]
                 }
 
                 // Remove base64 padding characters from pagination key
-                paginationKey = history?.pagination_key ? history.pagination_key.replace(/={1,2}$/, '') : false
+                paginationKey = history.pagination_key ? history.pagination_key.replace(/={1,2}$/, '') : false
 
                 // If we have enough events, break the loop, otherwise decrease the loop counter
                 loop = (events.length >= eventNumber || !paginationKey) ? 0 : loop-1

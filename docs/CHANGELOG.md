@@ -20,9 +20,8 @@ In addition to the new stream protocols, the new code no longer depends on the u
    removing the need for repeated republish loops on startup and Home Assistant
    restarts, and automatically clean up stale retained discovery and state
    topics when entities or devices are removed
- - Use the Ring v3 API for device health and camera event history queries, and
-   handle failed health queries gracefully so they cannot prevent a device from
-   being published
+ - Use the Ring v3 API for device health queries and handle failed health
+   queries gracefully so they cannot prevent a device from being published
  - Back off on repeated camera ding/motion subscription failures and skip
    subscription attempts on shared cameras that lack alert management permission
  - Standardize uninitialized device attributes to `null` instead of placeholder
